@@ -11,7 +11,6 @@ export default defineConfig(({ mode }) => ({
 		},
 
 		include: [
-			'@testing-library/react',
 			'vscode/localExtensionHost',
 			'vscode-textmate',
 			'vscode-oniguruma'
@@ -23,6 +22,9 @@ export default defineConfig(({ mode }) => ({
 			wasm(),
 			topLevelAwait()
 		]
+	},
+	server: {
+		allowedHosts: ["qlue-ls.com"]
 	},
 	resolve: {
 		alias:

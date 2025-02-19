@@ -9,7 +9,6 @@ export default defineConfig(({ mode }) => ({
 		esbuildOptions: {
 			plugins: [importMetaUrlPlugin]
 		},
-
 		include: [
 			'vscode/localExtensionHost',
 			'vscode-textmate',

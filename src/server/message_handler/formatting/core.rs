@@ -772,7 +772,7 @@ fn get_separator(kind: &str) -> Seperator {
         return Seperator::Unknown;
     }
     match kind {
-        "unit" | "Prologue" | "SolutionModifier" | "LimitOffsetClauses" => Seperator::LineBreak,
+        "unit" | "Query" | "Prologue" | "SolutionModifier" | "LimitOffsetClauses" => Seperator::LineBreak,
 
         "ExpressionList"
         | "GroupGraphPattern"

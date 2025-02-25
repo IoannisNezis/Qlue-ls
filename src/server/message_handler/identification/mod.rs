@@ -23,7 +23,7 @@ pub fn determine_operation_type(text: String) -> Result<String, String> {
 
             Ok("Unknown".into())
         }
-        Err(_) => panic!("Could not setup parser"),
+        Err(e) => Err(format!("Could not set up parser: {}", e)),
     }
 }
 

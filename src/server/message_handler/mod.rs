@@ -27,7 +27,6 @@ use textdocument_syncronization::{
 
 pub use diagnostic::*;
 pub use formatting::format_raw;
-pub use identification::determine_operation_type;
 
 use crate::server::lsp::errors::ErrorCode;
 

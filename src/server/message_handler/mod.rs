@@ -3,6 +3,7 @@ mod commands;
 mod completion;
 mod diagnostic;
 mod formatting;
+mod identification;
 mod hovering;
 mod lifecycle;
 mod misc;
@@ -26,6 +27,7 @@ use textdocument_syncronization::{
 
 pub use diagnostic::*;
 pub use formatting::format_raw;
+pub use identification::determine_operation_type;
 
 use crate::server::lsp::errors::ErrorCode;
 

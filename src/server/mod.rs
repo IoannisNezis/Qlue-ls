@@ -20,7 +20,7 @@ use message_handler::dispatch;
 // WARNING: This is a temporary soloution to export the format function directly
 // will remove soon (12.12.24)
 #[allow(unused_imports)]
-pub use message_handler::format_raw;
+pub use message_handler::{format_raw, determine_operation_type};
 
 use state::ServerState;
 use tools::Tools;

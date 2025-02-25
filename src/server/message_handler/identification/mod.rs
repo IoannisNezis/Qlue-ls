@@ -1,7 +1,6 @@
 use tree_sitter::Parser;
 use wasm_bindgen::prelude::wasm_bindgen;
 
-
 // FIXME: This should not be exposed to Wasm API
 // This is a dirty hack to get things done in QLever.
 // QLever UI will implement a LSP-Client soon^TM.

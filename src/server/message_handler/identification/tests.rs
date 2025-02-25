@@ -91,6 +91,12 @@ fn query_complex() {
            ?stop geo:hasGeometry/geo:asWKT ?stop_geometry .
          } ORDER BY DESC(?dist)"
     ), "Query");
+    // This is syntax is a QLever specific extension of SPARQL.
+    expect_type(indoc!(
+        "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        SELECT * WHERE {
+          ?a @en@rdfs:label ?b
+        }"), "Query");
 }
 
 #[test]

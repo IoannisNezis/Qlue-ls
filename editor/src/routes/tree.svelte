@@ -1,11 +1,22 @@
 <script lang="ts">
-    import { parse } from 'll-sparql-parser';
+    import { get_parse_tree } from 'll-sparql-parser';
+    interface Node {
+        kind: string;
+        type: 'node';
+        children: NodeOrToken[];
+    }
+    interface Token {
+        kind: string;
+        type: 'token';
+        text: string;
+    }
+    type NodeOrToken = Node | Token;
 
     let { input } = $props();
-    let parseTree = $derived(parse(input));
+    let parseTree = $derived(get_parse_tree(input));
 </script>
 
-{#snippet renderLeave(leave)}
+{#snippet renderLeave(leave: Token)}
     <div>
         <span>
             {leave.kind}:
@@ -16,18 +27,18 @@
     </div>
 {/snippet}
 
-{#snippet renderTree(tree)}
+{#snippet renderTree(tree: Node)}
     <span>
         {tree.kind}
     </span>
     <div class="ms-2 flex flex-col border-l ps-2">
         {#each tree.children as child}
-            {#if child.Tree}
+            {#if child.type == 'node'}
                 <span>
-                    {@render renderTree(child.Tree)}
+                    {@render renderTree(child)}
                 </span>
             {:else}
-                {@render renderLeave(child.Token)}
+                {@render renderLeave(child)}
             {/if}
         {/each}
     </div>

@@ -3,6 +3,7 @@ mod commands;
 mod completion;
 mod diagnostic;
 mod formatting;
+mod identification;
 mod hovering;
 mod lifecycle;
 mod misc;

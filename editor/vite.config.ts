@@ -29,7 +29,6 @@ export default defineConfig(({ mode }) => ({
 		alias:
 		{
 			"qlue-ls": mode === "development" ? "qlue-ls-dev" : "qlue-ls",
-			"ll-sparql-parser": mode === "development" ? "ll-sparql-parser-dev" : "ll-sparql-parser",
 		},
 	},
 	plugins: [sveltekit(), wasm(), topLevelAwait()]

@@ -8,7 +8,8 @@
     let editorContainer: HTMLElement;
     let wrapper: MonacoEditorLanguageClientWrapper | undefined;
     let markers: editor.IMarker[] = $state([]);
-    let content = $state('SELECT * {}');
+    let content = $state('SELECT * WHERE {\n  ?s ?p ?o\n}');
+    let cursorOffset = $state(0);
 
     onMount(async () => {
         const { MonacoEditorLanguageClientWrapper } = await import('monaco-editor-wrapper');
@@ -27,6 +28,9 @@
             .onDidChangeContent(() => {
                 content = wrapper?.getEditor()!.getModel()!.getValue();
             });
+        wrapper.getEditor()!.onDidChangeCursorPosition((e) => {
+            cursorOffset = wrapper?.getEditor()!.getModel()!.getOffsetAt(e.position);
+        });
     });
 
     onDestroy(() => {
@@ -43,7 +47,7 @@
         bind:this={editorContainer}
     ></div>
     {#if showTree}
-        <Tree input={content}></Tree>
+        <Tree input={content} {cursorOffset}></Tree>
     {/if}
 
     <button

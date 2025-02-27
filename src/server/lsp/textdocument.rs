@@ -7,6 +7,7 @@ use std::{
 use log::error;
 use serde::{Deserialize, Serialize};
 
+use text_size::TextSize;
 use tree_sitter::{Node, Point};
 
 use super::{
@@ -86,6 +87,10 @@ impl TextDocumentItem {
 
     pub(crate) fn get_range(&self, range: &Range) -> Option<&str> {
         self.text.get(range.to_byte_index_range(&self.text)?)
+    }
+
+    pub(crate) fn get_offset_at(&self, position: &Position) -> Option<text_size::TextSize> {
+        Some(TextSize::new(position.to_byte_index(&self.text)? as u32))
     }
 }
 

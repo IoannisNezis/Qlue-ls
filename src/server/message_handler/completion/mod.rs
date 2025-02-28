@@ -183,3 +183,6 @@ fn collect_completions(
         _ => vec![],
     })
 }
+
+#[cfg(test)]
+mod tests;

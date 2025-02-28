@@ -1,6 +1,8 @@
 use std::u32;
 
-use ll_sparql_parser::{parse, syntax_kind::SyntaxKind, SyntaxNode, SyntaxToken, TokenAtOffset};
+use ll_sparql_parser::{
+    parse, print_full_tree, syntax_kind::SyntaxKind, SyntaxNode, SyntaxToken, TokenAtOffset,
+};
 use text_size::TextSize;
 use tree_sitter::Query;
 
@@ -48,7 +50,7 @@ impl CompletionContext {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub(super) enum CompletionLocation {
     Unknown,
     /// In empty File
@@ -79,6 +81,7 @@ impl CompletionLocation {
         root: SyntaxNode,
         offset: TextSize,
     ) -> Result<Self, CompletionError> {
+        log::info!("{}", print_full_tree(&root, 0));
         let range = root.text_range();
         if range.is_empty() {
             return Ok(CompletionLocation::Empty);
@@ -91,31 +94,25 @@ impl CompletionLocation {
             );
             return Ok(CompletionLocation::Unknown);
         }
+
         Ok(match root.token_at_offset(offset) {
             TokenAtOffset::Single(token) => {
-                token
-                    .parent_ancestors()
-                    .for_each(|node| log::info!("{:?}", node.kind()));
-
                 if token.kind() == SyntaxKind::WHITESPACE {
-                    if match_ancestors(&token, &[SyntaxKind::GroupGraphPattern])
-                        | match_ancestors(&token, &[SyntaxKind::TriplesBlock])
-                        | match_ancestors(&token, &[SyntaxKind::GroupGraphPatternSub])
+                    match token
+                        .prev_sibling_or_token()
+                        .map_or(SyntaxKind::Eof, |prev| prev.kind())
                     {
-                        CompletionLocation::TripleOrNotTriple
-                    } else if match_ancestors(
-                        &token,
-                        &[
-                            SyntaxKind::Var,
-                            SyntaxKind::VarOrTerm,
-                            SyntaxKind::TriplesSameSubjectPath,
-                        ],
-                    ) {
-                        CompletionLocation::Predicate
-                    } else if match_ancestors(&token, &[SyntaxKind::Var, SyntaxKind::VerbSimple]) {
-                        CompletionLocation::Object
-                    } else {
-                        CompletionLocation::Unknown
+                        SyntaxKind::VarOrTerm => CompletionLocation::Predicate,
+                        SyntaxKind::VerbPath | SyntaxKind::VerbSimple => CompletionLocation::Object,
+                        _ => match token
+                            .parent()
+                            .map_or(SyntaxKind::Eof, |parent| parent.kind())
+                        {
+                            SyntaxKind::GroupGraphPattern | SyntaxKind::TriplesBlock => {
+                                CompletionLocation::TripleOrNotTriple
+                            }
+                            _ => CompletionLocation::Unknown,
+                        },
                     }
                 } else {
                     CompletionLocation::Unknown

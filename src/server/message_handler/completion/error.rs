@@ -1,5 +1,6 @@
 use crate::server::lsp::errors::{ErrorCode, ResponseError};
 
+#[derive(Debug)]
 pub(super) enum CompletionError {
     LocalizationError(LocalizationError),
 }
@@ -22,7 +23,8 @@ pub(super) fn to_resonse_error(completion_error: CompletionError) -> ResponseErr
     }
 }
 
-struct LocalizationError {
+#[derive(Debug)]
+pub(super) struct LocalizationError {
     code: ErrorCode,
     message: String,
 }

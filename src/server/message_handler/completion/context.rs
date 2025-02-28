@@ -1,10 +1,9 @@
 use std::u32;
 
 use ll_sparql_parser::{
-    parse, print_full_tree, syntax_kind::SyntaxKind, SyntaxNode, SyntaxToken, TokenAtOffset,
+    parse_query, print_full_tree, syntax_kind::SyntaxKind, SyntaxNode, SyntaxToken, TokenAtOffset,
 };
 use text_size::TextSize;
-use tree_sitter::Query;
 
 use crate::server::{
     lsp::{errors::ErrorCode, CompletionRequest, CompletionTriggerKind},
@@ -40,7 +39,7 @@ impl CompletionContext {
                 ),
             ))? as u32)
             .into();
-        let root = parse(&document.text);
+        let root = parse_query(&document.text);
         let location = CompletionLocation::from_position(root, offset)?;
         let trigger_kind = request.get_completion_context().trigger_kind.clone();
         Ok(Self {
@@ -72,8 +71,15 @@ pub(super) enum CompletionLocation {
     /// }
     /// ```
     TripleOrNotTriple,
+    /// 2nd part of a Triple
+    /// ```sparql
+    /// SELECT * WHERE {
+    ///  ?subject <here>
+    /// }
+    /// ```
     Predicate,
     Object,
+    SolutionModifier,
 }
 
 impl CompletionLocation {
@@ -87,8 +93,11 @@ impl CompletionLocation {
             return Ok(CompletionLocation::Empty);
         }
         if !range.contains(offset) {
+            if range.end() < offset {
+                return Ok(CompletionLocation::SolutionModifier);
+            }
             log::error!(
-                "Requested completion position: ({:?}) not in document range ({:?})",
+                "Requested completion position: ({:?}) before document range ({:?}). This should be impossible.",
                 offset,
                 range
             );
@@ -118,7 +127,7 @@ impl CompletionLocation {
                     CompletionLocation::Unknown
                 }
             }
-            TokenAtOffset::Between(token1, token2) => {
+            TokenAtOffset::Between(token1, _token2) => {
                 token1
                     .parent_ancestors()
                     .for_each(|node| log::info!("{:?}", node.kind()));
@@ -133,13 +142,6 @@ impl CompletionLocation {
                 CompletionLocation::Empty
             }
         })
-    }
-}
-
-fn match_nth_ancestor(token: &SyntaxToken, kind: SyntaxKind, n: usize) -> bool {
-    match token.parent_ancestors().nth(n) {
-        Some(node) => node.kind() == kind,
-        None => false,
     }
 }
 

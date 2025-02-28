@@ -1,15 +1,21 @@
-use ll_sparql_parser::parse;
+use ll_sparql_parser::parse_query;
 
 use crate::server::message_handler::completion::context::CompletionLocation;
 
-fn match_location_at_offset(input: &str, location: CompletionLocation,  offset:u32){
-    let root = parse(input);
+fn match_location_at_offset(input: &str, location: CompletionLocation, offset: u32) {
+    let root = parse_query(input);
     assert_eq!(
         CompletionLocation::from_position(root, offset.into()).unwrap(),
         location
     );
 }
 
+#[test]
+fn localize_solution_modifier() {
+    //           0123456789012
+    let input = "Select * {} ";
+    match_location_at_offset(input, CompletionLocation::SolutionModifier, 12);
+}
 
 #[test]
 fn localize_triple_or_not_1() {
@@ -51,7 +57,6 @@ fn localize_predicate_3() {
     let input = "Select * { \"str\"  }";
     match_location_at_offset(input, CompletionLocation::Predicate, 17);
 }
-
 
 #[test]
 fn localize_object_1() {

@@ -26,12 +26,12 @@ pub(super) fn get_union_snippets() -> Vec<CompletionItem> {
     ]
 }
 
-// pub(super)  get_solution_mod_snippets() -> Vec<CompletionItem> {
-//         CompletionItem::new(
-//             "ORDER BY",
-//             "Sort the results",
-//             "ORDER BY ${1|ASC,DESC|} ( $0 )",
-//             CompletionItemKind::Snippet,
-//             InsertTextFormat::Snippet,
-//         ),
-// }
+pub(super) fn get_solution_mod_snippets() -> Vec<CompletionItem> {
+    vec![CompletionItem::new(
+        "ORDER BY",
+        "Sort the results",
+        "ORDER BY ${1|ASC,DESC|} ( $0 )",
+        CompletionItemKind::Snippet,
+        InsertTextFormat::Snippet,
+    )]
+}

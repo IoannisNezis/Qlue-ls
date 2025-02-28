@@ -5,7 +5,7 @@ mod snippets;
 use context::{CompletionContext, CompletionLocation};
 use error::to_resonse_error;
 use log::{error, warn};
-use snippets::get_union_snippets;
+use snippets::{get_solution_mod_snippets, get_union_snippets};
 
 use crate::server::{
     anaysis::get_all_variables,
@@ -180,6 +180,7 @@ fn collect_completions(
         CompletionLocation::TripleOrNotTriple => variable_completions(server, request, false)?
             .chain(graph_pattern_not_triples_completions(server, request)?)
             .collect(),
+        CompletionLocation::SolutionModifier => get_solution_mod_snippets(),
         _ => vec![],
     })
 }

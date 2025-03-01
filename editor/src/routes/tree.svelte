@@ -18,7 +18,7 @@
 
 {#snippet renderLeave(leave: Token)}
     <div>
-        <span>
+        <span class={leave.active ? 'bg-yellow-400' : ''}>
             {leave.kind}:
         </span>
         <span class="w-min text-red-400">

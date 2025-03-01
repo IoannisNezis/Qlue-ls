@@ -53,6 +53,7 @@ impl CompletionContext {
 
 #[derive(Debug, PartialEq)]
 pub(super) enum CompletionLocation {
+    /// Unsupported location
     Unknown,
     /// At the beginning of the input
     Start,

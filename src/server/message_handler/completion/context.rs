@@ -7,6 +7,7 @@ use text_size::TextSize;
 
 use crate::server::{
     lsp::{errors::ErrorCode, CompletionRequest, CompletionTriggerKind},
+    message_handler::completion::utils::match_ancestors,
     Server,
 };
 
@@ -39,6 +40,7 @@ impl CompletionContext {
                 ),
             ))? as u32)
             .into();
+        log::info!("-{}-", &document.text);
         let root = parse_query(&document.text);
         let location = CompletionLocation::from_position(root, offset)?;
         let trigger_kind = request.get_completion_context().trigger_kind.clone();
@@ -52,13 +54,19 @@ impl CompletionContext {
 #[derive(Debug, PartialEq)]
 pub(super) enum CompletionLocation {
     Unknown,
-    /// In empty File
-    Empty,
+    /// At the beginning of the input
+    Start,
+    /// At the beginning of the input
+    End,
     /// Inside a "{}" Block
     /// Either at a `TriplesBlock` or a `GroupPatternNotTriples`
+    ///
+    /// ---
+    ///
+    /// **Example**
     /// ```sparql
     /// SELECT * WHERE {
-    ///  <here>
+    ///  >here<
     /// }
     /// ```
     /// or
@@ -66,35 +74,80 @@ pub(super) enum CompletionLocation {
     /// SELECT * WHERE {
     ///   OPTIONAL {
     ///     ?s ?p ?o .
-    ///     <here>
+    ///     >here<
     ///   }
     /// }
     /// ```
     TripleOrNotTriple,
     /// 2nd part of a Triple
+    ///
+    /// ---
+    ///
+    /// **Example**
     /// ```sparql
     /// SELECT * WHERE {
-    ///  ?subject <here>
+    ///  ?subject >here<
     /// }
     /// ```
     Predicate,
+    /// 3rd part of a Triple
+    ///
+    /// ---
+    ///
+    /// **Example**
+    /// ```sparql
+    /// SELECT * WHERE {
+    ///  ?subject <someiri> >here<
+    /// }
+    /// ```
     Object,
-    SolutionModifier,
 }
 
 impl CompletionLocation {
+    pub(super) fn from_token(token: &SyntaxToken) -> Self {
+        if let Some(location) = match token
+            .prev_sibling_or_token()
+            .map_or(SyntaxKind::Eof, |prev| prev.kind())
+        {
+            SyntaxKind::VarOrTerm => Some(CompletionLocation::Predicate),
+            SyntaxKind::VerbPath | SyntaxKind::VerbSimple => Some(CompletionLocation::Object),
+            SyntaxKind::Query => Some(CompletionLocation::End),
+            _ => None,
+        } {
+            return location;
+        }
+        if let Some(location) = match token
+            .parent()
+            .map_or(SyntaxKind::Eof, |parent| parent.kind())
+        {
+            SyntaxKind::GroupGraphPattern | SyntaxKind::TriplesBlock => {
+                Some(CompletionLocation::TripleOrNotTriple)
+            }
+            SyntaxKind::QueryUnit => Some(CompletionLocation::Start),
+            _ => None,
+        } {
+            return location;
+        }
+        if match_ancestors(&token, &[SyntaxKind::Error, SyntaxKind::GroupGraphPattern]) {
+            return CompletionLocation::TripleOrNotTriple;
+        }
+        if match_ancestors(&token, &[SyntaxKind::Error, SyntaxKind::Query]) {
+            return CompletionLocation::Start;
+        }
+        CompletionLocation::Unknown
+    }
     pub(super) fn from_position(
         root: SyntaxNode,
         offset: TextSize,
     ) -> Result<Self, CompletionError> {
-        log::info!("{}", print_full_tree(&root, 0));
+        log::info!("Tree\n{}", print_full_tree(&root, 0));
         let range = root.text_range();
         if range.is_empty() {
-            return Ok(CompletionLocation::Empty);
+            return Ok(CompletionLocation::Start);
         }
         if !range.contains(offset) {
-            if range.end() < offset {
-                return Ok(CompletionLocation::SolutionModifier);
+            if range.end() <= offset {
+                return Ok(CompletionLocation::End);
             }
             log::error!(
                 "Requested completion position: ({:?}) before document range ({:?}). This should be impossible.",
@@ -107,49 +160,13 @@ impl CompletionLocation {
         Ok(match root.token_at_offset(offset) {
             TokenAtOffset::Single(token) => {
                 if token.kind() == SyntaxKind::WHITESPACE {
-                    match token
-                        .prev_sibling_or_token()
-                        .map_or(SyntaxKind::Eof, |prev| prev.kind())
-                    {
-                        SyntaxKind::VarOrTerm => CompletionLocation::Predicate,
-                        SyntaxKind::VerbPath | SyntaxKind::VerbSimple => CompletionLocation::Object,
-                        _ => match token
-                            .parent()
-                            .map_or(SyntaxKind::Eof, |parent| parent.kind())
-                        {
-                            SyntaxKind::GroupGraphPattern | SyntaxKind::TriplesBlock => {
-                                CompletionLocation::TripleOrNotTriple
-                            }
-                            _ => CompletionLocation::Unknown,
-                        },
-                    }
+                    CompletionLocation::from_token(&token)
                 } else {
                     CompletionLocation::Unknown
                 }
             }
-            TokenAtOffset::Between(token1, _token2) => {
-                token1
-                    .parent_ancestors()
-                    .for_each(|node| log::info!("{:?}", node.kind()));
-                if match_ancestors(&token1, &[SyntaxKind::Error, SyntaxKind::Query]) {
-                    CompletionLocation::Empty
-                } else {
-                    CompletionLocation::Unknown
-                }
-            }
-            TokenAtOffset::None => {
-                log::info!("at no token");
-                CompletionLocation::Empty
-            }
+            TokenAtOffset::Between(token1, _token2) => CompletionLocation::from_token(&token1),
+            TokenAtOffset::None => CompletionLocation::Start,
         })
     }
-}
-
-fn match_ancestors(token: &SyntaxToken, ancestors: &[SyntaxKind]) -> bool {
-    token
-        .parent_ancestors()
-        .zip(ancestors.iter())
-        .take_while(|(ancestor, kind)| ancestor.kind() == **kind)
-        .count()
-        == ancestors.len()
 }

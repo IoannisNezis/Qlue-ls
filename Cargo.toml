@@ -31,7 +31,7 @@ serde_json = "1.0.117"
 serde_repr = "0.1.19"
 
 # parser
-ll-sparql-parser = "0.4.0"
+ll-sparql-parser = "0.4.1"
 
 # tree-sitter
 tree-sitter = { package = "tree-sitter-c2rust", version = "0.25.2" }

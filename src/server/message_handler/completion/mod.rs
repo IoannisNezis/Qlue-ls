@@ -1,6 +1,7 @@
 mod context;
 mod error;
 mod snippets;
+mod utils;
 
 use context::{CompletionContext, CompletionLocation};
 use error::to_resonse_error;
@@ -158,7 +159,7 @@ fn collect_completions(
     request: &CompletionRequest,
 ) -> Result<Vec<CompletionItem>, ResponseError> {
     Ok(match location {
-        CompletionLocation::Empty => get_union_snippets(),
+        CompletionLocation::Start => get_union_snippets(),
         CompletionLocation::Predicate => {
             vec![CompletionItem::new(
                 "predicate filler",
@@ -180,7 +181,7 @@ fn collect_completions(
         CompletionLocation::TripleOrNotTriple => variable_completions(server, request, false)?
             .chain(graph_pattern_not_triples_completions(server, request)?)
             .collect(),
-        CompletionLocation::SolutionModifier => get_solution_mod_snippets(),
+        CompletionLocation::End => get_solution_mod_snippets(),
         _ => vec![],
     })
 }

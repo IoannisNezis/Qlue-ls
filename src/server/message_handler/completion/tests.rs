@@ -11,10 +11,22 @@ fn match_location_at_offset(input: &str, location: CompletionLocation, offset: u
 }
 
 #[test]
-fn localize_solution_modifier() {
+fn localize_start_1() {
+    let input = "\n";
+    match_location_at_offset(input, CompletionLocation::Start, 0);
+}
+
+#[test]
+fn localize_start_2() {
+    let input = "S\n";
+    match_location_at_offset(input, CompletionLocation::Start, 1);
+}
+
+#[test]
+fn localize_end() {
     //           0123456789012
-    let input = "Select * {} ";
-    match_location_at_offset(input, CompletionLocation::SolutionModifier, 12);
+    let input = "Select * {} \n";
+    match_location_at_offset(input, CompletionLocation::End, 12);
 }
 
 #[test]
@@ -36,6 +48,13 @@ fn localize_triple_or_not_3() {
     //           012345678901234567890123
     let input = "Select * { ?s ?p ?o .  ?s ?p ?o }";
     match_location_at_offset(input, CompletionLocation::TripleOrNotTriple, 22);
+}
+
+#[test]
+fn localize_triple_or_not_4() {
+    //           0123456789012
+    let input = "Select * { ?  }";
+    match_location_at_offset(input, CompletionLocation::TripleOrNotTriple, 12);
 }
 
 #[test]

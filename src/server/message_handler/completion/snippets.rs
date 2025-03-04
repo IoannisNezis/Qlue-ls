@@ -1,6 +1,60 @@
 use crate::server::lsp::{CompletionItem, CompletionItemKind, InsertTextFormat};
 
-pub(super) fn get_union_snippets() -> Vec<CompletionItem> {
+pub(super) fn get_not_tripples_snippets() -> Vec<CompletionItem> {
+    vec![
+        CompletionItem::new(
+            "FILTER",
+            "Filter the results",
+            "FILTER ( $0 )",
+            CompletionItemKind::Snippet,
+            InsertTextFormat::Snippet,
+        ),
+        CompletionItem::new(
+            "BIND",
+            "Bind a new variable",
+            "BIND ($1 AS ?$0)",
+            CompletionItemKind::Snippet,
+            InsertTextFormat::Snippet,
+        ),
+        CompletionItem::new(
+            "VALUES",
+            "Inline data definition",
+            "VALUES ?$1 { $0 }",
+            CompletionItemKind::Snippet,
+            InsertTextFormat::Snippet,
+        ),
+        CompletionItem::new(
+            "SERVICE",
+            "Collect data from a fedarated SPARQL endpoint",
+            "SERVICE <$1> {\n  $0\n}",
+            CompletionItemKind::Snippet,
+            InsertTextFormat::Snippet,
+        ),
+        CompletionItem::new(
+            "MINUS",
+            "Subtract data",
+            "MINUS { $0 }",
+            CompletionItemKind::Snippet,
+            InsertTextFormat::Snippet,
+        ),
+        CompletionItem::new(
+            "OPTIONAL",
+            "Optional graphpattern",
+            "OPTIONAL { $0 }",
+            CompletionItemKind::Snippet,
+            InsertTextFormat::Snippet,
+        ),
+        CompletionItem::new(
+            "UNION",
+            "Union of two results",
+            "{\n  $1\n}\nUNION\n{\n  $0\n}",
+            CompletionItemKind::Snippet,
+            InsertTextFormat::Snippet,
+        ),
+    ]
+}
+
+pub(super) fn get_start_snippets() -> Vec<CompletionItem> {
     vec![
         CompletionItem::new(
             "SELECT",

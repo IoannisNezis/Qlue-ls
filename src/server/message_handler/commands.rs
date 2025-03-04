@@ -18,6 +18,7 @@ pub fn handle_execute_command_request(
     request: ExecuteCommandRequest,
 ) -> Result<ExecuteCommandResponse, ResponseError> {
     match request.params.command.as_str() {
+        // TODO: Remove this command
         "publishDiagnostics" => {
             let arguments = serde_parse(&request.params.arguments)?;
             publish_diagnostic(server, &arguments);

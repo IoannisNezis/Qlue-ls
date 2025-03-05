@@ -1,7 +1,7 @@
 use std::u32;
 
 use ll_sparql_parser::{
-    parse_query, print_full_tree, syntax_kind::SyntaxKind, SyntaxNode, SyntaxToken, TokenAtOffset,
+    parse_query, syntax_kind::SyntaxKind, SyntaxNode, SyntaxToken, TokenAtOffset,
 };
 use text_size::TextSize;
 
@@ -40,7 +40,6 @@ impl CompletionContext {
                 ),
             ))? as u32)
             .into();
-        log::info!("-{}-", &document.text);
         let root = parse_query(&document.text);
         let location = CompletionLocation::from_position(root, offset)?;
         let trigger_kind = request.get_completion_context().trigger_kind.clone();
@@ -141,7 +140,6 @@ impl CompletionLocation {
         root: SyntaxNode,
         offset: TextSize,
     ) -> Result<Self, CompletionError> {
-        log::info!("Tree\n{}", print_full_tree(&root, 0));
         let range = root.text_range();
         if range.is_empty() {
             return Ok(CompletionLocation::Start);

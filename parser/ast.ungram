@@ -1,0 +1,8 @@
+Query = Prologue ( SelectQuery | ConstructQuery | DescribeQuery | AskQuery ) ValuesClause
+SelectQuery = SelectClause DatasetClause* WhereClause SolutionModifier
+SelectClause = 'SELECT' ( 'DISTINCT' | 'REDUCED' )? '*'? ( Var | Assignment )*
+Assignment = '(' Expression 'AS' 'Var' ')'
+WhereClause = 'WHERE'? GroupGraphPattern
+GroupGraphPattern = '{' (( TripelsBlock | GraphPatternNotTriples ) '*')* '}'
+TriplesBlock = Triples*
+Triples = Subject Predicate Object

@@ -61,4 +61,5 @@ impl VarOrTerm {
     }
 }
 
+#[cfg(test)]
 mod test;

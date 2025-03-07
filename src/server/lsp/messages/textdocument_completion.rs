@@ -40,7 +40,7 @@ pub struct CompletionContext {
     pub trigger_character: Option<String>,
 }
 
-#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Clone)]
 #[repr(u8)]
 pub enum CompletionTriggerKind {
     Invoked = 1,

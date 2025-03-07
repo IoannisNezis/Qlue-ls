@@ -1,24 +1,26 @@
 <script lang="ts">
     import { get_parse_tree } from 'll-sparql-parser';
-    interface Node {
+    interface TreeElement {
         kind: string;
+        active: boolean;
+    }
+    interface Node extends TreeElement {
         type: 'node';
         children: NodeOrToken[];
     }
-    interface Token {
-        kind: string;
+    interface Token extends TreeElement {
         type: 'token';
         text: string;
     }
     type NodeOrToken = Node | Token;
 
-    let { input } = $props();
-    let parseTree = $derived(get_parse_tree(input));
+    let { input, cursorOffset } = $props();
+    let parseTree = $derived(get_parse_tree(input, cursorOffset));
 </script>
 
 {#snippet renderLeave(leave: Token)}
     <div>
-        <span>
+        <span class={leave.active ? 'bg-yellow-400' : ''}>
             {leave.kind}:
         </span>
         <span class="w-min text-red-400">
@@ -28,7 +30,7 @@
 {/snippet}
 
 {#snippet renderTree(tree: Node)}
-    <span>
+    <span class={tree.active ? 'bg-yellow-600' : ''}>
         {tree.kind}
     </span>
     <div class="ms-2 flex flex-col border-l ps-2">
@@ -47,7 +49,7 @@
 <div
     id="treeContainer"
     style="height: 60vh;"
-    class="overflow-y-auto overflow-x-hidden border-l border-gray-700 p-2 text-white"
+    class="overflow-auto border-l border-gray-700 p-2 text-white"
 >
     {@render renderTree(parseTree)}
 </div>

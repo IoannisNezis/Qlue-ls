@@ -12,9 +12,9 @@ build-native:
 	hyprctl notify 1 1000 0 build done
 
 build-wasm profile="release" target="bundler":
-	notify-send -t 1000 "starting wasm build..."
+	hyprctl notify 1 2000 0 starting build...
 	wasm-pack build --{{profile}} --target {{target}}
-	notify-send -t 600 "build done"
+	hyprctl notify 1 1000 0 build done
 
 watch-and-run recipe="test":
 	watchexec --restart --exts rs --exts toml just {{recipe}}

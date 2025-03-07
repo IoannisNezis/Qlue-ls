@@ -1,4 +1,12 @@
+mod context;
+mod error;
+mod snippets;
+mod utils;
+
+use context::{CompletionContext, CompletionLocation};
+use error::to_resonse_error;
 use log::{error, warn};
+use snippets::{get_not_tripples_snippets, get_solution_mod_snippets, get_start_snippets};
 
 use crate::server::{
     anaysis::get_all_variables,
@@ -14,15 +22,21 @@ pub fn handle_completion_request(
     server: &mut Server,
     request: CompletionRequest,
 ) -> Result<CompletionResponse, ResponseError> {
-    match request.get_completion_context().trigger_kind {
+    let completion_context =
+        CompletionContext::from_completion_request(server, &request).map_err(to_resonse_error)?;
+    log::info!("Location: {:?}", completion_context.location);
+
+    match completion_context.trigger_kind {
         // Completion was triggered by typing an trigger character
+        // NOTE: The Trigger character is "?"
         CompletionTriggerKind::TriggerCharacter  => Ok(
-            CompletionResponse::new(request.get_id(), collect_completions_triggered(server, &request)?))
+            CompletionResponse::new(request.get_id(), collect_completions_triggered(server, &request)?)
+        )
         ,
         // Completion was triggered by typing an identifier (24x7 code complete),
         // manual invocation (e.g Ctrl+Space) or via API.
         CompletionTriggerKind::Invoked  => Ok(
-            CompletionResponse::new(request.get_id(), collect_completions(server, &request)?),
+            CompletionResponse::new( request.get_id(), collect_completions(completion_context.location,server, &request)?),
         ),
         CompletionTriggerKind::TriggerForIncompleteCompletions => {
             error!("Completion was triggered by \"TriggerForIncompleteCompetions\", this is not implemented yet");
@@ -59,58 +73,7 @@ fn graph_pattern_not_triples_completions(
     _server: &Server,
     _request: &CompletionRequest,
 ) -> Result<impl Iterator<Item = CompletionItem>, ResponseError> {
-    Ok([
-        CompletionItem::new(
-            "FILTER",
-            "Filter the results",
-            "FILTER ( $0 )",
-            CompletionItemKind::Snippet,
-            InsertTextFormat::Snippet,
-        ),
-        CompletionItem::new(
-            "BIND",
-            "Bind a new variable",
-            "BIND ($1 AS ?$0)",
-            CompletionItemKind::Snippet,
-            InsertTextFormat::Snippet,
-        ),
-        CompletionItem::new(
-            "VALUES",
-            "Inline data definition",
-            "VALUES ?$1 { $0 }",
-            CompletionItemKind::Snippet,
-            InsertTextFormat::Snippet,
-        ),
-        CompletionItem::new(
-            "SERVICE",
-            "Collect data from a fedarated SPARQL endpoint",
-            "SERVICE <$1> {\n  $0\n}",
-            CompletionItemKind::Snippet,
-            InsertTextFormat::Snippet,
-        ),
-        CompletionItem::new(
-            "MINUS",
-            "Subtract data",
-            "MINUS { $0 }",
-            CompletionItemKind::Snippet,
-            InsertTextFormat::Snippet,
-        ),
-        CompletionItem::new(
-            "OPTIONAL",
-            "Optional graphpattern",
-            "OPTIONAL { $0 }",
-            CompletionItemKind::Snippet,
-            InsertTextFormat::Snippet,
-        ),
-        CompletionItem::new(
-            "UNION",
-            "Union of two results",
-            "{\n  $1\n}\nUNION\n{\n  $0\n}",
-            CompletionItemKind::Snippet,
-            InsertTextFormat::Snippet,
-        ),
-    ]
-    .into_iter())
+    Ok(get_not_tripples_snippets().into_iter())
 }
 
 fn collect_completions_triggered(
@@ -140,52 +103,37 @@ fn collect_completions_triggered(
 }
 
 fn collect_completions(
+    location: CompletionLocation,
     server: &Server,
     request: &CompletionRequest,
 ) -> Result<Vec<CompletionItem>, ResponseError> {
-    let tree = server
-        .state
-        .get_tree(&request.get_text_position().text_document.uri)
-        .unwrap();
-    let position = &request.get_text_position().position;
-    let node = tree
-        .root_node()
-        .descendant_for_point_range(position.to_point(), position.to_point())
-        .unwrap();
-    Ok(match node.kind() {
-        "unit" => vec![
-            CompletionItem::new(
-                "SELECT",
-                "Select query",
-                "SELECT ${1:*} WHERE {\n  $0\n}",
-                CompletionItemKind::Snippet,
-                InsertTextFormat::Snippet,
-            ),
-            CompletionItem::new(
-                "PREFIX",
-                "Declare a namespace",
-                "PREFIX ${1:namespace}: <${0:iri}>",
-                CompletionItemKind::Snippet,
-                InsertTextFormat::Snippet,
-            ),
-            CompletionItem::new(
-                "ORDER BY",
-                "Sort the results",
-                "ORDER BY ${1|ASC,DESC|} ( $0 )",
-                CompletionItemKind::Snippet,
-                InsertTextFormat::Snippet,
-            ),
-            CompletionItem::new(
-                "BASE",
-                "Set the Base URI",
-                "BASE <${0}>",
-                CompletionItemKind::Snippet,
-                InsertTextFormat::Snippet,
-            ),
-        ],
-        "GroupGraphPattern" => variable_completions(server, request, false)?
+    Ok(match location {
+        CompletionLocation::Start => get_start_snippets(),
+        CompletionLocation::Predicate => {
+            vec![CompletionItem::new(
+                "predicate filler",
+                "Hier könnte ihre predicate completion stehen",
+                "<predicate> ",
+                CompletionItemKind::Value,
+                InsertTextFormat::PlainText,
+            )]
+        }
+        CompletionLocation::Object => {
+            vec![CompletionItem::new(
+                "object filler",
+                "Hier könnte ihre object completion stehen",
+                "<object> ",
+                CompletionItemKind::Value,
+                InsertTextFormat::PlainText,
+            )]
+        }
+        CompletionLocation::TripleOrNotTriple => variable_completions(server, request, false)?
             .chain(graph_pattern_not_triples_completions(server, request)?)
             .collect(),
+        CompletionLocation::End => get_solution_mod_snippets(),
         _ => vec![],
     })
 }
+
+#[cfg(test)]
+mod tests;

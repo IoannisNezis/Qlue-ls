@@ -1,4 +1,9 @@
-use crate::{ast::TriplesBlock, parse_query, SyntaxNode};
+use rowan::TextRange;
+
+use crate::{
+    ast::{AstNode, GroupGraphPattern, TriplesBlock, WhereClause},
+    parse_query, SyntaxNode,
+};
 
 fn walk(node: SyntaxNode, mut path: Vec<usize>) -> Option<SyntaxNode> {
     if path.is_empty() {
@@ -9,6 +14,53 @@ fn walk(node: SyntaxNode, mut path: Vec<usize>) -> Option<SyntaxNode> {
         return walk(child, path);
     }
     return None;
+}
+
+#[test]
+fn where_clause() {
+    let input = "SELECT ?a WHERE { ?s ?p ?o}";
+
+    let root = parse_query(input);
+    let node = walk(root, vec![0, 0, 1]).unwrap();
+    let where_clause = WhereClause::cast(node).unwrap();
+    assert_eq!(
+        where_clause.where_token().unwrap().text_range(),
+        TextRange::new(10.into(), 15.into())
+    );
+    assert_eq!(
+        where_clause
+            .group_graph_pattern()
+            .unwrap()
+            .syntax
+            .to_string(),
+        "{ ?s ?p ?o}"
+    );
+}
+
+#[test]
+fn group_graph_pattern() {
+    let input = "SELECT * { ?s ?p ?o . {} ?a  ?b ?c .     ?x ?y  ?z}";
+    let root = parse_query(input);
+    let node = walk(root, vec![0, 0, 1, 0]).unwrap();
+    let ggp = GroupGraphPattern::cast(node).unwrap();
+    let triples_blocks = ggp.triple_blocks();
+    assert_eq!(triples_blocks.len(), 2);
+    assert_eq!(
+        triples_blocks[1]
+            .group_graph_pattern()
+            .unwrap()
+            .syntax
+            .to_string(),
+        "{ ?s ?p ?o . {} ?a  ?b ?c .     ?x ?y  ?z}"
+    );
+    assert_eq!(
+        ggp.l_paren_token().unwrap().text_range(),
+        TextRange::new(9.into(), 10.into())
+    );
+    assert_eq!(
+        ggp.r_paren_token().unwrap().text_range(),
+        TextRange::new(50.into(), 51.into())
+    );
 }
 
 #[test]
@@ -23,7 +75,7 @@ fn triples_block() {
     assert_eq!(triples_block.triples()[1].syntax.to_string(), "?a  ?b ?c");
     assert_eq!(triples_block.triples()[2].syntax.to_string(), "?x ?y  ?z");
     assert_eq!(
-        triples[2].triples_block().unwrap().syntax.to_string(),
+        triples[2].triples_block().unwrap().syntax().to_string(),
         "?s ?p ?o . ?a  ?b ?c .     ?x ?y  ?z"
     );
 }

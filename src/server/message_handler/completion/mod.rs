@@ -6,7 +6,7 @@ mod utils;
 use context::{CompletionContext, CompletionLocation};
 use error::to_resonse_error;
 use log::{error, warn};
-use snippets::{get_solution_mod_snippets, get_union_snippets};
+use snippets::{get_not_tripples_snippets, get_solution_mod_snippets, get_start_snippets};
 
 use crate::server::{
     anaysis::get_all_variables,
@@ -73,58 +73,7 @@ fn graph_pattern_not_triples_completions(
     _server: &Server,
     _request: &CompletionRequest,
 ) -> Result<impl Iterator<Item = CompletionItem>, ResponseError> {
-    Ok([
-        CompletionItem::new(
-            "FILTER",
-            "Filter the results",
-            "FILTER ( $0 )",
-            CompletionItemKind::Snippet,
-            InsertTextFormat::Snippet,
-        ),
-        CompletionItem::new(
-            "BIND",
-            "Bind a new variable",
-            "BIND ($1 AS ?$0)",
-            CompletionItemKind::Snippet,
-            InsertTextFormat::Snippet,
-        ),
-        CompletionItem::new(
-            "VALUES",
-            "Inline data definition",
-            "VALUES ?$1 { $0 }",
-            CompletionItemKind::Snippet,
-            InsertTextFormat::Snippet,
-        ),
-        CompletionItem::new(
-            "SERVICE",
-            "Collect data from a fedarated SPARQL endpoint",
-            "SERVICE <$1> {\n  $0\n}",
-            CompletionItemKind::Snippet,
-            InsertTextFormat::Snippet,
-        ),
-        CompletionItem::new(
-            "MINUS",
-            "Subtract data",
-            "MINUS { $0 }",
-            CompletionItemKind::Snippet,
-            InsertTextFormat::Snippet,
-        ),
-        CompletionItem::new(
-            "OPTIONAL",
-            "Optional graphpattern",
-            "OPTIONAL { $0 }",
-            CompletionItemKind::Snippet,
-            InsertTextFormat::Snippet,
-        ),
-        CompletionItem::new(
-            "UNION",
-            "Union of two results",
-            "{\n  $1\n}\nUNION\n{\n  $0\n}",
-            CompletionItemKind::Snippet,
-            InsertTextFormat::Snippet,
-        ),
-    ]
-    .into_iter())
+    Ok(get_not_tripples_snippets().into_iter())
 }
 
 fn collect_completions_triggered(
@@ -159,7 +108,7 @@ fn collect_completions(
     request: &CompletionRequest,
 ) -> Result<Vec<CompletionItem>, ResponseError> {
     Ok(match location {
-        CompletionLocation::Start => get_union_snippets(),
+        CompletionLocation::Start => get_start_snippets(),
         CompletionLocation::Predicate => {
             vec![CompletionItem::new(
                 "predicate filler",

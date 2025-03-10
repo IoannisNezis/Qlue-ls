@@ -1,5 +1,4 @@
 use config::{Config, ConfigError};
-use log::info;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -46,11 +45,11 @@ impl Settings {
     pub fn new() -> Self {
         match load_user_configuration() {
             Ok(settings) => {
-                info!("Loaded user configuration\n{:?}", settings);
+                log::info!("Loaded user configuration\n{:?}", settings);
                 settings
             }
             Err(error) => {
-                info!(
+                log::info!(
                     "Did not load user-configuration:\n{}\n falling back to default values",
                     error
                 );

@@ -1,7 +1,5 @@
 use std::process::exit;
 
-use log::info;
-
 use crate::server::{
     lsp::{
         errors::{ErrorCode, ResponseError},
@@ -16,7 +14,7 @@ pub fn handle_shutdown_request(
     server: &mut Server,
     request: RequestMessage,
 ) -> Result<ShutdownResponse, ResponseError> {
-    info!("Recieved shutdown request, preparing to shut down");
+    log::info!("Recieved shutdown request, preparing to shut down");
     match server.state.status {
         ServerStatus::Initializing => Err(ResponseError::new(
             ErrorCode::InvalidRequest,
@@ -41,7 +39,7 @@ pub(super) fn handle_initialize_request(
     match server.state.status {
         ServerStatus::Initializing => {
             if let Some(ref client_info) = initialize_request.params.client_info {
-                info!(
+                log::info!(
                     "Connected to: {} {}",
                     client_info.name,
                     client_info
@@ -101,7 +99,7 @@ pub(super) fn handle_initialized_notifcation(
     server: &mut Server,
     _initialized_notification: NotificationMessage,
 ) -> Result<(), ResponseError> {
-    info!("initialization completed");
+    log::info!("initialization completed");
     server.state.status = ServerStatus::Running;
     Ok(())
 }
@@ -110,6 +108,6 @@ pub(super) fn handle_exit_notifcation(
     _server: &mut Server,
     _initialized_notification: NotificationMessage,
 ) -> Result<(), ResponseError> {
-    info!("Recieved exit notification, shutting down!");
+    log::info!("Recieved exit notification, shutting down!");
     exit(0);
 }

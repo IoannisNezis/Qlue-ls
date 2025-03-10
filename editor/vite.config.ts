@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => ({
 		]
 	},
 	server: {
-		allowedHosts: ["qlue-ls.com"]
+		allowedHosts: ["qlue-ls.com", "galera.informatik.privat", "galera"]
 	},
 	resolve: {
 		alias:

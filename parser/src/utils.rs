@@ -1,6 +1,6 @@
 use rowan::TextSize;
 
-use crate::{syntax_kind::SyntaxKind, Rule, SyntaxNode};
+use crate::{rules::Rule, syntax_kind::SyntaxKind, SyntaxNode};
 
 pub fn continuations_at(root: &SyntaxNode, offset: TextSize) -> Option<Vec<SyntaxKind>> {
     let token = match root.token_at_offset(offset) {

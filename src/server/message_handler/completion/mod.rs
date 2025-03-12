@@ -1,7 +1,6 @@
 mod context;
 mod error;
 mod snippets;
-mod utils;
 
 use context::{CompletionContext, CompletionLocation};
 use error::to_resonse_error;
@@ -69,13 +68,6 @@ fn variable_completions(
     }))
 }
 
-fn graph_pattern_not_triples_completions(
-    _server: &Server,
-    _request: &CompletionRequest,
-) -> Result<impl Iterator<Item = CompletionItem>, ResponseError> {
-    Ok(get_not_tripples_snippets().into_iter())
-}
-
 fn collect_completions_triggered(
     server: &Server,
     request: &CompletionRequest,
@@ -137,9 +129,10 @@ fn collect_completions(
         .into_iter()
         .chain(
             variable_completions(server, request, false)?
-                .chain(graph_pattern_not_triples_completions(server, request)?),
+                .chain(get_not_tripples_snippets().into_iter()),
         )
         .collect(),
+        CompletionLocation::GraphPatternNotTriples => get_not_tripples_snippets(),
         CompletionLocation::SolutionModifier => get_solution_mod_snippets(),
         _ => vec![],
     })

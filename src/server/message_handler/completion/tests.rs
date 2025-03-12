@@ -78,6 +78,13 @@ fn localize_predicate_3() {
 }
 
 #[test]
+fn localize_predicate_4() {
+    //           012345678901234567890123
+    let input = "Select * { ?a ?b ?c ; }";
+    match_location_at_offset(input, CompletionLocation::Predicate, 21);
+}
+
+#[test]
 fn localize_object_1() {
     //           01234567890123456789
     let input = "Select * { ?a ?b  }";

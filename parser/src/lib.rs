@@ -7,8 +7,6 @@ mod utils;
 
 pub use utils::*;
 
-pub use rules::*;
-
 #[cfg(target_arch = "wasm32")]
 use js_sys::{Array, Object, Reflect};
 #[cfg(target_arch = "wasm32")]
@@ -83,7 +81,6 @@ fn build_js_tree(node: &SyntaxNode, offset: TextSize) -> JsValue {
             .unwrap();
             Some(token_obj.into())
         }
-        _ => None,
     }));
     Reflect::set(&obj, &JsValue::from_str("children"), &children.into()).unwrap();
     obj.into()

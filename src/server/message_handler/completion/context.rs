@@ -1,8 +1,7 @@
 use std::{collections::HashSet, u32};
 
 use ll_sparql_parser::{
-    continuations_at, parse_query, print_full_tree, syntax_kind::SyntaxKind, SyntaxNode,
-    TokenAtOffset,
+    continuations_at, parse_query, syntax_kind::SyntaxKind, SyntaxNode, TokenAtOffset,
 };
 use text_size::TextSize;
 
@@ -77,6 +76,18 @@ pub(super) enum CompletionLocation {
     /// }
     /// ```
     GroupGraphPatternSub,
+    /// At a `GroupPatternNotTriples`
+    ///
+    /// ---
+    ///
+    /// **Example**
+    /// ```sparql
+    /// SELECT * WHERE {
+    ///   ?a ?b ?c
+    ///   >here<
+    /// }
+    /// ```
+    GraphPatternNotTriples,
     /// 2nd part of a Triple
     ///
     /// ---
@@ -107,7 +118,6 @@ impl CompletionLocation {
         root: SyntaxNode,
         mut offset: TextSize,
     ) -> Result<Self, CompletionError> {
-        println!("{}", print_full_tree(&root, 0));
         let range = dbg!(root.text_range());
 
         // NOTE: If the document is empty the cursor is at the beginning
@@ -167,7 +177,9 @@ impl CompletionLocation {
                 // NOTE: Predicate
                 else if continues_with!([
                     SyntaxKind::PropertyListPathNotEmpty,
-                    SyntaxKind::PropertyListPath
+                    SyntaxKind::PropertyListPath,
+                    SyntaxKind::VerbPath,
+                    SyntaxKind::VerbSimple
                 ]) {
                     CompletionLocation::Predicate
                 }
@@ -183,6 +195,10 @@ impl CompletionLocation {
                 // NOTE: SolutionModifier
                 else if continues_with!([SyntaxKind::SolutionModifier]) {
                     CompletionLocation::SolutionModifier
+                }
+                // NOTE: GraphPatternNotTriples
+                else if continues_with!([SyntaxKind::GraphPatternNotTriples]) {
+                    CompletionLocation::GraphPatternNotTriples
                 } else {
                     CompletionLocation::Unknown
                 }

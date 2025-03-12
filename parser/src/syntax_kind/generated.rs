@@ -127,7 +127,7 @@ pub enum SyntaxKind {
     UNION,
     #[token("FILTER", ignore(case))]
     FILTER,
-    #[token(":")]
+    #[token(",")]
     Colon,
     #[token("a")]
     a,
@@ -337,6 +337,7 @@ pub enum SyntaxKind {
     ANON,
 
     // Composite nodes
+    QueryUnit,
     Query,
     Prologue,
     SelectQuery,
@@ -381,6 +382,7 @@ pub enum SyntaxKind {
     Load,
     Clear,
     Drop,
+    Add,
     Move,
     Copy,
     Create,
@@ -390,7 +392,6 @@ pub enum SyntaxKind {
     Modify,
     GraphRef,
     GraphRefAll,
-    Add,
     GraphOrDefault,
     QuadData,
     QuadPattern,
@@ -474,5 +475,4 @@ pub enum SyntaxKind {
     String,
     NumericLiteralUnsigned,
     PrefixedName,
-    QueryUnit,
 }

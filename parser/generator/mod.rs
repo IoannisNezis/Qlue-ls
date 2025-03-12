@@ -20,6 +20,7 @@ pub fn generate() {
 
     generate_types(&grammar);
     generate_parser(&grammar, &first);
+    generate_rules(&grammar);
 }
 
 fn generate_rule(grammar: &Grammar, rule: &Rule, first: &FirstSet) -> TokenStream {
@@ -160,6 +161,110 @@ fn generate_token_kind(token: &str) -> proc_macro2::Ident {
     )
 }
 
+fn foo(grammar: &Grammar, rule: &Rule) -> TokenStream {
+    match rule {
+        Rule::Labeled {
+            label: _label,
+            rule,
+        } => foo(grammar, rule),
+        Rule::Node(node) => {
+            let ident = format_ident!("{}", grammar[*node].name);
+            quote! {
+                Rule::Node(SyntaxKind::#ident)
+            }
+        }
+
+        Rule::Token(token) => {
+            let ident = format_ident!("{}", generate_token_kind(&grammar[*token].name));
+            quote! {
+                Rule::Token(SyntaxKind::#ident)
+            }
+        }
+        Rule::Seq(rules) => {
+            let sub_rules: Vec<_> = rules.iter().map(|rule| foo(grammar, rule)).collect();
+            quote! {
+                Rule::Seq(vec![
+                    #(#sub_rules),*
+                ])
+            }
+        }
+        Rule::Alt(rules) => {
+            let sub_rules: Vec<_> = rules.iter().map(|rule| foo(grammar, rule)).collect();
+            quote! {
+                Rule::Alt(vec![
+                    #(#sub_rules),*
+                ])
+            }
+        }
+        Rule::Opt(rule) => {
+            let sub_rule = foo(grammar, rule);
+            quote! {
+                Rule::Opt(Box::new(#sub_rule))
+            }
+        }
+        Rule::Rep(rule) => {
+            let sub_rule = foo(grammar, rule);
+            quote! {
+                Rule::Rep(Box::new(#sub_rule))
+            }
+        }
+    }
+}
+
+fn generate_rules(grammar: &Grammar) {
+    let arms = grammar.iter().map(|node| {
+        let ident = format_ident!("{}", grammar[node].name);
+        let rule = foo(grammar, &grammar[node].rule);
+        quote! {
+            SyntaxKind::#ident => {
+                Some(#rule)
+            }
+        }
+    });
+    let tokens = quote! {
+        use crate::syntax_kind::SyntaxKind;
+        #[derive(Debug, Clone)]
+        pub (super) enum Rule {
+            Node(SyntaxKind),
+            Token(SyntaxKind),
+            Seq(Vec<Rule>),
+            Alt(Vec<Rule>),
+            Opt(Box<Rule>),
+            Rep(Box<Rule>),
+        }
+        impl Rule {
+            pub(super) fn first(&self) -> Vec<SyntaxKind> {
+                match self {
+                    Rule::Node(syntax_kind) | Rule::Token(syntax_kind) => vec![*syntax_kind],
+                    Rule::Seq(rules) => rules.first().unwrap().first(),
+                    Rule::Alt(rules) => rules.iter().flat_map(|rule| rule.first()).collect(),
+                    Rule::Opt(rule) => rule.first(),
+                    Rule::Rep(rule) => rule.first(),
+                }
+            }
+            pub(super) fn is_nullable(&self) -> bool {
+                match self {
+                    Rule::Opt(_rule) | Rule::Rep(_rule) => true,
+                    _ => false,
+                }
+            }
+            pub(super) fn from_node_kind(kind: SyntaxKind) -> Option<Self> {
+                match kind {
+                    #(#arms)*
+                    _ => None
+                }
+            }
+        }
+
+    };
+
+    let syntax_tree = syn::parse2(tokens).unwrap();
+    let formatted_code = prettyplease::unparse(&syntax_tree);
+
+    let mut file = File::create("src/rules.rs").unwrap();
+    file.write_all(formatted_code.as_bytes()).unwrap();
+}
+
 fn generate_types(grammar: &Grammar) {
     let token_kinds = grammar
         .tokens()
@@ -187,12 +292,7 @@ fn generate_types(grammar: &Grammar) {
             Error,
             #[regex(r#"[ \t\n\f]+"#)]
             WHITESPACE,
-            #(#token_kinds),*
-        }
-
-        #[allow(non_camel_case_types)]
-        pub enum SyntaxKind {
-            Error,
+            #(#token_kinds),*,
             #(#parser_trees),*
         }
     };

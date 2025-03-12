@@ -23,45 +23,45 @@ fn localize_start_2() {
 }
 
 #[test]
-fn localize_end() {
+fn localize_solution_modifier() {
     //           0123456789012
     let input = "Select * {} \n";
-    match_location_at_offset(input, CompletionLocation::End, 12);
+    match_location_at_offset(input, CompletionLocation::SolutionModifier, 12);
 }
 
 #[test]
 fn localize_triple_or_not_1() {
     //           0123456789012
     let input = "Select * {  }";
-    match_location_at_offset(input, CompletionLocation::TripleOrNotTriple, 11);
+    match_location_at_offset(input, CompletionLocation::GroupGraphPatternSub, 11);
 }
 
 #[test]
 fn localize_triple_or_not_2() {
     //           012345678901234567890123
     let input = "Select * { ?s ?p ?o .  }";
-    match_location_at_offset(input, CompletionLocation::TripleOrNotTriple, 22);
+    match_location_at_offset(input, CompletionLocation::GroupGraphPatternSub, 21);
 }
 
 #[test]
 fn localize_triple_or_not_3() {
     //           012345678901234567890123
     let input = "Select * { ?s ?p ?o .  ?s ?p ?o }";
-    match_location_at_offset(input, CompletionLocation::TripleOrNotTriple, 22);
+    match_location_at_offset(input, CompletionLocation::GroupGraphPatternSub, 22);
 }
 
 #[test]
 fn localize_triple_or_not_4() {
     //           0123456789012
     let input = "Select * { ?  }";
-    match_location_at_offset(input, CompletionLocation::TripleOrNotTriple, 12);
+    match_location_at_offset(input, CompletionLocation::GroupGraphPatternSub, 12);
 }
 
 #[test]
 fn localize_predicate_1() {
     //           0123456789012345
-    let input = "Select * { ?a  }";
-    match_location_at_offset(input, CompletionLocation::Predicate, 14);
+    let input = "Select * { ?a }";
+    match_location_at_offset(input, CompletionLocation::Predicate, 13);
 }
 
 #[test]
@@ -89,4 +89,11 @@ fn localize_object_2() {
     //           01234567890123456789012
     let input = "Select * { ?a <iri>   }";
     match_location_at_offset(input, CompletionLocation::Object, 20);
+}
+
+#[test]
+fn localize_object_3() {
+    //           01234567890123456789012
+    let input = "Select * { ?a ?a ?b,  }";
+    match_location_at_offset(input, CompletionLocation::Object, 21);
 }

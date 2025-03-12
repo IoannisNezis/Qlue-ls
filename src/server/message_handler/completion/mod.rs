@@ -127,10 +127,20 @@ fn collect_completions(
                 InsertTextFormat::PlainText,
             )]
         }
-        CompletionLocation::TripleOrNotTriple => variable_completions(server, request, false)?
-            .chain(graph_pattern_not_triples_completions(server, request)?)
-            .collect(),
-        CompletionLocation::End => get_solution_mod_snippets(),
+        CompletionLocation::GroupGraphPatternSub => [CompletionItem::new(
+            "subject filler",
+            "Hier könnte ihre subject completion stehen",
+            "<object> ",
+            CompletionItemKind::Value,
+            InsertTextFormat::PlainText,
+        )]
+        .into_iter()
+        .chain(
+            variable_completions(server, request, false)?
+                .chain(graph_pattern_not_triples_completions(server, request)?),
+        )
+        .collect(),
+        CompletionLocation::SolutionModifier => get_solution_mod_snippets(),
         _ => vec![],
     })
 }

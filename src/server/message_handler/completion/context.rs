@@ -1,13 +1,13 @@
-use std::u32;
+use std::{collections::HashSet, u32};
 
 use ll_sparql_parser::{
-    parse_query, syntax_kind::SyntaxKind, SyntaxNode, SyntaxToken, TokenAtOffset,
+    continuations_at, parse_query, print_full_tree, syntax_kind::SyntaxKind, SyntaxNode,
+    TokenAtOffset,
 };
 use text_size::TextSize;
 
 use crate::server::{
     lsp::{errors::ErrorCode, CompletionRequest, CompletionTriggerKind},
-    message_handler::completion::utils::match_ancestors,
     Server,
 };
 
@@ -56,8 +56,6 @@ pub(super) enum CompletionLocation {
     Unknown,
     /// At the beginning of the input
     Start,
-    /// At the beginning of the input
-    End,
     /// Inside a "{}" Block
     /// Either at a `TriplesBlock` or a `GroupPatternNotTriples`
     ///
@@ -78,7 +76,7 @@ pub(super) enum CompletionLocation {
     ///   }
     /// }
     /// ```
-    TripleOrNotTriple,
+    GroupGraphPatternSub,
     /// 2nd part of a Triple
     ///
     /// ---
@@ -101,71 +99,98 @@ pub(super) enum CompletionLocation {
     /// }
     /// ```
     Object,
+    SolutionModifier,
 }
 
 impl CompletionLocation {
-    pub(super) fn from_token(token: &SyntaxToken) -> Self {
-        if let Some(location) = match token
-            .prev_sibling_or_token()
-            .map_or(SyntaxKind::Eof, |prev| prev.kind())
-        {
-            SyntaxKind::VarOrTerm => Some(CompletionLocation::Predicate),
-            SyntaxKind::VerbPath | SyntaxKind::VerbSimple => Some(CompletionLocation::Object),
-            SyntaxKind::Query => Some(CompletionLocation::End),
-            _ => None,
-        } {
-            return location;
-        }
-        if let Some(location) = match token
-            .parent()
-            .map_or(SyntaxKind::Eof, |parent| parent.kind())
-        {
-            SyntaxKind::GroupGraphPattern | SyntaxKind::TriplesBlock => {
-                Some(CompletionLocation::TripleOrNotTriple)
-            }
-            SyntaxKind::QueryUnit => Some(CompletionLocation::Start),
-            _ => None,
-        } {
-            return location;
-        }
-        if match_ancestors(&token, &[SyntaxKind::Error, SyntaxKind::GroupGraphPattern]) {
-            return CompletionLocation::TripleOrNotTriple;
-        }
-        if match_ancestors(&token, &[SyntaxKind::Error, SyntaxKind::Query]) {
-            return CompletionLocation::Start;
-        }
-        CompletionLocation::Unknown
-    }
     pub(super) fn from_position(
         root: SyntaxNode,
-        offset: TextSize,
+        mut offset: TextSize,
     ) -> Result<Self, CompletionError> {
-        let range = root.text_range();
+        println!("{}", print_full_tree(&root, 0));
+        let range = dbg!(root.text_range());
+
+        // NOTE: If the document is empty the cursor is at the beginning
         if range.is_empty() {
             return Ok(CompletionLocation::Start);
         }
+
         if !range.contains(offset) {
+            // NOTE: The cursor is "after" the document -> at the end
             if range.end() <= offset {
-                return Ok(CompletionLocation::End);
-            }
-            log::error!(
+                offset = root.text_range().end()
+            } else {
+                log::error!(
                 "Requested completion position: ({:?}) before document range ({:?}). This should be impossible.",
                 offset,
                 range
             );
-            return Ok(CompletionLocation::Unknown);
+                return Ok(CompletionLocation::Unknown);
+            }
         }
 
-        Ok(match root.token_at_offset(offset) {
-            TokenAtOffset::Single(token) => {
-                if token.kind() == SyntaxKind::WHITESPACE {
-                    CompletionLocation::from_token(&token)
+        // NOTE: The location of the cursor is not the position we start looking in the tree
+        // We start from checking from the first previous non error / non trivia token
+        let position = match root.token_at_offset(offset) {
+            TokenAtOffset::Single(mut token) | TokenAtOffset::Between(mut token, _) => {
+                // TODO: Handle Comments
+                while token.kind() == SyntaxKind::WHITESPACE
+                    || token.parent().unwrap().kind() == SyntaxKind::Error
+                {
+                    if let Some(prev) = token.prev_token() {
+                        token = prev
+                    } else {
+                        return Ok(CompletionLocation::Start);
+                    }
+                }
+                token.text_range().end()
+            }
+            TokenAtOffset::None => return Ok(CompletionLocation::Unknown),
+        };
+
+        log::info!("Completion position: {:?}", position);
+
+        Ok(
+            if let Some(continuations) = continuations_at(&root, position) {
+                println!("{:?}", continuations);
+                let continuations_set: HashSet<SyntaxKind> =
+                    HashSet::from_iter(continuations.into_iter());
+                macro_rules! continues_with {
+                    ([$($kind:expr),*]) => {
+                        [$($kind,)*].iter().any(|kind| continuations_set.contains(kind))
+                    };
+                }
+                // NOTE: GroupGraphPatternSub
+                if continues_with!([SyntaxKind::GroupGraphPatternSub, SyntaxKind::TriplesBlock]) {
+                    CompletionLocation::GroupGraphPatternSub
+                }
+                // NOTE: Predicate
+                else if continues_with!([
+                    SyntaxKind::PropertyListPathNotEmpty,
+                    SyntaxKind::PropertyListPath
+                ]) {
+                    CompletionLocation::Predicate
+                }
+                // NOTE: Object
+                else if continues_with!([
+                    SyntaxKind::ObjectListPath,
+                    SyntaxKind::ObjectPath,
+                    SyntaxKind::ObjectList,
+                    SyntaxKind::Object
+                ]) {
+                    CompletionLocation::Object
+                }
+                // NOTE: SolutionModifier
+                else if continues_with!([SyntaxKind::SolutionModifier]) {
+                    CompletionLocation::SolutionModifier
                 } else {
                     CompletionLocation::Unknown
                 }
-            }
-            TokenAtOffset::Between(token1, _token2) => CompletionLocation::from_token(&token1),
-            TokenAtOffset::None => CompletionLocation::Start,
-        })
+            } else {
+                // TODO: Can we determin the location even if the
+                // continuations are unknown?
+                CompletionLocation::Unknown
+            },
+        )
     }
 }

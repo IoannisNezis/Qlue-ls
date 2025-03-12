@@ -1,7 +1,13 @@
 pub mod ast;
 mod parser;
+mod rules;
 pub mod syntax_kind;
 mod syntax_node;
+mod utils;
+
+pub use utils::*;
+
+pub use rules::*;
 
 #[cfg(target_arch = "wasm32")]
 use js_sys::{Array, Object, Reflect};

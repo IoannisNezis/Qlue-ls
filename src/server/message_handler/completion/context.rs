@@ -15,6 +15,7 @@ use super::error::CompletionError;
 #[derive(Debug)]
 pub(super) struct CompletionContext {
     pub(super) location: CompletionLocation,
+    pub(super) continuations: HashSet<SyntaxKind>,
     pub(super) trigger_kind: CompletionTriggerKind,
 }
 
@@ -40,10 +41,11 @@ impl CompletionContext {
             ))? as u32)
             .into();
         let root = parse_query(&document.text);
-        let location = CompletionLocation::from_position(root, offset)?;
+        let (location, continuations) = CompletionLocation::from_position(root, offset)?;
         let trigger_kind = request.get_completion_context().trigger_kind.clone();
         Ok(Self {
             location,
+            continuations,
             trigger_kind,
         })
     }
@@ -75,19 +77,7 @@ pub(super) enum CompletionLocation {
     ///   }
     /// }
     /// ```
-    GroupGraphPatternSub,
-    /// At a `GroupPatternNotTriples`
-    ///
-    /// ---
-    ///
-    /// **Example**
-    /// ```sparql
-    /// SELECT * WHERE {
-    ///   ?a ?b ?c
-    ///   >here<
-    /// }
-    /// ```
-    GraphPatternNotTriples,
+    Subject,
     /// 2nd part of a Triple
     ///
     /// ---
@@ -130,12 +120,12 @@ impl CompletionLocation {
     pub(super) fn from_position(
         root: SyntaxNode,
         mut offset: TextSize,
-    ) -> Result<Self, CompletionError> {
+    ) -> Result<(Self, HashSet<SyntaxKind>), CompletionError> {
         let range = root.text_range();
 
         // NOTE: If the document is empty the cursor is at the beginning
         if range.is_empty() || offset == 0.into() {
-            return Ok(CompletionLocation::Start);
+            return Ok((CompletionLocation::Start, HashSet::new()));
         }
 
         if !range.contains(offset) {
@@ -148,7 +138,7 @@ impl CompletionLocation {
                 offset,
                 range
             );
-                return Ok(CompletionLocation::Unknown);
+                return Ok((CompletionLocation::Unknown, HashSet::new()));
             }
         }
 
@@ -163,12 +153,12 @@ impl CompletionLocation {
                     if let Some(prev) = token.prev_token() {
                         token = prev
                     } else {
-                        return Ok(CompletionLocation::Start);
+                        return Ok((CompletionLocation::Start, HashSet::new()));
                     }
                 }
                 token
             }
-            TokenAtOffset::None => return Ok(CompletionLocation::Unknown),
+            TokenAtOffset::None => return Ok((CompletionLocation::Unknown, HashSet::new())),
         };
 
         Ok(
@@ -181,9 +171,13 @@ impl CompletionLocation {
                         [$($kind,)*].iter().any(|kind| continuations_set.contains(kind))
                     };
                 }
-                // NOTE: GroupGraphPatternSub
-                if continues_with!([SyntaxKind::GroupGraphPatternSub, SyntaxKind::TriplesBlock]) {
-                    CompletionLocation::GroupGraphPatternSub
+                // NOTE: Subject
+                let location = if continues_with!([
+                    SyntaxKind::GroupGraphPatternSub,
+                    SyntaxKind::TriplesBlock,
+                    SyntaxKind::GraphPatternNotTriples
+                ]) {
+                    CompletionLocation::Subject
                 }
                 // NOTE: Predicate
                 else if continues_with!([
@@ -204,12 +198,15 @@ impl CompletionLocation {
                     CompletionLocation::Object
                 }
                 // NOTE: SolutionModifier
-                else if continues_with!([SyntaxKind::SolutionModifier]) {
+                else if continues_with!([
+                    SyntaxKind::SolutionModifier,
+                    SyntaxKind::HavingClause,
+                    SyntaxKind::OrderClause,
+                    SyntaxKind::LimitOffsetClauses,
+                    SyntaxKind::LimitClause,
+                    SyntaxKind::OffsetClause
+                ]) {
                     CompletionLocation::SolutionModifier
-                }
-                // NOTE: GraphPatternNotTriples
-                else if continues_with!([SyntaxKind::GraphPatternNotTriples]) {
-                    CompletionLocation::GraphPatternNotTriples
                 }
                 // NOTE: SelectBinding
                 else if continues_with!([SyntaxKind::Var])
@@ -220,11 +217,12 @@ impl CompletionLocation {
                     CompletionLocation::SelectBinding
                 } else {
                     CompletionLocation::Unknown
-                }
+                };
+                (location, continuations_set)
             } else {
                 // TODO: Can we determin the location even if the
                 // continuations are unknown?
-                CompletionLocation::Unknown
+                (CompletionLocation::Unknown, HashSet::new())
             },
         )
     }

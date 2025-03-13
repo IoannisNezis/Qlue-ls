@@ -30,16 +30,16 @@ pub enum GroupPatternNotTriples {
 impl GroupPatternNotTriples {
     pub fn group_graph_pattern(&self) -> Option<GraphGraphPattern> {
         match self {
-            GroupPatternNotTriples::GroupOrUnionGraphPattern(group_or_union_graph_pattern) => {
+            GroupPatternNotTriples::GroupOrUnionGraphPattern(_group_or_union_graph_pattern) => {
                 todo!()
             }
-            GroupPatternNotTriples::OptionalGraphPattern(optional_graph_pattern) => todo!(),
-            GroupPatternNotTriples::MinusGraphPattern(minus_graph_pattern) => todo!(),
-            GroupPatternNotTriples::GraphGraphPattern(graph_graph_pattern) => todo!(),
-            GroupPatternNotTriples::ServiceGraphPattern(service_graph_pattern) => todo!(),
-            GroupPatternNotTriples::Filter(filter) => None,
-            GroupPatternNotTriples::Bind(bind) => None,
-            GroupPatternNotTriples::InlineData(inline_data) => None,
+            GroupPatternNotTriples::OptionalGraphPattern(_optional_graph_pattern) => todo!(),
+            GroupPatternNotTriples::MinusGraphPattern(_minus_graph_pattern) => todo!(),
+            GroupPatternNotTriples::GraphGraphPattern(_graph_graph_pattern) => todo!(),
+            GroupPatternNotTriples::ServiceGraphPattern(_service_graph_pattern) => todo!(),
+            GroupPatternNotTriples::Filter(_filter) => None,
+            GroupPatternNotTriples::Bind(_bind) => None,
+            GroupPatternNotTriples::InlineData(_inline_data) => None,
         }
     }
 }

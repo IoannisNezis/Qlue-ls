@@ -111,6 +111,19 @@ pub(super) enum CompletionLocation {
     /// ```
     Object,
     SolutionModifier,
+    /// Variable Or Assignment in SelectClause
+    ///
+    /// ---
+    ///
+    /// **Example**
+    /// ```sparql
+    /// SELECT >here< ?s >here< WHERE {}
+    /// ```
+    /// or
+    /// ```sparql
+    /// SELECT REDUCED >here< WHERE {}
+    /// ```
+    SelectBinding,
 }
 
 impl CompletionLocation {
@@ -118,10 +131,10 @@ impl CompletionLocation {
         root: SyntaxNode,
         mut offset: TextSize,
     ) -> Result<Self, CompletionError> {
-        let range = dbg!(root.text_range());
+        let range = root.text_range();
 
         // NOTE: If the document is empty the cursor is at the beginning
-        if range.is_empty() {
+        if range.is_empty() || offset == 0.into() {
             return Ok(CompletionLocation::Start);
         }
 
@@ -141,7 +154,7 @@ impl CompletionLocation {
 
         // NOTE: The location of the cursor is not the position we start looking in the tree
         // We start from checking from the first previous non error / non trivia token
-        let position = match root.token_at_offset(offset) {
+        let anchor_token = match root.token_at_offset(offset) {
             TokenAtOffset::Single(mut token) | TokenAtOffset::Between(mut token, _) => {
                 // TODO: Handle Comments
                 while token.kind() == SyntaxKind::WHITESPACE
@@ -153,15 +166,13 @@ impl CompletionLocation {
                         return Ok(CompletionLocation::Start);
                     }
                 }
-                token.text_range().end()
+                token
             }
             TokenAtOffset::None => return Ok(CompletionLocation::Unknown),
         };
 
-        log::info!("Completion position: {:?}", position);
-
         Ok(
-            if let Some(continuations) = continuations_at(&root, position) {
+            if let Some(continuations) = continuations_at(&root, anchor_token.text_range().end()) {
                 println!("{:?}", continuations);
                 let continuations_set: HashSet<SyntaxKind> =
                     HashSet::from_iter(continuations.into_iter());
@@ -199,6 +210,14 @@ impl CompletionLocation {
                 // NOTE: GraphPatternNotTriples
                 else if continues_with!([SyntaxKind::GraphPatternNotTriples]) {
                     CompletionLocation::GraphPatternNotTriples
+                }
+                // NOTE: SelectBinding
+                else if continues_with!([SyntaxKind::Var])
+                    && anchor_token
+                        .parent_ancestors()
+                        .any(|ancestor| ancestor.kind() == SyntaxKind::SelectClause)
+                {
+                    CompletionLocation::SelectBinding
                 } else {
                     CompletionLocation::Unknown
                 }

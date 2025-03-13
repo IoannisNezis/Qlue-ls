@@ -28,15 +28,16 @@ pub fn handle_completion_request(
     match completion_context.trigger_kind {
         // Completion was triggered by typing an trigger character
         // NOTE: The Trigger character is "?"
-        CompletionTriggerKind::TriggerCharacter  => Ok(
-            CompletionResponse::new(request.get_id(), collect_completions_triggered(server, &request)?)
-        )
-        ,
+        CompletionTriggerKind::TriggerCharacter => Ok(CompletionResponse::new(
+            request.get_id(),
+            collect_completions_triggered(server, &request)?,
+        )),
         // Completion was triggered by typing an identifier (24x7 code complete),
         // manual invocation (e.g Ctrl+Space) or via API.
-        CompletionTriggerKind::Invoked  => Ok(
-            CompletionResponse::new( request.get_id(), collect_completions(completion_context.location,server, &request)?),
-        ),
+        CompletionTriggerKind::Invoked => Ok(CompletionResponse::new(
+            request.get_id(),
+            collect_completions(completion_context.location, server, &request)?,
+        )),
         CompletionTriggerKind::TriggerForIncompleteCompletions => {
             error!("Completion was triggered by \"TriggerForIncompleteCompetions\", this is not implemented yet");
             Err(ResponseError::new(ErrorCode::InvalidRequest, "Completion was triggered by \"TriggerForIncompleteCompetions\", this is not implemented yet"))

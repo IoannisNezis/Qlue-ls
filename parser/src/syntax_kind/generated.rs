@@ -60,8 +60,6 @@ pub enum SyntaxKind {
     DESC,
     #[token("LIMIT", ignore(case))]
     LIMIT,
-    #[token("INTEGER", ignore(case))]
-    INTEGER,
     #[token("OFFSET", ignore(case))]
     OFFSET,
     #[token("VALUES", ignore(case))]
@@ -299,11 +297,13 @@ pub enum SyntaxKind {
     LANGTAG,
     #[token("DoubleZirkumflex")]
     DoubleZirkumflex,
-    #[token("DECIMAL")]
+    #[regex(r"\d+")]
+    INTEGER,
+    #[regex(r"\d*\.\d+")]
     DECIMAL,
-    #[token("DOUBLE")]
+    #[regex(r"(?:\d+\.\d*(?:[eE][+-]?\d+))|(?:\.\d+([eE][+-]?\d+))|(?:\d+([eE][+-]?\d+))")]
     DOUBLE,
-    #[token("INTEGER_POSITIVE")]
+    #[regex(r"\+\d+")]
     INTEGER_POSITIVE,
     #[token("DECIMAL_POSITIVE")]
     DECIMAL_POSITIVE,

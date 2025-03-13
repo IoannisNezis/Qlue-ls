@@ -39,7 +39,7 @@ pub fn handle_completion_request(
         //       manual invocation (e.g Ctrl+Space) or via API.
         CompletionTriggerKind::Invoked => Ok(CompletionResponse::new(
             request.get_id(),
-            collect_completions(server, &request, completion_context)?,
+            collect_completions(completion_context)?,
         )),
         // NOTE: Did not read into what this is for jet
         CompletionTriggerKind::TriggerForIncompleteCompletions => {
@@ -49,17 +49,13 @@ pub fn handle_completion_request(
     }
 }
 
-fn collect_completions(
-    server: &Server,
-    request: &CompletionRequest,
-    context: CompletionContext,
-) -> Result<Vec<CompletionItem>, ResponseError> {
+fn collect_completions(context: CompletionContext) -> Result<Vec<CompletionItem>, ResponseError> {
     Ok(match context.location {
         CompletionLocation::Start => start::completions(context),
         CompletionLocation::SelectBinding => select_binding::completions(context),
         CompletionLocation::Predicate => predicate::completions(context),
         CompletionLocation::Object => object::completions(context),
-        CompletionLocation::Subject => subject::completions(server, request, context),
+        CompletionLocation::Subject => subject::completions(context),
         CompletionLocation::SolutionModifier => solution_modifier::completions(context),
         _ => vec![],
     })

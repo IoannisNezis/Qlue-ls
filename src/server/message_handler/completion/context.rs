@@ -179,6 +179,7 @@ impl CompletionLocation {
                 ]) {
                     CompletionLocation::Subject
                 }
+                // FIXME: predicate after ; does not get recognized
                 // NOTE: Predicate
                 else if continues_with!([
                     SyntaxKind::PropertyListPathNotEmpty,

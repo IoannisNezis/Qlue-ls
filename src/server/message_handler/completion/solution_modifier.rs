@@ -5,7 +5,6 @@ use crate::server::lsp::{CompletionItem, CompletionItemKind, InsertTextFormat};
 use super::CompletionContext;
 
 pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
-    log::info!("{:?}", context.continuations);
     let mut res = Vec::new();
     if context.continuations.contains(&SolutionModifier) {
         res.push(CompletionItem::new(

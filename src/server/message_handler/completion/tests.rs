@@ -12,53 +12,60 @@ fn match_location_at_offset(input: &str, location: CompletionLocation, offset: u
 
 #[test]
 fn localize_select_binding() {
-    assert!(match_location_at_offset(
-        //12345678
-        "Select  {}",
-        CompletionLocation::SelectBinding,
-        7,
+    assert!(matches!(
+        CompletionLocation::from_position(&parse_query("Select  {}"), 7.into())
+            .unwrap()
+            .0,
+        CompletionLocation::SelectBinding(_),
     ));
-    assert!(!match_location_at_offset(
-        //12345678901234567890
-        "Select  Reduced ?a {}",
-        CompletionLocation::SelectBinding,
-        0,
+
+    assert!(!matches!(
+        CompletionLocation::from_position(&parse_query("Select  Reduced ?a {}"), 0.into())
+            .unwrap()
+            .0,
+        CompletionLocation::SelectBinding(_),
     ));
-    assert!(match_location_at_offset(
-        //12345678901234567890
-        "Select Reduced ?a {}",
-        CompletionLocation::SelectBinding,
-        6,
+
+    assert!(matches!(
+        CompletionLocation::from_position(&parse_query("Select  Reduced ?a {}"), 6.into())
+            .unwrap()
+            .0,
+        CompletionLocation::SelectBinding(_),
     ));
-    assert!(match_location_at_offset(
-        //12345678901234567890
-        "Select Reduced ?a {}",
-        CompletionLocation::SelectBinding,
-        14,
+
+    assert!(matches!(
+        CompletionLocation::from_position(&parse_query("Select  Reduced ?a {}"), 14.into())
+            .unwrap()
+            .0,
+        CompletionLocation::SelectBinding(_),
     ));
-    assert!(match_location_at_offset(
-        //12345678901234567890
-        "Select Reduced ?a {}",
-        CompletionLocation::SelectBinding,
-        17,
+
+    assert!(matches!(
+        CompletionLocation::from_position(&parse_query("Select  Reduced ?a {}"), 17.into())
+            .unwrap()
+            .0,
+        CompletionLocation::SelectBinding(_),
     ));
-    assert!(!match_location_at_offset(
-        //12345678901234567890
-        "Select Reduced ?a {}",
-        CompletionLocation::SelectBinding,
-        19,
+
+    assert!(matches!(
+        CompletionLocation::from_position(&parse_query("Select  Reduced ?a {}"), 19.into())
+            .unwrap()
+            .0,
+        CompletionLocation::SelectBinding(_),
     ));
-    assert!(!match_location_at_offset(
-        //12345678901234567890
-        "Select * {}",
-        CompletionLocation::SelectBinding,
-        8,
+
+    assert!(!matches!(
+        CompletionLocation::from_position(&parse_query("Select * {}"), 8.into())
+            .unwrap()
+            .0,
+        CompletionLocation::SelectBinding(_),
     ));
-    assert!(!match_location_at_offset(
-        //12345678901234567890123456
-        "Select * { BIND (42 AS )}",
-        CompletionLocation::SelectBinding,
-        23,
+
+    assert!(!matches!(
+        CompletionLocation::from_position(&parse_query("Select * { BIND (42 AS )}"), 23.into())
+            .unwrap()
+            .0,
+        CompletionLocation::SelectBinding(_),
     ));
 }
 

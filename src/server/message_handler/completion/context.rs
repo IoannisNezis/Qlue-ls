@@ -1,7 +1,8 @@
 use std::{collections::HashSet, u32};
 
 use ll_sparql_parser::{
-    continuations_at, parse_query, syntax_kind::SyntaxKind, SyntaxNode, TokenAtOffset,
+    ast::{AstNode, SelectClause}, continuations_at, parse_query, syntax_kind::SyntaxKind, SyntaxNode,
+    TokenAtOffset,
 };
 use text_size::TextSize;
 
@@ -16,6 +17,7 @@ use super::error::CompletionError;
 pub(super) struct CompletionContext {
     pub(super) location: CompletionLocation,
     pub(super) continuations: HashSet<SyntaxKind>,
+    pub(super) tree: SyntaxNode,
     pub(super) trigger_kind: CompletionTriggerKind,
 }
 
@@ -40,17 +42,19 @@ impl CompletionContext {
                 ),
             ))? as u32)
             .into();
-        let root = parse_query(&document.text);
-        let (location, continuations) = CompletionLocation::from_position(root, offset)?;
+        let tree = parse_query(&document.text);
+        let (location, continuations) = CompletionLocation::from_position(&tree, offset)?;
         let trigger_kind = request.get_completion_context().trigger_kind.clone();
         Ok(Self {
             location,
             continuations,
+            tree,
             trigger_kind,
         })
     }
 }
 
+// TODO: add attach-node to location
 #[derive(Debug, PartialEq)]
 pub(super) enum CompletionLocation {
     /// Unsupported location
@@ -139,12 +143,12 @@ pub(super) enum CompletionLocation {
     /// ```sparql
     /// SELECT REDUCED >here< WHERE {}
     /// ```
-    SelectBinding,
+    SelectBinding(SelectClause),
 }
 
 impl CompletionLocation {
     pub(super) fn from_position(
-        root: SyntaxNode,
+        root: &SyntaxNode,
         mut offset: TextSize,
     ) -> Result<(Self, HashSet<SyntaxKind>), CompletionError> {
         let range = root.text_range();
@@ -240,7 +244,13 @@ impl CompletionLocation {
                         .parent_ancestors()
                         .any(|ancestor| ancestor.kind() == SyntaxKind::SelectClause)
                 {
-                    CompletionLocation::SelectBinding
+                    if let Some(select_clause) = anchor_token.parent_ancestors().find(|ancestor| ancestor.kind() == SyntaxKind::SelectClause){
+                    
+                    CompletionLocation::SelectBinding(SelectClause::cast(select_clause).expect("node of kind SelectClause should be castable to SelectClause ast node"))
+                    }else{
+
+                    CompletionLocation::Unknown
+                    }
                 } else {
                     CompletionLocation::Unknown
                 };

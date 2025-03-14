@@ -43,14 +43,6 @@ fn collect_all_unique_captures(
     Ok(capture_set.into_iter().collect())
 }
 
-pub fn get_all_variables(
-    analyis_state: &ServerState,
-    uri: &String,
-) -> Result<Vec<String>, ResponseError> {
-    let (document, tree) = analyis_state.get_state(uri)?;
-    collect_all_unique_captures(tree.root_node(), "(VAR) @variable", &document.text)
-}
-
 pub fn get_kind_at_position(
     analyis_state: &ServerState,
     uri: &String,

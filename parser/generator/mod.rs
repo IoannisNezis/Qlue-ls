@@ -277,9 +277,18 @@ fn generate_types(grammar: &Grammar) {
                     #token
             }
         });
-    let parser_trees = grammar
-        .iter()
-        .map(|node| format_ident!("{}", grammar[node].name));
+    let parser_trees = grammar.iter().map(|node| {
+        let ident = format_ident!("{}", grammar[node].name);
+        let comment = format!(
+            " {} => {}",
+            grammar[node].name,
+            format_rule(grammar, &grammar[node].rule)
+        );
+        quote! {
+            #[doc = #comment]
+            #ident
+        }
+    });
 
     let tokens = quote! {
         use logos::{Logos, Span};

@@ -25,6 +25,9 @@ pub fn parse_update(input: &str) -> SyntaxNode {
     SyntaxNode::new_root(parser::parse_text(input, parser::TopEntryPoint::UpdateUnit))
 }
 
+#[cfg(test)]
+mod tests;
+
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 pub fn get_parse_tree(input: &str, offset: u32) -> JsValue {

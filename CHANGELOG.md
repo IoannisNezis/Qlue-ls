@@ -7,10 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2025-03-15
+
 ### Added
 
 - ll parser
-- cursor locatlization for completion
+- cursor localization for completion
+- completions for select bindings
+- completions for solution modifiers
 
 ## [0.4.0] - 2025-02-25
 

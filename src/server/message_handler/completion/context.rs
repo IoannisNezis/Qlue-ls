@@ -172,22 +172,22 @@ impl CompletionLocation {
                     };
                 }
                 // NOTE: Subject
-                let location = if continues_with!([
-                    SyntaxKind::GroupGraphPatternSub,
-                    SyntaxKind::TriplesBlock,
-                    SyntaxKind::GraphPatternNotTriples
-                ]) {
-                    CompletionLocation::Subject
-                }
-                // FIXME: predicate after ; does not get recognized
+                let location =
                 // NOTE: Predicate
-                else if continues_with!([
+                if continues_with!([
                     SyntaxKind::PropertyListPathNotEmpty,
                     SyntaxKind::PropertyListPath,
                     SyntaxKind::VerbPath,
                     SyntaxKind::VerbSimple
                 ]) {
                     CompletionLocation::Predicate
+                }
+                else if continues_with!([
+                    SyntaxKind::GroupGraphPatternSub,
+                    SyntaxKind::TriplesBlock,
+                    SyntaxKind::GraphPatternNotTriples
+                ]) {
+                    CompletionLocation::Subject
                 }
                 // NOTE: Object
                 else if continues_with!([

@@ -4,7 +4,10 @@ use crate::server::message_handler::completion::context::CompletionLocation;
 
 fn match_location_at_offset(input: &str, location: CompletionLocation, offset: u32) -> bool {
     let root = parse_query(input);
-    CompletionLocation::from_position(root, offset.into()).unwrap() == location
+    CompletionLocation::from_position(&root, offset.into())
+        .unwrap()
+        .0
+        == location
 }
 
 #[test]
@@ -91,45 +94,45 @@ fn localize_solution_modifier() {
 }
 
 #[test]
-fn localize_triple_or_not_1() {
+fn localize_subject_1() {
     //           0123456789012
     let input = "Select * {  }";
     assert!(match_location_at_offset(
         input,
-        CompletionLocation::GroupGraphPatternSub,
+        CompletionLocation::Subject,
         11
     ));
 }
 
 #[test]
-fn localize_triple_or_not_2() {
+fn localize_subject_2() {
     //           012345678901234567890123
     let input = "Select * { ?s ?p ?o .  }";
     assert!(match_location_at_offset(
         input,
-        CompletionLocation::GroupGraphPatternSub,
+        CompletionLocation::Subject,
         21
     ));
 }
 
 #[test]
-fn localize_triple_or_not_3() {
+fn localize_subject_3() {
     //           012345678901234567890123
     let input = "Select * { ?s ?p ?o .  ?s ?p ?o }";
     assert!(match_location_at_offset(
         input,
-        CompletionLocation::GroupGraphPatternSub,
+        CompletionLocation::Subject,
         22
     ));
 }
 
 #[test]
-fn localize_triple_or_not_4() {
+fn localize_subject_4() {
     //           0123456789012
     let input = "Select * { ?  }";
     assert!(match_location_at_offset(
         input,
-        CompletionLocation::GroupGraphPatternSub,
+        CompletionLocation::Subject,
         12
     ));
 }

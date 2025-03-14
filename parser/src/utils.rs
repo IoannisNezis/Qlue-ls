@@ -123,7 +123,7 @@ pub fn continuations_at(root: &SyntaxNode, offset: TextSize) -> Option<Vec<Synta
 
 #[cfg(test)]
 mod test {
-    use crate::{ast::TriplesBlock, parse_query, syntax_kind::SyntaxKind, Rule};
+    use crate::{parse_query, rules::Rule, syntax_kind::SyntaxKind};
 
     use super::continuations_at;
 

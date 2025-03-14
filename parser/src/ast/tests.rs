@@ -1,7 +1,7 @@
 use rowan::TextRange;
 
 use crate::{
-    ast::{AstNode, GroupGraphPattern, TriplesBlock, WhereClause},
+    ast::{AstNode, GroupGraphPattern, Triple, TriplesBlock, Var, WhereClause},
     parse_query, SyntaxNode,
 };
 
@@ -77,5 +77,21 @@ fn triples_block() {
     assert_eq!(
         triples[2].triples_block().unwrap().syntax().to_string(),
         "?s ?p ?o . ?a  ?b ?c .     ?x ?y  ?z"
+    );
+}
+
+#[test]
+fn ast_triple() {
+    let input = "SELECT * { ?s ?p ?o ; ?p2 ?o2 ; ?p3 ?o3}";
+    let root = parse_query(input);
+    let node = walk(root, vec![0, 0, 1, 0, 0, 0, 0]).unwrap();
+    let triple = Triple::cast(node).unwrap();
+    println!(
+        "{:?}",
+        triple
+            .variables()
+            .iter()
+            .map(|var| var.syntax().text().to_string())
+            .collect::<Vec<String>>()
     );
 }

@@ -14,6 +14,48 @@ impl SelectQuery {
     pub fn where_clause(&self) -> Option<WhereClause> {
         WhereClause::cast(self.syntax.first_child_by_kind(&WhereClause::can_cast)?)
     }
+    pub fn variables(&self) -> Vec<Var> {
+        if let Some(where_clause) = self.where_clause() {
+            if let Some(ggp) = where_clause.group_graph_pattern() {
+                return ggp
+                    .triple_blocks()
+                    .iter()
+                    .flat_map(|triple_block| {
+                        triple_block
+                            .triples()
+                            .iter()
+                            .flat_map(|triple| triple.variables())
+                            .collect::<Vec<Var>>()
+                    })
+                    .collect();
+            }
+        }
+        todo!()
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct SelectClause {
+    syntax: SyntaxNode,
+}
+
+impl SelectClause {
+    pub fn variables(&self) -> Vec<Var> {
+        self.syntax
+            .children()
+            .filter_map(|child| {
+                if child.kind() == SyntaxKind::Var {
+                    Some(Var::cast(child).expect("Node of kind Var should be castable to Var"))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    pub fn select_query(&self) -> Option<SelectQuery> {
+        SelectQuery::cast(self.syntax.parent()?)
+    }
 }
 
 pub enum GroupPatternNotTriples {
@@ -153,11 +195,11 @@ pub struct TriplesBlock {
 
 impl TriplesBlock {
     /// Get the `Triple`'s contained in this `TriplesBlock`.
-    pub fn triples(&self) -> Vec<Triples> {
+    pub fn triples(&self) -> Vec<Triple> {
         self.syntax
             .children()
             .filter_map(|child| match child.kind() {
-                SyntaxKind::TriplesSameSubjectPath => Some(vec![Triples::cast(child).unwrap()]),
+                SyntaxKind::TriplesSameSubjectPath => Some(vec![Triple::cast(child).unwrap()]),
                 SyntaxKind::TriplesBlock => Some(TriplesBlock::cast(child).unwrap().triples()),
                 _ => None,
             })
@@ -171,11 +213,11 @@ impl TriplesBlock {
 }
 
 #[derive(Debug)]
-pub struct Triples {
+pub struct Triple {
     syntax: SyntaxNode,
 }
 
-impl Triples {
+impl Triple {
     pub fn subject(&self) -> Option<VarOrTerm> {
         self.syntax
             .first_child()
@@ -199,6 +241,48 @@ impl Triples {
         }
         return Some(TriplesBlock::cast(parent).expect("parent should be a TriplesBlock"));
     }
+
+    fn property_list_path(&self) -> Option<PropertyListPath> {
+        let child = self.syntax.last_child()?;
+        match child.kind() {
+            SyntaxKind::PropertyListPathNotEmpty => PropertyListPath::cast(child),
+            SyntaxKind::PropertyListPath => child
+                .first_child()
+                .map(|grand_child| PropertyListPath::cast(grand_child))
+                .flatten(),
+            _ => None,
+        }
+    }
+
+    fn variables(&self) -> Vec<Var> {
+        self.syntax
+            .preorder()
+            .filter_map(|walk_event| match walk_event {
+                rowan::WalkEvent::Enter(node) => Var::cast(node),
+                rowan::WalkEvent::Leave(_) => None,
+            })
+            .collect()
+    }
+}
+
+#[derive(Debug)]
+pub struct PropertyListPath {
+    syntax: SyntaxNode,
+}
+
+impl PropertyListPath {
+    pub fn variables(&self) -> Vec<Var> {
+        self.syntax
+            .children()
+            .filter_map(|child| match child.kind() {
+                SyntaxKind::VerbSimple => child
+                    .first_child()
+                    .map(|grand_child| Var::cast(grand_child))
+                    .flatten(),
+                _ => None,
+            })
+            .collect()
+    }
 }
 
 #[derive(Debug)]
@@ -207,6 +291,10 @@ pub struct VarOrTerm {
 }
 
 impl VarOrTerm {
+    pub fn var(&self) -> Option<Var> {
+        Var::cast(self.syntax.first_child()?)
+    }
+
     pub fn is_var(&self) -> bool {
         self.syntax
             .first_child()
@@ -215,6 +303,42 @@ impl VarOrTerm {
 
     pub fn is_term(&self) -> bool {
         !self.is_var()
+    }
+}
+
+#[derive(Debug)]
+pub struct Var {
+    syntax: SyntaxNode,
+}
+
+impl Var {
+    pub fn is_var(&self) -> bool {
+        self.syntax
+            .first_child()
+            .map_or(false, |child| child.kind() == SyntaxKind::Var)
+    }
+
+    pub fn is_term(&self) -> bool {
+        !self.is_var()
+    }
+}
+
+impl AstNode for Var {
+    #[inline]
+    fn kind() -> SyntaxKind {
+        SyntaxKind::Var
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    #[inline]
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
     }
 }
 
@@ -237,7 +361,26 @@ impl AstNode for VarOrTerm {
     }
 }
 
-impl AstNode for Triples {
+impl AstNode for PropertyListPath {
+    #[inline]
+    fn kind() -> SyntaxKind {
+        SyntaxKind::PropertyListPathNotEmpty
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    #[inline]
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+}
+
+impl AstNode for Triple {
     #[inline]
     fn kind() -> SyntaxKind {
         SyntaxKind::TriplesSameSubjectPath
@@ -459,6 +602,26 @@ impl AstNode for InlineData {
     #[inline]
     fn kind() -> SyntaxKind {
         SyntaxKind::InlineData
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+}
+
+impl AstNode for SelectClause {
+    #[inline]
+    fn kind() -> SyntaxKind {
+        SyntaxKind::SelectClause
     }
 
     fn cast(syntax: SyntaxNode) -> Option<Self> {

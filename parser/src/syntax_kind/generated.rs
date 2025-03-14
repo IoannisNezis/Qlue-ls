@@ -309,15 +309,15 @@ pub enum SyntaxKind {
     DOUBLE,
     #[regex(r"\+\d+")]
     INTEGER_POSITIVE,
-    #[token("DECIMAL_POSITIVE")]
+    #[regex(r"\+\d*\.\d+")]
     DECIMAL_POSITIVE,
-    #[token("DOUBLE_POSITIVE")]
+    #[regex(r"\+(?:\d+\.\d*(?:[eE][+-]?\d+))|\+(?:\.\d+([eE][+-]?\d+))|\+(?:\d+([eE][+-]?\d+))")]
     DOUBLE_POSITIVE,
-    #[token("INTEGER_NEGATIVE")]
+    #[regex(r"-\d+")]
     INTEGER_NEGATIVE,
-    #[token("DECIMAL_NEGATIVE")]
+    #[regex(r"-\d*\.\d+")]
     DECIMAL_NEGATIVE,
-    #[token("DOUBLE_NEGATIVE")]
+    #[regex(r"-(?:\d+\.\d*(?:[eE][+-]?\d+))|-(?:\.\d+([eE][+-]?\d+))|-(?:\d+([eE][+-]?\d+))")]
     DOUBLE_NEGATIVE,
     #[token("true")]
     True,

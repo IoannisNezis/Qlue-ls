@@ -88,6 +88,13 @@ pub(super) enum CompletionLocation {
     ///  ?subject >here<
     /// }
     /// ```
+    /// or
+    /// ```sparql
+    /// SELECT * WHERE {
+    ///  ?s ?p ?o ;
+    ///     >here<
+    /// }
+    /// ```
     Predicate,
     /// 3rd part of a Triple
     ///
@@ -100,6 +107,25 @@ pub(super) enum CompletionLocation {
     /// }
     /// ```
     Object,
+    /// After a Select Query
+    ///
+    /// ---
+    ///
+    /// **Example**
+    /// ```sparql
+    /// SELECT * WHERE {
+    ///  ?s ?p ?o
+    /// }
+    /// >here<
+    /// ```
+    /// or
+    /// **Example**
+    /// ```sparql
+    /// SELECT * WHERE {
+    ///  ?s ?p ?o
+    /// }
+    /// GROUP By ?s
+    /// >here<
     SolutionModifier,
     /// Variable Or Assignment in SelectClause
     ///

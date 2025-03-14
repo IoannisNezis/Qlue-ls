@@ -163,7 +163,6 @@ impl CompletionLocation {
 
         Ok(
             if let Some(continuations) = continuations_at(&root, anchor_token.text_range().end()) {
-                println!("{:?}", continuations);
                 let continuations_set: HashSet<SyntaxKind> =
                     HashSet::from_iter(continuations.into_iter());
                 macro_rules! continues_with {

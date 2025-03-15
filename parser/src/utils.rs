@@ -3,6 +3,9 @@ use rowan::TextSize;
 use crate::{rules::Rule, syntax_kind::SyntaxKind, SyntaxNode};
 
 pub fn continuations_at(root: &SyntaxNode, offset: TextSize) -> Option<Vec<SyntaxKind>> {
+    if !root.text_range().contains(offset) {
+        return None;
+    }
     let token = match root.token_at_offset(offset) {
         rowan::TokenAtOffset::Single(token) => Some(token),
         rowan::TokenAtOffset::Between(token1, _) => Some(token1),

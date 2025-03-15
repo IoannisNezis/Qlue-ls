@@ -14,6 +14,9 @@ impl SelectQuery {
     pub fn where_clause(&self) -> Option<WhereClause> {
         WhereClause::cast(self.syntax.first_child_by_kind(&WhereClause::can_cast)?)
     }
+    pub fn select_clause(&self) -> Option<SelectClause> {
+        SelectClause::cast(self.syntax.first_child_by_kind(&SelectClause::can_cast)?)
+    }
     pub fn variables(&self) -> Vec<Var> {
         if let Some(where_clause) = self.where_clause() {
             if let Some(ggp) = where_clause.group_graph_pattern() {
@@ -642,6 +645,10 @@ impl AstNode for SelectQuery {
     #[inline]
     fn kind() -> SyntaxKind {
         SyntaxKind::SelectQuery
+    }
+
+    fn can_cast(kind: SyntaxKind) -> bool {
+        matches!(kind, SyntaxKind::SelectQuery | SyntaxKind::SubSelect)
     }
 
     fn cast(syntax: SyntaxNode) -> Option<Self> {

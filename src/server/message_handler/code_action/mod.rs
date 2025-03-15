@@ -1,17 +1,20 @@
 mod quickfix;
 use std::collections::HashSet;
 
-use ll_sparql_parser::{parse_query, syntax_kind::SyntaxKind, TokenAtOffset};
-use log::info;
+use ll_sparql_parser::{
+    ast::{AstNode, SelectQuery},
+    parse_query,
+    syntax_kind::SyntaxKind,
+    TokenAtOffset,
+};
 use quickfix::get_quickfix;
-use text_size::TextRange;
 
 use crate::server::{
     anaysis::{get_all_uncompacted_uris, get_declared_uri_prefixes},
     lsp::{
         diagnostic::{Diagnostic, DiagnosticCode},
         errors::{ErrorCode, ResponseError},
-        textdocument::{Range, TextDocumentItem, TextEdit},
+        textdocument::{Position, Range, TextDocumentItem, TextEdit},
         CodeAction, CodeActionKind, CodeActionParams, CodeActionRequest, CodeActionResponse,
     },
     Server,
@@ -62,17 +65,73 @@ fn generate_code_actions(
         ))?;
 
     if root.text_range().contains((range.end as u32).into()) {
-        if let Some(parent) = match root.token_at_offset((range.end as u32).into()) {
-            TokenAtOffset::Single(token) | TokenAtOffset::Between(token, _) => token.parent(),
+        if let Some(token) = match root.token_at_offset((range.end as u32).into()) {
+            TokenAtOffset::Single(token) | TokenAtOffset::Between(token, _) => Some(token),
             TokenAtOffset::None => None,
         } {
             let mut code_actions = vec![];
-            if parent.kind() == SyntaxKind::iri {
+            if token.kind() == SyntaxKind::IRIREF
+                && token
+                    .parent()
+                    .map_or(false, |parent| parent.kind() == SyntaxKind::iri)
+            {
                 if let Some(code_action) = shorten_all_uris(server, &document) {
                     code_actions.push(code_action);
                 }
-                return Ok(code_actions);
+            } else if [SyntaxKind::VAR1, SyntaxKind::VAR2].contains(&token.kind()) {
+                if let Some(select_clause) = token
+                    .parent_ancestors()
+                    .find(|ancestor| {
+                        ancestor.kind() == SyntaxKind::SelectQuery
+                            || ancestor.kind() == SyntaxKind::SubSelect
+                    })
+                    .map(|node| SelectQuery::cast(node).map(|sq| sq.select_clause()))
+                    .flatten()
+                    .flatten()
+                {
+                    let result_vars: HashSet<String> = HashSet::from_iter(
+                        select_clause
+                            .variables()
+                            .iter()
+                            .map(|var| var.syntax().text().to_string()),
+                    );
+                    if !result_vars.contains(&token.to_string()) {
+                        if let Some(end) = Position::from_byte_index(
+                            select_clause.syntax().text_range().end().into(),
+                            &document.text,
+                        ) {
+                            if let Some(last_child) = select_clause.syntax().last_child_or_token() {
+                                let mut ca = CodeAction::new("Add to result", None);
+                                if last_child.kind() == SyntaxKind::Star {
+                                    ca.add_edit(
+                                        document_uri,
+                                        TextEdit::new(
+                                            Range::new(
+                                                end.line,
+                                                end.character - 1,
+                                                end.line,
+                                                end.character,
+                                            ),
+                                            &token.to_string(),
+                                        ),
+                                    );
+                                } else {
+                                    ca.add_edit(
+                                        document_uri,
+                                        TextEdit::new(
+                                            Range { start: end, end },
+                                            &format!(" {}", token.to_string()),
+                                        ),
+                                    );
+                                }
+                                code_actions.push(ca);
+                            }
+                        }
+                    }
+                }
             }
+
+            return Ok(code_actions);
         }
     }
     Ok(vec![])

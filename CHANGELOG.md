@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - tokenize PNAME_LN
 
+### Added
+
+- code action: add variable to result
+
 ## [0.5.0] - 2025-03-15
 
 ### Added

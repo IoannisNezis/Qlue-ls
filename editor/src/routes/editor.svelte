@@ -8,7 +8,9 @@
     let editorContainer: HTMLElement;
     let wrapper: MonacoEditorLanguageClientWrapper | undefined;
     let markers: editor.IMarker[] = $state([]);
-    let content = $state('SELECT * WHERE {\n  ?s <http://www.w3.org/2000/01/rdf-schema#> ?o .\n}');
+    let content = $state(
+        'SELECT * WHERE {\n  ?s <http://www.w3.org/2000/01/rdf-schema#> ?o .\n  {\n    SELECT * {\n      ?a ?b ?c\n    }\n  }\n}\n'
+    );
     let cursorOffset = $state(0);
 
     onMount(async () => {

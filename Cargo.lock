@@ -1153,7 +1153,7 @@ checksum = "4ee93343901ab17bd981295f2cf0026d4ad018c7c31ba84549a4ddbb47a45104"
 
 [[package]]
 name = "ll-sparql-parser"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "js-sys",
  "logos",

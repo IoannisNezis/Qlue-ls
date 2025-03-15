@@ -23,6 +23,9 @@ export default defineConfig(({ mode }) => ({
 			topLevelAwait()
 		]
 	},
+	server: {
+		allowedHosts: ["qlue-ls.com", "galera.informatik.privat", "galera", "ad-research.cs.uni-freiburg.de", "mundhahs.dev"]
+	},
 	resolve: {
 		alias:
 		{

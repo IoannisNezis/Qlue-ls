@@ -52,3 +52,20 @@ fn tokenize_numbers() {
         ]
     )
 }
+
+#[test]
+fn tokenize_iris() {
+    let tokens = tokenize("<simple> prefix: ns:local2 ns:123 ns:%32 x....42: äöü:öäü");
+    assert_eq!(
+        tokens,
+        vec![
+            SyntaxKind::IRIREF,
+            SyntaxKind::PNAME_NS,
+            SyntaxKind::PNAME_LN,
+            SyntaxKind::PNAME_LN,
+            SyntaxKind::PNAME_LN,
+            SyntaxKind::PNAME_NS,
+            SyntaxKind::PNAME_LN,
+        ]
+    )
+}

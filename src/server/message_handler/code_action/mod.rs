@@ -1,13 +1,16 @@
 mod quickfix;
 use std::collections::HashSet;
 
+use ll_sparql_parser::{parse_query, syntax_kind::SyntaxKind, TokenAtOffset};
+use log::info;
 use quickfix::get_quickfix;
+use text_size::TextRange;
 
 use crate::server::{
     anaysis::{get_all_uncompacted_uris, get_declared_uri_prefixes},
     lsp::{
         diagnostic::{Diagnostic, DiagnosticCode},
-        errors::ResponseError,
+        errors::{ErrorCode, ResponseError},
         textdocument::{Range, TextDocumentItem, TextEdit},
         CodeAction, CodeActionKind, CodeActionParams, CodeActionRequest, CodeActionResponse,
     },
@@ -48,20 +51,23 @@ fn generate_code_actions(
     params: &CodeActionParams,
 ) -> Result<Vec<CodeAction>, ResponseError> {
     let document_uri = &params.text_document.uri;
-    let (document, parse_tree) = server.state.get_state(document_uri)?;
-    if let Some(node) = parse_tree
-        .root_node()
-        .descendant_for_point_range(params.range.start.to_point(), params.range.end.to_point())
-    {
-        if let Some(parent) = node.parent() {
-            if node.kind() == "IRIREF"
-                && parent.kind() != "PrefixDecl"
-                && parent.kind() != "BaseDecl"
-            {
-                let mut code_actions = vec![];
-                // if let Some(code_action) = shorten_uri(server, Range::from_node(node), &document) {
-                //     code_actions.push(code_action);
-                // }
+    let document = server.state.get_document(&document_uri)?;
+    let root = parse_query(&document.text);
+    let range = params
+        .range
+        .to_byte_index_range(&document.text)
+        .ok_or(ResponseError::new(
+            ErrorCode::InvalidParams,
+            &format!("Range ({:?}) not inside document range", params.range),
+        ))?;
+
+    if root.text_range().contains((range.end as u32).into()) {
+        if let Some(parent) = match root.token_at_offset((range.end as u32).into()) {
+            TokenAtOffset::Single(token) | TokenAtOffset::Between(token, _) => token.parent(),
+            TokenAtOffset::None => None,
+        } {
+            let mut code_actions = vec![];
+            if parent.kind() == SyntaxKind::iri {
                 if let Some(code_action) = shorten_all_uris(server, &document) {
                     code_actions.push(code_action);
                 }

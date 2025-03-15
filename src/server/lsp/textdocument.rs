@@ -116,6 +116,37 @@ impl Position {
         Self { line, character }
     }
 
+    /// Convert UTF-8 byte offset in a text into UTF-16 based Position
+    ///
+    /// Returs None if:
+    /// - offset is outside the given str
+    /// - offset is not on the border of a UTF-8 codepoint
+    pub fn from_byte_index(offset: usize, text: &str) -> Option<Self> {
+        let mut offset_count = 0;
+        let mut position = Position::new(0, 0);
+        for char in text.chars() {
+            if offset_count >= offset {
+                break;
+            }
+            // BUG: Is this platform independent?
+            // Or do i need to check of "\r\n" aswell?
+            if char == '\n' {
+                position.line += 1;
+                position.character = 0;
+            } else {
+                position.character += char.len_utf16() as u32;
+            }
+            offset_count += char.len_utf8();
+        }
+        // NOTE: the byte offset MUST be at the start or end of a UTF-8 char.
+        // https://datatracker.ietf.org/doc/html/rfc2119
+        if offset_count == offset {
+            return Some(position);
+        }
+
+        return None;
+    }
+
     pub(crate) fn to_point(&self) -> Point {
         Point {
             row: self.line as usize,
@@ -375,6 +406,50 @@ mod tests {
     use crate::server::lsp::textdocument::{Position, Range, TextEdit};
 
     use super::TextDocumentItem;
+
+    #[test]
+    fn byte_index_to_position() {
+        let s = "aä😀\n123ä\n";
+        assert_eq!(
+            Position::from_byte_index(0, s).unwrap(),
+            Position::new(0, 0)
+        );
+
+        assert_eq!(
+            Position::from_byte_index(1, s).unwrap(),
+            Position::new(0, 1)
+        );
+        assert_eq!(
+            Position::from_byte_index(3, s).unwrap(),
+            Position::new(0, 2)
+        );
+        assert_eq!(
+            Position::from_byte_index(7, s).unwrap(),
+            Position::new(0, 4)
+        );
+        assert_eq!(
+            Position::from_byte_index(8, s).unwrap(),
+            Position::new(1, 0)
+        );
+        assert_eq!(
+            Position::from_byte_index(9, s).unwrap(),
+            Position::new(1, 1)
+        );
+        assert_eq!(
+            Position::from_byte_index(10, s).unwrap(),
+            Position::new(1, 2)
+        );
+        assert_eq!(
+            Position::from_byte_index(13, s).unwrap(),
+            Position::new(1, 4)
+        );
+        assert_eq!(
+            Position::from_byte_index(14, s).unwrap(),
+            Position::new(2, 0)
+        );
+        assert_eq!(Position::from_byte_index(15, s), None);
+        assert_eq!(Position::from_byte_index(2, s), None);
+    }
 
     #[test]
     fn translate_utf8_utf16() {

@@ -76,6 +76,13 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
                 CompletionItemKind::Snippet,
                 InsertTextFormat::Snippet,
             ),
+            CompletionItem::new(
+                "Sub select",
+                "Sub select query",
+                "{\n  Select * WHERE {\n    $0\n  }\n}",
+                CompletionItemKind::Snippet,
+                InsertTextFormat::Snippet,
+            ),
         ]);
     }
     res

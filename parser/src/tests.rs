@@ -4,10 +4,8 @@ use crate::syntax_kind::SyntaxKind;
 
 fn tokenize(input: &str) -> Vec<SyntaxKind> {
     let mut token_kinds = Vec::new();
-    let mut lexer = SyntaxKind::lexer(input);
-    while let Some(result) = lexer.next() {
-        // println!("kind: {:?}", result.unwrap_or(SyntaxKind::Error));
-        // println!("text: {:?}", lexer.slice().to_string());
+    let lexer = SyntaxKind::lexer(input);
+    for result in lexer {
         match result {
             Ok(kind) if !kind.is_trivia() => token_kinds.push(kind),
             Err(_) => token_kinds.push(SyntaxKind::Error),

@@ -245,17 +245,17 @@ impl Triple {
         return Some(TriplesBlock::cast(parent).expect("parent should be a TriplesBlock"));
     }
 
-    fn property_list_path(&self) -> Option<PropertyListPath> {
-        let child = self.syntax.last_child()?;
-        match child.kind() {
-            SyntaxKind::PropertyListPathNotEmpty => PropertyListPath::cast(child),
-            SyntaxKind::PropertyListPath => child
-                .first_child()
-                .map(|grand_child| PropertyListPath::cast(grand_child))
-                .flatten(),
-            _ => None,
-        }
-    }
+    // fn property_list_path(&self) -> Option<PropertyListPath> {
+    //     let child = self.syntax.last_child()?;
+    //     match child.kind() {
+    //         SyntaxKind::PropertyListPathNotEmpty => PropertyListPath::cast(child),
+    //         SyntaxKind::PropertyListPath => child
+    //             .first_child()
+    //             .map(|grand_child| PropertyListPath::cast(grand_child))
+    //             .flatten(),
+    //         _ => None,
+    //     }
+    // }
 
     fn variables(&self) -> Vec<Var> {
         self.syntax

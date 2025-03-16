@@ -26,9 +26,9 @@ pub fn handle_completion_request(
         match context.location {
             CompletionLocation::Start => start::completions(context),
             CompletionLocation::SelectBinding(_) => select_binding::completions(context),
+            CompletionLocation::Subject => subject::completions(context),
             CompletionLocation::Predicate => predicate::completions(context),
             CompletionLocation::Object => object::completions(context),
-            CompletionLocation::Subject => subject::completions(context),
             CompletionLocation::SolutionModifier => solution_modifier::completions(context),
             _ => vec![],
         },

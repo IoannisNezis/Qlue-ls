@@ -5,7 +5,6 @@ use crate::server::lsp::{CompletionItem, CompletionItemKind, InsertTextFormat};
 use super::CompletionContext;
 
 pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
-    log::info!("{:?}", context.continuations);
     let mut res = Vec::new();
     if context
         .continuations
@@ -15,7 +14,7 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
         res.push(CompletionItem::new(
             "subject filler",
             "Hier könnte ihre subject completion stehen",
-            "<object> ",
+            "<subject> ",
             CompletionItemKind::Value,
             InsertTextFormat::PlainText,
         ));
@@ -79,36 +78,5 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
             ),
         ]);
     }
-    return res;
+    res
 }
-
-// fn variable_completions(
-//     server: &Server,
-//     request: &CompletionRequest,
-//     triggered: bool,
-// ) -> Vec<CompletionItem> {
-//     match get_all_variables(
-//         &server.state,
-//         &request.get_text_position().text_document.uri,
-//     ) {
-//         Ok(variables) => variables
-//             .into_iter()
-//             .map(|variable| {
-//                 CompletionItem::new(
-//                     &variable,
-//                     "variable",
-//                     match triggered {
-//                         true => &variable[1..],
-//                         false => &variable,
-//                     },
-//                     CompletionItemKind::Snippet,
-//                     InsertTextFormat::Snippet,
-//                 )
-//             })
-//             .collect(),
-//         Err(err) => {
-//             log::error!("Error while retrieving varibles:\n{}", err.message);
-//             vec![]
-//         }
-//     }
-// }

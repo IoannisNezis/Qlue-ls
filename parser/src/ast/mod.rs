@@ -315,14 +315,8 @@ pub struct Var {
 }
 
 impl Var {
-    pub fn is_var(&self) -> bool {
-        self.syntax
-            .first_child()
-            .map_or(false, |child| child.kind() == SyntaxKind::Var)
-    }
-
-    pub fn is_term(&self) -> bool {
-        !self.is_var()
+    pub fn triple(&self) -> Option<Triple> {
+        self.syntax.ancestors().find_map(Triple::cast)
     }
 }
 

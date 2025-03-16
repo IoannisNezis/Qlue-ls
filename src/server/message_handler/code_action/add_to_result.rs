@@ -14,7 +14,8 @@ use crate::server::lsp::{
     CodeAction,
 };
 
-pub(super) fn code_action(token: SyntaxToken, document: &TextDocumentItem) -> Option<CodeAction> {
+pub(super) fn code_action(token: &SyntaxToken, document: &TextDocumentItem) -> Option<CodeAction> {
+    assert!(matches!(token.kind(), SyntaxKind::VAR1 | SyntaxKind::VAR2));
     let select_clause = match token
         .parent_ancestors()
         .nth(2)

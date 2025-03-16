@@ -1,4 +1,5 @@
 mod add_to_result;
+mod filter_var;
 mod quickfix;
 use std::collections::HashSet;
 
@@ -75,7 +76,10 @@ fn generate_code_actions(
                     code_actions.push(code_action)
                 }
             } else if [SyntaxKind::VAR1, SyntaxKind::VAR2].contains(&token.kind()) {
-                if let Some(code_action) = add_to_result::code_action(token, document) {
+                if let Some(code_action) = add_to_result::code_action(&token, document) {
+                    code_actions.push(code_action)
+                }
+                if let Some(code_action) = filter_var::code_action(&token, document) {
                     code_actions.push(code_action)
                 }
             }

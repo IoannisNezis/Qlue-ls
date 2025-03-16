@@ -30,7 +30,7 @@ pub(super) fn code_action(token: &SyntaxToken, document: &TextDocumentItem) -> O
                         start: position,
                         end: position,
                     },
-                    &format!(" Filter({})", var.syntax()),
+                    &format!(" FILTER ({})", var.syntax()),
                 )],
             )]),
         },

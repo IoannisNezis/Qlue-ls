@@ -16,19 +16,18 @@ use crate::server::lsp::{
 
 pub(super) fn code_action(token: SyntaxToken, document: &TextDocumentItem) -> Option<CodeAction> {
     let select_clause = match token
-        .parent()
-        .and_then(|parent| parent.parent())
+        .parent_ancestors()
+        .nth(2)
         .map(|grand_parent| grand_parent.kind())?
     {
         SyntaxKind::SubSelect => token
             .parent_ancestors()
-            .skip(2)
+            .skip(3)
             .find(|ancestor| {
                 ancestor.kind() == SyntaxKind::SelectQuery
                     || ancestor.kind() == SyntaxKind::SubSelect
             })
             .and_then(|node| SelectQuery::cast(node).and_then(|sq| sq.select_clause())),
-
         _ => token
             .parent_ancestors()
             .find(|ancestor| {

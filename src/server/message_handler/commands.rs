@@ -43,7 +43,7 @@ fn publish_diagnostic(server: &Server, args: &PublishDiagnosticsCommandAruments)
                     base: NotificationMessageBase::new("textDocument/publishDiagnistics"),
                     params: PublishDiagnosticsPrarams {
                         uri: uri.to_string(),
-                        diagnostics: diagnostics.collect(),
+                        diagnostics,
                     },
                 };
                 let message = serde_json::to_string(&diagnostic_notification).unwrap();

@@ -217,83 +217,6 @@ pub(crate) fn get_declared_uri_prefixes(
     Ok(namespaces)
 }
 
-pub fn get_used_prefixes(
-    analyis_state: &ServerState,
-    uri: &str,
-) -> Result<Vec<(String, Range)>, ResponseError> {
-    let (document, tree) = analyis_state.get_state(uri)?;
-    let query = build_query("(PrefixedName (PNAME_NS (PN_PREFIX) @prefix))")?;
-    let mut query_cursor = QueryCursor::new();
-    let mut captures = query_cursor.captures(&query, tree.root_node(), document.text.as_bytes());
-    let mut namespaces: Vec<(String, Range)> = Vec::new();
-    while let Some((mat, capture_index)) = captures.next() {
-        let node = mat.captures[*capture_index].node;
-        namespaces.push((
-            node.utf8_text(document.text.as_bytes())
-                .unwrap()
-                .to_string(),
-            Range::from_node(&node),
-        ));
-    }
-    Ok(namespaces)
-}
-
-pub(crate) fn get_unused_prefixes(
-    analysis_state: &ServerState,
-    uri: &str,
-) -> Result<impl Iterator<Item = (String, Range)>, ResponseError> {
-    let declared_namespaces = get_declared_prefixes(analysis_state, uri)?;
-    let declared_namespaces_set: HashSet<String> = declared_namespaces
-        .iter()
-        .map(|(namespace, _range)| namespace)
-        .cloned()
-        .collect();
-    let used_namespaces_set: HashSet<String> = get_used_prefixes(analysis_state, uri)?
-        .iter()
-        .map(|(namespace, _range)| namespace)
-        .cloned()
-        .collect();
-    let unused_prefixes = &declared_namespaces_set - &used_namespaces_set;
-
-    Ok(declared_namespaces
-        .iter()
-        .filter_map(move |(declared_namespace, range)| {
-            unused_prefixes
-                .contains(declared_namespace)
-                .then_some((declared_namespace.clone(), range.clone()))
-        })
-        .collect::<Vec<(String, Range)>>()
-        .into_iter())
-}
-
-pub(crate) fn get_undeclared_prefixes(
-    analysis_state: &ServerState,
-    uri: &str,
-) -> Result<impl Iterator<Item = (String, Range)>, ResponseError> {
-    let declared_namespaces_set: HashSet<String> = get_declared_prefixes(analysis_state, uri)?
-        .iter()
-        .map(|(namespace, _range)| namespace)
-        .cloned()
-        .collect();
-    let used_namespaces = get_used_prefixes(analysis_state, uri)?;
-    let used_namespaces_set: HashSet<String> = used_namespaces
-        .iter()
-        .map(|(namespace, _range)| namespace)
-        .cloned()
-        .collect();
-    let undelclared_prefixes_set = &used_namespaces_set - &declared_namespaces_set;
-
-    Ok(used_namespaces
-        .iter()
-        .filter_map(|(declared_namespace, range)| {
-            undelclared_prefixes_set
-                .contains(declared_namespace)
-                .then_some((declared_namespace.clone(), range.clone()))
-        })
-        .collect::<Vec<(String, Range)>>()
-        .into_iter())
-}
-
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
@@ -301,11 +224,7 @@ mod tests {
     use tree_sitter_sparql::LANGUAGE;
 
     use crate::server::{
-        anaysis::{
-            get_declared_prefixes, get_undeclared_prefixes, get_unused_prefixes, get_used_prefixes,
-        },
-        lsp::textdocument::TextDocumentItem,
-        state::ServerState,
+        anaysis::get_declared_prefixes, lsp::textdocument::TextDocumentItem, state::ServerState,
     };
 
     fn setup_state(text: &str) -> ServerState {
@@ -360,18 +279,5 @@ mod tests {
             .map(|(namespace, _range)| namespace)
             .collect();
         assert_eq!(declared_namesapces, vec!["y"]);
-    }
-    #[test]
-    fn unused_namespaces() {
-        let state = setup_state(indoc!(
-            "PREFIX wdt: <>
-             PREFIX wdt: <>
-             SELECT * {}"
-        ));
-        let declared_namesapces: Vec<String> = get_unused_prefixes(&state, "uri")
-            .unwrap()
-            .map(|(namespace, _range)| namespace)
-            .collect();
-        assert_eq!(declared_namesapces, vec!["wdt", "wdt"]);
     }
 }

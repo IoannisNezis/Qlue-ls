@@ -52,6 +52,10 @@ impl PrefixDeclaration {
         Some(
             self.syntax
                 .first_child_or_token_by_kind(&|kind| kind == SyntaxKind::PNAME_NS)?
+                .to_string()
+                .split_once(":")
+                .expect("Every PNAME_NS should contain ':' at the end")
+                .0
                 .to_string(),
         )
     }
@@ -337,13 +341,26 @@ impl PropertyListPath {
         self.syntax
             .children()
             .filter_map(|child| match child.kind() {
-                SyntaxKind::VerbSimple => child
-                    .first_child()
-                    .map(|grand_child| Var::cast(grand_child))
-                    .flatten(),
+                SyntaxKind::VerbSimple => child.first_child().and_then(Var::cast),
                 _ => None,
             })
             .collect()
+    }
+}
+
+#[derive(Debug)]
+pub struct PrefixedName {
+    syntax: SyntaxNode,
+}
+
+impl PrefixedName {
+    pub fn prefix(&self) -> String {
+        self.syntax
+            .to_string()
+            .split_once(":")
+            .expect("Every PrefixedName should contain a ':'")
+            .0
+            .to_string()
     }
 }
 
@@ -402,6 +419,25 @@ impl AstNode for VarOrTerm {
     #[inline]
     fn kind() -> SyntaxKind {
         SyntaxKind::VarOrTerm
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    #[inline]
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+}
+
+impl AstNode for PrefixedName {
+    #[inline]
+    fn kind() -> SyntaxKind {
+        SyntaxKind::PrefixedName
     }
 
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -791,6 +827,26 @@ pub trait AstNode {
         Self: Sized;
 
     fn syntax(&self) -> &SyntaxNode;
+
+    fn collect_decendants(&self, matcher: &impl Fn(SyntaxKind) -> bool) -> Vec<SyntaxNode> {
+        self.syntax()
+            .preorder()
+            .filter_map(|walk_event| match walk_event {
+                rowan::WalkEvent::Enter(node) if matcher(node.kind()) => Some(node),
+                _ => None,
+            })
+            .collect()
+    }
+
+    fn preorder_find_kind(&self, kind: SyntaxKind) -> Vec<SyntaxNode> {
+        self.syntax()
+            .preorder()
+            .filter_map(|walk_event| match walk_event {
+                rowan::WalkEvent::Enter(node) if node.kind() == kind => Some(node),
+                _ => None,
+            })
+            .collect()
+    }
 }
 
 #[cfg(test)]

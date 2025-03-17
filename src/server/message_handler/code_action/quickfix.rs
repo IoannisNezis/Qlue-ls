@@ -11,6 +11,7 @@ use crate::server::{
         textdocument::{Range, TextEdit},
         CodeAction, CodeActionKind, WorkspaceEdit,
     },
+    message_handler::code_action,
     Server,
 };
 
@@ -25,6 +26,7 @@ pub(super) fn get_quickfix(
         Some(DiagnosticCode::String(ref diagnostic_code)) => match diagnostic_code.as_str() {
             "undeclared-prefix" => declare_prefix(server, document_uri, diagnostic),
             "uncompacted-uri" => shorten_uri(server, document_uri, diagnostic),
+            "unused-prefix" => remove_prefix_declaration(server, document_uri, diagnostic),
             _ => {
                 log::warn!("Unknown diagnostic code: {}", diagnostic_code);
                 Ok(None)
@@ -32,6 +34,17 @@ pub(super) fn get_quickfix(
         },
         _ => Ok(None),
     }
+}
+
+fn remove_prefix_declaration(
+    _server: &Server,
+    document_uri: &String,
+    diagnostic: Diagnostic,
+) -> Result<Option<CodeAction>, ResponseError> {
+    let mut code_action =
+        CodeAction::new("remove prefix declaration", Some(CodeActionKind::QuickFix));
+    code_action.add_edit(document_uri, TextEdit::new(diagnostic.range, ""));
+    Ok(Some(code_action))
 }
 
 fn shorten_uri(
@@ -68,7 +81,7 @@ fn shorten_uri(
 
 fn declare_prefix(
     server: &Server,
-    document_uri: &String,
+    document_uri: &str,
     diagnostic: Diagnostic,
 ) -> Result<Option<CodeAction>, ResponseError> {
     if let Some(LSPAny::String(prefix)) = &diagnostic.data {
@@ -78,7 +91,7 @@ fn declare_prefix(
                 kind: Some(CodeActionKind::QuickFix),
                 edit: WorkspaceEdit {
                     changes: HashMap::from([(
-                        document_uri.clone(),
+                        document_uri.to_string(),
                         vec![TextEdit::new(
                             Range::new(0, 0, 0, 0),
                             &format!("PREFIX {}: <{}>\n", prefix, record.uri_prefix),

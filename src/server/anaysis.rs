@@ -257,27 +257,4 @@ mod tests {
             vec!["wdt", "wd", "wdt"]
         );
     }
-
-    #[test]
-    fn used_namespaces() {
-        let state = setup_state(indoc!(
-            "SELECT * {?a wdt:P32 ?b. ?a wd:p32 ?b. ?a wdt:P31 ?b}"
-        ));
-        let declared_namesapces = get_used_prefixes(&state, "uri")
-            .unwrap()
-            .into_iter()
-            .map(|(namespace, _range)| namespace)
-            .collect::<Vec<String>>();
-        assert_eq!(declared_namesapces, vec!["wdt", "wd", "wdt"]);
-    }
-
-    #[test]
-    fn undeclared_namespaces() {
-        let state = setup_state(indoc!("PREFIX x: <> SELECT * {x:y y:p x:x}"));
-        let declared_namesapces: Vec<String> = get_undeclared_prefixes(&state, "uri")
-            .unwrap()
-            .map(|(namespace, _range)| namespace)
-            .collect();
-        assert_eq!(declared_namesapces, vec!["y"]);
-    }
 }

@@ -91,7 +91,7 @@ mod test {
                  "data": "some-string"
                }"#
         );
-        let diagnostic: Diagnostic = serde_json::from_str(&message).unwrap();
+        let diagnostic: Diagnostic = serde_json::from_str(message).unwrap();
         assert_eq!(diagnostic,
         Diagnostic{
             range: Range::new(9,19,9,50),

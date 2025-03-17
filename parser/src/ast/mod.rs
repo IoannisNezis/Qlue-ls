@@ -6,6 +6,69 @@ use utils::nth_ancestor;
 use crate::{syntax_kind::SyntaxKind, SyntaxNode};
 
 #[derive(Debug, PartialEq)]
+pub struct QuertUnit {
+    syntax: SyntaxNode,
+}
+
+impl QuertUnit {
+    pub fn select_query(&self) -> Option<SelectQuery> {
+        SelectQuery::cast(
+            self.syntax
+                .first_child()?
+                .first_child_by_kind(&SelectQuery::can_cast)?,
+        )
+    }
+
+    pub fn prologue(&self) -> Option<Prologue> {
+        Prologue::cast(
+            self.syntax
+                .first_child()?
+                .first_child_by_kind(&Prologue::can_cast)?,
+        )
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Prologue {
+    syntax: SyntaxNode,
+}
+
+impl Prologue {
+    pub fn prefix_declarations(&self) -> Vec<PrefixDeclaration> {
+        self.syntax
+            .children()
+            .filter_map(&PrefixDeclaration::cast)
+            .collect()
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct PrefixDeclaration {
+    syntax: SyntaxNode,
+}
+
+impl PrefixDeclaration {
+    pub fn prefix(&self) -> Option<String> {
+        Some(
+            self.syntax
+                .first_child_or_token_by_kind(&|kind| kind == SyntaxKind::PNAME_NS)?
+                .to_string()
+                .split_once(":")
+                .expect("Every PNAME_NS should contain ':' at the end")
+                .0
+                .to_string(),
+        )
+    }
+    pub fn uri_prefix(&self) -> Option<String> {
+        Some(
+            self.syntax
+                .first_child_or_token_by_kind(&|kind| kind == SyntaxKind::IRIREF)?
+                .to_string(),
+        )
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub struct SelectQuery {
     syntax: SyntaxNode,
 }
@@ -245,17 +308,17 @@ impl Triple {
         return Some(TriplesBlock::cast(parent).expect("parent should be a TriplesBlock"));
     }
 
-    fn property_list_path(&self) -> Option<PropertyListPath> {
-        let child = self.syntax.last_child()?;
-        match child.kind() {
-            SyntaxKind::PropertyListPathNotEmpty => PropertyListPath::cast(child),
-            SyntaxKind::PropertyListPath => child
-                .first_child()
-                .map(|grand_child| PropertyListPath::cast(grand_child))
-                .flatten(),
-            _ => None,
-        }
-    }
+    // fn property_list_path(&self) -> Option<PropertyListPath> {
+    //     let child = self.syntax.last_child()?;
+    //     match child.kind() {
+    //         SyntaxKind::PropertyListPathNotEmpty => PropertyListPath::cast(child),
+    //         SyntaxKind::PropertyListPath => child
+    //             .first_child()
+    //             .map(|grand_child| PropertyListPath::cast(grand_child))
+    //             .flatten(),
+    //         _ => None,
+    //     }
+    // }
 
     fn variables(&self) -> Vec<Var> {
         self.syntax
@@ -278,13 +341,26 @@ impl PropertyListPath {
         self.syntax
             .children()
             .filter_map(|child| match child.kind() {
-                SyntaxKind::VerbSimple => child
-                    .first_child()
-                    .map(|grand_child| Var::cast(grand_child))
-                    .flatten(),
+                SyntaxKind::VerbSimple => child.first_child().and_then(Var::cast),
                 _ => None,
             })
             .collect()
+    }
+}
+
+#[derive(Debug)]
+pub struct PrefixedName {
+    syntax: SyntaxNode,
+}
+
+impl PrefixedName {
+    pub fn prefix(&self) -> String {
+        self.syntax
+            .to_string()
+            .split_once(":")
+            .expect("Every PrefixedName should contain a ':'")
+            .0
+            .to_string()
     }
 }
 
@@ -315,14 +391,8 @@ pub struct Var {
 }
 
 impl Var {
-    pub fn is_var(&self) -> bool {
-        self.syntax
-            .first_child()
-            .map_or(false, |child| child.kind() == SyntaxKind::Var)
-    }
-
-    pub fn is_term(&self) -> bool {
-        !self.is_var()
+    pub fn triple(&self) -> Option<Triple> {
+        self.syntax.ancestors().find_map(Triple::cast)
     }
 }
 
@@ -349,6 +419,25 @@ impl AstNode for VarOrTerm {
     #[inline]
     fn kind() -> SyntaxKind {
         SyntaxKind::VarOrTerm
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    #[inline]
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+}
+
+impl AstNode for PrefixedName {
+    #[inline]
+    fn kind() -> SyntaxKind {
+        SyntaxKind::PrefixedName
     }
 
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -641,6 +730,66 @@ impl AstNode for SelectClause {
     }
 }
 
+impl AstNode for Prologue {
+    #[inline]
+    fn kind() -> SyntaxKind {
+        SyntaxKind::Prologue
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+}
+
+impl AstNode for PrefixDeclaration {
+    #[inline]
+    fn kind() -> SyntaxKind {
+        SyntaxKind::PrefixDecl
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+}
+
+impl AstNode for QuertUnit {
+    #[inline]
+    fn kind() -> SyntaxKind {
+        SyntaxKind::QueryUnit
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+}
+
 impl AstNode for SelectQuery {
     #[inline]
     fn kind() -> SyntaxKind {
@@ -678,6 +827,26 @@ pub trait AstNode {
         Self: Sized;
 
     fn syntax(&self) -> &SyntaxNode;
+
+    fn collect_decendants(&self, matcher: &impl Fn(SyntaxKind) -> bool) -> Vec<SyntaxNode> {
+        self.syntax()
+            .preorder()
+            .filter_map(|walk_event| match walk_event {
+                rowan::WalkEvent::Enter(node) if matcher(node.kind()) => Some(node),
+                _ => None,
+            })
+            .collect()
+    }
+
+    fn preorder_find_kind(&self, kind: SyntaxKind) -> Vec<SyntaxNode> {
+        self.syntax()
+            .preorder()
+            .filter_map(|walk_event| match walk_event {
+                rowan::WalkEvent::Enter(node) if node.kind() == kind => Some(node),
+                _ => None,
+            })
+            .collect()
+    }
 }
 
 #[cfg(test)]

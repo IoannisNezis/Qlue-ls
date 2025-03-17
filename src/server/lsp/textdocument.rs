@@ -345,6 +345,13 @@ impl Range {
         self.end.translate_to_utf16_encoding(text)?;
         Ok(())
     }
+
+    pub(crate) fn from_byte_offset_range(range: text_size::TextRange, text: &str) -> Option<Range> {
+        Some(Range {
+            start: Position::from_byte_index(range.start().into(), text)?,
+            end: Position::from_byte_index(range.end().into(), text)?,
+        })
+    }
 }
 
 impl Display for Range {

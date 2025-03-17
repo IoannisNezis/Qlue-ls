@@ -1,7 +1,6 @@
 use std::{
     fs::{self, File},
     io::Read,
-    process::Command,
 };
 
 use tree_sitter::Parser;
@@ -16,7 +15,7 @@ fn compare_parse_trees() {
         let mut content_before = String::new();
         file.read_to_string(&mut content_before).unwrap();
         let output = qlue_ls::format_raw(content_before.clone()).expect("Formatting should work");
-        let content_after = String::from_utf8_lossy(&output.as_bytes()).to_string();
+        let content_after = String::from_utf8_lossy(output.as_bytes()).to_string();
 
         let mut parser = Parser::new();
         parser

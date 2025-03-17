@@ -1,7 +1,7 @@
 use rowan::TextRange;
 
 use crate::{
-    ast::{AstNode, GroupGraphPattern, Triple, TriplesBlock, Var, WhereClause},
+    ast::{AstNode, GroupGraphPattern, QuertUnit, Triple, TriplesBlock, WhereClause},
     parse_query, SyntaxNode,
 };
 
@@ -13,7 +13,30 @@ fn walk(node: SyntaxNode, mut path: Vec<usize>) -> Option<SyntaxNode> {
     if let Some(child) = node.children().nth(head) {
         return walk(child, path);
     }
-    return None;
+    None
+}
+
+#[test]
+fn prologue() {
+    let input = "PREFIX a: <dings>\n Prefix b: <foo> SELECT ?a WHERE { ?s ?p ?o}";
+
+    let root = parse_query(input);
+    let query_unit = QuertUnit::cast(root).unwrap();
+    let prologue = query_unit.prologue().unwrap();
+    assert_eq!(prologue.prefix_declarations()[0].prefix().unwrap(), "a");
+    assert_eq!(
+        prologue.prefix_declarations()[0].uri_prefix().unwrap(),
+        "<dings>"
+    );
+
+    assert_eq!(prologue.prefix_declarations()[1].prefix().unwrap(), "b");
+    assert_eq!(
+        prologue.prefix_declarations()[1].uri_prefix().unwrap(),
+        "<foo>"
+    );
+
+    let query_unit2 = QuertUnit::cast(parse_query("SELECT * {}")).unwrap();
+    assert_eq!(query_unit2.prologue(), None);
 }
 
 #[test]

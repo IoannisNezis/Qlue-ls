@@ -122,6 +122,7 @@ Static completion is done, dynamic offline completion is in development.
 | declare prefix    | declares undeclared prefix (if known) | undeclared prefix |
 | shorten all uri's | shorten all uri's into compacted form |                   |
 | add to result     | add variable to selected result       |                   |
+| filter variable   | add filter for this variable          |                   |
 
 # ⚙️  Configuration
 

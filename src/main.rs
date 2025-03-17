@@ -98,7 +98,7 @@ fn main() {
                 Ok(mut file) => {
                     let mut contents = String::new();
                     file.read_to_string(&mut contents)
-                        .expect(&format!("Could not read file {}", path));
+                        .expect("Could not read file");
                     match format_raw(contents.clone()) {
                         Ok(formatted_contents) => {
                             let unchanged = formatted_contents == contents;

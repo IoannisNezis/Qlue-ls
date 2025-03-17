@@ -1,12 +1,9 @@
+mod add_to_result;
+mod filter_var;
 mod quickfix;
 use std::collections::HashSet;
 
-use ll_sparql_parser::{
-    ast::{AstNode, SelectQuery},
-    parse_query,
-    syntax_kind::SyntaxKind,
-    TokenAtOffset,
-};
+use ll_sparql_parser::{parse_query, syntax_kind::SyntaxKind, TokenAtOffset};
 use quickfix::get_quickfix;
 
 use crate::server::{
@@ -14,7 +11,7 @@ use crate::server::{
     lsp::{
         diagnostic::{Diagnostic, DiagnosticCode},
         errors::{ErrorCode, ResponseError},
-        textdocument::{Position, Range, TextDocumentItem, TextEdit},
+        textdocument::{Range, TextDocumentItem, TextEdit},
         CodeAction, CodeActionKind, CodeActionParams, CodeActionRequest, CodeActionResponse,
     },
     Server,
@@ -54,7 +51,7 @@ fn generate_code_actions(
     params: &CodeActionParams,
 ) -> Result<Vec<CodeAction>, ResponseError> {
     let document_uri = &params.text_document.uri;
-    let document = server.state.get_document(&document_uri)?;
+    let document = server.state.get_document(document_uri)?;
     let root = parse_query(&document.text);
     let range = params
         .range
@@ -75,59 +72,15 @@ fn generate_code_actions(
                     .parent()
                     .map_or(false, |parent| parent.kind() == SyntaxKind::iri)
             {
-                if let Some(code_action) = shorten_all_uris(server, &document) {
-                    code_actions.push(code_action);
+                if let Some(code_action) = shorten_all_uris(server, document) {
+                    code_actions.push(code_action)
                 }
             } else if [SyntaxKind::VAR1, SyntaxKind::VAR2].contains(&token.kind()) {
-                if let Some(select_clause) = token
-                    .parent_ancestors()
-                    .find(|ancestor| {
-                        ancestor.kind() == SyntaxKind::SelectQuery
-                            || ancestor.kind() == SyntaxKind::SubSelect
-                    })
-                    .map(|node| SelectQuery::cast(node).map(|sq| sq.select_clause()))
-                    .flatten()
-                    .flatten()
-                {
-                    let result_vars: HashSet<String> = HashSet::from_iter(
-                        select_clause
-                            .variables()
-                            .iter()
-                            .map(|var| var.syntax().text().to_string()),
-                    );
-                    if !result_vars.contains(&token.to_string()) {
-                        if let Some(end) = Position::from_byte_index(
-                            select_clause.syntax().text_range().end().into(),
-                            &document.text,
-                        ) {
-                            if let Some(last_child) = select_clause.syntax().last_child_or_token() {
-                                let mut ca = CodeAction::new("Add to result", None);
-                                if last_child.kind() == SyntaxKind::Star {
-                                    ca.add_edit(
-                                        document_uri,
-                                        TextEdit::new(
-                                            Range::new(
-                                                end.line,
-                                                end.character - 1,
-                                                end.line,
-                                                end.character,
-                                            ),
-                                            &token.to_string(),
-                                        ),
-                                    );
-                                } else {
-                                    ca.add_edit(
-                                        document_uri,
-                                        TextEdit::new(
-                                            Range { start: end, end },
-                                            &format!(" {}", token.to_string()),
-                                        ),
-                                    );
-                                }
-                                code_actions.push(ca);
-                            }
-                        }
-                    }
+                if let Some(code_action) = add_to_result::code_action(&token, document) {
+                    code_actions.push(code_action)
+                }
+                if let Some(code_action) = filter_var::code_action(&token, document) {
+                    code_actions.push(code_action)
                 }
             }
 

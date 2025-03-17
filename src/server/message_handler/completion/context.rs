@@ -17,8 +17,8 @@ use super::error::CompletionError;
 pub(super) struct CompletionContext {
     pub(super) location: CompletionLocation,
     pub(super) continuations: HashSet<SyntaxKind>,
-    pub(super) tree: SyntaxNode,
-    pub(super) trigger_kind: CompletionTriggerKind,
+    pub(super) _tree: SyntaxNode,
+    pub(super) _trigger_kind: CompletionTriggerKind,
 }
 
 impl CompletionContext {
@@ -48,8 +48,8 @@ impl CompletionContext {
         Ok(Self {
             location,
             continuations,
-            tree,
-            trigger_kind,
+            _tree: tree,
+            _trigger_kind: trigger_kind,
         })
     }
 }

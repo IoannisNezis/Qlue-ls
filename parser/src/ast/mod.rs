@@ -6,6 +6,65 @@ use utils::nth_ancestor;
 use crate::{syntax_kind::SyntaxKind, SyntaxNode};
 
 #[derive(Debug, PartialEq)]
+pub struct QuertUnit {
+    syntax: SyntaxNode,
+}
+
+impl QuertUnit {
+    pub fn select_query(&self) -> Option<SelectQuery> {
+        SelectQuery::cast(
+            self.syntax
+                .first_child()?
+                .first_child_by_kind(&SelectQuery::can_cast)?,
+        )
+    }
+
+    pub fn prologue(&self) -> Option<Prologue> {
+        Prologue::cast(
+            self.syntax
+                .first_child()?
+                .first_child_by_kind(&Prologue::can_cast)?,
+        )
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Prologue {
+    syntax: SyntaxNode,
+}
+
+impl Prologue {
+    pub fn prefix_declarations(&self) -> Vec<PrefixDeclaration> {
+        self.syntax
+            .children()
+            .filter_map(&PrefixDeclaration::cast)
+            .collect()
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct PrefixDeclaration {
+    syntax: SyntaxNode,
+}
+
+impl PrefixDeclaration {
+    pub fn prefix(&self) -> Option<String> {
+        Some(
+            self.syntax
+                .first_child_or_token_by_kind(&|kind| kind == SyntaxKind::PNAME_NS)?
+                .to_string(),
+        )
+    }
+    pub fn uri_prefix(&self) -> Option<String> {
+        Some(
+            self.syntax
+                .first_child_or_token_by_kind(&|kind| kind == SyntaxKind::IRIREF)?
+                .to_string(),
+        )
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub struct SelectQuery {
     syntax: SyntaxNode,
 }
@@ -619,6 +678,66 @@ impl AstNode for SelectClause {
     #[inline]
     fn kind() -> SyntaxKind {
         SyntaxKind::SelectClause
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+}
+
+impl AstNode for Prologue {
+    #[inline]
+    fn kind() -> SyntaxKind {
+        SyntaxKind::Prologue
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+}
+
+impl AstNode for PrefixDeclaration {
+    #[inline]
+    fn kind() -> SyntaxKind {
+        SyntaxKind::PrefixDecl
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+}
+
+impl AstNode for QuertUnit {
+    #[inline]
+    fn kind() -> SyntaxKind {
+        SyntaxKind::QueryUnit
     }
 
     fn cast(syntax: SyntaxNode) -> Option<Self> {

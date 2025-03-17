@@ -29,7 +29,7 @@ impl Default for FormatSettings {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Settings {
     pub format: FormatSettings,
 }
@@ -55,14 +55,6 @@ impl Settings {
                 );
                 Settings::default()
             }
-        }
-    }
-}
-
-impl Default for Settings {
-    fn default() -> Self {
-        Self {
-            format: Default::default(),
         }
     }
 }

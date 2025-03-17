@@ -40,17 +40,8 @@ pub enum ErrorCode {
     InvalidParams = -32602,
     InternalError = -32603,
 
-    /**
-     * This is the start range of JSON-RPC reserved error codes.
-     * It doesn't denote a real error code. No LSP error codes should
-     * be defined between the start and end range. For backwards
-     * compatibility the `ServerNotInitialized` and the `UnknownErrorCode`
-     * are left in the range.
-     *
-     * @since 3.16.0
-     * JsonrpcReservedErrorRangeStart = -32099,
-     */
-
+    // @since 3.16.0
+    // JsonrpcReservedErrorRangeStart = -32099,
     /**
      * Error code indicating that a server received a notification or
      * request before the server has received the `initialize` request.

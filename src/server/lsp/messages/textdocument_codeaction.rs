@@ -87,7 +87,7 @@ impl CodeActionResponse {
     }
 
     pub(crate) fn add_code_actions(&mut self, code_actions: Vec<CodeAction>) {
-        self.result.extend(code_actions.into_iter());
+        self.result.extend(code_actions);
     }
 }
 

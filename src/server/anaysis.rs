@@ -28,7 +28,7 @@ fn build_query(query_str: &str) -> Result<Query, ResponseError> {
 fn collect_all_unique_captures(
     node: Node,
     query_str: &str,
-    text: &String,
+    text: &str,
 ) -> Result<Vec<String>, ResponseError> {
     let query = build_query(query_str)?;
     let mut capture_set: HashSet<String> = HashSet::new();
@@ -45,7 +45,7 @@ fn collect_all_unique_captures(
 
 pub fn get_kind_at_position(
     analyis_state: &ServerState,
-    uri: &String,
+    uri: &str,
     position: &Position,
 ) -> Result<&'static str, ResponseError> {
     let tree = analyis_state.get_tree(uri)?;
@@ -62,7 +62,7 @@ pub fn get_kind_at_position(
 
 pub fn namespace_is_declared(
     server_state: &ServerState,
-    document_uri: &String,
+    document_uri: &str,
     namespace: &str,
 ) -> Result<bool, ResponseError> {
     let declared_namespaces: HashSet<String> = get_declared_prefixes(server_state, document_uri)?
@@ -74,7 +74,7 @@ pub fn namespace_is_declared(
 
 pub fn get_all_uncompacted_uris(
     server: &Server,
-    document_uri: &String,
+    document_uri: &str,
 ) -> Result<Vec<(String, Range)>, ResponseError> {
     let (document, tree) = server.state.get_state(document_uri)?;
     let declared_uris = collect_all_unique_captures(
@@ -82,7 +82,7 @@ pub fn get_all_uncompacted_uris(
         "(PrefixDecl (IRIREF) @variable)",
         &document.text,
     )?;
-    let prefix_set: HashSet<String> = HashSet::from_iter(declared_uris.into_iter());
+    let prefix_set: HashSet<String> = HashSet::from_iter(declared_uris);
     let all_uris = get_all_uris(&server.state, document_uri)?;
     Ok(all_uris
         .into_iter()
@@ -92,7 +92,7 @@ pub fn get_all_uncompacted_uris(
 
 fn get_all_uris(
     analyis_state: &ServerState,
-    document_uri: &String,
+    document_uri: &str,
 ) -> Result<Vec<(String, Range)>, ResponseError> {
     let (document, tree) = analyis_state.get_state(document_uri)?;
     let query_str = "(IRIREF) @iri";
@@ -219,7 +219,7 @@ pub(crate) fn get_declared_uri_prefixes(
 
 pub fn get_used_prefixes(
     analyis_state: &ServerState,
-    uri: &String,
+    uri: &str,
 ) -> Result<Vec<(String, Range)>, ResponseError> {
     let (document, tree) = analyis_state.get_state(uri)?;
     let query = build_query("(PrefixedName (PNAME_NS (PN_PREFIX) @prefix))")?;
@@ -240,7 +240,7 @@ pub fn get_used_prefixes(
 
 pub(crate) fn get_unused_prefixes(
     analysis_state: &ServerState,
-    uri: &String,
+    uri: &str,
 ) -> Result<impl Iterator<Item = (String, Range)>, ResponseError> {
     let declared_namespaces = get_declared_prefixes(analysis_state, uri)?;
     let declared_namespaces_set: HashSet<String> = declared_namespaces
@@ -268,7 +268,7 @@ pub(crate) fn get_unused_prefixes(
 
 pub(crate) fn get_undeclared_prefixes(
     analysis_state: &ServerState,
-    uri: &String,
+    uri: &str,
 ) -> Result<impl Iterator<Item = (String, Range)>, ResponseError> {
     let declared_namespaces_set: HashSet<String> = get_declared_prefixes(analysis_state, uri)?
         .iter()
@@ -317,7 +317,7 @@ mod tests {
         let document = TextDocumentItem::new("uri", text);
         let tree = parser.parse(&document.text, None);
         state.add_document(document, tree);
-        return state;
+        state
     }
 
     #[test]
@@ -344,20 +344,18 @@ mod tests {
         let state = setup_state(indoc!(
             "SELECT * {?a wdt:P32 ?b. ?a wd:p32 ?b. ?a wdt:P31 ?b}"
         ));
-        let declared_namesapces = get_used_prefixes(&state, &"uri".to_string()).unwrap();
-        assert_eq!(
-            declared_namesapces
-                .iter()
-                .map(|(namespace, _range)| namespace)
-                .collect::<Vec<&String>>(),
-            vec!["wdt", "wd", "wdt"]
-        );
+        let declared_namesapces = get_used_prefixes(&state, "uri")
+            .unwrap()
+            .into_iter()
+            .map(|(namespace, _range)| namespace)
+            .collect::<Vec<String>>();
+        assert_eq!(declared_namesapces, vec!["wdt", "wd", "wdt"]);
     }
 
     #[test]
     fn undeclared_namespaces() {
         let state = setup_state(indoc!("PREFIX x: <> SELECT * {x:y y:p x:x}"));
-        let declared_namesapces: Vec<String> = get_undeclared_prefixes(&state, &"uri".to_string())
+        let declared_namesapces: Vec<String> = get_undeclared_prefixes(&state, "uri")
             .unwrap()
             .map(|(namespace, _range)| namespace)
             .collect();
@@ -370,7 +368,7 @@ mod tests {
              PREFIX wdt: <>
              SELECT * {}"
         ));
-        let declared_namesapces: Vec<String> = get_unused_prefixes(&state, &"uri".to_string())
+        let declared_namesapces: Vec<String> = get_unused_prefixes(&state, "uri")
             .unwrap()
             .map(|(namespace, _range)| namespace)
             .collect();

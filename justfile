@@ -1,7 +1,7 @@
 export CFLAGS_wasm32_unknown_unknown := `echo "-I$(pwd)/wasm-sysroot -Wbad-function-cast -Wcast-function-type -fno-builtin"`
 
-test:
-	cargo test --bin qlue-ls
+test target="":
+	cargo test {{target}} --bin qlue-ls
 
 start-monaco-editor:
 	cd editor && npm install && npm run dev

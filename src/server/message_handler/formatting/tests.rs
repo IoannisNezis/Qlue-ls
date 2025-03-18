@@ -1264,3 +1264,38 @@ fn format_comments_2() {
     );
     format_and_compare(ugly_query, pretty_query, &FormatSettings::default());
 }
+
+#[test]
+fn format_construct_where() {
+    let ugly_query = indoc!(
+        r#"CONSTRUCT WHERE { ?s ?p ?o }
+          "#
+    );
+    let pretty_query = indoc!(
+        r#"CONSTRUCT WHERE {
+             ?s ?p ?o
+           }
+          "#
+    );
+    format_and_compare(ugly_query, pretty_query, &FormatSettings::default());
+}
+
+#[test]
+fn format_unreasonable_dots() {
+    let ugly_query = indoc!(
+        r#"SELECT * WHERE {
+             FILTER (?s) . FILTER (?o) . {} . {}
+           }
+          "#
+    );
+    let pretty_query = indoc!(
+        r#"SELECT * WHERE {
+             FILTER (?s) .
+             FILTER (?o) .
+             {} .
+             {}
+           }
+          "#
+    );
+    format_and_compare(ugly_query, pretty_query, &FormatSettings::default());
+}

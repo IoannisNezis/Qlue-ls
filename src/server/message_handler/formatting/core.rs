@@ -117,7 +117,6 @@ pub(super) fn format_document(
         &mut tree.walk(),
         0,
         &indent_string,
-        "",
         settings,
     );
     edits.sort_by(|a, b| b.range.start.cmp(&a.range.start));
@@ -134,7 +133,7 @@ pub(super) fn format_document(
     // for edit in &edits {
     //     log::info!("{}", edit);
     // }
-    return Ok(edits);
+    Ok(edits)
 }
 
 fn merge_comments(
@@ -230,7 +229,7 @@ fn merge_comments(
         merged_edits.push(comment_edit);
     });
 
-    return Ok(merged_edits);
+    Ok(merged_edits)
 }
 
 fn remove_redundent_edits(edits: Vec<TextEdit>, document: &TextDocumentItem) -> Vec<TextEdit> {
@@ -242,7 +241,7 @@ fn remove_redundent_edits(edits: Vec<TextEdit>, document: &TextDocumentItem) -> 
                     return false;
                 }
             }
-            return true;
+            true
         })
         .collect()
 }
@@ -294,12 +293,11 @@ lazy_static! {
         "QuadData",
     ]);
 }
-pub(self) fn collect_format_edits(
+fn collect_format_edits(
     text: &String,
     cursor: &mut TreeCursor,
     indentation: usize,
     indent_base: &str,
-    extra_indent: &str,
     settings: &FormatSettings,
 ) -> (Vec<TextEdit>, Vec<CommentMarker>) {
     let node = cursor.node();
@@ -346,20 +344,21 @@ pub(self) fn collect_format_edits(
         node_augmentation(&node, &children, indentation, indent_base, settings);
 
     // NOTE: Step 3: Recursion
-    let recursive_edits = children.iter().flat_map(|node| {
+    let recursive_edits = children.iter().flat_map(|child| {
         let (edits, mut x) = collect_format_edits(
             text,
-            &mut node.walk(),
-            match INC_INDENTATION.contains(node.kind()) {
+            &mut child.walk(),
+            match INC_INDENTATION.contains(child.kind())
+                || (child.kind() == "TriplesTemplate" && node.kind() == "ConstructQuery")
+            {
                 true => indentation + 1,
                 false => indentation,
             },
             indent_base,
-            extra_indent,
             settings,
         );
         comments.append(&mut x);
-        return edits;
+        edits
     });
 
     let edits = seperation_edits
@@ -368,7 +367,7 @@ pub(self) fn collect_format_edits(
         .chain(recursive_edits)
         .collect();
 
-    return (edits, comments);
+    (edits, comments)
 }
 
 fn comment_marker(comment_node: &Node, text: &String, indentation: usize) -> CommentMarker {
@@ -376,7 +375,7 @@ fn comment_marker(comment_node: &Node, text: &String, indentation: usize) -> Com
     let mut maybe_attach = Some(*comment_node);
     while let Some(kind) = maybe_attach.map(|node| node.kind()) {
         match kind {
-            "comment" => maybe_attach = maybe_attach.map(|node| node.prev_sibling()).flatten(),
+            "comment" => maybe_attach = maybe_attach.and_then(|node| node.prev_sibling()),
             _ => break,
         }
     }
@@ -471,6 +470,24 @@ fn in_node_augmentation(
                 })
                 .collect()
         }
+        "ConstructQuery" => children
+            .iter()
+            .filter_map(|child| match child.kind() {
+                "CONSTRUCT" => Some(TextEdit::new(
+                    Range::from_ts_positions(child.end_position(), child.end_position()),
+                    " ",
+                )),
+                "{" => Some(TextEdit::new(
+                    Range::from_ts_positions(child.start_position(), child.start_position()),
+                    " ",
+                )),
+                "}" => Some(TextEdit::new(
+                    Range::from_ts_positions(child.start_position(), child.start_position()),
+                    "\n",
+                )),
+                _ => None,
+            })
+            .collect(),
         "PropertyListPathNotEmpty" => match node.parent() {
             Some(parent) => match parent.kind() {
                 "BlankNodePropertyListPath" | "TriplesSameSubjectPath" => children
@@ -545,7 +562,7 @@ fn in_node_augmentation(
                         ));
                     }
 
-                    return Some(edits);
+                    Some(edits)
                 }
                 _ => None,
             })
@@ -661,8 +678,8 @@ fn pre_node_augmentation(
             {
                 Some(" ".to_string())
             }
-            Some(_prev) => Some(get_linebreak(&indentation, indent_base)),
-            None => None,
+            Some(prev) if prev.kind() != "." => Some(get_linebreak(&indentation, indent_base)),
+            _ => None,
         },
         "QuadsNotTriples"
         | "GroupOrUnionGraphPattern"
@@ -674,7 +691,7 @@ fn pre_node_augmentation(
         | "InlineData"
         | "Update"
         | "Update1"
-            if node.prev_sibling().is_some() =>
+            if node.prev_sibling().map_or(false, |prev| prev.kind() != ".") =>
         {
             Some(get_linebreak(&indentation, indent_base))
         }
@@ -687,7 +704,6 @@ fn pre_node_augmentation(
         },
         "TriplesTemplate" | "TriplesBlock" => match node.prev_sibling().map(|parent| parent.kind())
         {
-            // Some("{") => &get_linebreak(&indentation, indent_base),
             Some(x) if x != "." => Some(get_linebreak(&indentation, indent_base)),
             _ => None,
         },
@@ -695,8 +711,7 @@ fn pre_node_augmentation(
             match settings.where_new_line
                 || node
                     .parent()
-                    .map(|parent| parent.kind() == "ConstructQuery")
-                    .unwrap_or(false)
+                    .map_or(false, |parent| parent.kind() == "ConstructQuery")
                 || node
                     .parent()
                     .map(|parent| parent.kind() == "DescribeQuery")
@@ -725,7 +740,7 @@ fn post_node_augmentation(
     settings: &FormatSettings,
 ) -> Option<TextEdit> {
     let insert = match node.kind() {
-        "CONSTRUCT" | "UNION" => Some(" ".to_string()),
+        "UNION" => Some(" ".to_string()),
         "Prologue" if settings.separate_prolouge && node.next_sibling().is_some() => {
             Some(get_linebreak(&indentation, indent_base))
         }
@@ -772,7 +787,9 @@ fn get_separator(kind: &str) -> Seperator {
         return Seperator::Unknown;
     }
     match kind {
-        "unit" | "Query" | "Prologue" | "SolutionModifier" | "LimitOffsetClauses" => Seperator::LineBreak,
+        "unit" | "Query" | "Prologue" | "SolutionModifier" | "LimitOffsetClauses" => {
+            Seperator::LineBreak
+        }
 
         "ExpressionList"
         | "GroupGraphPattern"

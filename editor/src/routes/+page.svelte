@@ -3,7 +3,6 @@
     import Editor from './editor.svelte';
     import Header from './header.svelte';
     import LoadingAnimation from './loadingAnimation.svelte';
-    import { fetch_data } from 'wasm-fetch';
 
     let editorReady = $state(true);
 

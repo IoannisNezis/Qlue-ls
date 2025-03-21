@@ -11,7 +11,6 @@ use crate::server::{
         textdocument::{Range, TextEdit},
         CodeAction, CodeActionKind, WorkspaceEdit,
     },
-    message_handler::code_action,
     Server,
 };
 

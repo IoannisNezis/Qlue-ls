@@ -17,10 +17,10 @@ use crate::server::{
     Server,
 };
 
-pub fn handle_codeaction_request(
+pub(super) async fn handle_codeaction_request(
     server: &mut Server,
     request: CodeActionRequest,
-) -> Result<CodeActionResponse, ResponseError> {
+) -> Result<(), ResponseError> {
     let mut code_action_response = CodeActionResponse::new(request.get_id());
     code_action_response.add_code_actions(generate_code_actions(server, &request.params)?);
     code_action_response.add_code_actions(
@@ -43,7 +43,7 @@ pub fn handle_codeaction_request(
             })
             .collect(),
     );
-    Ok(code_action_response)
+    server.send_message(code_action_response)
 }
 
 fn generate_code_actions(

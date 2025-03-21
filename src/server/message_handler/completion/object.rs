@@ -9,5 +9,6 @@ pub(super) fn completions(_context: CompletionContext) -> Vec<CompletionItem> {
         "<object> ",
         CompletionItemKind::Value,
         InsertTextFormat::PlainText,
+        None,
     )]
 }

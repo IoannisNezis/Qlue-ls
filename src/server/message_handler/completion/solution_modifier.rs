@@ -13,6 +13,7 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
             "GROUP BY $0",
             CompletionItemKind::Snippet,
             InsertTextFormat::Snippet,
+            None,
         ));
     }
     if context.continuations.contains(&SolutionModifier)
@@ -24,6 +25,7 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
             "HAVING $0",
             CompletionItemKind::Snippet,
             InsertTextFormat::Snippet,
+            None,
         ));
     }
     if context.continuations.contains(&SolutionModifier)
@@ -35,6 +37,7 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
             "ORDER BY ${1|ASC,DESC|} ( $0 )",
             CompletionItemKind::Snippet,
             InsertTextFormat::Snippet,
+            None,
         ));
     }
     if context.continuations.contains(&SolutionModifier)
@@ -47,6 +50,7 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
             "LIMIT $0",
             CompletionItemKind::Snippet,
             InsertTextFormat::Snippet,
+            None,
         ));
     }
     if context.continuations.contains(&SolutionModifier)
@@ -59,6 +63,7 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
             "OFFSET $0",
             CompletionItemKind::Snippet,
             InsertTextFormat::Snippet,
+            None,
         ));
     }
     return res;

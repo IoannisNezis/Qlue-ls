@@ -9,7 +9,7 @@ use crate::server::{
     Server,
 };
 
-pub(super) fn handle_did_open_notification(
+pub(super) async fn handle_did_open_notification(
     server: &mut Server,
     did_open_notification: DidOpenTextDocumentNotification,
 ) -> Result<(), ResponseError> {
@@ -23,7 +23,7 @@ pub(super) fn handle_did_open_notification(
     Ok(())
 }
 
-pub(super) fn handle_did_change_notification(
+pub(super) async fn handle_did_change_notification(
     server: &mut Server,
     did_change_notification: DidChangeTextDocumentNotification,
 ) -> Result<(), ResponseError> {
@@ -54,7 +54,7 @@ pub(super) fn handle_did_change_notification(
     }
 }
 
-pub(super) fn handle_did_save_notification(
+pub(super) async fn handle_did_save_notification(
     _server: &mut Server,
     did_save_notification: DidSaveTextDocumentNotification,
 ) -> Result<(), ResponseError> {

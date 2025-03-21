@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
 use ll_sparql_parser::{
-    ast::{AstNode, PrefixedName, QuertUnit},
-    parse_query,
+    ast::{AstNode, PrefixedName, QueryUnit},
+    SyntaxNode,
 };
 
 use crate::server::lsp::{
@@ -10,9 +10,11 @@ use crate::server::lsp::{
     textdocument::{Range, TextDocumentItem},
 };
 
-pub(super) fn diagnostics(document: &TextDocumentItem) -> Option<Vec<Diagnostic>> {
-    let root = parse_query(&document.text);
-    let qu = QuertUnit::cast(root)?;
+pub(super) fn diagnostics(
+    document: &TextDocumentItem,
+    parse_tree: SyntaxNode,
+) -> Option<Vec<Diagnostic>> {
+    let qu = QueryUnit::cast(parse_tree)?;
     let prefix_declarations = qu.prologue()?.prefix_declarations();
     let used_prefixes: HashSet<String> = qu.select_query().map_or(HashSet::new(), |select_query| {
         HashSet::from_iter(

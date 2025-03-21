@@ -14,6 +14,7 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
                     "DISTINCT ",
                     CompletionItemKind::Keyword,
                     InsertTextFormat::PlainText,
+                    None,
                 ),
                 CompletionItem::new(
                     "REDUCED",
@@ -21,6 +22,7 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
                     "REDUCED ",
                     CompletionItemKind::Keyword,
                     InsertTextFormat::PlainText,
+                    None,
                 ),
             ]);
         }
@@ -49,6 +51,7 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
                 &format!("{} ", var),
                 CompletionItemKind::Variable,
                 InsertTextFormat::PlainText,
+                None,
             )
         }));
         return res;

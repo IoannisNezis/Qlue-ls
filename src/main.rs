@@ -21,7 +21,7 @@ use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use server::{format_raw, Server};
 
 use clap::{Parser, Subcommand};
-use stdio_reader::listen_stdio;
+use stdio_reader::StdioMessages;
 
 /// qlue-ls: An SPARQL language server and formatter
 #[derive(Debug, Parser)]
@@ -78,7 +78,8 @@ fn send_message(message: String) {
     io::stdout().flush().expect("No IO errors or EOFs");
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     #[cfg(not(target_arch = "wasm32"))]
     configure_logging();
 
@@ -87,7 +88,9 @@ fn main() {
         Command::Server => {
             // Start server and listen to stdio
             let mut server = Server::new(send_message);
-            listen_stdio(|message| server.handle_message(message));
+            for message in StdioMessages::new() {
+                server.handle_message(message).await;
+            }
         }
         Command::Format {
             path,

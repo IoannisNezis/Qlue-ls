@@ -3,7 +3,7 @@ use crate::server::{
     Server,
 };
 
-pub(super) fn handle_set_trace_notifcation(
+pub(super) async fn handle_set_trace_notifcation(
     server: &mut Server,
     set_trace_notification: SetTraceNotification,
 ) -> Result<(), ResponseError> {

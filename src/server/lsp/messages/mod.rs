@@ -14,7 +14,6 @@ mod textdocument_publishdiagnostics;
 mod trace;
 mod utils;
 mod window_showmessage;
-mod workspace_exectutecommand;
 
 pub use initialize::*;
 pub use progress::*;
@@ -27,6 +26,4 @@ pub use textdocument_didopen::*;
 pub use textdocument_didsave::*;
 pub use textdocument_formatting::*;
 pub use textdocument_hover::*;
-pub use textdocument_publishdiagnostics::*;
 pub use trace::*;
-pub use workspace_exectutecommand::*;

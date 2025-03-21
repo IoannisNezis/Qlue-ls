@@ -192,15 +192,15 @@ impl CompletionLocation {
         };
 
         Ok(
-            if let Some(continuations) = continuations_at(&root, anchor_token.text_range().end()) {
+            if let Some(continuations) = continuations_at(root, anchor_token.text_range().end()) {
                 let continuations_set: HashSet<SyntaxKind> =
-                    HashSet::from_iter(continuations.into_iter());
+                    HashSet::from_iter(continuations);
+                log::info!("{:?}", continuations_set);
                 macro_rules! continues_with {
                     ([$($kind:expr),*]) => {
                         [$($kind,)*].iter().any(|kind| continuations_set.contains(kind))
                     };
                 }
-                // NOTE: Subject
                 let location =
                 // NOTE: Predicate
                 if continues_with!([
@@ -211,10 +211,12 @@ impl CompletionLocation {
                 ]) {
                     CompletionLocation::Predicate
                 }
+                // NOTE: Subject
                 else if continues_with!([
                     SyntaxKind::GroupGraphPatternSub,
                     SyntaxKind::TriplesBlock,
-                    SyntaxKind::GraphPatternNotTriples
+                    SyntaxKind::GraphPatternNotTriples,
+                    SyntaxKind::DataBlockValue
                 ]) {
                     CompletionLocation::Subject
                 }
@@ -254,6 +256,8 @@ impl CompletionLocation {
                 } else {
                     CompletionLocation::Unknown
                 };
+
+                log::info!("{:?}", location);
                 (location, continuations_set)
             } else {
                 // TODO: Can we determin the location even if the

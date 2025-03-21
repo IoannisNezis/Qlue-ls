@@ -4,7 +4,7 @@ version = "0.5.0"
 edition = "2021"
 authors = ["Ioannis Nezis <ioannis@nezis.de>"]
 description = "A resilient LL parser for SPARQL"
-repository = "https://github.com/IoannisNezis/ll-sparql-parser"
+repository = "https://github.com/IoannisNezis/qlue-ls"
 keywords = ["SPARQL", "parser", "rdf"]
 license = "MIT"
 

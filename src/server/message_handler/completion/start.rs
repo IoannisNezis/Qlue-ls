@@ -2,7 +2,7 @@ use crate::server::lsp::{CompletionItem, CompletionItemKind, InsertTextFormat};
 
 use super::CompletionContext;
 
-pub(super) fn completions(_context: CompletionContext) -> Vec<CompletionItem> {
+pub(super) async fn completions(_context: CompletionContext) -> Vec<CompletionItem> {
     vec![
         CompletionItem::new(
             "SELECT",
@@ -10,6 +10,7 @@ pub(super) fn completions(_context: CompletionContext) -> Vec<CompletionItem> {
             "SELECT ${1:*} WHERE {\n  $0\n}",
             CompletionItemKind::Snippet,
             InsertTextFormat::Snippet,
+            None,
         ),
         CompletionItem::new(
             "PREFIX",
@@ -17,6 +18,7 @@ pub(super) fn completions(_context: CompletionContext) -> Vec<CompletionItem> {
             "PREFIX ${1:namespace}: <${0:iri}>",
             CompletionItemKind::Snippet,
             InsertTextFormat::Snippet,
+            None,
         ),
         CompletionItem::new(
             "BASE",
@@ -24,6 +26,7 @@ pub(super) fn completions(_context: CompletionContext) -> Vec<CompletionItem> {
             "BASE <${0}>",
             CompletionItemKind::Snippet,
             InsertTextFormat::Snippet,
+            None,
         ),
     ]
 }

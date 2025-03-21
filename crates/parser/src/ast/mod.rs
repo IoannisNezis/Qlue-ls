@@ -6,11 +6,11 @@ use utils::nth_ancestor;
 use crate::{syntax_kind::SyntaxKind, SyntaxNode};
 
 #[derive(Debug, PartialEq)]
-pub struct QuertUnit {
+pub struct QueryUnit {
     syntax: SyntaxNode,
 }
 
-impl QuertUnit {
+impl QueryUnit {
     pub fn select_query(&self) -> Option<SelectQuery> {
         SelectQuery::cast(
             self.syntax
@@ -770,7 +770,7 @@ impl AstNode for PrefixDeclaration {
     }
 }
 
-impl AstNode for QuertUnit {
+impl AstNode for QueryUnit {
     #[inline]
     fn kind() -> SyntaxKind {
         SyntaxKind::QueryUnit

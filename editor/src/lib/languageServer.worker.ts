@@ -14,6 +14,8 @@ const wasmReader = wasmOutputStream.readable.getReader();
 const wasmWriter = wasmInputStream.writable.getWriter();
 
 
+
+
 // Initialize & start language server
 const server = init_language_server(wasmOutputStream.writable.getWriter());
 server.listen(wasmInputStream.readable.getReader());

@@ -4,16 +4,16 @@ use crate::server::{
     Server,
 };
 
-pub fn handle_hover_request(
+pub(super) async fn handle_hover_request(
     server: &mut Server,
     request: HoverRequest,
-) -> Result<HoverResponse, ResponseError> {
+) -> Result<(), ResponseError> {
     let node_kind = get_kind_at_position(
         &server.state,
         request.get_document_uri(),
         request.get_position(),
     );
-    Ok(HoverResponse::new(
+    server.send_message(HoverResponse::new(
         request.get_id(),
         documentation(node_kind.unwrap_or("")),
     ))

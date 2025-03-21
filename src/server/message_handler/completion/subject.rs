@@ -1,15 +1,41 @@
-use ll_sparql_parser::syntax_kind::SyntaxKind;
+use std::str::FromStr;
 
-use crate::server::lsp::{CompletionItem, CompletionItemKind, InsertTextFormat};
+use js_sys::JsString;
+use ll_sparql_parser::syntax_kind::SyntaxKind;
+use sparql::results::SparqlResult;
+use wasm_bindgen::{JsCast, JsValue};
+use wasm_bindgen_futures::JsFuture;
+use web_sys::{Request, RequestInit, Response};
+
+use crate::server::{
+    fetch::fetch_sparql_result,
+    lsp::{CompletionItem, CompletionItemKind, InsertTextFormat},
+};
 
 use super::CompletionContext;
 
-pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
+//     let query = r#"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+// PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+// SELECT ?type ?label ?count WHERE {
+//   {
+//     SELECT ?type (COUNT(?s) AS ?count) WHERE {
+//       ?s rdf:type ?type .
+//     }
+//     GROUP BY ?type
+//   }
+//   ?type rdfs:label ?label .
+// }
+// ORDER BY DESC(?count)
+// LIMIT 20
+// "#;
+
+pub(super) async fn completions(context: CompletionContext) -> Vec<CompletionItem> {
     let mut res = Vec::new();
     if context
         .continuations
         .contains(&SyntaxKind::GroupGraphPatternSub)
         || context.continuations.contains(&SyntaxKind::TriplesBlock)
+        || context.continuations.contains(&SyntaxKind::DataBlockValue)
     {
         res.push(CompletionItem::new(
             "subject filler",
@@ -17,6 +43,7 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
             "<subject> ",
             CompletionItemKind::Value,
             InsertTextFormat::PlainText,
+            None,
         ));
     }
     if context
@@ -33,6 +60,7 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
                 "FILTER ( $0 )",
                 CompletionItemKind::Snippet,
                 InsertTextFormat::Snippet,
+                None,
             ),
             CompletionItem::new(
                 "BIND",
@@ -40,6 +68,7 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
                 "BIND ($1 AS ?$0)",
                 CompletionItemKind::Snippet,
                 InsertTextFormat::Snippet,
+                None,
             ),
             CompletionItem::new(
                 "VALUES",
@@ -47,6 +76,7 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
                 "VALUES ?$1 { $0 }",
                 CompletionItemKind::Snippet,
                 InsertTextFormat::Snippet,
+                None,
             ),
             CompletionItem::new(
                 "SERVICE",
@@ -54,6 +84,7 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
                 "SERVICE <$1> {\n  $0\n}",
                 CompletionItemKind::Snippet,
                 InsertTextFormat::Snippet,
+                None,
             ),
             CompletionItem::new(
                 "MINUS",
@@ -61,6 +92,7 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
                 "MINUS { $0 }",
                 CompletionItemKind::Snippet,
                 InsertTextFormat::Snippet,
+                None,
             ),
             CompletionItem::new(
                 "OPTIONAL",
@@ -68,6 +100,7 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
                 "OPTIONAL { $0 }",
                 CompletionItemKind::Snippet,
                 InsertTextFormat::Snippet,
+                None,
             ),
             CompletionItem::new(
                 "UNION",
@@ -75,6 +108,7 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
                 "{\n  $1\n}\nUNION\n{\n  $0\n}",
                 CompletionItemKind::Snippet,
                 InsertTextFormat::Snippet,
+                None,
             ),
             CompletionItem::new(
                 "Sub select",
@@ -82,6 +116,7 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
                 "{\n  Select * WHERE {\n    $0\n  }\n}",
                 CompletionItemKind::Snippet,
                 InsertTextFormat::Snippet,
+                None,
             ),
         ]);
     }

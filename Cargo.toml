@@ -30,8 +30,11 @@ serde = "1.0.203"
 serde_json = "1.0.117"
 serde_repr = "0.1.19"
 
-# custom parser
-ll-sparql-parser = { path = "./parser/", version = "*" }
+# custom SPARQL parser
+ll-sparql-parser = { path = "./crates/parser/", version = "*" }
+
+# sparql utils
+sparql = { path = "./crates/sparql/", version = "*" }
 
 # tree-sitter parser
 tree-sitter = { package = "tree-sitter-c2rust", version = "0.25.2" }
@@ -55,19 +58,27 @@ text-size = "1.1.1"
 # WASM
 wasm-bindgen = "0.2.95"
 wasm-logger = { version = "0.2.0" }
-wasm-bindgen-futures = "0.4.49"
+wasm-bindgen-futures = "0.4.50"
 web-sys = { version = "0.3.76", features = [
 	"ReadableStream",
 	"ReadableStreamDefaultReader",
 	"WritableStream",
 	"WritableStreamDefaultWriter",
+	"Window",
+	"Request",
+	"Response",
+	"RequestInit",
+	"Headers",
+	"WorkerGlobalScope",
 ] }
+js-sys = "0.3.77"
 console_error_panic_hook = { version = "0.1.7", optional = true }
 getrandom = { version = "0.2", features = ["js"] }
 serde-wasm-bindgen = "0.6.5"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 log4rs = { version = "1.3.0" }
+tokio = { version = "1.44.1", features = ["full"] }
 
 [build-dependencies]
 cc = "1.0.100"

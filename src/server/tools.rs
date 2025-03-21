@@ -62,6 +62,10 @@ impl Tools {
             Record::new("rdfs", "http://www.w3.org/2000/01/rdf-schema#"),
             Record::new("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
             Record::new("osmrel", "https://www.openstreetmap.org/relation/"),
+            Record::new("dblp", "https://dblp.org/rdf/schema#"),
+            Record::new("publication", "https://dblp.org/rec"),
+            Record::new("creator", "https://dblp.org/pid"),
+            Record::new("stream", "https://dblp.org/streams"),
         ];
         records.into_iter().for_each(|record| {
             if let Err(error) = self.uri_converter.add_record(record.clone()) {

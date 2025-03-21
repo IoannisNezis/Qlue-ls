@@ -44,7 +44,7 @@ impl Server {
         loop {
             match read_message(&reader).await {
                 Ok((value, done)) => {
-                    self.handle_message(value);
+                    self.handle_message(value).await;
                     if done {
                         break;
                     }

@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
-use crate::server::lsp::rpc::{RequestId, RequestMessageBase, ResponseMessageBase};
+use crate::server::lsp::{
+    rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
+    textdocument::TextEdit,
+};
 
 use super::utils::TextDocumentPositionParams;
 
@@ -77,6 +80,7 @@ pub struct CompletionItem {
     detail: String,
     insert_text: String,
     insert_text_format: InsertTextFormat,
+    additional_text_edits: Option<Vec<TextEdit>>,
 }
 
 impl CompletionItem {
@@ -86,6 +90,7 @@ impl CompletionItem {
         insert_text: &str,
         kind: CompletionItemKind,
         insert_text_format: InsertTextFormat,
+        additional_text_edits: Option<Vec<TextEdit>>,
     ) -> Self {
         Self {
             label: label.to_string(),
@@ -93,6 +98,7 @@ impl CompletionItem {
             detail: detail.to_string(),
             insert_text: insert_text.to_string(),
             insert_text_format,
+            additional_text_edits,
         }
     }
 }
@@ -185,6 +191,7 @@ mod tests {
             "SELECT ${1:*} WHERE {\n  $0\n}",
             CompletionItemKind::Snippet,
             InsertTextFormat::Snippet,
+            None,
         );
         let completion_response = CompletionResponse::new(&RequestId::Integer(1337), vec![cmp]);
         let expected_message = r#"{"jsonrpc":"2.0","id":1337,"result":{"items":[{"label":"SELECT","kind":15,"detail":"Select query","insertText":"SELECT ${1:*} WHERE {\n  $0\n}","insertTextFormat":2}]}}"#;

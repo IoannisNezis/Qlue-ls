@@ -4,14 +4,14 @@ mod unused_prefix;
 use ll_sparql_parser::parse_query;
 
 use crate::server::{
-    lsp::{errors::ResponseError, DiagnosticRequest, DiagnosticResponse},
+    lsp::{errors::LSPError, DiagnosticRequest, DiagnosticResponse},
     Server,
 };
 
 pub(super) async fn handle_diagnostic_request(
     server: &mut Server,
     request: DiagnosticRequest,
-) -> Result<(), ResponseError> {
+) -> Result<(), LSPError> {
     let document = server
         .state
         .get_document(&request.params.text_document.uri)?;
@@ -38,6 +38,6 @@ pub(super) async fn handle_diagnostic_request(
 // fn undefined_select_binding(
 //     server: &Server,
 //     document: &TextDocumentItem,
-// ) -> Result<impl Iterator<Item = Diagnostic>, ResponseError> {
+// ) -> Result<impl Iterator<Item = Diagnostic>, LSPError> {
 //     todo!()
 // }

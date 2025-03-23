@@ -278,7 +278,7 @@ impl TriplesBlock {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Triple {
     syntax: SyntaxNode,
 }

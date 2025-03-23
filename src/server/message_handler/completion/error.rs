@@ -1,4 +1,4 @@
-use crate::server::lsp::errors::{ErrorCode, ResponseError};
+use crate::server::lsp::errors::{ErrorCode, LSPError};
 
 #[derive(Debug)]
 pub(super) enum CompletionError {
@@ -11,9 +11,9 @@ impl CompletionError {
     }
 }
 
-pub(super) fn to_resonse_error(completion_error: CompletionError) -> ResponseError {
+pub(super) fn to_resonse_error(completion_error: CompletionError) -> LSPError {
     match completion_error {
-        CompletionError::LocalizationError(localization_error) => ResponseError::new(
+        CompletionError::LocalizationError(localization_error) => LSPError::new(
             localization_error.code,
             &format!(
                 "Could not localize curor while handeling Completion-request:\n{}",

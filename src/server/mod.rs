@@ -15,7 +15,7 @@ use capabilities::create_capabilities;
 use configuration::Settings;
 use log::{error, info};
 use lsp::{
-    errors::{ErrorCode, ResponseError},
+    errors::{ErrorCode, LSPError},
     rpc::{RecoverId, RequestIdOrNull, ResponseMessage},
     ServerInfo,
 };
@@ -80,12 +80,12 @@ impl Server {
         }
     }
 
-    fn send_message<T>(&self, message: T) -> Result<(), ResponseError>
+    fn send_message<T>(&self, message: T) -> Result<(), LSPError>
     where
         T: Serialize,
     {
         let message_string = serde_json::to_string(&message).map_err(|error| {
-            ResponseError::new(
+            LSPError::new(
                 ErrorCode::ParseError,
                 &format!(
                     "Could not deserialize RPC-message \"{}\"\n\n{}",

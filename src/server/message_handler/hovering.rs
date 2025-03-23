@@ -1,13 +1,13 @@
 use crate::server::{
     anaysis::get_kind_at_position,
-    lsp::{errors::ResponseError, HoverRequest, HoverResponse},
+    lsp::{errors::LSPError, HoverRequest, HoverResponse},
     Server,
 };
 
 pub(super) async fn handle_hover_request(
     server: &mut Server,
     request: HoverRequest,
-) -> Result<(), ResponseError> {
+) -> Result<(), LSPError> {
     let node_kind = get_kind_at_position(
         &server.state,
         request.get_document_uri(),

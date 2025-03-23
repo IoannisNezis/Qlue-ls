@@ -1,16 +1,6 @@
-use std::str::FromStr;
-
-use js_sys::JsString;
 use ll_sparql_parser::syntax_kind::SyntaxKind;
-use sparql::results::SparqlResult;
-use wasm_bindgen::{JsCast, JsValue};
-use wasm_bindgen_futures::JsFuture;
-use web_sys::{Request, RequestInit, Response};
 
-use crate::server::{
-    fetch::fetch_sparql_result,
-    lsp::{CompletionItem, CompletionItemKind, InsertTextFormat},
-};
+use crate::server::lsp::{CompletionItem, CompletionItemKind, InsertTextFormat};
 
 use super::CompletionContext;
 

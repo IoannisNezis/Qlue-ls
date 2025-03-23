@@ -24,7 +24,6 @@ pub(super) fn diagnostics(
             .preorder_find_kind(SyntaxKind::iri)
             .into_iter()
             .filter_map(|iri| {
-                log::info!("{:?}", iri);
                 let iri_string = iri.text().to_string();
                 // TODO: Check if iri is a IRIREF and not a PrefixedName
                 match server.shorten_uri(&iri_string[1..iri_string.len() - 1]) {

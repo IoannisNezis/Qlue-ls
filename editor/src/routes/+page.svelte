@@ -1,15 +1,9 @@
 <script>
-    import { onMount } from 'svelte';
     import Editor from './editor.svelte';
     import Header from './header.svelte';
     import LoadingAnimation from './loadingAnimation.svelte';
-    import { fetch_data } from 'wasm-fetch';
 
     let editorReady = $state(true);
-
-    onMount(async () => {
-        let result = await fetch_data('https://qlever.cs.uni-freiburg.de/api/dblp');
-    });
 </script>
 
 <Header></Header>

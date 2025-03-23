@@ -1,6 +1,7 @@
 pub mod diagnostic;
 mod initialize;
 mod progress;
+mod qluels_setbackend;
 mod shutdown;
 mod textdocument_codeaction;
 mod textdocument_completion;
@@ -17,6 +18,7 @@ mod window_showmessage;
 
 pub use initialize::*;
 pub use progress::*;
+pub use qluels_setbackend::*;
 pub use shutdown::*;
 pub use textdocument_codeaction::*;
 pub use textdocument_completion::*;

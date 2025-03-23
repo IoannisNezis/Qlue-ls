@@ -1,12 +1,16 @@
 <script lang="ts">
     import { onDestroy, onMount } from 'svelte';
     import Statusbar from './statusbar.svelte';
-    import type { MonacoEditorLanguageClientWrapper } from 'monaco-editor-wrapper';
+    import type {
+        LanguageClientWrapper,
+        MonacoEditorLanguageClientWrapper
+    } from 'monaco-editor-wrapper';
     import type { editor } from 'monaco-editor';
     import Tree from './tree.svelte';
 
     let editorContainer: HTMLElement;
     let wrapper: MonacoEditorLanguageClientWrapper | undefined;
+    let languageClientWrapper: LanguageClientWrapper | undefined = $state();
     let markers: editor.IMarker[] = $state([]);
     let content = $state('SELECT * WHERE {\n  \n}');
     let cursorOffset = $state(0);
@@ -19,6 +23,7 @@
         wrapper = new MonacoEditorLanguageClientWrapper();
         let wrapperConfig = await buildWrapperConfig(editorContainer, content);
         await wrapper.initAndStart(wrapperConfig);
+        languageClientWrapper = wrapper.getLanguageClientWrapper('sparql');
         monaco.editor.onDidChangeMarkers(() => {
             markers = monaco.editor.getModelMarkers({});
         });
@@ -50,6 +55,7 @@
         <Tree input={content} {cursorOffset}></Tree>
     {/if}
 
+    <!-- svelte-ignore a11y_consider_explicit_label -->
     <button
         onclick={() => (showTree = !showTree)}
         class="absolute right-2 top-2 rounded bg-gray-700 px-2 py-2 font-bold text-white hover:bg-gray-600"
@@ -70,7 +76,7 @@
         </svg>
     </button>
 </div>
-<Statusbar {markers}></Statusbar>
+<Statusbar {languageClientWrapper} {markers}></Statusbar>
 
 <style>
     #editor {

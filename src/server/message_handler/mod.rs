@@ -1,3 +1,4 @@
+mod backend;
 mod code_action;
 mod completion;
 mod diagnostic;
@@ -8,6 +9,7 @@ mod lifecycle;
 mod misc;
 mod textdocument_syncronization;
 
+use backend::handle_set_backend_request;
 use code_action::handle_codeaction_request;
 use completion::handle_completion_request;
 use diagnostic::handle_diagnostic_request;
@@ -29,14 +31,11 @@ use crate::server::lsp::errors::ErrorCode;
 use self::formatting::handle_format_request;
 
 use super::{
-    lsp::{errors::ResponseError, rpc::deserialize_message},
+    lsp::{errors::LSPError, rpc::deserialize_message},
     Server,
 };
 
-pub(super) async fn dispatch(
-    server: &mut Server,
-    message_string: &String,
-) -> Result<(), ResponseError> {
+pub(super) async fn dispatch(server: &mut Server, message_string: &String) -> Result<(), LSPError> {
     let message = deserialize_message(message_string)?;
     let method = message.get_method().unwrap_or("");
     macro_rules! link {
@@ -45,7 +44,7 @@ pub(super) async fn dispatch(
         };
     }
     match method {
-        // Requests
+        // NOTE: Requests
         "initialize" => link!(handle_initialize_request),
         "shutdown" => link!(handle_shutdown_request),
         "textDocument/formatting" => link!(handle_format_request),
@@ -53,19 +52,22 @@ pub(super) async fn dispatch(
         "textDocument/codeAction" => link!(handle_codeaction_request),
         "textDocument/hover" => link!(handle_hover_request),
         "textDocument/completion" => link!(handle_completion_request),
-        // Notifications
+        // NOTE: Notifications
         "initialized" => link!(handle_initialized_notifcation),
         "exit" => link!(handle_exit_notifcation),
         "textDocument/didOpen" => link!(handle_did_open_notification),
         "textDocument/didChange" => link!(handle_did_change_notification),
         "textDocument/didSave" => link!(handle_did_save_notification),
         "$/setTrace" => link!(handle_set_trace_notifcation),
+        // NOTE: LSP extensions
+        // Requests
+        "qlueLs/setBackend" => link!(handle_set_backend_request),
         unknown_method => {
             warn!(
                 "Received message with unknown method \"{}\"",
                 unknown_method
             );
-            Err(ResponseError::new(
+            Err(LSPError::new(
                 ErrorCode::MethodNotFound,
                 &format!("Method \"{}\" currently not supported", unknown_method),
             ))

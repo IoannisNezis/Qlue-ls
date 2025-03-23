@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 use serde::Deserialize;
 
@@ -35,16 +35,23 @@ pub enum RDFTerm {
         value: String,
     },
 }
-impl ToString for RDFTerm {
-    fn to_string(&self) -> String {
+impl Display for RDFTerm {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            RDFTerm::Uri { value } => value.clone(),
+            RDFTerm::Uri { value } => write!(f, "<{}>", value),
             RDFTerm::Literal {
                 value,
-                lang: _lang,
-                datatype: _datatype,
-            } => value.clone(),
-            RDFTerm::Bnode { value } => value.clone(),
+                lang,
+                datatype,
+            } => match (lang.as_ref(), datatype.as_ref()) {
+                (None, None) => write!(f, "\"{}\"", value),
+                (None, Some(dt)) => write!(f, "\"{}\"^^{}", value, dt),
+                (Some(lang_tag), None) => write!(f, "\"{}\"@{}", value, lang_tag),
+                (Some(_), Some(_)) => {
+                    panic!("No RDFTERm should have a language tag and a datatype")
+                }
+            },
+            RDFTerm::Bnode { value } => write!(f, "{}", value),
         }
     }
 }

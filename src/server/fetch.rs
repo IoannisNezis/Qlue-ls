@@ -4,19 +4,16 @@ use js_sys::JsString;
 use sparql::results::SparqlResult;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
-use web_sys::{Request, RequestInit, Response};
+use web_sys::{Request, RequestInit, RequestMode, Response};
 
-use super::lsp::errors::{ErrorCode, ResponseError};
+use super::lsp::errors::{ErrorCode, LSPError};
 
-pub(crate) async fn fetch_sparql_result(
-    url: &str,
-    query: &str,
-) -> Result<SparqlResult, ResponseError> {
+pub(crate) async fn fetch_sparql_result(url: &str, query: &str) -> Result<SparqlResult, LSPError> {
     let opts = RequestInit::new();
     opts.set_method("POST");
     opts.set_body(&JsString::from_str(query).unwrap());
     let request = Request::new_with_str_and_init(url, &opts).map_err(|err| {
-        ResponseError::new(
+        LSPError::new(
             ErrorCode::InternalError,
             &format!("Could not init request:\n{:?}", err),
         )
@@ -25,7 +22,7 @@ pub(crate) async fn fetch_sparql_result(
         .headers()
         .set("Content-Type", "application/sparql-query")
         .map_err(|err| {
-            ResponseError::new(
+            LSPError::new(
                 ErrorCode::InternalError,
                 &format!("Could not set Header:\n{:?}", err),
             )
@@ -38,7 +35,7 @@ pub(crate) async fn fetch_sparql_result(
     let resp_value = JsFuture::from(worker_global.fetch_with_request(&request))
         .await
         .map_err(|err| {
-            ResponseError::new(
+            LSPError::new(
                 ErrorCode::InternalError,
                 &format!("SPARQL request failed:\n{:?}", err),
             )
@@ -46,7 +43,7 @@ pub(crate) async fn fetch_sparql_result(
 
     // Cast the response value to a Response object
     let resp: Response = resp_value.dyn_into().map_err(|err| {
-        ResponseError::new(
+        LSPError::new(
             ErrorCode::InternalError,
             &format!("Could not cast reponse:\n{:?}", err),
         )
@@ -56,7 +53,7 @@ pub(crate) async fn fetch_sparql_result(
     if !resp.ok() {
         let status = resp.status();
         let status_text = resp.status_text();
-        return Err(ResponseError::new(
+        return Err(LSPError::new(
             ErrorCode::InternalError,
             &format!(
                 "SPARQL request failed:\nHTTP error: {} {}",
@@ -67,14 +64,14 @@ pub(crate) async fn fetch_sparql_result(
 
     // Get the response body as text and await it
     let text = JsFuture::from(resp.text().map_err(|err| {
-        ResponseError::new(
+        LSPError::new(
             ErrorCode::InternalError,
             &format!("Response has no text:\n{:?}", err),
         )
     })?)
     .await
     .map_err(|err| {
-        ResponseError::new(
+        LSPError::new(
             ErrorCode::InternalError,
             &format!("Could not read Response text:\n{:?}", err),
         )
@@ -83,9 +80,23 @@ pub(crate) async fn fetch_sparql_result(
     .unwrap();
     // Return the text as a JsValue
     serde_json::from_str(&text).map_err(|err| {
-        ResponseError::new(
+        LSPError::new(
             ErrorCode::InternalError,
             &format!("Failed to parse SPARQL response:\n{}", err),
         )
     })
+}
+
+pub(crate) async fn check_server_availability(url: &str) -> bool {
+    let worker_global = js_sys::global().unchecked_into::<web_sys::WorkerGlobalScope>();
+    let opts = RequestInit::new();
+    opts.set_method("GET");
+    opts.set_mode(RequestMode::Cors);
+    let request = Request::new_with_str_and_init(url, &opts).expect("Failed to create request");
+    let resp_value = match JsFuture::from(worker_global.fetch_with_request(&request)).await {
+        Ok(resp) => resp,
+        Err(_) => return false,
+    };
+    let resp: Response = resp_value.dyn_into().unwrap();
+    resp.ok()
 }

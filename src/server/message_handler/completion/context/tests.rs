@@ -2,74 +2,58 @@ use ll_sparql_parser::parse_query;
 
 use crate::server::message_handler::completion::context::CompletionLocation;
 
-fn match_location_at_offset(input: &str, location: CompletionLocation, offset: u32) -> bool {
-    let root = parse_query(input);
-    CompletionLocation::from_position(&root, offset.into())
-        .unwrap()
-        .0
-        == location
+use super::{get_anchor_token, get_continuations, get_location};
+
+fn match_location_at_offset(input: &str, matcher: CompletionLocation, offset: u32) -> bool {
+    location(input, offset) == matcher
 }
 
-fn get_location(input: &str, offset:usize) -> CompletionLocation{
+fn location(input: &str, offset: u32) -> CompletionLocation {
     let root = parse_query(input);
-    let anchor = get_
+    let anchor = get_anchor_token(&root, offset.into());
+    let continuations = get_continuations(&root, &anchor);
+    get_location(&anchor, &continuations)
 }
 
 #[test]
 fn localize_select_binding() {
     assert!(matches!(
-        CompletionLocation::from_position(&parse_query("Select  {}"), 7.into())
-            .unwrap()
-            .0,
+        location("Select  {}", 7),
         CompletionLocation::SelectBinding(_),
     ));
 
     assert!(!matches!(
-        CompletionLocation::from_position(&parse_query("Select  Reduced ?a {}"), 0.into())
-            .unwrap()
-            .0,
+        location("Select  Reduced ?a {}", 0),
         CompletionLocation::SelectBinding(_),
     ));
 
     assert!(matches!(
-        CompletionLocation::from_position(&parse_query("Select  Reduced ?a {}"), 6.into())
-            .unwrap()
-            .0,
+        location("Select  Reduced ?a {}", 6),
         CompletionLocation::SelectBinding(_),
     ));
 
     assert!(matches!(
-        CompletionLocation::from_position(&parse_query("Select  Reduced ?a {}"), 14.into())
-            .unwrap()
-            .0,
+        location("Select  Reduced ?a {}", 14),
         CompletionLocation::SelectBinding(_),
     ));
 
     assert!(matches!(
-        CompletionLocation::from_position(&parse_query("Select  Reduced ?a {}"), 17.into())
-            .unwrap()
-            .0,
+        location("Select  Reduced ?a {}", 17),
         CompletionLocation::SelectBinding(_),
     ));
 
     assert!(matches!(
-        CompletionLocation::from_position(&parse_query("Select  Reduced ?a {}"), 19.into())
-            .unwrap()
-            .0,
+        location("Select  Reduced ?a {}", 19),
         CompletionLocation::SelectBinding(_),
     ));
 
     assert!(!matches!(
-        CompletionLocation::from_position(&parse_query("Select * {}"), 8.into())
-            .unwrap()
-            .0,
+        location("Select * {}", 8),
         CompletionLocation::SelectBinding(_),
     ));
 
     assert!(!matches!(
-        CompletionLocation::from_position(&parse_query("Select * { BIND (42 AS )}"), 23.into())
-            .unwrap()
-            .0,
+        location("Select * { BIND (42 AS )}", 23),
         CompletionLocation::SelectBinding(_),
     ));
 }
@@ -196,31 +180,19 @@ fn localize_predicate_4() {
 fn localize_object_1() {
     //           01234567890123456789
     let input = "Select * { ?a ?b  }";
-    assert!(match_location_at_offset(
-        input,
-        CompletionLocation::Object,
-        17
-    ));
+    assert!(matches!(location(input, 17), CompletionLocation::Object(_)));
 }
 
 #[test]
 fn localize_object_2() {
     //           01234567890123456789012
     let input = "Select * { ?a <iri>   }";
-    assert!(match_location_at_offset(
-        input,
-        CompletionLocation::Object,
-        20
-    ));
+    assert!(matches!(location(input, 20), CompletionLocation::Object(_)));
 }
 
 #[test]
 fn localize_object_3() {
     //           01234567890123456789012
     let input = "Select * { ?a ?a ?b,  }";
-    assert!(match_location_at_offset(
-        input,
-        CompletionLocation::Object,
-        21
-    ));
+    assert!(matches!(location(input, 21), CompletionLocation::Object(_)));
 }

@@ -1,8 +1,11 @@
-use ll_sparql_parser::ast::{AstNode, QueryUnit};
+use indoc::indoc;
+use lazy_static::lazy_static;
+use ll_sparql_parser::ast::{AstNode, QueryUnit, SelectQuery};
+use tera::{Context, Tera};
 
 use crate::server::{
     fetch::fetch_sparql_result,
-    lsp::{CompletionItem, CompletionItemKind, InsertTextFormat},
+    lsp::{CompletionItem, CompletionItemKind, CompletionTriggerKind, InsertTextFormat},
     message_handler::completion::context::CompletionLocation,
     Server,
 };
@@ -36,22 +39,96 @@ LIMIT 100
         context
     )
 }
+lazy_static! {
+    static ref QUERY_TEMPATES: Tera = {
+        let mut tera = Tera::default();
+        tera.add_raw_template(
+            "object_query.rq.template",
+            indoc! {
+               "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                PREFIX dblp: <https://dblp.org/rdf/schema#>
+                PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                {% for prefix in prefixes %}
+                    PREFIX {{prefix.0}}: <{{prefix.1}}>
+                {% endfor %}
+                SELECT ?entity ?name ?count  WHERE {
+                  {
+                    SELECT ?entity (COUNT(?entity) AS ?count) WHERE {
+                        {{context}} ?entity
+                    }
+                    GROUP BY ?entity
+                  }
+                  OPTIONAL {
+                    ?entity dblp:creatorName ?creatorname .
+                  }
+                  OPTIONAL {
+                    ?entity rdfs:label ?label .
+                  }
+                  BIND (COALESCE(?creatorname, ?label, ?entity) AS ?name)
+                }
+                ORDER BY DESC(?count)
+                LIMIT 100"
+            },
+        )
+        .expect("Template should be valid");
+        tera
+    };
+}
 
 pub(super) async fn completions(
     server: &Server,
     context: CompletionContext,
 ) -> Vec<CompletionItem> {
-    if let CompletionLocation::Object(triple) = context.location {
+    if context.trigger_kind == CompletionTriggerKind::TriggerCharacter
+        && context.trigger_character.map_or(false, |tc| tc == "?")
+    {
+        if let Some(select_query) = context
+            .anchor_token
+            .as_ref()
+            .unwrap()
+            .parent_ancestors()
+            .find_map(&SelectQuery::cast)
+        {
+            select_query
+                .variables()
+                .iter()
+                .map(|var| {
+                    let var_text = var.var_name();
+                    CompletionItem::new(
+                        &var_text,
+                        "Variable",
+                        &format!("{} ", var_text),
+                        CompletionItemKind::Variable,
+                        InsertTextFormat::PlainText,
+                        None,
+                    )
+                })
+                .collect()
+        } else {
+            vec![]
+        }
+    } else if let CompletionLocation::Object(triple) = context.location {
+        let prefix_declarations: Vec<_> = triple
+            .used_prefixes()
+            .into_iter()
+            .filter_map(|prefix| server.tools.uri_converter.find_by_prefix(&prefix).ok())
+            .map(|record| (&record.prefix, &record.uri_prefix))
+            .collect();
         let triples_string = triple.syntax().text().to_string();
         let (inject_context, search_term) = triples_string.split_at(
             (context.anchor_token.unwrap().text_range().end()
                 - triple.syntax().text_range().start())
             .into(),
         );
-        log::info!("{}", search_term);
+        let mut template_context = Context::new();
+        template_context.insert("prefixes", &prefix_declarations);
+        template_context.insert("context", &inject_context);
+        let query = QUERY_TEMPATES
+            .render("object_query.rq.template", &template_context)
+            .expect("Template should render");
         let query_unit = QueryUnit::cast(context.tree).unwrap();
         if let Some(backend) = &server.state.backend {
-            match fetch_sparql_result(&backend.url, &query(inject_context)).await {
+            match fetch_sparql_result(&backend.url, &query).await {
                 Ok(result) => result
                     .results
                     .bindings

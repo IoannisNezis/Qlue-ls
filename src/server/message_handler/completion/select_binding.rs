@@ -54,12 +54,12 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
                 None,
             )
         }));
-        return res;
+        res
     } else {
         log::error!(
             "select binding completions was called with location: {:?}",
             context.location
         );
-        return vec![];
+        vec![]
     }
 }

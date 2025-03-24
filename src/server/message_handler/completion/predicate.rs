@@ -3,7 +3,7 @@ use ll_sparql_parser::ast::{AstNode, QueryUnit};
 
 use crate::server::{
     fetch::fetch_sparql_result,
-    lsp::{CompletionItem, CompletionItemKind, InsertTextFormat},
+    lsp::{CompletionItem, CompletionItemKind, CompletionTriggerKind, InsertTextFormat},
     Server,
 };
 
@@ -25,7 +25,30 @@ pub(super) async fn completions(
     context: CompletionContext,
 ) -> Vec<CompletionItem> {
     let query_unit = QueryUnit::cast(context.tree).unwrap();
-    if let Some(backend) = &server.state.backend {
+    if context.trigger_kind == CompletionTriggerKind::TriggerCharacter
+        && context.trigger_character.map_or(false, |tc| tc == "?")
+    {
+        log::info!("varibale completion");
+        if let Some(select_query) = query_unit.select_query() {
+            select_query
+                .variables()
+                .iter()
+                .map(|var| {
+                    let var_text = var.var_name();
+                    CompletionItem::new(
+                        &var_text,
+                        "Variable",
+                        &format!("{} ", var_text),
+                        CompletionItemKind::Variable,
+                        InsertTextFormat::PlainText,
+                        None,
+                    )
+                })
+                .collect()
+        } else {
+            vec![]
+        }
+    } else if let Some(backend) = &server.state.backend {
         match fetch_sparql_result(&backend.url, QUERY).await {
             Ok(result) => result
                 .results

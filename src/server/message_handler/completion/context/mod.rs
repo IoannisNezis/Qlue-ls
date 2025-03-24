@@ -111,7 +111,8 @@ pub(super) struct CompletionContext {
     pub(super) location: CompletionLocation,
     pub(super) continuations: HashSet<SyntaxKind>,
     pub(super) tree: SyntaxNode,
-    pub(super) _trigger_kind: CompletionTriggerKind,
+    pub(super) trigger_kind: CompletionTriggerKind,
+    pub(super) trigger_character: Option<String>,
     pub(super) anchor_token: Option<SyntaxToken>,
 }
 
@@ -137,6 +138,7 @@ impl CompletionContext {
             ))? as u32)
             .into();
         let trigger_kind = request.get_completion_context().trigger_kind.clone();
+        let trigger_character = request.get_completion_context().trigger_character.clone();
         let tree = parse_query(&document.text);
         let anchor_token = get_anchor_token(&tree, offset);
         log::info!("anchor: {:?}", anchor_token);
@@ -148,7 +150,8 @@ impl CompletionContext {
             location,
             continuations,
             tree,
-            _trigger_kind: trigger_kind,
+            trigger_kind,
+            trigger_character,
             anchor_token,
         })
     }

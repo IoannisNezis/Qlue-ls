@@ -7,7 +7,7 @@ use tree_sitter::{Node, Point, Tree, TreeCursor};
 use crate::server::{
     configuration::FormatSettings,
     lsp::{
-        errors::ResponseError,
+        errors::LSPError,
         textdocument::{Position, Range, TextDocumentItem, TextEdit},
         FormattingOptions,
     },
@@ -105,7 +105,7 @@ pub(super) fn format_document(
     tree: &Tree,
     options: &FormattingOptions,
     settings: &FormatSettings,
-) -> Result<Vec<TextEdit>, ResponseError> {
+) -> Result<Vec<TextEdit>, LSPError> {
     // TODO: Throw error dont panic!
     let indent_string = match settings.insert_spaces.unwrap_or(options.insert_spaces) {
         true => " ".repeat(settings.tab_size.unwrap_or(options.tab_size) as usize),
@@ -140,7 +140,7 @@ fn merge_comments(
     edits: Vec<ConsolidatedTextEdit>,
     comments: Vec<CommentMarker>,
     text: &String,
-) -> Result<Vec<TextEdit>, ResponseError> {
+) -> Result<Vec<TextEdit>, LSPError> {
     let mut comment_iter = comments.into_iter().rev().peekable();
     let mut merged_edits =
         edits

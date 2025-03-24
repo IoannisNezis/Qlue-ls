@@ -8,7 +8,7 @@ use wasm_bindgen::prelude::wasm_bindgen;
 use crate::server::{
     configuration::Settings,
     lsp::{
-        errors::ResponseError, textdocument::TextDocumentItem, FormattingOptions,
+        errors::LSPError, textdocument::TextDocumentItem, FormattingOptions,
         FormattingRequest, FormattingResponse,
     },
     Server,
@@ -17,7 +17,7 @@ use crate::server::{
 pub(super) async fn handle_format_request(
     server: &mut Server,
     request: FormattingRequest,
-) -> Result<(), ResponseError> {
+) -> Result<(), LSPError> {
     let (document, tree) = server.state.get_state(request.get_document_uri())?;
     let edits = format_document(
         &document,

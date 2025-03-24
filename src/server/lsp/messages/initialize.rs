@@ -58,15 +58,15 @@ pub struct InitializeResult {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
-pub struct InitializeResonse {
+pub struct InitializeResponse {
     #[serde(flatten)]
     pub base: ResponseMessageBase,
     pub result: InitializeResult,
 }
 
-impl InitializeResonse {
+impl InitializeResponse {
     pub fn new(id: &RequestId, server: &Server) -> Self {
-        InitializeResonse {
+        InitializeResponse {
             base: ResponseMessageBase::success(id),
             result: InitializeResult {
                 capabilities: server.capabilities.clone(),

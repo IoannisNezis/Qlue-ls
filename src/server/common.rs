@@ -3,9 +3,9 @@ use std::{any::type_name, fmt};
 use log::error;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
-use super::lsp::errors::{ErrorCode, ResponseError};
+use super::lsp::errors::{ErrorCode, LSPError};
 
-pub(crate) fn serde_parse<T, O>(message: O) -> Result<T, ResponseError>
+pub(crate) fn serde_parse<T, O>(message: O) -> Result<T, LSPError>
 where
     T: Serialize + DeserializeOwned,
     O: Serialize + fmt::Debug,
@@ -16,7 +16,7 @@ where
                 "Error while deserializing message:\n{}-----------------------\n{:?}",
                 error, message,
             );
-            ResponseError::new(
+            LSPError::new(
                 ErrorCode::ParseError,
                 &format!(
                     "Could not deserialize RPC-message \"{}\"\n\n{}",
@@ -25,7 +25,7 @@ where
                 ),
             )
         }),
-        Err(error) => Err(ResponseError::new(
+        Err(error) => Err(LSPError::new(
             ErrorCode::ParseError,
             &format!("Could not serialize RPC-message\n\n{}", error),
         )),

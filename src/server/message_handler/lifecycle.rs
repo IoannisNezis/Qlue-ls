@@ -2,9 +2,9 @@ use std::process::exit;
 
 use crate::server::{
     lsp::{
-        errors::{ErrorCode, ResponseError},
+        errors::{ErrorCode, LSPError},
         rpc::{NotificationMessage, RequestMessage},
-        InitializeRequest, InitializeResonse, ProgressNotification, ShutdownResponse,
+        InitializeRequest, InitializeResponse, ProgressNotification, ShutdownResponse,
     },
     state::ServerStatus,
     Server,
@@ -13,14 +13,14 @@ use crate::server::{
 pub(super) async fn handle_shutdown_request(
     server: &mut Server,
     request: RequestMessage,
-) -> Result<(), ResponseError> {
+) -> Result<(), LSPError> {
     log::info!("Recieved shutdown request, preparing to shut down");
     match server.state.status {
-        ServerStatus::Initializing => Err(ResponseError::new(
+        ServerStatus::Initializing => Err(LSPError::new(
             ErrorCode::InvalidRequest,
             "The Server is not yet initialized",
         )),
-        ServerStatus::ShuttingDown => Err(ResponseError::new(
+        ServerStatus::ShuttingDown => Err(LSPError::new(
             ErrorCode::InvalidRequest,
             "The Server is already shutting down",
         )),
@@ -34,7 +34,7 @@ pub(super) async fn handle_shutdown_request(
 pub(super) async fn handle_initialize_request(
     server: &mut Server,
     initialize_request: InitializeRequest,
-) -> Result<(), ResponseError> {
+) -> Result<(), LSPError> {
     match server.state.status {
         ServerStatus::Initializing => {
             if let Some(ref client_info) = initialize_request.params.client_info {
@@ -86,9 +86,9 @@ pub(super) async fn handle_initialize_request(
                     serde_json::to_string(&init_progress_end_notification).unwrap(),
                 )?;
             }
-            server.send_message(InitializeResonse::new(initialize_request.get_id(), server))
+            server.send_message(InitializeResponse::new(initialize_request.get_id(), server))
         }
-        _ => Err(ResponseError::new(
+        _ => Err(LSPError::new(
             ErrorCode::InvalidRequest,
             "The Server is already initialized",
         )),
@@ -98,7 +98,7 @@ pub(super) async fn handle_initialize_request(
 pub(super) async fn handle_initialized_notifcation(
     server: &mut Server,
     _initialized_notification: NotificationMessage,
-) -> Result<(), ResponseError> {
+) -> Result<(), LSPError> {
     log::info!("initialization completed");
     server.state.status = ServerStatus::Running;
     Ok(())
@@ -107,7 +107,7 @@ pub(super) async fn handle_initialized_notifcation(
 pub(super) async fn handle_exit_notifcation(
     _server: &mut Server,
     _initialized_notification: NotificationMessage,
-) -> Result<(), ResponseError> {
+) -> Result<(), LSPError> {
     log::info!("Recieved exit notification, shutting down!");
     exit(0);
 }

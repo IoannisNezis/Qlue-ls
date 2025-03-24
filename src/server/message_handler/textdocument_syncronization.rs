@@ -2,7 +2,7 @@ use log::{error, info, warn};
 
 use crate::server::{
     lsp::{
-        errors::{ErrorCode, ResponseError},
+        errors::{ErrorCode, LSPError},
         DidChangeTextDocumentNotification, DidOpenTextDocumentNotification,
         DidSaveTextDocumentNotification,
     },
@@ -12,7 +12,7 @@ use crate::server::{
 pub(super) async fn handle_did_open_notification(
     server: &mut Server,
     did_open_notification: DidOpenTextDocumentNotification,
-) -> Result<(), ResponseError> {
+) -> Result<(), LSPError> {
     info!(
         "opened text document: \"{}\"",
         did_open_notification.params.text_document.uri
@@ -26,7 +26,7 @@ pub(super) async fn handle_did_open_notification(
 pub(super) async fn handle_did_change_notification(
     server: &mut Server,
     did_change_notification: DidChangeTextDocumentNotification,
-) -> Result<(), ResponseError> {
+) -> Result<(), LSPError> {
     let uri = &did_change_notification.params.text_document.base.uri;
     if let Some(document) = server
         .state
@@ -40,7 +40,7 @@ pub(super) async fn handle_did_change_notification(
         }
         if let Err(err) = server.state.update_tree(uri, new_tree) {
             error!("{}", err.message);
-            return Err(ResponseError::new(
+            return Err(LSPError::new(
                 ErrorCode::InternalError,
                 &format!("Error while building parse-tree:\n{}", err.message),
             ));
@@ -50,14 +50,14 @@ pub(super) async fn handle_did_change_notification(
     } else {
         let message = format!("Did-Change request failed, document not found: \"{}\"", uri);
         error!("{}", message);
-        Err(ResponseError::new(ErrorCode::InvalidRequest, &message))
+        Err(LSPError::new(ErrorCode::InvalidRequest, &message))
     }
 }
 
 pub(super) async fn handle_did_save_notification(
     _server: &mut Server,
     did_save_notification: DidSaveTextDocumentNotification,
-) -> Result<(), ResponseError> {
+) -> Result<(), LSPError> {
     log::warn!(
         "saved text document (has no effect yet): \"{}\"",
         did_save_notification.params.text_document.uri

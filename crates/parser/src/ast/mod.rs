@@ -278,17 +278,22 @@ impl TriplesBlock {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Triple {
     syntax: SyntaxNode,
 }
 
 impl Triple {
     pub fn subject(&self) -> Option<VarOrTerm> {
+        self.syntax.first_child().and_then(VarOrTerm::cast)
+    }
+
+    pub fn used_prefixes(&self) -> Vec<String> {
         self.syntax
-            .first_child()
-            .map(|child| VarOrTerm::cast(child))
-            .flatten()
+            .descendants()
+            .filter_map(PrefixedName::cast)
+            .map(|prefixed_name| prefixed_name.prefix())
+            .collect()
     }
 
     /// Get the `TriplesBlock` this Triple is part of.
@@ -305,7 +310,7 @@ impl Triple {
                 break;
             }
         }
-        return Some(TriplesBlock::cast(parent).expect("parent should be a TriplesBlock"));
+        Some(TriplesBlock::cast(parent).expect("parent should be a TriplesBlock"))
     }
 
     // fn property_list_path(&self) -> Option<PropertyListPath> {
@@ -393,6 +398,9 @@ pub struct Var {
 impl Var {
     pub fn triple(&self) -> Option<Triple> {
         self.syntax.ancestors().find_map(Triple::cast)
+    }
+    pub fn var_name(&self) -> String {
+        self.syntax.text().to_string()[1..].to_string()
     }
 }
 

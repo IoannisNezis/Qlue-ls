@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use tree_sitter::Tree;
 
 use super::lsp::{
-    errors::{ErrorCode, ResponseError},
+    errors::{ErrorCode, LSPError},
     textdocument::{TextDocumentItem, TextEdit},
-    TextDocumentContentChangeEvent, TraceValue,
+    SetBackendParams, TextDocumentContentChangeEvent, TraceValue,
 };
 
 #[derive(Debug, PartialEq)]
@@ -19,6 +19,7 @@ pub struct ServerState {
     pub status: ServerStatus,
     pub trace_value: TraceValue,
     documents: HashMap<String, (TextDocumentItem, Option<Tree>)>,
+    pub backend: Option<SetBackendParams>,
 }
 
 impl ServerState {
@@ -27,7 +28,12 @@ impl ServerState {
             status: ServerStatus::Initializing,
             trace_value: TraceValue::Off,
             documents: HashMap::new(),
+            backend: None,
         }
+    }
+
+    pub(crate) fn set_backend(&mut self, backend: SetBackendParams) {
+        self.backend = Some(backend)
     }
 
     pub(super) fn add_document(&mut self, text_document: TextDocumentItem, tree: Option<Tree>) {
@@ -50,35 +56,35 @@ impl ServerState {
         return Some(document);
     }
 
-    pub(super) fn get_state(&self, uri: &str) -> Result<(&TextDocumentItem, &Tree), ResponseError> {
+    pub(super) fn get_state(&self, uri: &str) -> Result<(&TextDocumentItem, &Tree), LSPError> {
         match self.documents.get(uri) {
             Some((document, Some(tree))) => Ok((document, tree)),
-            Some((_document, None)) => Err(ResponseError::new(
+            Some((_document, None)) => Err(LSPError::new(
                 ErrorCode::InternalError,
                 &format!("Could not find parse-tree for \"{}\"", uri),
             )),
-            None => Err(ResponseError::new(
+            None => Err(LSPError::new(
                 ErrorCode::InternalError,
                 &format!("Could not find document \"{}\"", uri),
             )),
         }
     }
 
-    pub(super) fn get_tree(&self, uri: &str) -> Result<&Tree, ResponseError> {
+    pub(super) fn get_tree(&self, uri: &str) -> Result<&Tree, LSPError> {
         match self.documents.get(uri) {
             Some((_document, Some(tree))) => Ok(tree),
-            _ => Err(ResponseError::new(
+            _ => Err(LSPError::new(
                 ErrorCode::InternalError,
                 &format!("Could not find parse-tree for \"{}\"", uri),
             )),
         }
     }
 
-    pub(super) fn get_document(&self, uri: &str) -> Result<&TextDocumentItem, ResponseError> {
+    pub(super) fn get_document(&self, uri: &str) -> Result<&TextDocumentItem, LSPError> {
         Ok(&self
             .documents
             .get(uri)
-            .ok_or(ResponseError::new(
+            .ok_or(LSPError::new(
                 ErrorCode::InvalidRequest,
                 &format!("Requested document \"{}\"could not be found", uri),
             ))?
@@ -89,14 +95,14 @@ impl ServerState {
         &mut self,
         uri: &str,
         new_tree: Option<Tree>,
-    ) -> Result<(), ResponseError> {
+    ) -> Result<(), LSPError> {
         if self.documents.get(uri).is_some() {
             self.documents
                 .entry(uri.to_string())
                 .and_modify(|(_document, old_tree)| *old_tree = new_tree);
             Ok(())
         } else {
-            Err(ResponseError::new(
+            Err(LSPError::new(
                 ErrorCode::InternalError,
                 &format!("Could not update parse-tree, no entry for \"{}\"", uri),
             ))

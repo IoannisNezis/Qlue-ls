@@ -16,7 +16,7 @@ impl Tools {
 
         tools.initiate_uri_converter();
         tools.initiate_parser();
-        return tools;
+        tools
     }
 
     fn initiate_parser(&mut self) {
@@ -31,7 +31,7 @@ impl Tools {
 
     fn initiate_uri_converter(&mut self) {
         let records = [
-            Record::new("schema", "http://schema.org/"),
+            Record::new("schema", "https://schema.org/"),
             Record::new(
                 "envCube2023",
                 "https://environment.ld.admin.ch/foen/nfi/nfi_C-20/cube/2023-",
@@ -63,9 +63,13 @@ impl Tools {
             Record::new("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
             Record::new("osmrel", "https://www.openstreetmap.org/relation/"),
             Record::new("dblp", "https://dblp.org/rdf/schema#"),
-            Record::new("publication", "https://dblp.org/rec"),
-            Record::new("creator", "https://dblp.org/pid"),
-            Record::new("stream", "https://dblp.org/streams"),
+            Record::new("publication", "https://dblp.org/rec/"),
+            Record::new("stream", "https://dblp.org/streams/"),
+            Record::new("cito", "http://purl.org/spar/cito/"),
+            Record::new("datacite", "http://purl.org/spar/datacite/"),
+            Record::new("terms", "http://purl.org/dc/terms/"),
+            Record::new("owl", "http://www.w3.org/2002/07/owl#"),
+            Record::new("literal", "http://purl.org/spar/literal/"),
         ];
         records.into_iter().for_each(|record| {
             if let Err(error) = self.uri_converter.add_record(record.clone()) {

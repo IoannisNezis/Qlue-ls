@@ -354,6 +354,23 @@ impl PropertyListPath {
 }
 
 #[derive(Debug)]
+pub struct Iri {
+    syntax: SyntaxNode,
+}
+
+impl Iri {
+    pub fn prefixed_name(&self) -> Option<PrefixedName> {
+        self.syntax.first_child().and_then(PrefixedName::cast)
+    }
+
+    pub fn is_uncompressed(&self) -> bool {
+        self.syntax
+            .first_child()
+            .map_or(false, |child| child.kind() == SyntaxKind::IRIREF)
+    }
+}
+
+#[derive(Debug)]
 pub struct PrefixedName {
     syntax: SyntaxNode,
 }
@@ -427,6 +444,25 @@ impl AstNode for VarOrTerm {
     #[inline]
     fn kind() -> SyntaxKind {
         SyntaxKind::VarOrTerm
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    #[inline]
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+}
+
+impl AstNode for Iri {
+    #[inline]
+    fn kind() -> SyntaxKind {
+        SyntaxKind::iri
     }
 
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -854,6 +890,10 @@ pub trait AstNode {
                 _ => None,
             })
             .collect()
+    }
+
+    fn text(&self) -> String {
+        self.syntax().text().to_string()
     }
 }
 

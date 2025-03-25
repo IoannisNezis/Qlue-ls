@@ -3,7 +3,7 @@ mod code_action;
 mod completion;
 mod diagnostic;
 mod formatting;
-mod hovering;
+mod hover;
 mod identification;
 mod lifecycle;
 mod misc;
@@ -13,7 +13,7 @@ use backend::handle_set_backend_request;
 use code_action::handle_codeaction_request;
 use completion::handle_completion_request;
 use diagnostic::handle_diagnostic_request;
-use hovering::handle_hover_request;
+use hover::handle_hover_request;
 use lifecycle::{
     handle_exit_notifcation, handle_initialize_request, handle_initialized_notifcation,
     handle_shutdown_request,

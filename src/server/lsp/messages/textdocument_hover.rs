@@ -38,25 +38,29 @@ struct HoverParams {
 pub struct HoverResponse {
     #[serde(flatten)]
     base: ResponseMessageBase,
-    result: HoverResult,
+    result: Option<Hover>,
 }
 
 impl HoverResponse {
-    pub fn new(id: &RequestId, content: String) -> Self {
+    pub fn new(id: &RequestId) -> Self {
         HoverResponse {
             base: ResponseMessageBase::success(id),
-            result: HoverResult {
-                contents: HoverResultContents::MarkupContent(MarkupContent::Content {
-                    kind: Markupkind::Markdown,
-                    value: content,
-                }),
-            },
+            result: None,
         }
+    }
+
+    pub fn set_markdown_content(&mut self, content: String) {
+        self.result = Some(Hover {
+            contents: HoverResultContents::MarkupContent(MarkupContent::Content {
+                kind: Markupkind::Markdown,
+                value: content,
+            }),
+        })
     }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
-struct HoverResult {
+struct Hover {
     contents: HoverResultContents,
 }
 

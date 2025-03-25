@@ -12,33 +12,6 @@ use crate::server::{
 
 use super::{utils::compress_rdf_term, CompletionContext};
 
-fn query(context: &str) -> String {
-    format!(
-        "
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX dblp: <https://dblp.org/rdf/schema#>
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-SELECT ?entity ?name ?count  WHERE {{
-  {{
-    SELECT ?entity (COUNT(?entity) AS ?count) WHERE {{
-      {} ?entity
-    }}
-    GROUP BY ?entity
-  }}
-  OPTIONAL {{
-    ?entity dblp:creatorName ?creatorname .
-  }}
-  OPTIONAL {{
-    ?entity rdfs:label ?label .
-  }}
-  BIND (COALESCE(?creatorname, ?label, ?entity) AS ?name)
-}}
-ORDER BY DESC(?count)
-LIMIT 100
-",
-        context
-    )
-}
 lazy_static! {
     static ref QUERY_TEMPATES: Tera = {
         let mut tera = Tera::default();
@@ -79,35 +52,7 @@ pub(super) async fn completions(
     server: &Server,
     context: CompletionContext,
 ) -> Vec<CompletionItem> {
-    if context.trigger_kind == CompletionTriggerKind::TriggerCharacter
-        && context.trigger_character.map_or(false, |tc| tc == "?")
-    {
-        if let Some(select_query) = context
-            .anchor_token
-            .as_ref()
-            .unwrap()
-            .parent_ancestors()
-            .find_map(&SelectQuery::cast)
-        {
-            select_query
-                .variables()
-                .iter()
-                .map(|var| {
-                    let var_text = var.var_name();
-                    CompletionItem::new(
-                        &var_text,
-                        "Variable",
-                        &format!("{} ", var_text),
-                        CompletionItemKind::Variable,
-                        InsertTextFormat::PlainText,
-                        None,
-                    )
-                })
-                .collect()
-        } else {
-            vec![]
-        }
-    } else if let CompletionLocation::Object(triple) = context.location {
+    if let CompletionLocation::Object(triple) = context.location {
         let prefix_declarations: Vec<_> = triple
             .used_prefixes()
             .into_iter()
@@ -141,7 +86,7 @@ pub(super) async fn completions(
                         CompletionItem::new(
                             &name.to_string(),
                             &value,
-                            "",
+                            &value,
                             CompletionItemKind::Value,
                             InsertTextFormat::PlainText,
                             import_edit.map(|edit| vec![edit]),

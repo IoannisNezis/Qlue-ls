@@ -59,7 +59,7 @@ pub(super) enum CompletionLocation {
     ///     >here<
     /// }
     /// ```
-    Predicate,
+    Predicate(Triple),
     /// 3rd part of a Triple
     ///
     /// ---
@@ -141,11 +141,8 @@ impl CompletionContext {
         let trigger_character = request.get_completion_context().trigger_character.clone();
         let tree = parse_query(&document.text);
         let anchor_token = get_anchor_token(&tree, offset);
-        log::info!("anchor: {:?}", anchor_token);
         let continuations = get_continuations(&tree, &anchor_token);
-        log::info!("continuations: {:?}", continuations);
         let location = get_location(&anchor_token, &continuations);
-        log::info!("location: {:?}", location);
         Ok(Self {
             location,
             continuations,
@@ -178,7 +175,11 @@ fn get_location(
             SyntaxKind::VerbPath,
             SyntaxKind::VerbSimple
         ]) {
-            CompletionLocation::Predicate
+            if let Some(triple) = anchor.parent_ancestors().find_map(Triple::cast) {
+                CompletionLocation::Predicate(triple)
+            } else {
+                CompletionLocation::Unknown
+            }
         }
         // NOTE: Subject
         else if continues_with!([
@@ -196,11 +197,8 @@ fn get_location(
             SyntaxKind::ObjectList,
             SyntaxKind::Object
         ]) {
-            if let Some(triple) = anchor
-                .parent_ancestors()
-                .find(|parent| Triple::can_cast(parent.kind()))
-            {
-                CompletionLocation::Object(Triple::cast(triple).unwrap())
+            if let Some(triple) = anchor.parent_ancestors().find_map(Triple::cast) {
+                CompletionLocation::Object(triple)
             } else {
                 CompletionLocation::Unknown
             }

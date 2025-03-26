@@ -50,10 +50,10 @@ impl ServerState {
         document.apply_text_edits(
             content_changes
                 .into_iter()
-                .map(|change_event| TextEdit::from_text_document_content_change_event(change_event))
+                .map(TextEdit::from_text_document_content_change_event)
                 .collect::<Vec<TextEdit>>(),
         );
-        return Some(document);
+        Some(document)
     }
 
     pub(super) fn get_state(&self, uri: &str) -> Result<(&TextDocumentItem, &Tree), LSPError> {
@@ -66,16 +66,6 @@ impl ServerState {
             None => Err(LSPError::new(
                 ErrorCode::InternalError,
                 &format!("Could not find document \"{}\"", uri),
-            )),
-        }
-    }
-
-    pub(super) fn get_tree(&self, uri: &str) -> Result<&Tree, LSPError> {
-        match self.documents.get(uri) {
-            Some((_document, Some(tree))) => Ok(tree),
-            _ => Err(LSPError::new(
-                ErrorCode::InternalError,
-                &format!("Could not find parse-tree for \"{}\"", uri),
             )),
         }
     }

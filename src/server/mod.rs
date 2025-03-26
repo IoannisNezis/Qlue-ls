@@ -53,7 +53,7 @@ impl Server {
                 name: "Qlue-ls".to_string(),
                 version: Some(version.to_string()),
             },
-            tools: Tools::initiate(),
+            tools: Tools::init(),
             send_message_clusure: Box::new(write_function),
         }
     }

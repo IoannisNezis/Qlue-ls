@@ -1,7 +1,5 @@
-use indoc::indoc;
-use lazy_static::lazy_static;
 use ll_sparql_parser::ast::{AstNode, QueryUnit};
-use tera::{Context, Tera};
+use tera::Context;
 use text_size::TextRange;
 
 use crate::server::{
@@ -12,29 +10,6 @@ use crate::server::{
 };
 
 use super::{utils::compress_rdf_term, CompletionContext};
-
-lazy_static! {
-    static ref QUERY_TEMPATES: Tera = {
-        let mut tera = Tera::default();
-        tera.add_raw_template(
-            "predicate.rq",
-            indoc! {
-               "{% for prefix in prefixes %}
-                PREFIX {{prefix.0}}: <{{prefix.1}}>
-                {% endfor %}
-                SELECT ?pred (COUNT(?pred) as ?count)  WHERE {
-                    {{context}} ?pred ?o .
-                }
-                GROUP BY ?pred
-                ORDER BY DESC(?count)
-                LIMIT 100
-               "
-            },
-        )
-        .expect("Template should be valid");
-        tera
-    };
-}
 
 pub(super) async fn completions(
     server: &Server,
@@ -58,8 +33,10 @@ pub(super) async fn completions(
                     .map(|record| (record.prefix.clone(), record.uri_prefix.clone()))
                     .collect::<Vec<_>>(),
             );
-            let query = QUERY_TEMPATES
-                .render("predicate.rq", &template_context)
+            let query = server
+                .tools
+                .tera
+                .render("predicate_completion.rq", &template_context)
                 .expect("Template should render");
 
             match fetch_sparql_result(&backend.url, &query).await {

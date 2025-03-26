@@ -147,13 +147,6 @@ impl Position {
         return None;
     }
 
-    pub(crate) fn to_point(&self) -> Point {
-        Point {
-            row: self.line as usize,
-            column: self.character as usize,
-        }
-    }
-
     pub(crate) fn from_point(position: Point) -> Position {
         Position {
             line: position.row as u32,

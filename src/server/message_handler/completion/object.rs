@@ -1,52 +1,14 @@
-use indoc::indoc;
-use lazy_static::lazy_static;
-use ll_sparql_parser::ast::{AstNode, QueryUnit, SelectQuery};
-use tera::{Context, Tera};
+use ll_sparql_parser::ast::{AstNode, QueryUnit};
+use tera::Context;
 
 use crate::server::{
     fetch::fetch_sparql_result,
-    lsp::{CompletionItem, CompletionItemKind, CompletionTriggerKind, InsertTextFormat},
+    lsp::{CompletionItem, CompletionItemKind, InsertTextFormat},
     message_handler::completion::context::CompletionLocation,
     Server,
 };
 
 use super::{utils::compress_rdf_term, CompletionContext};
-
-lazy_static! {
-    static ref QUERY_TEMPATES: Tera = {
-        let mut tera = Tera::default();
-        tera.add_raw_template(
-            "object_query.rq.template",
-            indoc! {
-               "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-                PREFIX dblp: <https://dblp.org/rdf/schema#>
-                PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-                {% for prefix in prefixes %}
-                    PREFIX {{prefix.0}}: <{{prefix.1}}>
-                {% endfor %}
-                SELECT ?entity ?name ?count  WHERE {
-                  {
-                    SELECT ?entity (COUNT(?entity) AS ?count) WHERE {
-                        {{context}} ?entity
-                    }
-                    GROUP BY ?entity
-                  }
-                  OPTIONAL {
-                    ?entity dblp:creatorName ?creatorname .
-                  }
-                  OPTIONAL {
-                    ?entity rdfs:label ?label .
-                  }
-                  BIND (COALESCE(?creatorname, ?label, ?entity) AS ?name)
-                }
-                ORDER BY DESC(?count)
-                LIMIT 100"
-            },
-        )
-        .expect("Template should be valid");
-        tera
-    };
-}
 
 pub(super) async fn completions(
     server: &Server,
@@ -68,8 +30,10 @@ pub(super) async fn completions(
         let mut template_context = Context::new();
         template_context.insert("prefixes", &prefix_declarations);
         template_context.insert("context", &inject_context);
-        let query = QUERY_TEMPATES
-            .render("object_query.rq.template", &template_context)
+        let query = server
+            .tools
+            .tera
+            .render("object_completion.rq", &template_context)
             .expect("Template should render");
         let query_unit = QueryUnit::cast(context.tree).unwrap();
         if let Some(backend) = &server.state.backend {

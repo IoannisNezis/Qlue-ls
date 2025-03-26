@@ -1,17 +1,14 @@
-use streaming_iterator::StreamingIterator;
-
-use std::collections::HashSet;
-
-use tree_sitter::{Node, Query, QueryCursor};
-
 use super::{
     lsp::{
         errors::{ErrorCode, LSPError},
-        textdocument::{Position, Range},
+        textdocument::Range,
     },
     state::ServerState,
     Server,
 };
+use std::collections::HashSet;
+use streaming_iterator::StreamingIterator;
+use tree_sitter::{Node, Query, QueryCursor};
 
 fn build_query(query_str: &str) -> Result<Query, LSPError> {
     Query::new(&tree_sitter_sparql::LANGUAGE.into(), query_str).map_err(|error| {
@@ -41,23 +38,6 @@ fn collect_all_unique_captures(
         }
     }
     Ok(capture_set.into_iter().collect())
-}
-
-pub fn get_kind_at_position(
-    analyis_state: &ServerState,
-    uri: &str,
-    position: &Position,
-) -> Result<&'static str, LSPError> {
-    let tree = analyis_state.get_tree(uri)?;
-    let point = position.to_point();
-
-    tree.root_node()
-        .descendant_for_point_range(point, point)
-        .ok_or(LSPError::new(
-            ErrorCode::InternalError,
-            &format!("Could not get kind at position {} of {}", position, uri),
-        ))
-        .map(|node| node.kind())
 }
 
 pub fn namespace_is_declared(

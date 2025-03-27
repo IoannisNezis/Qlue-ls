@@ -1,4 +1,7 @@
-use super::{utils::fetch_online_completions, CompletionContext};
+use super::{
+    utils::{fetch_online_completions, get_replace_range},
+    CompletionContext,
+};
 use crate::server::{
     lsp::{CompletionItem, CompletionItemKind, InsertTextFormat},
     Server,
@@ -8,6 +11,8 @@ use ll_sparql_parser::{
     syntax_kind::SyntaxKind,
 };
 use tera::Context;
+
+static QUERY_TEMPLATE: &str = "subject_completion.rq";
 
 pub(super) async fn completions(
     server: &Server,
@@ -20,15 +25,17 @@ pub(super) async fn completions(
         || context.continuations.contains(&SyntaxKind::TriplesBlock)
         || context.continuations.contains(&SyntaxKind::DataBlockValue)
     {
-        if let Some(search_term) = context.search_term {
+        if let Some(search_term) = context.search_term.as_ref() {
             let mut template_context = Context::new();
-            template_context.insert("search_term", &search_term);
+            template_context.insert("search_term", search_term);
+            let range = get_replace_range(&context);
             let query_unit = QueryUnit::cast(context.tree).unwrap();
             match fetch_online_completions(
                 server,
                 &query_unit,
-                "subject_completion.rq",
+                QUERY_TEMPLATE,
                 template_context,
+                range,
             )
             .await
             {

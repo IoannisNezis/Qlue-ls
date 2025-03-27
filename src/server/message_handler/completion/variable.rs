@@ -12,7 +12,8 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
                 let var_text = var.var_name();
                 CompletionItem::new(
                     &var_text,
-                    "Variable",
+                    Some("Variable".to_string()),
+                    None,
                     &format!("{} ", var_text),
                     CompletionItemKind::Variable,
                     InsertTextFormat::PlainText,

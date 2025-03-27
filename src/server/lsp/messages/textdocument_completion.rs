@@ -75,18 +75,21 @@ struct CompletionResult {
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CompletionItem {
-    label: String,
-    kind: CompletionItemKind,
-    detail: String,
-    insert_text: String,
-    insert_text_format: InsertTextFormat,
-    additional_text_edits: Option<Vec<TextEdit>>,
+    pub label: String,
+    pub kind: CompletionItemKind,
+    pub detail: Option<String>,
+    pub sort_text: Option<String>,
+    pub insert_text: Option<String>,
+    pub text_edit: Option<TextEdit>,
+    pub insert_text_format: InsertTextFormat,
+    pub additional_text_edits: Option<Vec<TextEdit>>,
 }
 
 impl CompletionItem {
     pub fn new(
         label: &str,
-        detail: &str,
+        detail: Option<String>,
+        sort_text: Option<String>,
         insert_text: &str,
         kind: CompletionItemKind,
         insert_text_format: InsertTextFormat,
@@ -95,8 +98,10 @@ impl CompletionItem {
         Self {
             label: label.to_string(),
             kind,
-            detail: detail.to_string(),
-            insert_text: insert_text.to_string(),
+            detail,
+            sort_text,
+            insert_text: Some(insert_text.to_string()),
+            text_edit: None,
             insert_text_format,
             additional_text_edits,
         }

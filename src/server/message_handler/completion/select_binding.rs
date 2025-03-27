@@ -10,7 +10,8 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
             res.append(&mut vec![
                 CompletionItem::new(
                     "DISTINCT",
-                    "Ensure unique results",
+                    Some("Ensure unique results".to_string()),
+                    None,
                     "DISTINCT ",
                     CompletionItemKind::Keyword,
                     InsertTextFormat::PlainText,
@@ -18,7 +19,8 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
                 ),
                 CompletionItem::new(
                     "REDUCED",
-                    "Permit elimination of some non-distinct solutions",
+                    Some("Permit elimination of some non-distinct solutions".to_string()),
+                    None,
                     "REDUCED ",
                     CompletionItemKind::Keyword,
                     InsertTextFormat::PlainText,
@@ -47,7 +49,8 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
         res.extend(vars.into_iter().map(|var| {
             CompletionItem::new(
                 &var,
-                "variable",
+                Some("variable".to_string()),
+                None,
                 &format!("{} ", var),
                 CompletionItemKind::Variable,
                 InsertTextFormat::PlainText,

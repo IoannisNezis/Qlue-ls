@@ -50,7 +50,8 @@ pub(super) async fn completions(
                         let (value, import_edit) = compress_rdf_term(server, &query_unit, pred);
                         CompletionItem::new(
                             &value,
-                            &format!("{} occurences", count),
+                            Some("".to_string()),
+                            Some(count.to_string()),
                             &format!("{} ", value),
                             CompletionItemKind::Value,
                             InsertTextFormat::PlainText,

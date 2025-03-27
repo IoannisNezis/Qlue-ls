@@ -6,7 +6,7 @@ use ll_sparql_parser::{
     syntax_kind::SyntaxKind,
     SyntaxNode, SyntaxToken, TokenAtOffset,
 };
-use text_size::TextSize;
+use text_size::{TextRange, TextSize};
 
 use crate::server::{
     lsp::{errors::ErrorCode, CompletionRequest, CompletionTriggerKind},
@@ -114,6 +114,7 @@ pub(super) struct CompletionContext {
     pub(super) trigger_kind: CompletionTriggerKind,
     pub(super) trigger_character: Option<String>,
     pub(super) anchor_token: Option<SyntaxToken>,
+    pub(super) search_term: Option<String>,
 }
 
 impl CompletionContext {
@@ -141,6 +142,7 @@ impl CompletionContext {
         let trigger_character = request.get_completion_context().trigger_character.clone();
         let tree = parse_query(&document.text);
         let anchor_token = get_anchor_token(&tree, offset);
+        let search_term = get_search_term(&tree, &anchor_token, offset);
         let continuations = get_continuations(&tree, &anchor_token);
         let location = get_location(&anchor_token, &continuations);
         Ok(Self {
@@ -150,8 +152,22 @@ impl CompletionContext {
             trigger_kind,
             trigger_character,
             anchor_token,
+            search_term,
         })
     }
+}
+
+fn get_search_term(
+    root: &SyntaxNode,
+    anchor_token: &Option<SyntaxToken>,
+    trigger_pos: TextSize,
+) -> Option<String> {
+    anchor_token.as_ref().and_then(|anchor| {
+        let range = TextRange::new(anchor.text_range().end(), trigger_pos);
+        root.text_range()
+            .contains_range(range)
+            .then(|| root.text().slice(range).to_string().trim().to_string())
+    })
 }
 
 fn get_location(

@@ -54,31 +54,37 @@ pub(super) fn init() -> Tera {
         (
             "object_completion.rq",
             indoc! {
-               "PREFIX dblps: <https://dblp.org/rdf/schema-2020-07-01#>
-                PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-                PREFIX dblp: <https://dblp.org/rdf/schema#>
-                PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-                SELECT ?qlue_ls_value ?qlue_ls_label ?qlue_ls_detail  WHERE {
-                  {
-                    SELECT ?qlue_ls_value (COUNT(?entity) AS ?count) WHERE {
-                      {{context}} ?qlue_ls_value
-                    }
-                    GROUP BY ?qlue_ls_value
-                  }
-                  OPTIONAL {
-                    ?qlue_ls_value dblp:name ?creatorqlue_ls_label .
-                  }
-                  OPTIONAL {
-                    ?qlue_ls_value rdfs:label ?label .
-                  }
-                  OPTIONAL {
-                    ?qlue_ls_value dblp:qlue_ls_detail ?qlue_ls_detail .
-                    
-                  }
-                  BIND (COALESCE(?creatorqlue_ls_label, ?label, ?qlue_ls_value) AS ?qlue_ls_label)
-                }
-                ORDER BY DESC(?count)
-                LIMIT 100 "
+                "PREFIX dblps: <https://dblp.org/rdf/schema-2020-07-01#>
+                 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                 PREFIX dblp: <https://dblp.org/rdf/schema#>
+                 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                 {% for prefix in prefixes %}
+                 PREFIX {{prefix.0}}: <{{prefix.1}}>
+                 {% endfor %}
+                 SELECT ?qlue_ls_value ?qlue_ls_label ?qlue_ls_detail WHERE {
+                   {
+                     SELECT ?qlue_ls_value WHERE {
+                       {{context}} ?qlue_ls_value
+                     }
+                     GROUP BY ?qlue_ls_value
+                   }
+                   OPTIONAL {
+                     ?qlue_ls_value dblp:name ?name .
+                   }
+                   OPTIONAL {
+                     ?qlue_ls_value rdfs:label ?label .
+                   }
+                   OPTIONAL {
+                     ?qlue_ls_value dblp:comment ?qlue_ls_detail .
+                   }
+                   BIND (COALESCE(?name, ?label, ?qlue_ls_value) AS ?qlue_ls_label)
+                   {% if search_term %}
+                   FILTER REGEX(STR(?qlue_ls_value),\"^{{search_term}}\")
+                   {% endif %}
+                 }
+                 ORDER BY DESC(?count)
+                 LIMIT 100
+                 "
             },
         ),
         (
@@ -87,11 +93,19 @@ pub(super) fn init() -> Tera {
                "{% for prefix in prefixes %}
                 PREFIX {{prefix.0}}: <{{prefix.1}}>
                 {% endfor %}
-                SELECT ?pred (COUNT(?pred) as ?count)  WHERE {
-                    {{context}} ?pred ?o .
+                PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                SELECT * WHERE {
+                  {
+                    SELECT ?qlue_ls_value WHERE {
+                      {{context}} ?qlue_ls_value ?o .
+                    }
+                    GROUP BY ?qlue_ls_value
+                    ORDER BY DESC(COUNT(?qlue_ls_value))
+                  }
+                   OPTIONAL {
+                    ?qlue_ls_value rdfs:label ?qlue_ls_label .
+                  }
                 }
-                GROUP BY ?pred
-                ORDER BY DESC(?count)
                 LIMIT 100
                "
             },

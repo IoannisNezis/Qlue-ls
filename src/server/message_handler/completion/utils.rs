@@ -6,17 +6,20 @@ use crate::server::{
     fetch::fetch_sparql_result,
     lsp::{
         errors::{ErrorCode, LSPError},
-        textdocument::{Range, TextEdit},
+        textdocument::{Position, Range, TextEdit},
         CompletionItem, CompletionItemKind, InsertTextFormat,
     },
     Server,
 };
+
+use super::context::CompletionContext;
 
 pub(super) async fn fetch_online_completions(
     server: &Server,
     query_unit: &QueryUnit,
     query_template: &str,
     query_template_context: Context,
+    range: Range,
 ) -> Result<Vec<CompletionItem>, LSPError> {
     let query = server
         .tools
@@ -39,7 +42,6 @@ pub(super) async fn fetch_online_completions(
         )),
     }?;
 
-    log::info!("canary2");
     match fetch_sparql_result(url, &query).await {
         Ok(result) => Ok(result
             .results
@@ -47,30 +49,49 @@ pub(super) async fn fetch_online_completions(
             .into_iter()
             .enumerate()
             .map(|(idx, binding)| {
-                log::info!("canary3");
                 let value = binding
                     .get("qlue_ls_value")
                     .expect("Every completion query should provide a `qlue_ls_value`");
                 let label = binding.get("qlue_ls_label").unwrap_or(value);
                 let detail = binding.get("qlue_ls_detail");
                 let (value, import_edit) = compress_rdf_term(server, query_unit, value);
-
-                log::info!("canary4");
-                CompletionItem::new(
-                    &format!("{} ", label),
-                    detail.map(|x| x.to_string()),
-                    Some(format!("{:0>5}", idx)),
-                    &value.to_string(),
-                    CompletionItemKind::Value,
-                    InsertTextFormat::PlainText,
-                    import_edit.map(|edit| vec![edit]),
-                )
+                CompletionItem {
+                    label: format!("{} ", label),
+                    detail: detail.map(|x| x.to_string()),
+                    sort_text: Some(format!("{:0>5}", idx)),
+                    insert_text: None,
+                    text_edit: Some(TextEdit {
+                        range: range.clone(),
+                        new_text: format!("{} ", value),
+                    }),
+                    kind: CompletionItemKind::Value,
+                    insert_text_format: InsertTextFormat::PlainText,
+                    additional_text_edits: import_edit.map(|edit| vec![edit]),
+                }
             })
             .collect()),
         Err(err) => Err(LSPError::new(
             ErrorCode::InternalError,
             &format!("Completion query failed:\n {:?}", err),
         )),
+    }
+}
+
+/// Get the range the completion is supposed to replace
+/// The context.search_term MUST be not None!
+pub(super) fn get_replace_range(context: &CompletionContext) -> Range {
+    Range {
+        start: context.trigger_textdocument_position,
+        end: Position::new(
+            context.trigger_textdocument_position.line,
+            context.trigger_textdocument_position.character
+                - context
+                    .search_term
+                    .as_ref()
+                    .expect("search_term should be Some")
+                    .chars()
+                    .fold(0, |accu, char| accu + char.len_utf16()) as u32,
+        ),
     }
 }
 

@@ -9,7 +9,7 @@ use ll_sparql_parser::{
 use text_size::{TextRange, TextSize};
 
 use crate::server::{
-    lsp::{errors::ErrorCode, CompletionRequest, CompletionTriggerKind},
+    lsp::{errors::ErrorCode, textdocument::Position, CompletionRequest, CompletionTriggerKind},
     Server,
 };
 
@@ -109,6 +109,7 @@ pub(super) enum CompletionLocation {
 #[derive(Debug)]
 pub(super) struct CompletionContext {
     pub(super) location: CompletionLocation,
+    pub(super) trigger_textdocument_position: Position,
     pub(super) continuations: HashSet<SyntaxKind>,
     pub(super) tree: SyntaxNode,
     pub(super) trigger_kind: CompletionTriggerKind,
@@ -147,6 +148,7 @@ impl CompletionContext {
         let location = get_location(&anchor_token, &continuations);
         Ok(Self {
             location,
+            trigger_textdocument_position: document_position.position,
             continuations,
             tree,
             trigger_kind,
@@ -164,9 +166,13 @@ fn get_search_term(
 ) -> Option<String> {
     anchor_token.as_ref().and_then(|anchor| {
         let range = TextRange::new(anchor.text_range().end(), trigger_pos);
-        root.text_range()
-            .contains_range(range)
-            .then(|| root.text().slice(range).to_string().trim().to_string())
+        root.text_range().contains_range(range).then(|| {
+            root.text()
+                .slice(range)
+                .to_string()
+                .trim_start()
+                .to_string()
+        })
     })
 }
 

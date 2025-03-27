@@ -45,13 +45,13 @@ impl Display for RDFTerm {
                 datatype,
             } => match (lang.as_ref(), datatype.as_ref()) {
                 (None, None) => write!(f, "\"{}\"", value),
-                (None, Some(dt)) => write!(f, "\"{}\"^^{}", value, dt),
+                (None, Some(_dt)) => write!(f, "\"{}\"", value),
                 (Some(lang_tag), None) => write!(f, "\"{}\"@{}", value, lang_tag),
                 (Some(_), Some(_)) => {
                     panic!("No RDFTERm should have a language tag and a datatype")
                 }
             },
-            RDFTerm::Bnode { value } => write!(f, "{}", value),
+            RDFTerm::Bnode { value } => write!(f, "_:{}", value),
         }
     }
 }

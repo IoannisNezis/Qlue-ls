@@ -79,7 +79,9 @@ pub struct CompletionItem {
     pub kind: CompletionItemKind,
     pub detail: Option<String>,
     pub sort_text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub insert_text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub text_edit: Option<TextEdit>,
     pub insert_text_format: InsertTextFormat,
     pub additional_text_edits: Option<Vec<TextEdit>>,

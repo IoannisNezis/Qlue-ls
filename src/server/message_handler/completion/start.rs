@@ -6,7 +6,8 @@ pub(super) async fn completions(_context: CompletionContext) -> Vec<CompletionIt
     vec![
         CompletionItem::new(
             "SELECT",
-            "Select query",
+            Some("Select query".to_string()),
+            None,
             "SELECT ${1:*} WHERE {\n  $0\n}",
             CompletionItemKind::Snippet,
             InsertTextFormat::Snippet,
@@ -14,7 +15,8 @@ pub(super) async fn completions(_context: CompletionContext) -> Vec<CompletionIt
         ),
         CompletionItem::new(
             "PREFIX",
-            "Declare a namespace",
+            Some("Declare a namespace".to_string()),
+            None,
             "PREFIX ${1:namespace}: <${0:iri}>",
             CompletionItemKind::Snippet,
             InsertTextFormat::Snippet,
@@ -22,7 +24,8 @@ pub(super) async fn completions(_context: CompletionContext) -> Vec<CompletionIt
         ),
         CompletionItem::new(
             "BASE",
-            "Set the Base URI",
+            Some("Set the Base URI".to_string()),
+            None,
             "BASE <${0}>",
             CompletionItemKind::Snippet,
             InsertTextFormat::Snippet,

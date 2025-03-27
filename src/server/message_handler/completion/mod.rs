@@ -36,7 +36,7 @@ pub(super) async fn handle_completion_request(
             match context.location {
                 CompletionLocation::Start => start::completions(context).await,
                 CompletionLocation::SelectBinding(_) => select_binding::completions(context),
-                CompletionLocation::Subject => subject::completions(context).await,
+                CompletionLocation::Subject => subject::completions(server, context).await,
                 CompletionLocation::Predicate(_) => predicate::completions(server, context).await,
                 CompletionLocation::Object(_) => object::completions(server, context).await,
                 CompletionLocation::SolutionModifier => solution_modifier::completions(context),

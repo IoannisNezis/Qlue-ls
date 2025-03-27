@@ -9,7 +9,8 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
     if context.continuations.contains(&SolutionModifier) {
         res.push(CompletionItem::new(
             "GROUP BY",
-            "Group the results",
+            Some("Group the results".to_string()),
+            None,
             "GROUP BY $0",
             CompletionItemKind::Snippet,
             InsertTextFormat::Snippet,
@@ -21,7 +22,8 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
     {
         res.push(CompletionItem::new(
             "HAVING",
-            "Filter Groups",
+            Some("Filter Groups".to_string()),
+            None,
             "HAVING $0",
             CompletionItemKind::Snippet,
             InsertTextFormat::Snippet,
@@ -33,7 +35,8 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
     {
         res.push(CompletionItem::new(
             "ORDER BY",
-            "Sort the results",
+            Some("Sort the results".to_string()),
+            None,
             "ORDER BY ${1|ASC,DESC|} ( $0 )",
             CompletionItemKind::Snippet,
             InsertTextFormat::Snippet,
@@ -46,7 +49,8 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
     {
         res.push(CompletionItem::new(
             "LIMIT",
-            "Limit the results",
+            Some("Limit the results".to_string()),
+            None,
             "LIMIT $0",
             CompletionItemKind::Snippet,
             InsertTextFormat::Snippet,
@@ -59,7 +63,8 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
     {
         res.push(CompletionItem::new(
             "OFFSET",
-            "OFFSET the results",
+            Some("OFFSET the results".to_string()),
+            None,
             "OFFSET $0",
             CompletionItemKind::Snippet,
             InsertTextFormat::Snippet,

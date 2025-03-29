@@ -195,8 +195,19 @@ fn get_location(
             SyntaxKind::PropertyListPathNotEmpty,
             SyntaxKind::PropertyListPath,
             SyntaxKind::VerbPath,
-            SyntaxKind::VerbSimple
-        ]) {
+            SyntaxKind::VerbSimple,
+            SyntaxKind::PathEltOrInverse,
+            SyntaxKind::PathSequence,
+            SyntaxKind::PathElt,
+            SyntaxKind::PathNegatedPropertySet,
+            SyntaxKind::PathOneInPropertySet,
+            SyntaxKind::PathAlternative
+        ]) && anchor.parent().map_or(false, |parent| {
+            !matches!(
+                parent.kind(),
+                SyntaxKind::BlankNodePropertyListPath | SyntaxKind::BlankNodePropertyList
+            )
+        }) {
             if let Some(triple) = anchor.parent_ancestors().find_map(Triple::cast) {
                 CompletionLocation::Predicate(triple)
             } else {

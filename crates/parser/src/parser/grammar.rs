@@ -3351,6 +3351,12 @@ pub(super) fn parse_PathOneInPropertySet(p: &mut Parser) {
                     p.close(marker, SyntaxKind::Error);
                     return;
                 }
+                SyntaxKind::RParen => {
+                    let inner_marker = p.open();
+                    p.close(inner_marker, SyntaxKind::Error);
+                    p.close(marker, SyntaxKind::PathOneInPropertySet);
+                    return;
+                }
                 _ => {
                     p.advance_with_error("Expected ....");
                 }

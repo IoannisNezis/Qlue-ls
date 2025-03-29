@@ -97,10 +97,9 @@ pub(super) fn init() -> Tera {
                 SELECT * WHERE {
                   {
                     SELECT ?qlue_ls_value WHERE {
-                      {{context}} ?qlue_ls_value ?o .
+                      {{context}}
                     }
                     GROUP BY ?qlue_ls_value
-                    ORDER BY DESC(COUNT(?qlue_ls_value))
                   }
                    OPTIONAL {
                     ?qlue_ls_value rdfs:label ?qlue_ls_label .

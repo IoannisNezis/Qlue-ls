@@ -194,7 +194,8 @@ mod tests {
     fn serialize() {
         let cmp = CompletionItem::new(
             "SELECT",
-            "Select query",
+            Some("Select query".to_string()),
+            None,
             "SELECT ${1:*} WHERE {\n  $0\n}",
             CompletionItemKind::Snippet,
             InsertTextFormat::Snippet,

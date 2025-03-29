@@ -1,9 +1,9 @@
 mod utils;
 
-use rowan::cursor::SyntaxToken;
+use rowan::{cursor::SyntaxToken, SyntaxNodeChildren};
 use utils::nth_ancestor;
 
-use crate::{syntax_kind::SyntaxKind, SyntaxNode};
+use crate::{syntax_kind::SyntaxKind, Sparql, SyntaxNode};
 
 #[derive(Debug, PartialEq)]
 pub struct QueryUnit {
@@ -96,7 +96,7 @@ impl SelectQuery {
                     .collect();
             }
         }
-        todo!()
+        return vec![];
     }
 }
 
@@ -288,6 +288,10 @@ impl Triple {
         self.syntax.first_child().and_then(VarOrTerm::cast)
     }
 
+    pub fn properties_list_path(&self) -> Option<PropertyListPath> {
+        PropertyListPath::cast(self.syntax.children().nth(1)?)
+    }
+
     pub fn used_prefixes(&self) -> Vec<String> {
         self.syntax
             .descendants()
@@ -313,18 +317,6 @@ impl Triple {
         Some(TriplesBlock::cast(parent).expect("parent should be a TriplesBlock"))
     }
 
-    // fn property_list_path(&self) -> Option<PropertyListPath> {
-    //     let child = self.syntax.last_child()?;
-    //     match child.kind() {
-    //         SyntaxKind::PropertyListPathNotEmpty => PropertyListPath::cast(child),
-    //         SyntaxKind::PropertyListPath => child
-    //             .first_child()
-    //             .map(|grand_child| PropertyListPath::cast(grand_child))
-    //             .flatten(),
-    //         _ => None,
-    //     }
-    // }
-
     fn variables(&self) -> Vec<Var> {
         self.syntax
             .preorder()
@@ -337,11 +329,72 @@ impl Triple {
 }
 
 #[derive(Debug)]
+pub struct PropertyPath {
+    pub verb: Path,
+    pub object: ObjectListPath,
+}
+
+#[derive(Debug)]
+pub struct Path {
+    syntax: SyntaxNode,
+}
+
+impl Path {
+    pub fn sub_paths(&self) -> SubPaths {
+        SubPaths {
+            children: self.syntax.children(),
+        }
+    }
+}
+
+pub struct SubPaths {
+    children: SyntaxNodeChildren<Sparql>,
+}
+
+impl Iterator for SubPaths {
+    type Item = Path;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(next_child) = self.children.next() {
+            if let Some(path) = Path::cast(next_child.into()) {
+                return Some(path);
+            }
+        }
+        None
+    }
+}
+
+#[derive(Debug)]
+pub struct ObjectListPath {
+    syntax: SyntaxNode,
+}
+
+#[derive(Debug)]
 pub struct PropertyListPath {
     syntax: SyntaxNode,
 }
 
 impl PropertyListPath {
+    pub fn properties(&self) -> Vec<PropertyPath> {
+        self.syntax
+            .children()
+            .step_by(3)
+            .filter_map(|child| {
+                match (
+                    Path::cast(child.clone()),
+                    child
+                        .next_sibling()
+                        .and_then(|next| ObjectListPath::cast(next)),
+                ) {
+                    (None, None) | (None, Some(_)) | (Some(_), None) => None,
+                    (Some(path), Some(object_list)) => Some(PropertyPath {
+                        verb: path,
+                        object: object_list,
+                    }),
+                }
+            })
+            .collect()
+    }
     pub fn variables(&self) -> Vec<Var> {
         self.syntax
             .children()
@@ -497,10 +550,24 @@ impl AstNode for PrefixedName {
     }
 }
 
-impl AstNode for PropertyListPath {
-    #[inline]
+impl AstNode for Path {
     fn kind() -> SyntaxKind {
-        SyntaxKind::PropertyListPathNotEmpty
+        SyntaxKind::VerbPath
+    }
+
+    fn can_cast(kind: SyntaxKind) -> bool {
+        matches!(
+            kind,
+            SyntaxKind::Path
+                | SyntaxKind::VerbPath
+                | SyntaxKind::PathAlternative
+                | SyntaxKind::PathSequence
+                | SyntaxKind::PathElt
+                | SyntaxKind::PathEltOrInverse
+                | SyntaxKind::PathPrimary
+                | SyntaxKind::PathNegatedPropertySet
+                | SyntaxKind::PathOneInPropertySet
+        )
     }
 
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -508,6 +575,55 @@ impl AstNode for PropertyListPath {
             Some(Self { syntax })
         } else {
             None
+        }
+    }
+
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+}
+
+impl AstNode for ObjectListPath {
+    fn kind() -> SyntaxKind {
+        SyntaxKind::ObjectListPath
+    }
+    fn can_cast(kind: SyntaxKind) -> bool {
+        matches!(kind, SyntaxKind::ObjectListPath | SyntaxKind::ObjectList)
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+}
+
+impl AstNode for PropertyListPath {
+    #[inline]
+    fn kind() -> SyntaxKind {
+        SyntaxKind::PropertyListPathNotEmpty
+    }
+
+    fn can_cast(kind: SyntaxKind) -> bool {
+        matches!(
+            kind,
+            SyntaxKind::PropertyListPath | SyntaxKind::PropertyListPathNotEmpty
+        )
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        match syntax.kind() {
+            SyntaxKind::PropertyListPathNotEmpty => Some(Self { syntax }),
+            SyntaxKind::PropertyListPath => Some(Self {
+                syntax: syntax.first_child()?,
+            }),
+            _ => None,
         }
     }
     #[inline]

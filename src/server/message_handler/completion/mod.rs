@@ -23,6 +23,7 @@ pub(super) async fn handle_completion_request(
 ) -> Result<(), LSPError> {
     let context =
         CompletionContext::from_completion_request(server, &request).map_err(to_resonse_error)?;
+    log::info!("{:?}", context.location);
     server.send_message(CompletionResponse::new(
         request.get_id(),
         if context.trigger_kind == CompletionTriggerKind::TriggerCharacter

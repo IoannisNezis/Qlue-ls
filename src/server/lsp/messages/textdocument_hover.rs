@@ -133,8 +133,8 @@ mod tests {
 
     #[test]
     fn serialize() {
-        let hover_response =
-            HoverResponse::new(&RequestId::Integer(42), "hover content".to_string());
+        let mut hover_response = HoverResponse::new(&RequestId::Integer(42));
+        hover_response.set_markdown_content("hover content".to_string());
         let expected_message = r#"{"jsonrpc":"2.0","id":42,"result":{"contents":{"kind":"markdown","value":"hover content"}}}"#;
         assert_eq!(
             serde_json::to_string(&hover_response).unwrap(),

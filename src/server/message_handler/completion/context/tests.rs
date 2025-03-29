@@ -137,10 +137,9 @@ fn localize_subject_4() {
 fn localize_predicate_1() {
     //           0123456789012345
     let input = "Select * { ?a }";
-    assert!(match_location_at_offset(
-        input,
-        CompletionLocation::Predicate,
-        13
+    assert!(matches!(
+        location(input, 13),
+        CompletionLocation::Predicate(_),
     ));
 }
 
@@ -148,20 +147,19 @@ fn localize_predicate_1() {
 fn localize_predicate_2() {
     //           0123456789012345678
     let input = "Select * { <iri>  }";
-    assert!(match_location_at_offset(
-        input,
-        CompletionLocation::Predicate,
-        17
+
+    assert!(matches!(
+        location(input, 17),
+        CompletionLocation::Predicate(_),
     ));
 }
 
 #[test]
 fn localize_predicate_3() {
     let input = "Select * { \"str\"  }";
-    assert!(match_location_at_offset(
-        input,
-        CompletionLocation::Predicate,
-        17
+    assert!(matches!(
+        location(input, 17),
+        CompletionLocation::Predicate(_),
     ));
 }
 
@@ -169,10 +167,9 @@ fn localize_predicate_3() {
 fn localize_predicate_4() {
     //           012345678901234567890123
     let input = "Select * { ?a ?b ?c ; }";
-    assert!(match_location_at_offset(
-        input,
-        CompletionLocation::Predicate,
-        21
+    assert!(matches!(
+        location(input, 21),
+        CompletionLocation::Predicate(_),
     ));
 }
 

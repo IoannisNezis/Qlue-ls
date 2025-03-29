@@ -52,9 +52,11 @@ pub(super) async fn fetch_online_completions(
                 let value = binding
                     .get("qlue_ls_value")
                     .expect("Every completion query should provide a `qlue_ls_value`");
-                let label = binding.get("qlue_ls_label").unwrap_or(value);
-                let detail = binding.get("qlue_ls_detail");
                 let (value, import_edit) = compress_rdf_term(server, query_unit, value);
+                let label = binding
+                    .get("qlue_ls_label")
+                    .map_or(value.clone(), |label| label.to_string());
+                let detail = binding.get("qlue_ls_detail");
                 CompletionItem {
                     label: format!("{} ", label),
                     detail: detail.map(|x| x.to_string()),

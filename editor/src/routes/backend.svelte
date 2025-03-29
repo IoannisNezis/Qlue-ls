@@ -32,6 +32,9 @@
 
     function setBackend(conf: BackendConf) {
         backend_state.name = conf.name;
+    }
+
+    function checkAvailibility() {
         languageClientWrapper
             .getLanguageClient()!
             .sendRequest('qlueLs/setBackend', backend_config)
@@ -40,9 +43,15 @@
             });
     }
 
+    function refreshAvailibility() {
+        checkAvailibility();
+        setTimeout(refreshAvailibility, 10000);
+    }
+
     $effect(() => {
         if (languageClientWrapper) {
             setBackend(backend_config);
+            refreshAvailibility();
         }
     });
 </script>

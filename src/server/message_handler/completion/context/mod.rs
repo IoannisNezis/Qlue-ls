@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use ll_sparql_parser::{
-    ast::{AstNode, SelectClause, Triple},
+    ast::{AstNode, SelectClause, ServiceGraphPattern, Triple},
     continuations_at, parse_query,
     syntax_kind::SyntaxKind,
     SyntaxNode, SyntaxToken, TokenAtOffset,
@@ -128,6 +128,7 @@ pub(super) struct CompletionContext {
     pub(super) trigger_character: Option<String>,
     pub(super) anchor_token: Option<SyntaxToken>,
     pub(super) search_term: Option<String>,
+    pub(super) backend: Option<String>,
 }
 
 impl CompletionContext {
@@ -154,7 +155,20 @@ impl CompletionContext {
         let trigger_kind = request.get_completion_context().trigger_kind.clone();
         let trigger_character = request.get_completion_context().trigger_character.clone();
         let tree = parse_query(&document.text);
-        let anchor_token = get_anchor_token(&tree, offset);
+        let trigger_token = get_trigger_token(&tree, offset);
+        let backend = trigger_token
+            .as_ref()
+            .unwrap()
+            .parent_ancestors()
+            .find_map(ServiceGraphPattern::cast)
+            .and_then(|service| service.iri())
+            .and_then(|iri| iri.raw_iri())
+            .and_then(|iri_string| server.state.get_backend_name_by_url(&iri_string))
+            .or(server
+                .state
+                .get_default_backend()
+                .map(|backend| backend.name.clone()));
+        let anchor_token = trigger_token.and_then(get_anchor_token);
         let search_term = get_search_term(&tree, &anchor_token, offset);
         let continuations = get_continuations(&tree, &anchor_token);
         let location = get_location(&anchor_token, &continuations);
@@ -167,6 +181,7 @@ impl CompletionContext {
             trigger_character,
             anchor_token,
             search_term,
+            backend,
         })
     }
 }
@@ -177,7 +192,11 @@ fn get_search_term(
     trigger_pos: TextSize,
 ) -> Option<String> {
     anchor_token.as_ref().and_then(|anchor| {
-        let range = TextRange::new(anchor.text_range().end(), trigger_pos);
+        let range = if anchor.text_range().end() > trigger_pos {
+            TextRange::new(anchor.text_range().start(), trigger_pos)
+        } else {
+            TextRange::new(anchor.text_range().end(), trigger_pos)
+        };
         root.text_range().contains_range(range).then(|| {
             root.text()
                 .slice(range)
@@ -307,26 +326,27 @@ fn get_continuations(root: &SyntaxNode, anchor_token: &Option<SyntaxToken>) -> H
     }
 }
 
-fn get_anchor_token(root: &SyntaxNode, offset: TextSize) -> Option<SyntaxToken> {
+fn get_trigger_token(root: &SyntaxNode, offset: TextSize) -> Option<SyntaxToken> {
     if offset == 0.into() || !root.text_range().contains(offset) {
         return None;
     }
     match root.token_at_offset(offset) {
-        TokenAtOffset::Single(mut token) | TokenAtOffset::Between(mut token, _) => {
-            // TODO: Handle Comments
-            while token.kind() == SyntaxKind::WHITESPACE
-                || token.parent().unwrap().kind() == SyntaxKind::Error
-            {
-                if let Some(prev) = token.prev_token() {
-                    token = prev
-                } else {
-                    return None;
-                }
-            }
-            Some(token)
-        }
+        TokenAtOffset::Single(token) | TokenAtOffset::Between(_, token) => Some(token),
         TokenAtOffset::None => None,
     }
+}
+
+fn get_anchor_token(mut token: SyntaxToken) -> Option<SyntaxToken> {
+    while token.kind() == SyntaxKind::WHITESPACE
+        || token.parent().unwrap().kind() == SyntaxKind::Error
+    {
+        if let Some(prev) = token.prev_token() {
+            token = prev
+        } else {
+            return None;
+        }
+    }
+    Some(token)
 }
 
 #[cfg(test)]

@@ -2,7 +2,7 @@ use ll_sparql_parser::parse_query;
 
 use crate::server::message_handler::completion::context::CompletionLocation;
 
-use super::{get_anchor_token, get_continuations, get_location};
+use super::{get_anchor_token, get_continuations, get_location, get_trigger_token};
 
 fn match_location_at_offset(input: &str, matcher: CompletionLocation, offset: u32) -> bool {
     location(input, offset) == matcher
@@ -10,7 +10,8 @@ fn match_location_at_offset(input: &str, matcher: CompletionLocation, offset: u3
 
 fn location(input: &str, offset: u32) -> CompletionLocation {
     let root = parse_query(input);
-    let anchor = get_anchor_token(&root, offset.into());
+    let trigger_token = get_trigger_token(&root, offset.into());
+    let anchor = trigger_token.and_then(get_anchor_token);
     let continuations = get_continuations(&root, &anchor);
     get_location(&anchor, &continuations)
 }

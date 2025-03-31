@@ -96,13 +96,12 @@ pub(super) fn init() -> Tera {
                 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
                 SELECT * WHERE {
                   {
-                    SELECT ?qlue_ls_value WHERE {
+                    SELECT ?qlue_ls_value (COUNT(?qlue_ls_value) AS ?count) WHERE {
                       {{context}}
                     }
                     GROUP BY ?qlue_ls_value
-                  }
-                   OPTIONAL {
-                    ?qlue_ls_value rdfs:label ?qlue_ls_label .
+                    ORDER BY DESC(?count) 
+                    LIMIT 100
                   }
                 }
                 LIMIT 100

@@ -58,8 +58,8 @@ pub(super) async fn hover(server: &Server, token: SyntaxToken) -> Option<String>
     let query = QUERY_TEMPATES
         .render("hover_iri_query.rq", &context)
         .expect("Template should render");
-    let backend = server.state.backend.as_ref()?;
-    match fetch_sparql_result(&backend.url, &query).await {
+    let backend_url = &server.state.get_default_backend()?.url;
+    match fetch_sparql_result(&backend_url, &query).await {
         Ok(result) => {
             if let RDFTerm::Literal {
                 value,

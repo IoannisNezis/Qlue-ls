@@ -1,5 +1,7 @@
 mod utils;
 
+use std::usize;
+
 use rowan::{cursor::SyntaxToken, SyntaxNodeChildren};
 use utils::nth_ancestor;
 
@@ -279,13 +281,18 @@ impl TriplesBlock {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct Subject {
+    syntax: SyntaxNode,
+}
+
+#[derive(Debug, PartialEq)]
 pub struct Triple {
     syntax: SyntaxNode,
 }
 
 impl Triple {
-    pub fn subject(&self) -> Option<VarOrTerm> {
-        self.syntax.first_child().and_then(VarOrTerm::cast)
+    pub fn subject(&self) -> Option<Subject> {
+        self.syntax.first_child().and_then(Subject::cast)
     }
 
     pub fn properties_list_path(&self) -> Option<PropertyListPath> {
@@ -331,7 +338,13 @@ impl Triple {
 #[derive(Debug)]
 pub struct PropertyPath {
     pub verb: Path,
-    pub object: ObjectListPath,
+    pub object: ObjectList,
+}
+
+impl PropertyPath {
+    pub fn text(&self) -> String {
+        format!("{} {}", self.verb.text(), self.object.text())
+    }
 }
 
 #[derive(Debug)]
@@ -365,7 +378,7 @@ impl Iterator for SubPaths {
 }
 
 #[derive(Debug)]
-pub struct ObjectListPath {
+pub struct ObjectList {
     syntax: SyntaxNode,
 }
 
@@ -378,13 +391,11 @@ impl PropertyListPath {
     pub fn properties(&self) -> Vec<PropertyPath> {
         self.syntax
             .children()
-            .step_by(3)
+            .step_by(2)
             .filter_map(|child| {
                 match (
                     Path::cast(child.clone()),
-                    child
-                        .next_sibling()
-                        .and_then(|next| ObjectListPath::cast(next)),
+                    child.next_sibling().and_then(ObjectList::cast),
                 ) {
                     (None, None) | (None, Some(_)) | (Some(_), None) => None,
                     (Some(path), Some(object_list)) => Some(PropertyPath {
@@ -414,6 +425,14 @@ pub struct Iri {
 impl Iri {
     pub fn prefixed_name(&self) -> Option<PrefixedName> {
         self.syntax.first_child().and_then(PrefixedName::cast)
+    }
+
+    /// Converts a IRIREF "<abc>" into the raw string "abc"
+    /// Returns None this iri is a PrefixedName
+    pub fn raw_iri(&self) -> Option<String> {
+        (self.syntax.first_child()?.kind() == SyntaxKind::IRIREF
+            && self.syntax.text_range().len() >= 2.into())
+        .then(|| self.text()[1..usize::from(self.syntax.text_range().len()) - 1].to_string())
     }
 
     pub fn is_uncompressed(&self) -> bool {
@@ -583,7 +602,7 @@ impl AstNode for Path {
     }
 }
 
-impl AstNode for ObjectListPath {
+impl AstNode for ObjectList {
     fn kind() -> SyntaxKind {
         SyntaxKind::ObjectListPath
     }
@@ -624,6 +643,29 @@ impl AstNode for PropertyListPath {
                 syntax: syntax.first_child()?,
             }),
             _ => None,
+        }
+    }
+    #[inline]
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+}
+
+impl AstNode for Subject {
+    #[inline]
+    fn kind() -> SyntaxKind {
+        SyntaxKind::VarOrTerm
+    }
+
+    fn can_cast(kind: SyntaxKind) -> bool {
+        matches!(kind, SyntaxKind::VarOrTerm | SyntaxKind::TriplesNodePath)
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
         }
     }
     #[inline]

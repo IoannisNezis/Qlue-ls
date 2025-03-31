@@ -17,7 +17,6 @@ pub(super) async fn completions(
 ) -> Vec<CompletionItem> {
     if let CompletionLocation::Object(triple) = &context.location {
         if let Some(search_term) = context.search_term.as_ref() {
-            log::info!("canary1");
             let prefix_declarations: Vec<_> = triple
                 .used_prefixes()
                 .into_iter()
@@ -39,7 +38,6 @@ pub(super) async fn completions(
             template_context.insert("context", &inject);
             template_context.insert("search_term", &search_term);
 
-            log::info!("canary2");
             match fetch_online_completions(
                 server,
                 &query_unit,

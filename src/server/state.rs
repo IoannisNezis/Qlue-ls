@@ -5,7 +5,7 @@ use tree_sitter::Tree;
 use super::lsp::{
     errors::{ErrorCode, LSPError},
     textdocument::{TextDocumentItem, TextEdit},
-    SetBackendParams, TextDocumentContentChangeEvent, TraceValue,
+    Backend, TextDocumentContentChangeEvent, TraceValue,
 };
 
 #[derive(Debug, PartialEq)]
@@ -19,7 +19,8 @@ pub struct ServerState {
     pub status: ServerStatus,
     pub trace_value: TraceValue,
     documents: HashMap<String, (TextDocumentItem, Option<Tree>)>,
-    pub backend: Option<SetBackendParams>,
+    backends: HashMap<String, Backend>,
+    default_backend: Option<String>,
 }
 
 impl ServerState {
@@ -28,12 +29,25 @@ impl ServerState {
             status: ServerStatus::Initializing,
             trace_value: TraceValue::Off,
             documents: HashMap::new(),
-            backend: None,
+            backends: HashMap::new(),
+            default_backend: None,
         }
     }
 
-    pub(crate) fn set_backend(&mut self, backend: SetBackendParams) {
-        self.backend = Some(backend)
+    pub fn set_default_backend(&mut self, name: String) {
+        self.default_backend = Some(name)
+    }
+
+    pub fn get_default_backend(&self) -> Option<&Backend> {
+        self.backends.get(self.default_backend.as_ref()?)
+    }
+
+    pub fn add_backend(&mut self, backend: Backend) {
+        self.backends.insert(backend.name.clone(), backend);
+    }
+
+    pub fn get_backend(&self, backend_name: &str) -> Option<&Backend> {
+        self.backends.get(backend_name)
     }
 
     pub(super) fn add_document(&mut self, text_document: TextDocumentItem, tree: Option<Tree>) {

@@ -104,6 +104,18 @@ pub(super) enum CompletionLocation {
     /// SELECT REDUCED >here< WHERE {}
     /// ```
     SelectBinding(SelectClause),
+    /// RDF Graph identifier
+    ///
+    /// ---
+    ///
+    /// **Example**
+    /// ```sparql
+    /// SELECT * WHERE {
+    ///   Graph >here< {
+    ///   }
+    /// }
+    /// ```
+    Graph,
 }
 
 #[derive(Debug)]
@@ -186,6 +198,12 @@ fn get_location(
                         [$($kind,)*].iter().any(|kind| continuations.contains(kind))
                     };
                 }
+
+        macro_rules! child_of {
+                    ([$($kind:expr),*]) => {
+                        [$($kind,)*].iter().any(|kind| anchor.parent().map_or(false, |parent| parent.kind() == *kind))
+                    };
+                }
         // NOTE: START
         if anchor.kind() == SyntaxKind::WHITESPACE && anchor.text_range().start() == 0.into() {
             CompletionLocation::Start
@@ -194,6 +212,7 @@ fn get_location(
         else if continues_with!([
             SyntaxKind::PropertyListPathNotEmpty,
             SyntaxKind::PropertyListPath,
+            SyntaxKind::Path,
             SyntaxKind::VerbPath,
             SyntaxKind::VerbSimple,
             SyntaxKind::PathEltOrInverse,
@@ -202,12 +221,11 @@ fn get_location(
             SyntaxKind::PathNegatedPropertySet,
             SyntaxKind::PathOneInPropertySet,
             SyntaxKind::PathAlternative
-        ]) && anchor.parent().map_or(false, |parent| {
-            !matches!(
-                parent.kind(),
-                SyntaxKind::BlankNodePropertyListPath | SyntaxKind::BlankNodePropertyList
-            )
-        }) {
+        ]) || continues_with!([SyntaxKind::iri])
+            && anchor.parent().map_or(false, |parent| {
+                parent.kind() == SyntaxKind::PathOneInPropertySet
+            })
+        {
             if let Some(triple) = anchor.parent_ancestors().find_map(Triple::cast) {
                 CompletionLocation::Predicate(triple)
             } else {
@@ -219,7 +237,8 @@ fn get_location(
             SyntaxKind::GroupGraphPatternSub,
             SyntaxKind::TriplesBlock,
             SyntaxKind::GraphPatternNotTriples,
-            SyntaxKind::DataBlockValue
+            SyntaxKind::DataBlockValue,
+            SyntaxKind::GraphNodePath
         ]) {
             CompletionLocation::Subject
         }
@@ -246,6 +265,11 @@ fn get_location(
             SyntaxKind::OffsetClause
         ]) {
             CompletionLocation::SolutionModifier
+        } else if (continues_with!([SyntaxKind::VarOrIri])
+            && child_of!([SyntaxKind::GraphGraphPattern]))
+            || continues_with!([SyntaxKind::DefaultGraphClause, SyntaxKind::SourceSelector])
+        {
+            CompletionLocation::Graph
         }
         // NOTE: SelectBinding
         else if continues_with!([SyntaxKind::Var])
@@ -284,7 +308,7 @@ fn get_continuations(root: &SyntaxNode, anchor_token: &Option<SyntaxToken>) -> H
 }
 
 fn get_anchor_token(root: &SyntaxNode, offset: TextSize) -> Option<SyntaxToken> {
-    if offset == 0.into() {
+    if offset == 0.into() || !root.text_range().contains(offset) {
         return None;
     }
     match root.token_at_offset(offset) {

@@ -1,5 +1,6 @@
 mod context;
 mod error;
+mod graph;
 mod object;
 mod predicate;
 mod select_binding;
@@ -23,7 +24,7 @@ pub(super) async fn handle_completion_request(
 ) -> Result<(), LSPError> {
     let context =
         CompletionContext::from_completion_request(server, &request).map_err(to_resonse_error)?;
-    log::info!("{:?}", context.location);
+
     server.send_message(CompletionResponse::new(
         request.get_id(),
         if context.trigger_kind == CompletionTriggerKind::TriggerCharacter
@@ -41,6 +42,7 @@ pub(super) async fn handle_completion_request(
                 CompletionLocation::Predicate(_) => predicate::completions(server, context).await,
                 CompletionLocation::Object(_) => object::completions(server, context).await,
                 CompletionLocation::SolutionModifier => solution_modifier::completions(context),
+                CompletionLocation::Graph => graph::completions(context),
                 _ => vec![],
             }
         },

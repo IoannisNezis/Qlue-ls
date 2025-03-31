@@ -1,34 +1,53 @@
+use curies::Converter;
+
 use crate::server::{
     fetch::check_server_availability,
-    lsp::{errors::LSPError, SetBackendRequest, SetBackendResponse},
+    lsp::{
+        errors::{ErrorCode, LSPError},
+        PingBackendRequest, PingBackendResponse, SetBackendNotification,
+    },
     Server,
 };
 
-pub(super) async fn handle_set_backend_request(
+pub(super) async fn handle_ping_backend_request(
     server: &mut Server,
-    request: SetBackendRequest,
+    request: PingBackendRequest,
 ) -> Result<(), LSPError> {
-    log::info!(
-        r#"Set backend "{}": <{}>"#,
-        request.params.name,
-        request.params.url
-    );
-    let health_check_url = &request
-        .params
-        .health_check_url
-        .as_ref()
-        .unwrap_or(&request.params.url);
-    log::info!("Testing availibilty of <{}>", health_check_url);
+    let backend = match request.params.backend_name {
+        Some(ref name) => server.state.get_backend(name).ok_or(LSPError::new(
+            ErrorCode::InvalidParams,
+            &format!("got ping request for unknown backend",),
+        )),
+        None => server.state.get_default_backend().ok_or(LSPError::new(
+            ErrorCode::InvalidParams,
+            "no backend or default backend provided",
+        )),
+    }?;
+    let health_check_url = &backend.health_check_url.as_ref().unwrap_or(&backend.url);
     let availible = check_server_availability(health_check_url).await;
-    log::info!(
-        "Servive: {}",
-        match availible {
-            true => "availible",
-            false => "unavailible",
-        }
-    );
-    let id = request.get_id().clone();
-    server.state.set_backend(request.params);
-    server.send_message(SetBackendResponse::new(&id, availible))?;
+    server.send_message(PingBackendResponse::new(request.get_id(), availible))
+}
+
+pub(super) async fn handle_add_backend_notification(
+    server: &mut Server,
+    request: SetBackendNotification,
+) -> Result<(), LSPError> {
+    server.state.add_backend(request.params.backend.clone());
+    if request.params.default {
+        server
+            .state
+            .set_default_backend(request.params.backend.name);
+    }
+    server.tools.uri_converter = match request.params.prefix_map {
+        Some(prefix_map) => Converter::from_prefix_map(prefix_map)
+            .await
+            .map_err(|err| {
+                LSPError::new(
+                    ErrorCode::InvalidParams,
+                    &format!("Could not load prefix map:\n\"{}\"", err),
+                )
+            })?,
+        None => Converter::new(":"),
+    };
     Ok(())
 }

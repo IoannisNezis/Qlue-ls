@@ -199,6 +199,15 @@ pub struct ServiceGraphPattern {
     syntax: SyntaxNode,
 }
 
+impl ServiceGraphPattern {
+    pub fn iri(&self) -> Option<Iri> {
+        self.syntax
+            .children()
+            .find(|child| child.kind() == SyntaxKind::VarOrIri)
+            .and_then(|child| child.first_child().and_then(Iri::cast))
+    }
+}
+
 impl WhereClause {
     pub fn group_graph_pattern(&self) -> Option<GroupGraphPattern> {
         GroupGraphPattern::cast(self.syntax.first_child()?)
@@ -430,7 +439,7 @@ impl Iri {
     /// Converts a IRIREF "<abc>" into the raw string "abc"
     /// Returns None this iri is a PrefixedName
     pub fn raw_iri(&self) -> Option<String> {
-        (self.syntax.first_child()?.kind() == SyntaxKind::IRIREF
+        (self.syntax.first_child_or_token()?.kind() == SyntaxKind::IRIREF
             && self.syntax.text_range().len() >= 2.into())
         .then(|| self.text()[1..usize::from(self.syntax.text_range().len()) - 1].to_string())
     }

@@ -34,6 +34,12 @@ impl ServerState {
         }
     }
 
+    pub fn get_backend_name_by_url(&self, url: &str) -> Option<String> {
+        self.backends
+            .iter()
+            .find_map(|(key, backend)| (backend.url == url).then(|| key.clone()))
+    }
+
     pub fn set_default_backend(&mut self, name: String) {
         self.default_backend = Some(name)
     }

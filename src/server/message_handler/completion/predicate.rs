@@ -42,8 +42,15 @@ pub(super) async fn completions(
                 .map(|record| (record.prefix.clone(), record.uri_prefix.clone()))
                 .collect::<Vec<_>>(),
         );
-        match fetch_online_completions(server, &query_unit, QUERY_TEMPLATE, template_context, range)
-            .await
+        match fetch_online_completions(
+            server,
+            &query_unit,
+            context.backend.as_ref(),
+            QUERY_TEMPLATE,
+            template_context,
+            range,
+        )
+        .await
         {
             Ok(online_completions) => online_completions,
             Err(err) => {

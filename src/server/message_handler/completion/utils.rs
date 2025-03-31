@@ -17,6 +17,7 @@ use super::context::CompletionContext;
 pub(super) async fn fetch_online_completions(
     server: &Server,
     query_unit: &QueryUnit,
+    backend_name: Option<&String>,
     query_template: &str,
     query_template_context: Context,
     range: Range,
@@ -34,49 +35,54 @@ pub(super) async fn fetch_online_completions(
                 ),
             )
         })?;
-    let url = &server
-        .state
-        .get_default_backend()
-        .ok_or(LSPError::new(
-            ErrorCode::InternalError,
-            "No default SPARQL backend defined",
-        ))?
-        .url;
+    if let Some(backend) = backend_name {
+        let url = &server
+            .state
+            .get_backend(backend)
+            .ok_or(LSPError::new(
+                ErrorCode::InternalError,
+                "No default SPARQL backend defined",
+            ))?
+            .url;
 
-    match fetch_sparql_result(url, &query).await {
-        Ok(result) => Ok(result
-            .results
-            .bindings
-            .into_iter()
-            .enumerate()
-            .map(|(idx, binding)| {
-                let value = binding
-                    .get("qlue_ls_value")
-                    .expect("Every completion query should provide a `qlue_ls_value`");
-                let (value, import_edit) = compress_rdf_term(server, query_unit, value);
-                let label = binding
-                    .get("qlue_ls_label")
-                    .map_or(value.clone(), |label| label.to_string());
-                let detail = binding.get("qlue_ls_detail");
-                CompletionItem {
-                    label: format!("{} ", label),
-                    detail: detail.map(|x| x.to_string()),
-                    sort_text: Some(format!("{:0>5}", idx)),
-                    insert_text: None,
-                    text_edit: Some(TextEdit {
-                        range: range.clone(),
-                        new_text: format!("{} ", value),
-                    }),
-                    kind: CompletionItemKind::Value,
-                    insert_text_format: InsertTextFormat::PlainText,
-                    additional_text_edits: import_edit.map(|edit| vec![edit]),
-                }
-            })
-            .collect()),
-        Err(err) => Err(LSPError::new(
-            ErrorCode::InternalError,
-            &format!("Completion query failed:\n {:?}", err),
-        )),
+        match fetch_sparql_result(url, &query).await {
+            Ok(result) => Ok(result
+                .results
+                .bindings
+                .into_iter()
+                .enumerate()
+                .map(|(idx, binding)| {
+                    let value = binding
+                        .get("qlue_ls_value")
+                        .expect("Every completion query should provide a `qlue_ls_value`");
+                    let (value, import_edit) = compress_rdf_term(server, query_unit, value);
+                    let label = binding
+                        .get("qlue_ls_label")
+                        .map_or(value.clone(), |label| label.to_string());
+                    let detail = binding.get("qlue_ls_detail");
+                    CompletionItem {
+                        label: format!("{} ", label),
+                        detail: detail.map(|x| x.to_string()),
+                        sort_text: Some(format!("{:0>5}", idx)),
+                        insert_text: None,
+                        text_edit: Some(TextEdit {
+                            range: range.clone(),
+                            new_text: format!("{} ", value),
+                        }),
+                        kind: CompletionItemKind::Value,
+                        insert_text_format: InsertTextFormat::PlainText,
+                        additional_text_edits: import_edit.map(|edit| vec![edit]),
+                    }
+                })
+                .collect()),
+            Err(err) => Err(LSPError::new(
+                ErrorCode::InternalError,
+                &format!("Completion query failed:\n {:?}", err),
+            )),
+        }
+    } else {
+        log::warn!("No Backend provided");
+        Ok(vec![])
     }
 }
 

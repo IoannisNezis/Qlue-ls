@@ -36,6 +36,7 @@ pub(super) async fn completions(
             match fetch_online_completions(
                 server,
                 &query_unit,
+                context.backend.as_ref(),
                 QUERY_TEMPLATE,
                 template_context,
                 range,

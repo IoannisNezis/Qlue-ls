@@ -128,11 +128,6 @@ pub(super) fn format_document(
         edit.range.translate_to_utf16_encoding(&document.text)?;
     }
     edits = remove_redundent_edits(edits, document);
-    //
-    // log::info!("------------edits------------");
-    // for edit in &edits {
-    //     log::info!("{}", edit);
-    // }
     Ok(edits)
 }
 

@@ -9,7 +9,7 @@ mod lifecycle;
 mod misc;
 mod textdocument_syncronization;
 
-use backend::handle_set_backend_request;
+use backend::{handle_add_backend_notification, handle_ping_backend_request};
 use code_action::handle_codeaction_request;
 use completion::handle_completion_request;
 use diagnostic::handle_diagnostic_request;
@@ -61,7 +61,8 @@ pub(super) async fn dispatch(server: &mut Server, message_string: &String) -> Re
         "$/setTrace" => link!(handle_set_trace_notifcation),
         // NOTE: LSP extensions
         // Requests
-        "qlueLs/setBackend" => link!(handle_set_backend_request),
+        "qlueLs/addBackend" => link!(handle_add_backend_notification),
+        "qlueLs/pingBackend" => link!(handle_ping_backend_request),
         unknown_method => {
             warn!(
                 "Received message with unknown method \"{}\"",

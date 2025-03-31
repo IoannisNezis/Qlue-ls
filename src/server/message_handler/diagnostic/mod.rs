@@ -16,22 +16,26 @@ pub(super) async fn handle_diagnostic_request(
         .state
         .get_document(&request.params.text_document.uri)?;
     let parse_tree = parse_query(&document.text);
+
     let mut diagnostics = Vec::new();
     if let Some(unused_prefix_diagnostics) =
         unused_prefix::diagnostics(document, parse_tree.clone())
     {
         diagnostics.extend(unused_prefix_diagnostics);
     }
+
     if let Some(undeclared_prefix_diagnostics) =
         undeclared_prefix::diagnostics(document, parse_tree.clone())
     {
         diagnostics.extend(undeclared_prefix_diagnostics);
     }
+
     if let Some(uncompacted_uri_diagnostics) =
         uncompacted_uri::diagnostics(document, server, parse_tree)
     {
         diagnostics.extend(uncompacted_uri_diagnostics);
     }
+
     server.send_message(DiagnosticResponse::new(request.get_id(), diagnostics))
 }
 

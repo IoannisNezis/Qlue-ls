@@ -34,13 +34,14 @@ pub(super) async fn fetch_online_completions(
                 ),
             )
         })?;
-    let url = match &server.state.backend {
-        Some(backend) => Ok(&backend.url),
-        None => Err(LSPError::new(
+    let url = &server
+        .state
+        .get_default_backend()
+        .ok_or(LSPError::new(
             ErrorCode::InternalError,
-            "No SPARQL backend defined",
-        )),
-    }?;
+            "No default SPARQL backend defined",
+        ))?
+        .url;
 
     match fetch_sparql_result(url, &query).await {
         Ok(result) => Ok(result

@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use super::{
     utils::{fetch_online_completions, get_replace_range},
     CompletionContext,
@@ -20,12 +22,13 @@ pub(super) async fn completions(
 ) -> Vec<CompletionItem> {
     if let CompletionLocation::Predicate(triple) = &context.location {
         let range = get_replace_range(&context);
-        let query_unit = QueryUnit::cast(context.tree.clone()).unwrap();
         let mut template_context = Context::new();
-
-        if let Some(inject) =
-            compute_inject_context(triple, context.anchor_token.unwrap().text_range().end())
-        {
+        let query_unit = QueryUnit::cast(context.tree.clone()).unwrap();
+        if let Some(inject) = compute_inject_context(
+            triple,
+            context.anchor_token.unwrap().text_range().end(),
+            context.continuations,
+        ) {
             template_context.insert("context", &inject);
         } else {
             return vec![];
@@ -53,14 +56,33 @@ pub(super) async fn completions(
     }
 }
 
-fn compute_inject_context(triple: &Triple, offset: TextSize) -> Option<String> {
+fn compute_inject_context(
+    triple: &Triple,
+    offset: TextSize,
+    continuations: HashSet<SyntaxKind>,
+) -> Option<String> {
     let subject_string = triple.subject()?.text();
-    let properties = triple.properties_list_path()?.properties();
-
-    if let Some(property) = properties.last() {
-        reduce_path(&subject_string, &property.verb, "?qlue_ls_inner2", offset)
-    } else {
+    if continuations.contains(&SyntaxKind::PropertyListPath)
+        || continuations.contains(&SyntaxKind::PropertyListPathNotEmpty)
+    {
         Some(format!("{} ?qlue_ls_value ?qlue_ls_inner2", subject_string))
+    } else {
+        let properties = triple.properties_list_path()?.properties();
+        if continuations.contains(&SyntaxKind::VerbPath) {
+            Some(format!("{} ?qlue_ls_value ?qlue_ls_inner2", triple.text()))
+        } else {
+            let (last_prop, prev_prop) = properties.split_last()?;
+            Some(format!(
+                "{} {} . {}",
+                subject_string,
+                prev_prop
+                    .iter()
+                    .map(|prop| prop.text())
+                    .collect::<Vec<_>>()
+                    .join(" ; "),
+                reduce_path(&subject_string, &last_prop.verb, "?qlue_ls_inner2", offset)?
+            ))
+        }
     }
 }
 
@@ -99,7 +121,7 @@ fn reduce_path(subject: &str, path: &Path, object: &str, offset: TextSize) -> Op
             }
         }
         SyntaxKind::PathEltOrInverse => {
-            if path.syntax().children_with_tokens().nth(0)?.kind() == SyntaxKind::Zirkumflex {
+            if path.syntax().first_child_or_token()?.kind() == SyntaxKind::Zirkumflex {
                 reduce_path(
                     object,
                     &Path::cast(path.syntax().last_child()?)?,
@@ -116,11 +138,14 @@ fn reduce_path(subject: &str, path: &Path, object: &str, offset: TextSize) -> Op
             }
         }
         SyntaxKind::PathNegatedPropertySet => {
-            let last_child = path.syntax().last_child()?;
-            reduce_path(subject, &Path::cast(last_child)?, object, offset)
+            if let Some(last_child) = path.syntax().last_child() {
+                reduce_path(subject, &Path::cast(last_child)?, object, offset)
+            } else {
+                Some(format!("{} ?qlue_ls_value {}", subject, object))
+            }
         }
         SyntaxKind::PathOneInPropertySet => {
-            let first_child = path.syntax().children_with_tokens().nth(0)?;
+            let first_child = path.syntax().first_child_or_token()?;
             if first_child.kind() == SyntaxKind::Zirkumflex {
                 if first_child.text_range().end() == offset {
                     Some(format!("{} ?qlue_ls_value {}", object, subject))
@@ -252,9 +277,9 @@ mod test {
     #[test]
     fn reduce_negated_path() {
         //       012345678901234567890123456
-        let s = "Select * { ?a !  <x>}";
+        let s = "Select * { ?a !()}";
         let reduced = "?a ?qlue_ls_value ?qlue_ls_inner2";
-        let offset = 15;
+        let offset = 16;
         let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
         let triples = query_unit
             .select_query()
@@ -361,6 +386,41 @@ mod test {
         let s = "Select * { ?a ^(^<a>/)  <x>}";
         let reduced = "?qlue_ls_inner2 ^<a> ?qlue_ls_inner . ?qlue_ls_inner ?qlue_ls_value ?a";
         let offset = 21;
+        let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
+        let triples = query_unit
+            .select_query()
+            .unwrap()
+            .where_clause()
+            .unwrap()
+            .group_graph_pattern()
+            .unwrap()
+            .triple_blocks()
+            .first()
+            .unwrap()
+            .triples();
+        let triple = triples.first().unwrap();
+        let res = reduce_path(
+            &triple.subject().unwrap().text(),
+            &triple
+                .properties_list_path()
+                .unwrap()
+                .properties()
+                .last()
+                .unwrap()
+                .verb,
+            "?qlue_ls_inner2",
+            offset.into(),
+        )
+        .unwrap();
+        assert_eq!(res, reduced);
+    }
+
+    #[test]
+    fn reduce_complex_path4() {
+        //       01234567890123456
+        let s = "Select * { ?a !^  <x>}";
+        let reduced = "?qlue_ls_inner2 ?qlue_ls_value ?a";
+        let offset = 16;
         let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
         let triples = query_unit
             .select_query()

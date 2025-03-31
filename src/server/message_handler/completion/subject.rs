@@ -19,11 +19,14 @@ pub(super) async fn completions(
     context: CompletionContext,
 ) -> Vec<CompletionItem> {
     let mut res = Vec::new();
-    if context
-        .continuations
-        .contains(&SyntaxKind::GroupGraphPatternSub)
-        || context.continuations.contains(&SyntaxKind::TriplesBlock)
-        || context.continuations.contains(&SyntaxKind::DataBlockValue)
+    if [
+        SyntaxKind::GroupGraphPatternSub,
+        SyntaxKind::TriplesBlock,
+        SyntaxKind::DataBlockValue,
+        SyntaxKind::GraphNodePath,
+    ]
+    .iter()
+    .any(|kind| context.continuations.contains(kind))
     {
         if let Some(search_term) = context.search_term.as_ref() {
             let mut template_context = Context::new();

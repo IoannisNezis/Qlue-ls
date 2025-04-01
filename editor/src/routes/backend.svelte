@@ -1,16 +1,11 @@
 <script lang="ts">
-    import { afterNavigate } from '$app/navigation';
+    import { backends, type Backend, type BackendConf } from '$lib/backends';
     import { LanguageClientWrapper } from 'monaco-editor-wrapper';
     interface Props {
         languageClientWrapper: LanguageClientWrapper;
     }
-    interface BackendConf {
-        name: string;
-        url: string;
-        healthCheckUrl?: string;
-    }
     interface BackendState {
-        name: string;
+        name: Backend;
         availibility: 'unknown' | 'up' | 'down';
     }
 
@@ -19,27 +14,34 @@
     }
     let { languageClientWrapper }: Props = $props();
 
-    const backend_config: BackendConf = {
-        name: 'dblp',
-        url: 'https://qlever.cs.uni-freiburg.de/api/dblp',
-        healthCheckUrl: 'https://qlever.cs.uni-freiburg.de/api/dblp/ping'
-    };
+    let active_backend: Backend = backends[0].backend;
 
     let backend_state: BackendState = $state({
-        name: backend_config.name,
+        backend: active_backend,
         availibility: 'unknown'
     });
 
-    function setBackend(conf: BackendConf) {
-        backend_state.name = conf.name;
+    function addBackend(conf: BackendConf) {
+        if (conf.default) {
+            active_backend = conf.backend;
+        }
+        languageClientWrapper
+            .getLanguageClient()!
+            .sendRequest('qlueLs/addBackend', conf)
+            .catch((err) => {
+                console.error(err);
+            });
     }
 
     function checkAvailibility() {
         languageClientWrapper
             .getLanguageClient()!
-            .sendRequest('qlueLs/setBackend', backend_config)
+            .sendRequest('qlueLs/pingBackend', active_backend!.name)
             .then((response: SetBackendResponse) => {
                 backend_state.availibility = response.availible ? 'up' : 'down';
+            })
+            .catch((err) => {
+                console.error(err);
             });
     }
 
@@ -50,7 +52,7 @@
 
     $effect(() => {
         if (languageClientWrapper) {
-            setBackend(backend_config);
+            backends.forEach(addBackend);
             refreshAvailibility();
         }
     });
@@ -140,5 +142,5 @@
             />
         </svg>
     {/if}
-    {backend_state.name}
+    {backend_state.backend.name}
 </div>

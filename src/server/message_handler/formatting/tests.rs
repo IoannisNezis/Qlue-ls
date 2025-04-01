@@ -782,6 +782,30 @@ fn format_anon() {
 }
 
 #[test]
+fn format_comment_indentation() {
+    let mut settings = FormatSettings::default();
+    settings.tab_size = Some(4);
+    let ugly_query = indoc!(
+        "SELECT * WHERE {
+           {} UNION # comment
+           {}
+         # comment
+         }
+         "
+    );
+    let pretty_query = indoc!(
+        "SELECT * WHERE {
+             {}
+             UNION # comment
+             {}
+             # comment
+         }
+         "
+    );
+    format_and_compare(ugly_query, pretty_query, &settings);
+}
+
+#[test]
 fn format_comments_with_dots() {
     let ugly_query = indoc!(
         "SELECT * WHERE {

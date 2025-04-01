@@ -79,14 +79,14 @@ impl ConsolidatedTextEdit {
 }
 
 impl CommentMarker {
-    fn to_edit(&self) -> TextEdit {
+    fn to_edit(&self, indent_base: &str) -> TextEdit {
         let prefix = match (
             self.position.line == 0 && self.position.character == 0,
             self.trailing,
         ) {
             (true, _) => "",
             (false, true) => " ",
-            (false, false) => &get_linebreak(&self.indentation_level, "  "),
+            (false, false) => &get_linebreak(&self.indentation_level, indent_base),
         };
         TextEdit::new(
             Range::new(
@@ -123,16 +123,11 @@ pub(super) fn format_document(
 
     comments.sort_by(|a, b| a.position.cmp(&b.position));
     let consolidated_edits = consolidate_edits(edits);
-    edits = merge_comments(consolidated_edits, comments, &document.text)?;
+    edits = merge_comments(consolidated_edits, comments, &document.text, &indent_string)?;
     for edit in edits.iter_mut() {
         edit.range.translate_to_utf16_encoding(&document.text)?;
     }
     edits = remove_redundent_edits(edits, document);
-    //
-    // log::info!("------------edits------------");
-    // for edit in &edits {
-    //     log::info!("{}", edit);
-    // }
     Ok(edits)
 }
 
@@ -140,6 +135,7 @@ fn merge_comments(
     edits: Vec<ConsolidatedTextEdit>,
     comments: Vec<CommentMarker>,
     text: &String,
+    indent_base: &str,
 ) -> Result<Vec<TextEdit>, ResponseError> {
     let mut comment_iter = comments.into_iter().rev().peekable();
     let mut merged_edits =
@@ -167,10 +163,8 @@ fn merge_comments(
                     // Select #comment
                     // * {}
                     // In this case this edits needs to be split into two edits.
-                    let (mut previous_edit, mut next_edit) =
-                        match consolidated_edit.split_at(comment.position) {
-                            (previous_edit, next_edit) => (previous_edit, next_edit.fuse()),
-                        };
+                    let (previous_edit, next_edit) = consolidated_edit.split_at(comment.position);
+                    let (mut previous_edit, mut next_edit) = (previous_edit, next_edit.fuse());
                     // WARNING: This could cause issues.
                     // The amout of chars is neccesarily equal to the amout of
                     // utf-8 bytes. Here i assume that all whispace is 1 utf8 byte long.
@@ -184,25 +178,23 @@ fn merge_comments(
                         Some((idx, '\n')) => {
                             next_edit.new_text = format!(
                                 "{}{}",
-                                comment.to_edit().new_text,
+                                comment.to_edit(indent_base).new_text,
                                 &next_edit.new_text[idx..]
                             )
                         }
                         Some((idx, _char)) => {
                             next_edit.new_text = format!(
                                 "{}{}{}",
-                                comment.to_edit().new_text,
-                                get_linebreak(&comment.indentation_level, "  "),
+                                comment.to_edit(indent_base).new_text,
+                                get_linebreak(&comment.indentation_level, indent_base),
                                 &next_edit.new_text[idx..]
                             )
                         }
                         None => {
-                            let indent = match next_edit.range.end.to_byte_index(&text) {
+                            let indent = match next_edit.range.end.to_byte_index(text) {
                                 Some(start_next_token) => {
                                     match text.get(start_next_token..start_next_token + 1) {
-                                        Some("}") => {
-                                            comment.indentation_level.checked_sub(1).unwrap_or(0)
-                                        }
+                                        Some("}") => comment.indentation_level.saturating_sub(1),
                                         _ => comment.indentation_level,
                                     }
                                 }
@@ -210,8 +202,8 @@ fn merge_comments(
                             };
                             next_edit.new_text = format!(
                                 "{}{}",
-                                comment.to_edit().new_text,
-                                get_linebreak(&indent, "  "),
+                                comment.to_edit(indent_base).new_text,
+                                get_linebreak(&indent, indent_base),
                             )
                         }
                     };
@@ -220,11 +212,11 @@ fn merge_comments(
                 }
 
                 acc.push(consolidated_edit.fuse());
-                return acc;
+                acc
             });
     // NOTE: all remaining comments are attached to 0:0.
     comment_iter.for_each(|comment| {
-        let comment_edit = comment.to_edit();
+        let comment_edit = comment.to_edit(indent_base);
         merged_edits.push(TextEdit::new(Range::new(0, 0, 0, 0), "\n"));
         merged_edits.push(comment_edit);
     });
@@ -417,7 +409,7 @@ fn node_augmentation(
     if KEYWORDS.contains(&node.kind()) && settings.capitalize_keywords {
         augmentations.push(TextEdit::new(Range::from_node(&node), node.kind()));
     }
-    return augmentations;
+    augmentations
 }
 
 fn in_node_augmentation(
@@ -745,24 +737,21 @@ fn post_node_augmentation(
             Some(get_linebreak(&indentation, indent_base))
         }
         "PropertyListPathNotEmpty" => match node.parent().map(|parent| parent.kind()) {
-            Some("BlankNodePropertyListPath") if node.child_count() > 3 => Some(get_linebreak(
-                &indentation.checked_sub(1).unwrap_or(0),
-                indent_base,
-            )),
+            Some("BlankNodePropertyListPath") if node.child_count() > 3 => {
+                Some(get_linebreak(&indentation.saturating_sub(1), indent_base))
+            }
             Some("BlankNodePropertyListPath") if node.child_count() <= 3 => Some(" ".to_string()),
             _ => None,
         },
         "TriplesTemplate" => match node.parent().map(|parent| parent.kind()) {
-            Some("TriplesTemplateBlock") => Some(get_linebreak(
-                &indentation.checked_sub(1).unwrap_or(0),
-                indent_base,
-            )),
+            Some("TriplesTemplateBlock") => {
+                Some(get_linebreak(&indentation.saturating_sub(1), indent_base))
+            }
             _ => None,
         },
-        "GroupGraphPatternSub" | "ConstructTriples" | "Quads" => Some(get_linebreak(
-            &indentation.checked_sub(1).unwrap_or(0),
-            indent_base,
-        )),
+        "GroupGraphPatternSub" | "ConstructTriples" | "Quads" => {
+            Some(get_linebreak(&indentation.saturating_sub(1), indent_base))
+        }
         _ => None,
     }?;
     Some(TextEdit::new(
@@ -895,6 +884,5 @@ fn get_column_width(node: &Node) -> usize {
     range
         .end_point
         .column
-        .checked_sub(range.start_point.column)
-        .unwrap_or(0)
+        .saturating_sub(range.start_point.column)
 }

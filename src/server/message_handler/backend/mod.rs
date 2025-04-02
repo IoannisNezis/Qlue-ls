@@ -16,7 +16,7 @@ pub(super) async fn handle_ping_backend_request(
     let backend = match request.params.backend_name {
         Some(ref name) => server.state.get_backend(name).ok_or(LSPError::new(
             ErrorCode::InvalidParams,
-            &format!("got ping request for unknown backend",),
+            &format!("got ping request for unknown backend: \"{}\"", name),
         )),
         None => server.state.get_default_backend().ok_or(LSPError::new(
             ErrorCode::InvalidParams,
@@ -36,18 +36,20 @@ pub(super) async fn handle_add_backend_notification(
     if request.params.default {
         server
             .state
-            .set_default_backend(request.params.backend.name);
+            .set_default_backend(request.params.backend.name.clone());
     }
-    server.tools.uri_converter = match request.params.prefix_map {
-        Some(prefix_map) => Converter::from_prefix_map(prefix_map)
+    if let Some(prefix_map) = request.params.prefix_map {
+        server
+            .state
+            .add_prefix_map(request.params.backend.name, prefix_map)
             .await
             .map_err(|err| {
+                log::error!("{}", err);
                 LSPError::new(
                     ErrorCode::InvalidParams,
                     &format!("Could not load prefix map:\n\"{}\"", err),
                 )
-            })?,
-        None => Converter::new(":"),
+            })?;
     };
     Ok(())
 }

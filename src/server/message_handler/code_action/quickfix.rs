@@ -81,7 +81,11 @@ fn declare_prefix(
     diagnostic: Diagnostic,
 ) -> Result<Option<CodeAction>, LSPError> {
     if let Some(LSPAny::String(prefix)) = &diagnostic.data {
-        if let Ok(record) = server.tools.uri_converter.find_by_prefix(&prefix) {
+        if let Some(Ok(record)) = server
+            .state
+            .get_default_converter()
+            .and_then(|converter| Some(converter.find_by_prefix(&prefix)))
+        {
             Ok(Some(CodeAction {
                 title: format!("Declare prefix \"{}\"", prefix),
                 kind: Some(CodeActionKind::QuickFix),

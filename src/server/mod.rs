@@ -134,8 +134,9 @@ impl Server {
     /// - The `uri_converter` fails to find a record associated with the URI.
     /// - The `uri_converter` fails to shorten the URI into a CURIE.
     pub(crate) fn shorten_uri(&self, uri: &str) -> Option<(String, String, String)> {
-        let record = self.tools.uri_converter.find_by_uri(uri).ok()?;
-        let curie = self.tools.uri_converter.compress(uri).ok()?;
+        let converter = self.state.get_default_converter()?;
+        let record = converter.find_by_uri(uri).ok()?;
+        let curie = converter.compress(uri).ok()?;
         Some((record.prefix.clone(), record.uri_prefix.clone(), curie))
     }
 }

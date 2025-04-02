@@ -202,7 +202,7 @@ mod tests {
             None,
         );
         let completion_response = CompletionResponse::new(&RequestId::Integer(1337), vec![cmp]);
-        let expected_message = r#"{"jsonrpc":"2.0","id":1337,"result":{"items":[{"label":"SELECT","kind":15,"detail":"Select query","insertText":"SELECT ${1:*} WHERE {\n  $0\n}","insertTextFormat":2,"additionalTextEdits":null}]}}"#;
+        let expected_message = r#"{"jsonrpc":"2.0","id":1337,"result":{"items":[{"label":"SELECT","kind":15,"detail":"Select query","sortText":null,"insertText":"SELECT ${1:*} WHERE {\n  $0\n}","insertTextFormat":2,"additionalTextEdits":null}]}}"#;
         let actual_message = serde_json::to_string(&completion_response).unwrap();
         assert_eq!(actual_message, expected_message);
     }

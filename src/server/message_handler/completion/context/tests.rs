@@ -44,7 +44,8 @@ fn localize_select_binding() {
     ));
 
     assert!(matches!(
-        location("Select  Reduced ?a {}", 19),
+        //        0123456678901233456789
+        location("Select  Reduced ?a {}", 16),
         CompletionLocation::SelectBinding(_),
     ));
 

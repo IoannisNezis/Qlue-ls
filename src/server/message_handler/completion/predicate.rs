@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use super::{
-    utils::{fetch_online_completions, get_replace_range},
+    utils::{fetch_online_completions, get_prefix_declarations, get_replace_range},
     CompletionContext,
 };
 use crate::server::{
@@ -24,6 +24,7 @@ pub(super) async fn completions(
         let range = get_replace_range(&context);
         let mut template_context = Context::new();
         let query_unit = QueryUnit::cast(context.tree.clone()).unwrap();
+        let prefixes = get_prefix_declarations(server, &context, triple);
         if let Some(inject) = compute_inject_context(
             triple,
             context.anchor_token.unwrap().text_range().end(),
@@ -33,15 +34,7 @@ pub(super) async fn completions(
         } else {
             return vec![];
         }
-        template_context.insert(
-            "prefixes",
-            &triple
-                .used_prefixes()
-                .iter()
-                .filter_map(|prefix| server.tools.uri_converter.find_by_prefix(prefix).ok())
-                .map(|record| (record.prefix.clone(), record.uri_prefix.clone()))
-                .collect::<Vec<_>>(),
-        );
+        template_context.insert("prefixes", &prefixes);
         match fetch_online_completions(
             server,
             &query_unit,

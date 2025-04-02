@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use curies::{Converter, CuriesError};
 use tree_sitter::Tree;
 
 use super::lsp::{
@@ -20,6 +21,7 @@ pub struct ServerState {
     pub trace_value: TraceValue,
     documents: HashMap<String, (TextDocumentItem, Option<Tree>)>,
     backends: HashMap<String, Backend>,
+    uri_converter: HashMap<String, Converter>,
     default_backend: Option<String>,
 }
 
@@ -30,6 +32,7 @@ impl ServerState {
             trace_value: TraceValue::Off,
             documents: HashMap::new(),
             backends: HashMap::new(),
+            uri_converter: HashMap::new(),
             default_backend: None,
         }
     }
@@ -50,6 +53,16 @@ impl ServerState {
 
     pub fn add_backend(&mut self, backend: Backend) {
         self.backends.insert(backend.name.clone(), backend);
+    }
+
+    pub async fn add_prefix_map(
+        &mut self,
+        backend: String,
+        map: HashMap<String, String>,
+    ) -> Result<(), CuriesError> {
+        self.uri_converter
+            .insert(backend, Converter::from_prefix_map(map).await?);
+        Ok(())
     }
 
     pub fn get_backend(&self, backend_name: &str) -> Option<&Backend> {
@@ -117,5 +130,13 @@ impl ServerState {
                 &format!("Could not update parse-tree, no entry for \"{}\"", uri),
             ))
         }
+    }
+
+    pub(crate) fn get_default_converter(&self) -> Option<&Converter> {
+        self.uri_converter.get((&self.default_backend).as_ref()?)
+    }
+
+    pub(crate) fn get_converter(&self, backend_name: &str) -> Option<&Converter> {
+        self.uri_converter.get(backend_name)
     }
 }

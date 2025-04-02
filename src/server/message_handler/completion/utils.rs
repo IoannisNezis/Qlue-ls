@@ -1,4 +1,4 @@
-use ll_sparql_parser::ast::QueryUnit;
+use ll_sparql_parser::ast::{QueryUnit, Triple};
 use sparql::results::RDFTerm;
 use tera::Context;
 
@@ -135,4 +135,24 @@ pub(super) fn compress_rdf_term(
         },
         _ => (rdf_term.to_string(), None),
     }
+}
+
+pub(super) fn get_prefix_declarations<'a>(
+    server: &'a Server,
+    context: &CompletionContext,
+    triple: &'a Triple,
+) -> Vec<(&'a String, &'a String)> {
+    triple
+        .used_prefixes()
+        .into_iter()
+        .filter_map(|prefix| {
+            context.backend.as_ref().and_then(|backend| {
+                server
+                    .state
+                    .get_converter(backend)
+                    .and_then(|converter| converter.find_by_prefix(&prefix).ok())
+            })
+        })
+        .map(|record| (&record.prefix, &record.uri_prefix))
+        .collect()
 }

@@ -1,5 +1,5 @@
 use super::{
-    utils::{fetch_online_completions, get_replace_range},
+    utils::{fetch_online_completions, get_prefix_declarations, get_replace_range},
     CompletionContext,
 };
 use crate::server::{
@@ -17,12 +17,7 @@ pub(super) async fn completions(
 ) -> Vec<CompletionItem> {
     if let CompletionLocation::Object(triple) = &context.location {
         if let Some(search_term) = context.search_term.as_ref() {
-            let prefix_declarations: Vec<_> = triple
-                .used_prefixes()
-                .into_iter()
-                .filter_map(|prefix| server.tools.uri_converter.find_by_prefix(&prefix).ok())
-                .map(|record| (&record.prefix, &record.uri_prefix))
-                .collect();
+            let prefix_declarations: Vec<_> = get_prefix_declarations(server, &context, triple);
             let range = get_replace_range(&context);
             let query_unit = QueryUnit::cast(context.tree).unwrap();
             let inject = query_unit

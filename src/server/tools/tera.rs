@@ -115,12 +115,12 @@ pub(super) fn init() -> Tera {
                 {% if prefix %}
                 PREFIX {{prefix.0}}: <{{prefix.1}}>
                 {% endif %}
-                SELECT ?hover WHERE {
+                SELECT ?qlue_ls_value WHERE {
                   {{entity}} rdfs:label ?label .
                   OPTIONAL {
                       {{entity}} rdfs:comment ?comment .
                   }
-                  Bind(COALESCE(?comment, ?label) as ?hover)
+                  Bind(COALESCE(?comment, ?label) as ?qlue_ls_value)
                 }
                 LIMIT 1
                "

@@ -77,6 +77,13 @@ fn compute_inject_context(
         let properties = triple.properties_list_path()?.properties();
         if continuations.contains(&SyntaxKind::VerbPath) {
             Some(format!("{} ?qlue_ls_value ?qlue_ls_inner2", triple.text()))
+        } else if properties.len() == 1 {
+            reduce_path(
+                &subject_string,
+                &properties[0].verb,
+                "?qlue_ls_inner2",
+                offset,
+            )
         } else {
             let (last_prop, prev_prop) = properties.split_last()?;
             Some(format!(
@@ -178,10 +185,10 @@ mod test {
 
     #[test]
     fn reduce_sequence_path() {
-        //       012345678901234567890123456
-        let s = "Select * { ?a <p0>/<p1>/  }";
-        let reduced = "?a <p0>/<p1> ?qlue_ls_inner . ?qlue_ls_inner ?qlue_ls_value ?qlue_ls_inner2";
-        let offset = 24;
+        //       0123456789012345678901
+        let s = "Select * { ?a <p0>/  }";
+        let reduced = "?a <p0> ?qlue_ls_inner . ?qlue_ls_inner ?qlue_ls_value ?qlue_ls_inner2";
+        let offset = 19;
         let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
         let triples = query_unit
             .select_query()

@@ -1,7 +1,4 @@
-use std::collections::HashMap;
-
-use log::error;
-
+use super::{Diagnostic, DiagnosticCode};
 use crate::server::{
     anaysis::namespace_is_declared,
     common::{serde_parse, UncompactedUrisDiagnosticData},
@@ -13,8 +10,8 @@ use crate::server::{
     },
     Server,
 };
-
-use super::{Diagnostic, DiagnosticCode};
+use log::error;
+use std::collections::HashMap;
 
 pub(super) fn get_quickfix(
     server: &Server,

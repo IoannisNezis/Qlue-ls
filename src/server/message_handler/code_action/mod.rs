@@ -157,6 +157,11 @@ mod test {
                ?c <https://schema.org/name> ?d
              }"
         ));
+        server
+            .tools
+            .uri_converter
+            .add_prefix("schema", "https://schema.org/")
+            .unwrap();
         server.state = state;
         let document = server.state.get_document("uri").unwrap();
         let code_action = shorten_all_uris(&server, document).unwrap();
@@ -176,6 +181,11 @@ mod test {
     #[test]
     fn shorten_all_uris_declared() {
         let mut server = Server::new(|_message| {});
+        server
+            .tools
+            .uri_converter
+            .add_prefix("schema", "https://schema.org/")
+            .unwrap();
         let state = setup_state(indoc!(
             "PREFIX schema: <https://schema.org/>
              SELECT * {

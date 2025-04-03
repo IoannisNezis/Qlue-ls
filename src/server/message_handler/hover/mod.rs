@@ -30,7 +30,7 @@ pub(super) async fn handle_hover_request(
     if let TokenAtOffset::Single(token) = root.token_at_offset(offset.into()) {
         if let Some(content) = match token.kind() {
             SyntaxKind::PNAME_LN | SyntaxKind::PNAME_NS | SyntaxKind::IRIREF => {
-                iri::hover(server, token).await
+                Some(iri::hover(server, token).await?)
             }
             other => documentation::get_docstring_for_kind(other),
         } {

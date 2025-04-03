@@ -1,16 +1,23 @@
-use indoc::indoc;
-use lazy_static::lazy_static;
+use crate::server::{
+    fetch::fetch_sparql_result,
+    lsp::errors::{ErrorCode, LSPError},
+    Server,
+};
 use ll_sparql_parser::{
     ast::{AstNode, Iri},
     SyntaxToken,
 };
 use sparql::results::RDFTerm;
-use tera::{Context, Tera};
+use tera::Context;
 
-use crate::server::{fetch::fetch_sparql_result, Server};
-
-pub(super) async fn hover(server: &Server, token: SyntaxToken) -> Option<String> {
-    let iri = token.parent_ancestors().find_map(Iri::cast)?;
+pub(super) async fn hover(server: &Server, token: SyntaxToken) -> Result<String, LSPError> {
+    let iri = token
+        .parent_ancestors()
+        .find_map(Iri::cast)
+        .ok_or(LSPError::new(
+            ErrorCode::InternalError,
+            "Could not find iri node",
+        ))?;
     let mut context = Context::new();
     context.insert("entity", &iri.text());
 
@@ -30,25 +37,35 @@ pub(super) async fn hover(server: &Server, token: SyntaxToken) -> Option<String>
     let query = server
         .tools
         .tera
-        .render("hover_iri_query.rq", &context)
-        .expect("Template should render");
-    let backend_url = &server.state.get_default_backend()?.url;
-    match fetch_sparql_result(backend_url, &query).await {
-        Ok(result) => {
-            if let RDFTerm::Literal {
-                value,
-                lang: _lang,
-                datatype: _datatype,
-            } = result.results.bindings.first()?.get("hover")?
-            {
-                Some(value.to_owned())
-            } else {
-                None
-            }
-        }
-        Err(err) => {
-            log::error!("{:?}", err);
-            None
-        }
+        .render("hover_iri.rq", &context)
+        .map_err(|err| {
+            log::error!("{}", err);
+            LSPError::new(ErrorCode::InternalError, &err.to_string())
+        })?;
+    let backend_url = &server
+        .state
+        .get_default_backend()
+        .ok_or(LSPError::new(
+            ErrorCode::InternalError,
+            "Could not resolve backend url",
+        ))?
+        .url;
+    let result = fetch_sparql_result(backend_url, &query).await?;
+    if let Some(RDFTerm::Literal {
+        value,
+        lang: _lang,
+        datatype: _datatype,
+    }) = result
+        .results
+        .bindings
+        .first()
+        .and_then(|value| value.get("qlue_ls_value"))
+    {
+        Ok(value.to_owned())
+    } else {
+        Err(LSPError::new(
+            ErrorCode::InternalError,
+            "No RDF literal \"qlue_ls_value\" in result",
+        ))
     }
 }

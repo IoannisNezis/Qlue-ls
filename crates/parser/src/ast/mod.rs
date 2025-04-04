@@ -98,7 +98,7 @@ impl SelectQuery {
                     .collect();
             }
         }
-        return vec![];
+        vec![]
     }
 }
 
@@ -391,6 +391,38 @@ pub struct ObjectList {
     syntax: SyntaxNode,
 }
 
+#[derive(Debug, PartialEq)]
+pub struct BlankPropertyList {
+    syntax: SyntaxNode,
+}
+
+impl BlankPropertyList {
+    pub fn triple(&self) -> Option<Triple> {
+        match self.syntax.kind() {
+            SyntaxKind::BlankNodePropertyListPath => {
+                todo!()
+            }
+            SyntaxKind::BlankNodePropertyList => {
+                todo!()
+            }
+            SyntaxKind::BlankNode => self.syntax.ancestors().nth(7).and_then(Triple::cast),
+            _ => None,
+        }
+    }
+
+    pub fn is_object(&self) -> bool {
+        todo!()
+    }
+
+    pub fn is_subject(&self) -> bool {
+        todo!()
+    }
+
+    pub fn property_list(&self) -> Option<PropertyListPath> {
+        todo!()
+    }
+}
+
 #[derive(Debug)]
 pub struct PropertyListPath {
     syntax: SyntaxNode,
@@ -632,6 +664,36 @@ impl AstNode for ObjectList {
     }
 }
 
+impl AstNode for BlankPropertyList {
+    #[inline]
+    fn kind() -> SyntaxKind {
+        SyntaxKind::BlankNodePropertyListPath
+    }
+
+    fn can_cast(kind: SyntaxKind) -> bool {
+        matches!(
+            kind,
+            SyntaxKind::BlankNodePropertyListPath
+                | SyntaxKind::BlankNodePropertyList
+                | SyntaxKind::BlankNode
+        )
+    }
+
+    #[inline]
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+}
+
 impl AstNode for PropertyListPath {
     #[inline]
     fn kind() -> SyntaxKind {
@@ -645,15 +707,15 @@ impl AstNode for PropertyListPath {
         )
     }
 
+    #[inline]
     fn cast(syntax: SyntaxNode) -> Option<Self> {
-        match syntax.kind() {
-            SyntaxKind::PropertyListPathNotEmpty => Some(Self { syntax }),
-            SyntaxKind::PropertyListPath => Some(Self {
-                syntax: syntax.first_child()?,
-            }),
-            _ => None,
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
         }
     }
+
     #[inline]
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax

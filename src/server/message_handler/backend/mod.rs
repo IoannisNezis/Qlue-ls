@@ -1,5 +1,3 @@
-use curies::Converter;
-
 use crate::server::{
     fetch::check_server_availability,
     lsp::{

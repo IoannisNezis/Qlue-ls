@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use ll_sparql_parser::{
-    ast::{AstNode, SelectClause, ServiceGraphPattern, Triple},
+    ast::{AstNode, BlankPropertyList, SelectClause, ServiceGraphPattern, Triple},
     continuations_at, parse_query,
     syntax_kind::SyntaxKind,
     SyntaxNode, SyntaxToken, TokenAtOffset,
@@ -116,6 +116,24 @@ pub(super) enum CompletionLocation {
     /// }
     /// ```
     Graph,
+    /// A Blank node property list in a triple
+    ///
+    /// ---
+    ///
+    /// **Example**
+    /// ```sparql
+    /// SELECT * WHERE {
+    ///   ?s ?p [ >here< ]
+    /// }
+    ///
+    /// or
+    ///
+    /// ```sparql
+    /// SELECT * WHERE {
+    ///   \[ >here< \]
+    /// }
+    /// ```
+    BlankNodeProperty(BlankPropertyList),
 }
 
 #[derive(Debug)]
@@ -171,7 +189,7 @@ impl CompletionContext {
         let anchor_token = trigger_token.and_then(get_anchor_token);
         let search_term = get_search_term(&tree, &anchor_token, offset);
         let continuations = get_continuations(&tree, &anchor_token);
-        let location = get_location(&anchor_token, &continuations);
+        let location = get_location(&anchor_token, &continuations, offset);
         Ok(Self {
             location,
             trigger_textdocument_position: document_position.position,
@@ -210,6 +228,7 @@ fn get_search_term(
 fn get_location(
     anchor_token: &Option<SyntaxToken>,
     continuations: &HashSet<SyntaxKind>,
+    offset: TextSize,
 ) -> CompletionLocation {
     if let Some(anchor) = anchor_token {
         macro_rules! continues_with {
@@ -223,9 +242,18 @@ fn get_location(
                         [$($kind,)*].iter().any(|kind| anchor.parent().map_or(false, |parent| parent.kind() == *kind))
                     };
                 }
+        log::info!("anchor {:?}", anchor);
+        log::info!("cont {:?}", continuations);
         // NOTE: START
         if anchor.kind() == SyntaxKind::WHITESPACE && anchor.text_range().start() == 0.into() {
             CompletionLocation::Start
+        } else if anchor.kind() == SyntaxKind::ANON && anchor.text_range().contains(offset) {
+            anchor
+                .parent()
+                .and_then(|parent| {
+                    BlankPropertyList::cast(parent).map(CompletionLocation::BlankNodeProperty)
+                })
+                .unwrap_or(CompletionLocation::Unknown)
         }
         // NOTE: Predicate
         else if continues_with!([
@@ -245,7 +273,11 @@ fn get_location(
                 parent.kind() == SyntaxKind::PathOneInPropertySet
             })
         {
-            if let Some(triple) = anchor.parent_ancestors().find_map(Triple::cast) {
+            if let Some(blank_node_property) =
+                anchor.parent_ancestors().find_map(BlankPropertyList::cast)
+            {
+                CompletionLocation::BlankNodeProperty(blank_node_property)
+            } else if let Some(triple) = anchor.parent_ancestors().find_map(Triple::cast) {
                 CompletionLocation::Predicate(triple)
             } else {
                 CompletionLocation::Unknown

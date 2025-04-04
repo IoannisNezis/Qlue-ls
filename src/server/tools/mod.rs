@@ -1,8 +1,6 @@
-mod curies;
 mod tera;
 mod tree_sitter;
 
-use ::curies::Converter;
 use ::tera::Tera;
 use ::tree_sitter::Parser;
 

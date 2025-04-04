@@ -1,0 +1,49 @@
+use super::context::{CompletionContext, CompletionLocation};
+use crate::server::{
+    lsp::{textdocument::Range, CompletionItem},
+    message_handler::completion::utils::{fetch_online_completions, get_prefix_declarations},
+    Server,
+};
+use ll_sparql_parser::ast::{AstNode, QueryUnit};
+use tera::Context;
+
+static QUERY_TEMPLATE: &str = "predicate_completion.rq";
+
+pub(super) async fn completions(
+    server: &Server,
+    context: CompletionContext,
+) -> Vec<CompletionItem> {
+    if let CompletionLocation::BlankNodeProperty(blank_node_props) = &context.location {
+        let query_unit = QueryUnit::cast(context.tree.clone()).unwrap();
+        let triple = blank_node_props.triple().unwrap();
+        let subj = triple.subject().unwrap();
+        let props = triple.properties_list_path().unwrap().properties();
+        let path = &props.last().unwrap().verb;
+        let inject_context = format!(
+            "{} {} ?qlue_ls_inner . ?qlue_ls_inner ?qlue_ls_value []",
+            subj.text(),
+            path.text()
+        );
+        let prefixes = get_prefix_declarations(server, &context, &triple);
+        let mut template_context = Context::new();
+        template_context.insert("context", &inject_context);
+        template_context.insert("prefixes", &prefixes);
+        fetch_online_completions(
+            server,
+            &query_unit,
+            context.backend.as_ref(),
+            QUERY_TEMPLATE,
+            template_context,
+            Range::new(
+                context.trigger_textdocument_position.line,
+                context.trigger_textdocument_position.character,
+                context.trigger_textdocument_position.line,
+                context.trigger_textdocument_position.character,
+            ),
+        )
+        .await
+        .unwrap_or(vec![])
+    } else {
+        panic!("object completions requested for non object location");
+    }
+}

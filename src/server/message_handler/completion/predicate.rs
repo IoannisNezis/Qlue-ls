@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use super::{
     utils::{fetch_online_completions, get_prefix_declarations, get_replace_range},
     CompletionContext,
@@ -11,6 +9,7 @@ use ll_sparql_parser::{
     ast::{AstNode, Path, QueryUnit, Triple},
     syntax_kind::SyntaxKind,
 };
+use std::collections::HashSet;
 use tera::Context;
 use text_size::TextSize;
 
@@ -65,18 +64,13 @@ fn compute_inject_context(
     if continuations.contains(&SyntaxKind::PropertyListPath)
         || continuations.contains(&SyntaxKind::PropertyListPathNotEmpty)
     {
-        Some(format!("{} ?qlue_ls_value ?qlue_ls_inner2", subject_string))
+        Some(format!("{} ?qlue_ls_value []", subject_string))
     } else {
         let properties = triple.properties_list_path()?.properties();
         if continuations.contains(&SyntaxKind::VerbPath) {
-            Some(format!("{} ?qlue_ls_value ?qlue_ls_inner2", triple.text()))
+            Some(format!("{} ?qlue_ls_value []", triple.text()))
         } else if properties.len() == 1 {
-            reduce_path(
-                &subject_string,
-                &properties[0].verb,
-                "?qlue_ls_inner2",
-                offset,
-            )
+            reduce_path(&subject_string, &properties[0].verb, "[]", offset)
         } else {
             let (last_prop, prev_prop) = properties.split_last()?;
             Some(format!(
@@ -87,7 +81,7 @@ fn compute_inject_context(
                     .map(|prop| prop.text())
                     .collect::<Vec<_>>()
                     .join(" ; "),
-                reduce_path(&subject_string, &last_prop.verb, "?qlue_ls_inner2", offset)?
+                reduce_path(&subject_string, &last_prop.verb, "[]", offset)?
             ))
         }
     }
@@ -180,7 +174,7 @@ mod test {
     fn reduce_sequence_path() {
         //       0123456789012345678901
         let s = "Select * { ?a <p0>/  }";
-        let reduced = "?a <p0> ?qlue_ls_inner . ?qlue_ls_inner ?qlue_ls_value ?qlue_ls_inner2";
+        let reduced = "?a <p0> ?qlue_ls_inner . ?qlue_ls_inner ?qlue_ls_value []";
         let offset = 19;
         let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
         let triples = query_unit
@@ -204,7 +198,7 @@ mod test {
                 .last()
                 .unwrap()
                 .verb,
-            "?qlue_ls_inner2",
+            "[]",
             offset.into(),
         )
         .unwrap();
@@ -215,7 +209,7 @@ mod test {
     fn reduce_alternating_path() {
         //       012345678901234567890123456
         let s = "Select * { ?a <p0>/<p1>|  <x>}";
-        let reduced = "?a ?qlue_ls_value ?qlue_ls_inner2";
+        let reduced = "?a ?qlue_ls_value []";
         let offset = 24;
         let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
         let triples = query_unit
@@ -239,7 +233,7 @@ mod test {
                 .last()
                 .unwrap()
                 .verb,
-            "?qlue_ls_inner2",
+            "[]",
             offset.into(),
         )
         .unwrap();
@@ -250,7 +244,7 @@ mod test {
     fn reduce_inverse_path() {
         //       012345678901234567890123456
         let s = "Select * { ?a ^  <x>}";
-        let reduced = "?qlue_ls_inner2 ?qlue_ls_value ?a";
+        let reduced = "[] ?qlue_ls_value ?a";
         let offset = 15;
         let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
         let triples = query_unit
@@ -274,7 +268,7 @@ mod test {
                 .last()
                 .unwrap()
                 .verb,
-            "?qlue_ls_inner2",
+            "[]",
             offset.into(),
         )
         .unwrap();
@@ -285,7 +279,7 @@ mod test {
     fn reduce_negated_path() {
         //       012345678901234567890123456
         let s = "Select * { ?a !()}";
-        let reduced = "?a ?qlue_ls_value ?qlue_ls_inner2";
+        let reduced = "?a ?qlue_ls_value []";
         let offset = 16;
         let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
         let triples = query_unit
@@ -309,7 +303,7 @@ mod test {
                 .last()
                 .unwrap()
                 .verb,
-            "?qlue_ls_inner2",
+            "[]",
             offset.into(),
         )
         .unwrap();
@@ -320,8 +314,7 @@ mod test {
     fn reduce_complex_path1() {
         //       0123456789012345678901234567890123456
         let s = "Select * { ?a <p0>|<p1>/(<p2>)/^  <x>}";
-        let reduced =
-            "?a <p1>/(<p2>) ?qlue_ls_inner . ?qlue_ls_inner2 ?qlue_ls_value ?qlue_ls_inner";
+        let reduced = "?a <p1>/(<p2>) ?qlue_ls_inner . [] ?qlue_ls_value ?qlue_ls_inner";
         let offset = 32;
         let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
         let triples = query_unit
@@ -345,7 +338,7 @@ mod test {
                 .last()
                 .unwrap()
                 .verb,
-            "?qlue_ls_inner2",
+            "[]",
             offset.into(),
         )
         .unwrap();
@@ -355,8 +348,7 @@ mod test {
     fn reduce_complex_path2() {
         //       01234567890123456789012345678901234567890
         let s = "Select * { ?a <p0>|<p1>/(<p2>)/^<p2>/!(^)  <x>}";
-        let reduced =
-            "?a <p1>/(<p2>)/^<p2> ?qlue_ls_inner . ?qlue_ls_inner2 ?qlue_ls_value ?qlue_ls_inner";
+        let reduced = "?a <p1>/(<p2>)/^<p2> ?qlue_ls_inner . [] ?qlue_ls_value ?qlue_ls_inner";
         let offset = 40;
         let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
         let triples = query_unit
@@ -380,7 +372,7 @@ mod test {
                 .last()
                 .unwrap()
                 .verb,
-            "?qlue_ls_inner2",
+            "[]",
             offset.into(),
         )
         .unwrap();
@@ -391,7 +383,7 @@ mod test {
     fn reduce_complex_path3() {
         //       0123456789012345678901234567890123456
         let s = "Select * { ?a ^(^<a>/)  <x>}";
-        let reduced = "?qlue_ls_inner2 ^<a> ?qlue_ls_inner . ?qlue_ls_inner ?qlue_ls_value ?a";
+        let reduced = "[] ^<a> ?qlue_ls_inner . ?qlue_ls_inner ?qlue_ls_value ?a";
         let offset = 21;
         let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
         let triples = query_unit
@@ -415,7 +407,7 @@ mod test {
                 .last()
                 .unwrap()
                 .verb,
-            "?qlue_ls_inner2",
+            "[]",
             offset.into(),
         )
         .unwrap();
@@ -426,7 +418,7 @@ mod test {
     fn reduce_complex_path4() {
         //       01234567890123456
         let s = "Select * { ?a !^  <x>}";
-        let reduced = "?qlue_ls_inner2 ?qlue_ls_value ?a";
+        let reduced = "[] ?qlue_ls_value ?a";
         let offset = 16;
         let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
         let triples = query_unit
@@ -450,7 +442,7 @@ mod test {
                 .last()
                 .unwrap()
                 .verb,
-            "?qlue_ls_inner2",
+            "[]",
             offset.into(),
         )
         .unwrap();

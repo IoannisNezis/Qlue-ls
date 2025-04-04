@@ -1,3 +1,4 @@
+mod blank_node_property;
 mod context;
 mod error;
 mod graph;
@@ -24,6 +25,7 @@ pub(super) async fn handle_completion_request(
 ) -> Result<(), LSPError> {
     let context =
         CompletionContext::from_completion_request(server, &request).map_err(to_resonse_error)?;
+    log::info!("location: {:?}", context.location);
     server.send_message(CompletionResponse::new(
         request.get_id(),
         if context.trigger_kind == CompletionTriggerKind::TriggerCharacter
@@ -42,6 +44,9 @@ pub(super) async fn handle_completion_request(
                 CompletionLocation::Object(_) => object::completions(server, context).await,
                 CompletionLocation::SolutionModifier => solution_modifier::completions(context),
                 CompletionLocation::Graph => graph::completions(context),
+                CompletionLocation::BlankNodeProperty(_) => {
+                    blank_node_property::completions(server, context).await
+                }
                 _ => vec![],
             }
         },

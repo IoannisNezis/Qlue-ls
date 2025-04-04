@@ -27,6 +27,7 @@ pub(super) async fn fetch_online_completions(
         .tera
         .render(query_template, &query_template_context)
         .map_err(|err| {
+            log::error!("{}", err);
             LSPError::new(
                 ErrorCode::InternalError,
                 &format!(
@@ -35,6 +36,7 @@ pub(super) async fn fetch_online_completions(
                 ),
             )
         })?;
+
     if let Some(backend) = backend_name {
         let url = &server
             .state
@@ -44,7 +46,6 @@ pub(super) async fn fetch_online_completions(
                 "No default SPARQL backend defined",
             ))?
             .url;
-
         match fetch_sparql_result(url, &query).await {
             Ok(result) => Ok(result
                 .results

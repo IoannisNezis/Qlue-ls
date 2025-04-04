@@ -337,7 +337,7 @@ pub enum SyntaxKind {
     PNAME_LN,
     #[token("BLANK_NODE_LABEL")]
     BLANK_NODE_LABEL,
-    #[token("ANON")]
+    #[regex(r"\[\s*\]")]
     ANON,
 
     // Composite nodes

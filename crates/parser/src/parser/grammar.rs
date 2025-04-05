@@ -5,6 +5,10 @@ use crate::SyntaxKind;
 pub(super) fn parse_QueryUnit(p: &mut Parser) {
     let marker = p.open();
     parse_Query(p);
+    // Add remaining tokens as error.
+    while !p.at(SyntaxKind::Eof) {
+        p.advance_with_error("unexpected token");
+    }
     p.close(marker, SyntaxKind::QueryUnit);
 }
 /// [1] Query -> Prologue (SelectQuery | ConstructQuery | DescribeQuery | AskQuery) ValuesClause
@@ -25,7 +29,7 @@ pub(super) fn parse_Query(p: &mut Parser) {
             parse_AskQuery(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
+            eprintln!("");
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -225,6 +229,10 @@ pub(super) fn parse_UpdateUnit(p: &mut Parser) {
     }
     let marker = p.open();
     parse_Update(p);
+    // Add remaining tokens as error.
+    while !p.at(SyntaxKind::Eof) {
+        p.advance_with_error("unexpected token");
+    }
     p.close(marker, SyntaxKind::UpdateUnit);
 }
 /// [9] Update -> Prologue (UpdateOne (';' Update)?)?

@@ -2,15 +2,20 @@ use rowan::TextSize;
 
 use crate::{rules::Rule, syntax_kind::SyntaxKind, SyntaxNode};
 
-pub fn continuations_at(root: &SyntaxNode, offset: TextSize) -> Option<Vec<SyntaxKind>> {
-    if !root.text_range().contains(offset) {
+pub fn continuations_at(root: &SyntaxNode, mut offset: TextSize) -> Option<Vec<SyntaxKind>> {
+    let token = if offset < root.text_range().start() {
         return None;
-    }
-    let token = match root.token_at_offset(offset) {
-        rowan::TokenAtOffset::Single(token) => Some(token),
-        rowan::TokenAtOffset::Between(token1, _) => Some(token1),
-        rowan::TokenAtOffset::None => None,
-    }?;
+    } else if offset >= root.text_range().end() {
+        let last_token = root.last_token()?;
+        offset = last_token.text_range().end();
+        last_token
+    } else {
+        match root.token_at_offset(offset) {
+            rowan::TokenAtOffset::Single(token) => Some(token),
+            rowan::TokenAtOffset::Between(token1, _) => Some(token1),
+            rowan::TokenAtOffset::None => None,
+        }?
+    };
     let mut parent = token.parent()?;
 
     let mut children_stack: Vec<_> = parent.children_with_tokens().collect();
@@ -143,7 +148,7 @@ mod test {
             Rule::from_node_kind(SyntaxKind::GroupGraphPatternSub)
                 .unwrap()
                 .first(),
-            vec![SyntaxKind::TriplesBlock, SyntaxKind::GroupGraphPatternSub]
+            vec![SyntaxKind::TriplesBlock, SyntaxKind::GraphPatternNotTriples]
         );
     }
 
@@ -209,7 +214,7 @@ mod test {
     #[test]
     fn continueations_select_query() {
         //           012345678901234567890123456789
-        let input = "SELECT * FROM <> WHERE {}";
+        let input = "SELECT * FROM <> WHERE {}\n";
         let root = parse_query(input);
         assert_eq!(
             continuations_at(&root, 8.into()),
@@ -223,6 +228,11 @@ mod test {
             continuations_at(&root, 25.into()),
             vec![SyntaxKind::SolutionModifier, SyntaxKind::ValuesClause].into()
         );
+        // Maybe this would be reasonable?:
+        // assert_eq!(
+        //     continuations_at(&root, 27.into()),
+        //     vec![SyntaxKind::SolutionModifier, SyntaxKind::ValuesClause].into()
+        // );
     }
 
     #[test]

@@ -16,6 +16,15 @@ fn tokenize(input: &str) -> Vec<SyntaxKind> {
 }
 
 #[test]
+fn tokenize_a() {
+    let tokens = tokenize("abc a affiliation");
+    assert_eq!(
+        tokens,
+        vec![SyntaxKind::Error, SyntaxKind::a, SyntaxKind::Error,]
+    )
+}
+
+#[test]
 fn tokenize_variables() {
     let tokens = tokenize("?var $x ?x2 ?münchen ?42 ?2· ?x");
     assert_eq!(

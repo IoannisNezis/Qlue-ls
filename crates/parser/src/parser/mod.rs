@@ -22,10 +22,7 @@ struct Token {
 
 impl Token {
     fn is_trivia(&self) -> bool {
-        match self.kind {
-            SyntaxKind::WHITESPACE => true,
-            _ => false,
-        }
+        matches!(self.kind, SyntaxKind::WHITESPACE)
     }
 }
 
@@ -200,5 +197,8 @@ fn lex(text: &str) -> Vec<Token> {
             text: lexer.slice().to_string(),
         });
     }
-    return tokens;
+    tokens
 }
+
+#[cfg(test)]
+mod tests;

@@ -127,7 +127,7 @@ pub enum SyntaxKind {
     FILTER,
     #[token(",")]
     Colon,
-    #[token("a")]
+    #[regex(r" a ")]
     a,
     #[token("|")]
     Pipe,

@@ -176,12 +176,14 @@ impl CompletionContext {
         let trigger_token = get_trigger_token(&tree, offset);
         let backend = trigger_token
             .as_ref()
-            .unwrap()
-            .parent_ancestors()
-            .find_map(ServiceGraphPattern::cast)
-            .and_then(|service| service.iri())
-            .and_then(|iri| iri.raw_iri())
-            .and_then(|iri_string| server.state.get_backend_name_by_url(&iri_string))
+            .and_then(|token| {
+                token
+                    .parent_ancestors()
+                    .find_map(ServiceGraphPattern::cast)
+                    .and_then(|service| service.iri())
+                    .and_then(|iri| iri.raw_iri())
+                    .and_then(|iri_string| server.state.get_backend_name_by_url(&iri_string))
+            })
             .or(server
                 .state
                 .get_default_backend()
@@ -242,8 +244,6 @@ fn get_location(
                         [$($kind,)*].iter().any(|kind| anchor.parent().map_or(false, |parent| parent.kind() == *kind))
                     };
                 }
-        log::info!("anchor {:?}", anchor);
-        log::info!("cont {:?}", continuations);
         // NOTE: START
         if anchor.kind() == SyntaxKind::WHITESPACE && anchor.text_range().start() == 0.into() {
             CompletionLocation::Start
@@ -359,12 +359,15 @@ fn get_continuations(root: &SyntaxNode, anchor_token: &Option<SyntaxToken>) -> H
 }
 
 fn get_trigger_token(root: &SyntaxNode, offset: TextSize) -> Option<SyntaxToken> {
-    if offset == 0.into() || !root.text_range().contains(offset) {
-        return None;
-    }
-    match root.token_at_offset(offset) {
-        TokenAtOffset::Single(token) | TokenAtOffset::Between(_, token) => Some(token),
-        TokenAtOffset::None => None,
+    if offset == 0.into() || root.text_range().end() < offset {
+        None
+    } else if root.text_range().end() == offset {
+        root.last_token()
+    } else {
+        match root.token_at_offset(offset) {
+            TokenAtOffset::Single(token) | TokenAtOffset::Between(_, token) => Some(token),
+            TokenAtOffset::None => None,
+        }
     }
 }
 

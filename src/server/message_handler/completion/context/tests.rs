@@ -1,4 +1,4 @@
-use ll_sparql_parser::parse_query;
+use ll_sparql_parser::{parse_query, syntax_kind::SyntaxKind, SyntaxToken};
 
 use crate::server::message_handler::completion::context::CompletionLocation;
 
@@ -13,48 +13,56 @@ fn location(input: &str, offset: u32) -> CompletionLocation {
     let trigger_token = get_trigger_token(&root, offset.into());
     let anchor = trigger_token.and_then(get_anchor_token);
     let continuations = get_continuations(&root, &anchor);
-    get_location(&anchor, &continuations)
+    get_location(&anchor, &continuations, offset.into())
 }
 
 #[test]
 fn localize_select_binding() {
     assert!(matches!(
+        //        0123456789
         location("Select  {}", 7),
         CompletionLocation::SelectBinding(_),
     ));
 
     assert!(!matches!(
+        //        012345678901234567890
         location("Select  Reduced ?a {}", 0),
         CompletionLocation::SelectBinding(_),
     ));
 
     assert!(matches!(
+        //        012345678901234567890
         location("Select  Reduced ?a {}", 6),
         CompletionLocation::SelectBinding(_),
     ));
 
     assert!(matches!(
+        //        012345678901234567890
         location("Select  Reduced ?a {}", 14),
         CompletionLocation::SelectBinding(_),
     ));
 
     assert!(matches!(
+        //        012345678901234567890
         location("Select  Reduced ?a {}", 17),
         CompletionLocation::SelectBinding(_),
     ));
 
     assert!(matches!(
+        //        012345678901234567890
         //        0123456678901233456789
         location("Select  Reduced ?a {}", 16),
         CompletionLocation::SelectBinding(_),
     ));
 
     assert!(!matches!(
+        //        012345678901234567890
         location("Select * {}", 8),
         CompletionLocation::SelectBinding(_),
     ));
 
     assert!(!matches!(
+        //        012345678901234567890
         location("Select * { BIND (42 AS )}", 23),
         CompletionLocation::SelectBinding(_),
     ));
@@ -194,4 +202,20 @@ fn localize_object_3() {
     //           01234567890123456789012
     let input = "Select * { ?a ?a ?b,  }";
     assert!(matches!(location(input, 21), CompletionLocation::Object(_)));
+}
+
+fn trigger_token_at(input: &str, offset: u32) -> Option<SyntaxToken> {
+    let root = parse_query(input);
+    get_trigger_token(&root, offset.into())
+}
+
+#[test]
+fn tigger_token_at_end() {
+    //           01234567890123456789012
+    let input = "Select * { ?a ?a ?b }";
+
+    assert!(matches!(
+        trigger_token_at(input, 21).unwrap().kind(),
+        SyntaxKind::RCurly
+    ));
 }

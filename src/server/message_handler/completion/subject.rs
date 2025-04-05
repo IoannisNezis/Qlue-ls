@@ -125,7 +125,7 @@ pub(super) async fn completions(
                 "Sub select",
                 Some("Sub select query".to_string()),
                 None,
-                "{\n  Select * WHERE {\n    $0\n  }\n}",
+                "{\n  SELECT * WHERE {\n    $0\n  }\n}",
                 CompletionItemKind::Snippet,
                 InsertTextFormat::Snippet,
                 None,

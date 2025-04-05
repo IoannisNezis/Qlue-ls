@@ -65,6 +65,20 @@ impl ServerState {
         Ok(())
     }
 
+    #[cfg(test)]
+    pub fn add_prefix_map_test(
+        &mut self,
+        backend: String,
+        map: HashMap<String, String>,
+    ) -> Result<(), CuriesError> {
+        let mut converter = Converter::new(":");
+        for (prefix, uri_prefix) in map.iter() {
+            converter.add_prefix(prefix, uri_prefix)?;
+        }
+        self.uri_converter.insert(backend, converter);
+        Ok(())
+    }
+
     pub fn get_backend(&self, backend_name: &str) -> Option<&Backend> {
         self.backends.get(backend_name)
     }

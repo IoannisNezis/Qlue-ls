@@ -125,12 +125,17 @@ fn shorten_all_uris(server: &Server, document: &TextDocumentItem) -> Option<Code
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashMap;
+
     use indoc::indoc;
     use tree_sitter::Parser;
     use tree_sitter_sparql::LANGUAGE;
 
     use crate::server::{
-        lsp::textdocument::{Range, TextDocumentItem, TextEdit},
+        lsp::{
+            textdocument::{Range, TextDocumentItem, TextEdit},
+            Backend,
+        },
         message_handler::code_action::shorten_all_uris,
         state::ServerState,
         Server,
@@ -138,6 +143,18 @@ mod test {
 
     fn setup_state(text: &str) -> ServerState {
         let mut state = ServerState::new();
+        state.add_backend(Backend {
+            name: "test".to_string(),
+            url: "".to_string(),
+            health_check_url: None,
+        });
+        state.set_default_backend("test".to_string());
+        state
+            .add_prefix_map_test(
+                "test".to_string(),
+                HashMap::from_iter([("schema".to_string(), "https://schema.org/".to_string())]),
+            )
+            .unwrap();
         let mut parser = Parser::new();
         if let Err(err) = parser.set_language(&LANGUAGE.into()) {
             log::error!("Could not initialize parser:\n{}", err)
@@ -157,11 +174,6 @@ mod test {
                ?c <https://schema.org/name> ?d
              }"
         ));
-        server
-            .tools
-            .uri_converter
-            .add_prefix("schema", "https://schema.org/")
-            .unwrap();
         server.state = state;
         let document = server.state.get_document("uri").unwrap();
         let code_action = shorten_all_uris(&server, document).unwrap();
@@ -181,11 +193,6 @@ mod test {
     #[test]
     fn shorten_all_uris_declared() {
         let mut server = Server::new(|_message| {});
-        server
-            .tools
-            .uri_converter
-            .add_prefix("schema", "https://schema.org/")
-            .unwrap();
         let state = setup_state(indoc!(
             "PREFIX schema: <https://schema.org/>
              SELECT * {

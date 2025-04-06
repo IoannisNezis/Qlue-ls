@@ -1,9 +1,11 @@
 use crate::server::lsp::{CompletionItem, CompletionItemKind, InsertTextFormat};
 
-use super::CompletionContext;
+use super::{error::CompletionError, CompletionContext};
 
-pub(super) async fn completions(_context: CompletionContext) -> Vec<CompletionItem> {
-    vec![
+pub(super) async fn completions(
+    _context: CompletionContext,
+) -> Result<Vec<CompletionItem>, CompletionError> {
+    Ok(vec![
         CompletionItem::new(
             "SELECT",
             Some("Select query".to_string()),
@@ -31,5 +33,5 @@ pub(super) async fn completions(_context: CompletionContext) -> Vec<CompletionIt
             InsertTextFormat::Snippet,
             None,
         ),
-    ]
+    ])
 }

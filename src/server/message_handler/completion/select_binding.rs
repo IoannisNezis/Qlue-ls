@@ -1,9 +1,11 @@
-use super::{CompletionContext, CompletionLocation};
+use super::{error::CompletionError, CompletionContext, CompletionLocation};
 use crate::server::lsp::{CompletionItem, CompletionItemKind, InsertTextFormat};
 use ll_sparql_parser::{ast::AstNode, syntax_kind::SyntaxKind};
 use std::collections::HashSet;
 
-pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
+pub(super) fn completions(
+    context: CompletionContext,
+) -> Result<Vec<CompletionItem>, CompletionError> {
     if let CompletionLocation::SelectBinding(select_clause) = &context.location {
         let mut res = Vec::new();
         if context.continuations.contains(&SyntaxKind::DISTINCT) {
@@ -57,12 +59,11 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
                 None,
             )
         }));
-        res
+        Ok(res)
     } else {
-        log::error!(
+        Err(CompletionError::ResolveError(format!(
             "select binding completions was called with location: {:?}",
             context.location
-        );
-        vec![]
+        )))
     }
 }

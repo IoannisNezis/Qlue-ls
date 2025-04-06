@@ -1,4 +1,5 @@
 use super::{
+    error::CompletionError,
     utils::{fetch_online_completions, get_replace_range},
     CompletionContext,
 };
@@ -17,7 +18,7 @@ static QUERY_TEMPLATE: &str = "subject_completion.rq";
 pub(super) async fn completions(
     server: &Server,
     context: CompletionContext,
-) -> Vec<CompletionItem> {
+) -> Result<Vec<CompletionItem>, CompletionError> {
     let mut res = Vec::new();
     if [
         SyntaxKind::GroupGraphPatternSub,
@@ -89,7 +90,7 @@ pub(super) async fn completions(
                 "SERVICE",
                 Some("Collect data from a fedarated SPARQL endpoint".to_string()),
                 None,
-                "SERVICE <$1> {\n  $0\n}",
+                "SERVICE $1 {\n  $0\n}",
                 CompletionItemKind::Snippet,
                 InsertTextFormat::Snippet,
                 None,
@@ -132,5 +133,5 @@ pub(super) async fn completions(
             ),
         ]);
     }
-    res
+    Ok(res)
 }

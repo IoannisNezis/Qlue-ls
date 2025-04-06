@@ -1,4 +1,7 @@
-use super::context::{CompletionContext, CompletionLocation};
+use super::{
+    context::{CompletionContext, CompletionLocation},
+    error::CompletionError,
+};
 use crate::server::{
     lsp::{textdocument::Range, CompletionItem},
     message_handler::completion::utils::{fetch_online_completions, get_prefix_declarations},
@@ -12,13 +15,31 @@ static QUERY_TEMPLATE: &str = "predicate_completion.rq";
 pub(super) async fn completions(
     server: &Server,
     context: CompletionContext,
-) -> Vec<CompletionItem> {
+) -> Result<Vec<CompletionItem>, CompletionError> {
     if let CompletionLocation::BlankNodeProperty(blank_node_props) = &context.location {
-        let query_unit = QueryUnit::cast(context.tree.clone()).unwrap();
-        let triple = blank_node_props.triple().unwrap();
-        let subj = triple.subject().unwrap();
-        let props = triple.properties_list_path().unwrap().properties();
-        let path = &props.last().unwrap().verb;
+        let query_unit = QueryUnit::cast(context.tree.clone()).ok_or(
+            CompletionError::ResolveError("Could not cast root to QueryUnit".to_string()),
+        )?;
+        let triple = blank_node_props
+            .triple()
+            .ok_or(CompletionError::ResolveError(
+                "Could not find Triple from anchor node".to_string(),
+            ))?;
+        let subj = triple.subject().ok_or(CompletionError::ResolveError(
+            "Triple has no subject".to_string(),
+        ))?;
+        let props = triple
+            .properties_list_path()
+            .ok_or(CompletionError::ResolveError(
+                "Triple has no property list".to_string(),
+            ))?
+            .properties();
+        let path = &props
+            .last()
+            .ok_or(CompletionError::ResolveError(
+                "Property list is empty".to_string(),
+            ))?
+            .verb;
         let inject_context = format!(
             "{} {} ?qlue_ls_inner . ?qlue_ls_inner ?qlue_ls_value []",
             subj.text(),
@@ -42,7 +63,6 @@ pub(super) async fn completions(
             ),
         )
         .await
-        .unwrap_or(vec![])
     } else {
         panic!("object completions requested for non object location");
     }

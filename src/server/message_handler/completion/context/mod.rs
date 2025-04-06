@@ -9,7 +9,7 @@ use ll_sparql_parser::{
 use text_size::{TextRange, TextSize};
 
 use crate::server::{
-    lsp::{errors::ErrorCode, textdocument::Position, CompletionRequest, CompletionTriggerKind},
+    lsp::{textdocument::Position, CompletionRequest, CompletionTriggerKind},
     Server,
 };
 
@@ -134,6 +134,16 @@ pub(super) enum CompletionLocation {
     /// }
     /// ```
     BlankNodeProperty(BlankPropertyList),
+    /// URL of a SERVICE endpoint
+    ///
+    /// ---
+    ///
+    /// **Example**
+    /// ```sparql
+    /// SELECT * WHERE {
+    ///   SERVICE >here< {}
+    /// }
+    ServiceUrl,
 }
 
 #[derive(Debug)]
@@ -158,17 +168,14 @@ impl CompletionContext {
         let document = server
             .state
             .get_document(&document_position.text_document.uri)
-            .map_err(|err| CompletionError::localization_error(err.code, err.message))?;
+            .map_err(|err| CompletionError::LocalizationError(err.message))?;
         let offset = (document_position
             .position
             .to_byte_index(&document.text)
-            .ok_or(CompletionError::localization_error(
-                ErrorCode::InvalidParams,
-                format!(
-                    "Position ({}) not inside document range",
-                    document_position.position
-                ),
-            ))? as u32)
+            .ok_or(CompletionError::LocalizationError(format!(
+                "Position ({}) not inside document range",
+                document_position.position
+            )))? as u32)
             .into();
         let trigger_kind = request.get_completion_context().trigger_kind.clone();
         let trigger_character = request.get_completion_context().trigger_character.clone();
@@ -321,6 +328,12 @@ fn get_location(
             || continues_with!([SyntaxKind::DefaultGraphClause, SyntaxKind::SourceSelector])
         {
             CompletionLocation::Graph
+        }
+        // NOTE: ServiceUrl
+        else if continues_with!([SyntaxKind::VarOrIri])
+            && child_of!([SyntaxKind::ServiceGraphPattern])
+        {
+            CompletionLocation::ServiceUrl
         }
         // NOTE: SelectBinding
         else if continues_with!([SyntaxKind::Var])

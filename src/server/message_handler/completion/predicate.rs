@@ -1,4 +1,5 @@
 use super::{
+    error::CompletionError,
     utils::{fetch_online_completions, get_prefix_declarations, get_replace_range},
     CompletionContext,
 };
@@ -18,23 +19,25 @@ static QUERY_TEMPLATE: &str = "predicate_completion.rq";
 pub(super) async fn completions(
     server: &Server,
     context: CompletionContext,
-) -> Vec<CompletionItem> {
+) -> Result<Vec<CompletionItem>, CompletionError> {
     if let CompletionLocation::Predicate(triple) = &context.location {
         let range = get_replace_range(&context);
         let mut template_context = Context::new();
-        let query_unit = QueryUnit::cast(context.tree.clone()).unwrap();
+        let query_unit = QueryUnit::cast(context.tree.clone()).ok_or(
+            CompletionError::ResolveError("Could not cast root to QueryUnit".to_string()),
+        )?;
         let prefixes = get_prefix_declarations(server, &context, triple);
-        if let Some(inject) = compute_inject_context(
+        let inject = compute_inject_context(
             triple,
             context.anchor_token.unwrap().text_range().end(),
             context.continuations,
-        ) {
-            template_context.insert("context", &inject);
-        } else {
-            return vec![];
-        }
+        )
+        .ok_or(CompletionError::ResolveError(
+            "Could not build inject-string for the template".to_string(),
+        ))?;
+        template_context.insert("context", &inject);
         template_context.insert("prefixes", &prefixes);
-        match fetch_online_completions(
+        fetch_online_completions(
             server,
             &query_unit,
             context.backend.as_ref(),
@@ -43,13 +46,6 @@ pub(super) async fn completions(
             range,
         )
         .await
-        {
-            Ok(online_completions) => online_completions,
-            Err(err) => {
-                log::error!("{:?}", err);
-                vec![]
-            }
-        }
     } else {
         panic!("object completions requested for non object location");
     }

@@ -2,9 +2,11 @@ use ll_sparql_parser::syntax_kind::SyntaxKind::*;
 
 use crate::server::lsp::{CompletionItem, CompletionItemKind, InsertTextFormat};
 
-use super::CompletionContext;
+use super::{error::CompletionError, CompletionContext};
 
-pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
+pub(super) fn completions(
+    context: CompletionContext,
+) -> Result<Vec<CompletionItem>, CompletionError> {
     let mut res = Vec::new();
     if context.continuations.contains(&SolutionModifier) {
         res.push(CompletionItem::new(
@@ -71,5 +73,5 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
             None,
         ));
     }
-    return res;
+    return Ok(res);
 }

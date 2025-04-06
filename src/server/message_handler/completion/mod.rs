@@ -5,6 +5,7 @@ mod graph;
 mod object;
 mod predicate;
 mod select_binding;
+mod service_url;
 mod solution_modifier;
 mod start;
 mod subject;
@@ -12,7 +13,7 @@ mod utils;
 mod variable;
 
 use context::{CompletionContext, CompletionLocation};
-use error::to_resonse_error;
+use error::{to_lsp_error, CompletionError};
 
 use crate::server::{
     lsp::{errors::LSPError, CompletionRequest, CompletionResponse, CompletionTriggerKind},
@@ -24,7 +25,7 @@ pub(super) async fn handle_completion_request(
     request: CompletionRequest,
 ) -> Result<(), LSPError> {
     let context =
-        CompletionContext::from_completion_request(server, &request).map_err(to_resonse_error)?;
+        CompletionContext::from_completion_request(server, &request).map_err(to_lsp_error)?;
     server.send_message(CompletionResponse::new(
         request.get_id(),
         if context.trigger_kind == CompletionTriggerKind::TriggerCharacter
@@ -46,8 +47,13 @@ pub(super) async fn handle_completion_request(
                 CompletionLocation::BlankNodeProperty(_) => {
                     blank_node_property::completions(server, context).await
                 }
-                _ => vec![],
+                CompletionLocation::ServiceUrl => service_url::completions(server),
+                location => Err(CompletionError::LocalizationError(format!(
+                    "Unknown location \"{:?}\"",
+                    location
+                ))),
             }
+            .map_err(to_lsp_error)?
         },
     ))
 }

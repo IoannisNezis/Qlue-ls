@@ -153,4 +153,8 @@ impl ServerState {
     pub(crate) fn get_converter(&self, backend_name: &str) -> Option<&Converter> {
         self.uri_converter.get(backend_name)
     }
+
+    pub(crate) fn get_all_backends(&self) -> Vec<&Backend> {
+        self.backends.values().collect()
+    }
 }

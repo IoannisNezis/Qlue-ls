@@ -47,7 +47,8 @@ pub(super) async fn completions(
             {
                 Ok(online_completions) => {
                     // TODO: remove magic number: 100 is the maximum number or results...
-                    is_incomplete = online_completions.len() < 100;
+                    is_incomplete = online_completions.len() >= 100;
+                    log::info!("result size: {}", online_completions.len());
                     items.extend(online_completions)
                 }
                 Err(err) => {

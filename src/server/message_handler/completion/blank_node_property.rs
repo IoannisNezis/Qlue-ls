@@ -64,7 +64,7 @@ pub(super) async fn completions(
         )
         .await?;
         Ok(CompletionList {
-            is_incomplete: items.len() < 100,
+            is_incomplete: items.len() >= 100,
             item_defaults: Some(ItemDefaults {
                 edit_range: None,
                 commit_characters: None,

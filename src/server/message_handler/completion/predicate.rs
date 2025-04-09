@@ -51,12 +51,7 @@ pub(super) async fn completions(
 
         Ok(CompletionList {
             is_incomplete: items.len() < 100,
-            item_defaults: Some(ItemDefaults {
-                insert_text_format: Some(InsertTextFormat::PlainText),
-                data: None,
-                commit_characters: None,
-                edit_range: None,
-            }),
+            item_defaults: None,
             items,
         })
     } else {

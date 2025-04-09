@@ -7,6 +7,7 @@
     } from 'monaco-editor-wrapper';
     import type { editor } from 'monaco-editor';
     import Tree from './tree.svelte';
+    import { backends } from '$lib/backends';
 
     let editorContainer: HTMLElement;
     let wrapper: MonacoEditorLanguageClientWrapper | undefined;
@@ -14,6 +15,7 @@
     let markers: editor.IMarker[] = $state([]);
     let content = $state('SELECT * WHERE {\n  \n}');
     let cursorOffset = $state(0);
+    let backend = $state(backends[0].backend);
 
     onMount(async () => {
         const { MonacoEditorLanguageClientWrapper } = await import('monaco-editor-wrapper');
@@ -24,17 +26,31 @@
         let wrapperConfig = await buildWrapperConfig(editorContainer, content);
         await wrapper.initAndStart(wrapperConfig);
         languageClientWrapper = wrapper.getLanguageClientWrapper('sparql');
+        let editor = wrapper.getEditor()!;
         monaco.editor.onDidChangeMarkers(() => {
             markers = monaco.editor.getModelMarkers({});
         });
-        wrapper
-            .getEditor()!
-            .getModel()!
-            .onDidChangeContent(() => {
-                content = wrapper?.getEditor()!.getModel()!.getValue();
-            });
-        wrapper.getEditor()!.onDidChangeCursorPosition((e) => {
+        editor.getModel()!.onDidChangeContent(() => {
+            content = wrapper?.getEditor()!.getModel()!.getValue();
+        });
+        editor.onDidChangeCursorPosition((e) => {
             cursorOffset = wrapper?.getEditor()!.getModel()!.getOffsetAt(e.position);
+        });
+        wrapper.getEditor()!.addAction({
+            id: 'Execute Query',
+            label: 'Execute',
+            keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
+            contextMenuGroupId: 'navigation',
+            contextMenuOrder: 1.5,
+            run(editor, ...args) {
+                const encoded_query = encodeURIComponent(editor.getModel()?.getValue()).replaceAll(
+                    '%20',
+                    '+'
+                );
+                window.open(
+                    `https://qlever.cs.uni-freiburg.de/${backend.name}/?query=${encoded_query}`
+                );
+            }
         });
     });
 
@@ -76,7 +92,7 @@
         </svg>
     </button>
 </div>
-<Statusbar {languageClientWrapper} {markers}></Statusbar>
+<Statusbar {languageClientWrapper} {markers} bind:backend></Statusbar>
 
 <style>
     #editor {

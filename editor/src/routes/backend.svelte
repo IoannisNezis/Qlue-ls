@@ -1,8 +1,10 @@
 <script lang="ts">
     import { backends, type Backend, type BackendConf } from '$lib/backends';
     import { LanguageClientWrapper } from 'monaco-editor-wrapper';
+    import { setContext } from 'svelte';
     interface Props {
         languageClientWrapper: LanguageClientWrapper;
+        backend;
     }
     interface BackendState {
         name: Backend;
@@ -12,18 +14,18 @@
     interface SetBackendResponse {
         availible: boolean;
     }
-    let { languageClientWrapper }: Props = $props();
-
-    let active_backend: Backend = backends[0].backend;
+    let { languageClientWrapper, backend }: Props = $props();
 
     let backend_state: BackendState = $state({
-        backend: active_backend,
+        backend: backend,
         availibility: 'unknown'
     });
 
+    setContext('backend', () => backend_state.backend);
+
     function addBackend(conf: BackendConf) {
         if (conf.default) {
-            active_backend = conf.backend;
+            backend = conf.backend;
         }
         languageClientWrapper
             .getLanguageClient()!
@@ -36,7 +38,7 @@
     function checkAvailibility() {
         languageClientWrapper
             .getLanguageClient()!
-            .sendRequest('qlueLs/pingBackend', active_backend!.name)
+            .sendRequest('qlueLs/pingBackend', backend!.name)
             .then((response: SetBackendResponse) => {
                 backend_state.availibility = response.availible ? 'up' : 'down';
             })

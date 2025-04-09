@@ -6,11 +6,12 @@
     interface Props {
         languageClientWrapper: LanguageClientWrapper;
         markers: editor.IMarker[];
+        backend;
     }
-    let { languageClientWrapper, markers }: Props = $props();
+    let { languageClientWrapper, markers, backend = $bindable() }: Props = $props();
 </script>
 
 <div class="flex w-full justify-end border-t border-gray-700 py-1 text-gray-300">
-    <Backend {languageClientWrapper}></Backend>
+    <Backend {languageClientWrapper} bind:backend></Backend>
     <Markers {markers}></Markers>
 </div>

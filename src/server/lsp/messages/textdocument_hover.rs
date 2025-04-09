@@ -7,7 +7,7 @@ use crate::server::lsp::{
 
 use super::utils::TextDocumentPositionParams;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 pub struct HoverRequest {
     #[serde(flatten)]
     base: RequestMessageBase,
@@ -28,16 +28,17 @@ impl HoverRequest {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 struct HoverParams {
     #[serde(flatten)]
     text_document_position: TextDocumentPositionParams,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct HoverResponse {
     #[serde(flatten)]
     base: ResponseMessageBase,
+    #[serde(skip_serializing_if = "Option::is_none")]
     result: Option<Hover>,
 }
 
@@ -59,12 +60,12 @@ impl HoverResponse {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 struct Hover {
     contents: HoverResultContents,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 #[serde(untagged)]
 enum HoverResultContents {
     SingleMarkedString(MarkedString),
@@ -74,19 +75,19 @@ enum HoverResultContents {
     //see: https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_hover
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 #[serde(untagged)]
 enum MarkedString {
     Content { language: String, value: String },
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 #[serde(untagged)]
 enum MarkupContent {
     Content { kind: Markupkind, value: String },
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum Markupkind {
     Plaintext,

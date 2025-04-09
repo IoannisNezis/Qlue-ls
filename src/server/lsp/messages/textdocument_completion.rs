@@ -9,7 +9,7 @@ use crate::server::lsp::{
 
 use super::utils::TextDocumentPositionParams;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 pub struct CompletionRequest {
     #[serde(flatten)]
     base: RequestMessageBase,
@@ -26,25 +26,25 @@ impl CompletionRequest {
     }
 
     pub(crate) fn get_completion_context(&self) -> &CompletionContext {
-        return &self.params.context;
+        &self.params.context
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 pub struct CompletionParams {
     #[serde(flatten)]
     base: TextDocumentPositionParams,
     pub context: CompletionContext,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CompletionContext {
     pub trigger_kind: CompletionTriggerKind,
     pub trigger_character: Option<String>,
 }
 
-#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Clone)]
+#[derive(Debug, Deserialize_repr, PartialEq, Clone)]
 #[repr(u8)]
 pub enum CompletionTriggerKind {
     Invoked = 1,
@@ -52,7 +52,7 @@ pub enum CompletionTriggerKind {
     TriggerForIncompleteCompletions = 3,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct CompletionResponse {
     #[serde(flatten)]
     base: ResponseMessageBase,
@@ -68,7 +68,7 @@ impl CompletionResponse {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CompletionList {
     pub is_incomplete: bool,
@@ -81,19 +81,23 @@ pub struct CompletionList {
 #[serde(rename_all = "camelCase")]
 pub struct ItemDefaults {
     /// A default commit character set.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub commit_characters: Option<Vec<String>>,
 
     /// A default edit range
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub edit_range: Option<Range>,
 
     /// A default insert text format
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub insert_text_format: Option<InsertTextFormat>,
 
     /// A default data value.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<LSPAny>,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CompletionItem {
     pub label: String,
@@ -134,7 +138,7 @@ impl CompletionItem {
     }
 }
 
-#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq)]
+#[derive(Debug, Serialize_repr, PartialEq)]
 #[repr(u8)]
 pub enum CompletionItemKind {
     Text = 1,

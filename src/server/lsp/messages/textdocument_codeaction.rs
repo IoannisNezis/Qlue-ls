@@ -10,7 +10,7 @@ use crate::server::lsp::{
 
 use super::diagnostic::Diagnostic;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct CodeActionRequest {
     #[serde(flatten)]
     pub base: RequestMessageBase,
@@ -22,7 +22,7 @@ impl CodeActionRequest {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CodeActionParams {
     pub text_document: TextDocumentIdentifier,
@@ -52,7 +52,7 @@ pub enum CodeActionKind {
     SourceFixAll,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct CodeActionContext {
     pub diagnostics: Vec<Diagnostic>,
     only: Option<Vec<CodeActionKind>>,
@@ -66,7 +66,7 @@ pub enum CodeActionTriggerKind {
     Automatic = 2,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 pub struct CodeActionResponse {
     #[serde(flatten)]
     base: ResponseMessageBase,
@@ -91,7 +91,7 @@ impl CodeActionResponse {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 pub struct CodeAction {
     pub title: String,
     pub edit: WorkspaceEdit,

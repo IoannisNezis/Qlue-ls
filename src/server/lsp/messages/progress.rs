@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::server::lsp::{
     rpc::NotificationMessageBase,
@@ -8,7 +8,7 @@ use crate::server::lsp::{
     },
 };
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 pub struct ProgressNotification {
     #[serde(flatten)]
     pub base: NotificationMessageBase,
@@ -67,7 +67,7 @@ impl ProgressNotification {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 pub struct ProgressParams<T> {
     token: ProgressToken,
     value: T,

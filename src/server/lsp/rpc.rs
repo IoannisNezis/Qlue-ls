@@ -86,7 +86,7 @@ pub struct RequestMessage {
     pub params: Option<Params>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Deserialize, Debug, PartialEq)]
 pub struct RequestMessageBase {
     #[serde(flatten)]
     pub base: Message,
@@ -152,7 +152,7 @@ pub enum RequestIdOrNull {
     Null,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Debug, PartialEq)]
 pub struct ResponseMessageBase {
     #[serde(flatten)]
     pub base: Message,

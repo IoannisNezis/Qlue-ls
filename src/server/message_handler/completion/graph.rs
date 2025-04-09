@@ -1,17 +1,20 @@
-use crate::server::lsp::{CompletionItem, CompletionItemKind, InsertTextFormat};
+use crate::server::lsp::{CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat};
 
 use super::{context::CompletionContext, error::CompletionError};
 
-pub(super) fn completions(
-    _context: CompletionContext,
-) -> Result<Vec<CompletionItem>, CompletionError> {
-    Ok(vec![CompletionItem::new(
-        "<graph>",
-        Some("hier könnte ihr Graph stehen".to_string()),
-        None,
-        "<graph>",
-        CompletionItemKind::Value,
-        InsertTextFormat::PlainText,
-        None,
-    )])
+pub(super) fn completions(_context: CompletionContext) -> Result<CompletionList, CompletionError> {
+    Ok(CompletionList {
+        is_incomplete: true,
+        item_defaults: None,
+        items: vec![CompletionItem {
+            label: "<graph>".to_string(),
+            kind: CompletionItemKind::Value,
+            detail: Some("hier könnte ihr Graph stehen".to_string()),
+            sort_text: None,
+            insert_text: Some("<graph>".to_string()),
+            text_edit: None,
+            insert_text_format: Some(InsertTextFormat::PlainText),
+            additional_text_edits: None,
+        }],
+    })
 }

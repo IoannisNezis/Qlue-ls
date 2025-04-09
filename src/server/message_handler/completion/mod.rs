@@ -53,7 +53,7 @@ pub(super) async fn handle_completion_request(
                     location
                 ))),
             }
-            .map_err(to_lsp_error)?
-        },
+        }
+        .map_err(to_lsp_error)?,
     ))
 }

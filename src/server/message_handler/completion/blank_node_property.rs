@@ -3,7 +3,7 @@ use super::{
     error::CompletionError,
 };
 use crate::server::{
-    lsp::{textdocument::Range, CompletionItem},
+    lsp::{textdocument::Range, CompletionList, InsertTextFormat, ItemDefaults},
     message_handler::completion::utils::{fetch_online_completions, get_prefix_declarations},
     Server,
 };
@@ -15,7 +15,7 @@ static QUERY_TEMPLATE: &str = "predicate_completion.rq";
 pub(super) async fn completions(
     server: &Server,
     context: CompletionContext,
-) -> Result<Vec<CompletionItem>, CompletionError> {
+) -> Result<CompletionList, CompletionError> {
     if let CompletionLocation::BlankNodeProperty(blank_node_props) = &context.location {
         let query_unit = QueryUnit::cast(context.tree.clone()).ok_or(
             CompletionError::ResolveError("Could not cast root to QueryUnit".to_string()),
@@ -49,7 +49,7 @@ pub(super) async fn completions(
         let mut template_context = Context::new();
         template_context.insert("context", &inject_context);
         template_context.insert("prefixes", &prefixes);
-        fetch_online_completions(
+        let items = fetch_online_completions(
             server,
             &query_unit,
             context.backend.as_ref(),
@@ -62,7 +62,17 @@ pub(super) async fn completions(
                 context.trigger_textdocument_position.character,
             ),
         )
-        .await
+        .await?;
+        Ok(CompletionList {
+            is_incomplete: items.len() < 100,
+            item_defaults: Some(ItemDefaults {
+                edit_range: None,
+                commit_characters: None,
+                data: None,
+                insert_text_format: Some(InsertTextFormat::PlainText),
+            }),
+            items,
+        })
     } else {
         panic!("object completions requested for non object location");
     }

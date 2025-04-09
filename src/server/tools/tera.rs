@@ -47,7 +47,7 @@ pub(super) fn init() -> Tera {
                    FILTER REGEX(STR(?alias),\"^{{search_term}}\")
                  }
                  ORDER BY DESC(?count)
-                 LIMIT 40
+                 LIMIT 100
                  OFFSET 0"
             },
         ),

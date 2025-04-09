@@ -1,77 +1,89 @@
+use super::{error::CompletionError, CompletionContext};
+use crate::server::lsp::{
+    CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
+};
 use ll_sparql_parser::syntax_kind::SyntaxKind::*;
 
-use crate::server::lsp::{CompletionItem, CompletionItemKind, InsertTextFormat};
-
-use super::{error::CompletionError, CompletionContext};
-
-pub(super) fn completions(
-    context: CompletionContext,
-) -> Result<Vec<CompletionItem>, CompletionError> {
-    let mut res = Vec::new();
+pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, CompletionError> {
+    let mut items = Vec::new();
     if context.continuations.contains(&SolutionModifier) {
-        res.push(CompletionItem::new(
-            "GROUP BY",
-            Some("Group the results".to_string()),
-            None,
-            "GROUP BY $0",
-            CompletionItemKind::Snippet,
-            InsertTextFormat::Snippet,
-            None,
-        ));
+        items.push(CompletionItem {
+            label: "GROUP BY".to_string(),
+            kind: CompletionItemKind::Snippet,
+            detail: Some("Group the results".to_string()),
+            sort_text: None,
+            insert_text: Some("GROUP BY $0".to_string()),
+            text_edit: None,
+            insert_text_format: None,
+            additional_text_edits: None,
+        });
     }
     if context.continuations.contains(&SolutionModifier)
         || context.continuations.contains(&HavingClause)
     {
-        res.push(CompletionItem::new(
-            "HAVING",
-            Some("Filter Groups".to_string()),
-            None,
-            "HAVING $0",
-            CompletionItemKind::Snippet,
-            InsertTextFormat::Snippet,
-            None,
-        ));
+        items.push(CompletionItem {
+            label: "HAVING".to_string(),
+            kind: CompletionItemKind::Snippet,
+            detail: Some("Filter Groups".to_string()),
+            sort_text: None,
+            insert_text: Some("HAVING $0".to_string()),
+            text_edit: None,
+            insert_text_format: None,
+            additional_text_edits: None,
+        });
     }
     if context.continuations.contains(&SolutionModifier)
         || context.continuations.contains(&OrderClause)
     {
-        res.push(CompletionItem::new(
-            "ORDER BY",
-            Some("Sort the results".to_string()),
-            None,
-            "ORDER BY ${1|ASC,DESC|} ( $0 )",
-            CompletionItemKind::Snippet,
-            InsertTextFormat::Snippet,
-            None,
-        ));
+        items.push(CompletionItem {
+            label: "ORDER BY".to_string(),
+            kind: CompletionItemKind::Snippet,
+            detail: Some("Sort the results".to_string()),
+            sort_text: None,
+            insert_text: Some("ORDER BY ${1|ASC,DESC|} ( $0 )".to_string()),
+            text_edit: None,
+            insert_text_format: None,
+            additional_text_edits: None,
+        });
     }
     if context.continuations.contains(&SolutionModifier)
         || context.continuations.contains(&LimitClause)
         || context.continuations.contains(&LimitOffsetClauses)
     {
-        res.push(CompletionItem::new(
-            "LIMIT",
-            Some("Limit the results".to_string()),
-            None,
-            "LIMIT $0",
-            CompletionItemKind::Snippet,
-            InsertTextFormat::Snippet,
-            None,
-        ));
+        items.push(CompletionItem {
+            label: "LIMIT".to_string(),
+            kind: CompletionItemKind::Snippet,
+            detail: Some("Limit the results".to_string()),
+            sort_text: None,
+            insert_text: Some("LIMIT $0".to_string()),
+            text_edit: None,
+            insert_text_format: None,
+            additional_text_edits: None,
+        });
     }
     if context.continuations.contains(&SolutionModifier)
         || context.continuations.contains(&OffsetClause)
         || context.continuations.contains(&LimitOffsetClauses)
     {
-        res.push(CompletionItem::new(
-            "OFFSET",
-            Some("OFFSET the results".to_string()),
-            None,
-            "OFFSET $0",
-            CompletionItemKind::Snippet,
-            InsertTextFormat::Snippet,
-            None,
-        ));
+        items.push(CompletionItem {
+            label: "OFFSET".to_string(),
+            kind: CompletionItemKind::Snippet,
+            detail: Some("OFFSET the results".to_string()),
+            sort_text: None,
+            insert_text: Some("OFFSET $0".to_string()),
+            text_edit: None,
+            insert_text_format: None,
+            additional_text_edits: None,
+        });
     }
-    return Ok(res);
+    return Ok(CompletionList {
+        is_incomplete: false,
+        item_defaults: Some(ItemDefaults {
+            insert_text_format: Some(InsertTextFormat::Snippet),
+            data: None,
+            commit_characters: None,
+            edit_range: None,
+        }),
+        items,
+    });
 }

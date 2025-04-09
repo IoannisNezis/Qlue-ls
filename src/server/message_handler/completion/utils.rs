@@ -6,7 +6,7 @@ use crate::server::{
     fetch::fetch_sparql_result,
     lsp::{
         textdocument::{Position, Range, TextEdit},
-        CompletionItem, CompletionItemKind, InsertTextFormat,
+        CompletionItem, CompletionItemKind,
     },
     Server,
 };
@@ -64,7 +64,7 @@ pub(super) async fn fetch_online_completions(
                     new_text: format!("{} ", value),
                 }),
                 kind: CompletionItemKind::Value,
-                insert_text_format: InsertTextFormat::PlainText,
+                insert_text_format: None,
                 additional_text_edits: import_edit.map(|edit| vec![edit]),
             }
         })

@@ -4,7 +4,7 @@ use super::{
     CompletionContext,
 };
 use crate::server::{
-    lsp::{CompletionItem, CompletionItemKind, InsertTextFormat},
+    lsp::{CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat},
     Server,
 };
 use ll_sparql_parser::{
@@ -18,8 +18,9 @@ static QUERY_TEMPLATE: &str = "subject_completion.rq";
 pub(super) async fn completions(
     server: &Server,
     context: CompletionContext,
-) -> Result<Vec<CompletionItem>, CompletionError> {
-    let mut res = Vec::new();
+) -> Result<CompletionList, CompletionError> {
+    let mut items = Vec::new();
+    let mut is_incomplete = false;
     if [
         SyntaxKind::GroupGraphPatternSub,
         SyntaxKind::TriplesBlock,
@@ -44,7 +45,11 @@ pub(super) async fn completions(
             )
             .await
             {
-                Ok(online_completions) => res.extend(online_completions),
+                Ok(online_completions) => {
+                    // TODO: remove magic number: 100 is the maximum number or results...
+                    is_incomplete = online_completions.len() < 100;
+                    items.extend(online_completions)
+                }
                 Err(err) => {
                     log::error!("{:?}", err);
                 }
@@ -58,80 +63,92 @@ pub(super) async fn completions(
             .continuations
             .contains(&SyntaxKind::GraphPatternNotTriples)
     {
-        res.append(&mut vec![
-            CompletionItem::new(
-                "FILTER",
-                Some("Filter the results".to_string()),
-                None,
-                "FILTER ( $0 )",
-                CompletionItemKind::Snippet,
-                InsertTextFormat::Snippet,
-                None,
-            ),
-            CompletionItem::new(
-                "BIND",
-                Some("Bind a new variable".to_string()),
-                None,
-                "BIND ($1 AS ?$0)",
-                CompletionItemKind::Snippet,
-                InsertTextFormat::Snippet,
-                None,
-            ),
-            CompletionItem::new(
-                "VALUES",
-                Some("Inline data definition".to_string()),
-                None,
-                "VALUES ?$1 { $0 }",
-                CompletionItemKind::Snippet,
-                InsertTextFormat::Snippet,
-                None,
-            ),
-            CompletionItem::new(
-                "SERVICE",
-                Some("Collect data from a fedarated SPARQL endpoint".to_string()),
-                None,
-                "SERVICE $1 {\n  $0\n}",
-                CompletionItemKind::Snippet,
-                InsertTextFormat::Snippet,
-                None,
-            ),
-            CompletionItem::new(
-                "MINUS",
-                Some("Subtract data".to_string()),
-                None,
-                "MINUS { $0 }",
-                CompletionItemKind::Snippet,
-                InsertTextFormat::Snippet,
-                None,
-            ),
-            CompletionItem::new(
-                "OPTIONAL",
-                Some("Optional graphpattern".to_string()),
-                None,
-                "OPTIONAL { $0 }",
-                CompletionItemKind::Snippet,
-                InsertTextFormat::Snippet,
-                None,
-            ),
-            CompletionItem::new(
-                "UNION",
-                Some("Union of two results".to_string()),
-                None,
-                "{\n  $1\n}\nUNION\n{\n  $0\n}",
-                CompletionItemKind::Snippet,
-                InsertTextFormat::Snippet,
-                None,
-            ),
-            CompletionItem::new(
-                "Sub select",
-                Some("Sub select query".to_string()),
-                None,
-                "{\n  SELECT * WHERE {\n    $0\n  }\n}",
-                CompletionItemKind::Snippet,
-                InsertTextFormat::Snippet,
-                None,
-            ),
+        items.append(&mut vec![
+            CompletionItem {
+                label: "FILTER".to_string(),
+                kind: CompletionItemKind::Snippet,
+                detail: Some("Filter the results".to_string()),
+                sort_text: None,
+                insert_text: Some("FILTER ( $0 )".to_string()),
+                text_edit: None,
+                insert_text_format: Some(InsertTextFormat::Snippet),
+                additional_text_edits: None,
+            },
+            CompletionItem {
+                label: "BIND".to_string(),
+                kind: CompletionItemKind::Snippet,
+                detail: Some("Bind a new variable".to_string()),
+                sort_text: None,
+                insert_text: Some("BIND ($1 AS ?$0)".to_string()),
+                text_edit: None,
+                insert_text_format: Some(InsertTextFormat::Snippet),
+                additional_text_edits: None,
+            },
+            CompletionItem {
+                label: "VALUES".to_string(),
+                kind: CompletionItemKind::Snippet,
+                detail: Some("Inline data definition".to_string()),
+                sort_text: None,
+                insert_text: Some("VALUES ?$1 { $0 }".to_string()),
+                text_edit: None,
+                insert_text_format: Some(InsertTextFormat::Snippet),
+                additional_text_edits: None,
+            },
+            CompletionItem {
+                label: "SERVICE".to_string(),
+                kind: CompletionItemKind::Snippet,
+                detail: Some("Collect data from a fedarated SPARQL endpoint".to_string()),
+                sort_text: None,
+                insert_text: Some("SERVICE $1 {\n  $0\n}".to_string()),
+                text_edit: None,
+                insert_text_format: Some(InsertTextFormat::Snippet),
+                additional_text_edits: None,
+            },
+            CompletionItem {
+                label: "MINUS".to_string(),
+                kind: CompletionItemKind::Snippet,
+                detail: Some("Subtract data".to_string()),
+                sort_text: None,
+                insert_text: Some("MINUS { $0 }".to_string()),
+                text_edit: None,
+                insert_text_format: Some(InsertTextFormat::Snippet),
+                additional_text_edits: None,
+            },
+            CompletionItem {
+                label: "OPTIONAL".to_string(),
+                kind: CompletionItemKind::Snippet,
+                detail: Some("Optional graphpattern".to_string()),
+                sort_text: None,
+                insert_text: Some("OPTIONAL { $0 }".to_string()),
+                text_edit: None,
+                insert_text_format: Some(InsertTextFormat::Snippet),
+                additional_text_edits: None,
+            },
+            CompletionItem {
+                label: "UNION".to_string(),
+                kind: CompletionItemKind::Snippet,
+                detail: Some("Union of two results".to_string()),
+                sort_text: None,
+                insert_text: Some("{\n  $1\n}\nUNION\n{\n  $0\n}".to_string()),
+                text_edit: None,
+                insert_text_format: Some(InsertTextFormat::Snippet),
+                additional_text_edits: None,
+            },
+            CompletionItem {
+                label: "Sub select".to_string(),
+                kind: CompletionItemKind::Snippet,
+                detail: Some("Sub select query".to_string()),
+                sort_text: None,
+                insert_text: Some("{\n  SELECT * WHERE {\n    $0\n  }\n}".to_string()),
+                text_edit: None,
+                insert_text_format: Some(InsertTextFormat::Snippet),
+                additional_text_edits: None,
+            },
         ]);
     }
-    Ok(res)
+    Ok(CompletionList {
+        is_incomplete,
+        item_defaults: None,
+        items,
+    })
 }

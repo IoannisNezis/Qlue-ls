@@ -2,8 +2,9 @@ use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
 use crate::server::lsp::{
+    base_types::LSPAny,
     rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
-    textdocument::TextEdit,
+    textdocument::{Range, TextEdit},
 };
 
 use super::utils::TextDocumentPositionParams;
@@ -55,21 +56,41 @@ pub enum CompletionTriggerKind {
 pub struct CompletionResponse {
     #[serde(flatten)]
     base: ResponseMessageBase,
-    result: CompletionResult,
+    result: CompletionList,
 }
 
 impl CompletionResponse {
-    pub fn new(id: &RequestId, items: Vec<CompletionItem>) -> Self {
+    pub fn new(id: &RequestId, completion_list: CompletionList) -> Self {
         CompletionResponse {
             base: ResponseMessageBase::success(id),
-            result: CompletionResult { items },
+            result: completion_list,
         }
     }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
-struct CompletionResult {
-    items: Vec<CompletionItem>,
+#[serde(rename_all = "camelCase")]
+pub struct CompletionList {
+    pub is_incomplete: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub item_defaults: Option<ItemDefaults>,
+    pub items: Vec<CompletionItem>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct ItemDefaults {
+    /// A default commit character set.
+    pub commit_characters: Option<Vec<String>>,
+
+    /// A default edit range
+    pub edit_range: Option<Range>,
+
+    /// A default insert text format
+    pub insert_text_format: Option<InsertTextFormat>,
+
+    /// A default data value.
+    pub data: Option<LSPAny>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -77,13 +98,17 @@ struct CompletionResult {
 pub struct CompletionItem {
     pub label: String,
     pub kind: CompletionItemKind,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub detail: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub sort_text: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub insert_text: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub text_edit: Option<TextEdit>,
-    pub insert_text_format: InsertTextFormat,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub insert_text_format: Option<InsertTextFormat>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub additional_text_edits: Option<Vec<TextEdit>>,
 }
 
@@ -94,7 +119,6 @@ impl CompletionItem {
         sort_text: Option<String>,
         insert_text: &str,
         kind: CompletionItemKind,
-        insert_text_format: InsertTextFormat,
         additional_text_edits: Option<Vec<TextEdit>>,
     ) -> Self {
         Self {
@@ -104,7 +128,7 @@ impl CompletionItem {
             sort_text,
             insert_text: Some(insert_text.to_string()),
             text_edit: None,
-            insert_text_format,
+            insert_text_format: None,
             additional_text_edits,
         }
     }
@@ -153,7 +177,7 @@ mod tests {
         messages::utils::TextDocumentPositionParams,
         rpc::{Message, RequestId, RequestMessageBase},
         textdocument::{Position, TextDocumentIdentifier},
-        CompletionContext, CompletionItem, CompletionItemKind, CompletionParams,
+        CompletionContext, CompletionItem, CompletionItemKind, CompletionList, CompletionParams,
         CompletionTriggerKind, InsertTextFormat,
     };
 
@@ -192,17 +216,24 @@ mod tests {
 
     #[test]
     fn serialize() {
-        let cmp = CompletionItem::new(
-            "SELECT",
-            Some("Select query".to_string()),
-            None,
-            "SELECT ${1:*} WHERE {\n  $0\n}",
-            CompletionItemKind::Snippet,
-            InsertTextFormat::Snippet,
-            None,
-        );
-        let completion_response = CompletionResponse::new(&RequestId::Integer(1337), vec![cmp]);
-        let expected_message = r#"{"jsonrpc":"2.0","id":1337,"result":{"items":[{"label":"SELECT","kind":15,"detail":"Select query","sortText":null,"insertText":"SELECT ${1:*} WHERE {\n  $0\n}","insertTextFormat":2,"additionalTextEdits":null}]}}"#;
+        let cmp = CompletionItem {
+            label: "SELECT".to_string(),
+            detail: Some("Select query".to_string()),
+            sort_text: None,
+            insert_text: Some("SELECT ${1:*} WHERE {\n  $0\n}".to_string()),
+            text_edit: None,
+            kind: CompletionItemKind::Snippet,
+            insert_text_format: Some(InsertTextFormat::Snippet),
+            additional_text_edits: None,
+        };
+        let completion_list = CompletionList {
+            is_incomplete: true,
+            item_defaults: None,
+            items: vec![cmp],
+        };
+        let completion_response =
+            CompletionResponse::new(&RequestId::Integer(1337), completion_list);
+        let expected_message = r#"{"jsonrpc":"2.0","id":1337,"result":{"isIncomplete":true,"items":[{"label":"SELECT","kind":15,"detail":"Select query","insertText":"SELECT ${1:*} WHERE {\n  $0\n}","insertTextFormat":2}]}}"#;
         let actual_message = serde_json::to_string(&completion_response).unwrap();
         assert_eq!(actual_message, expected_message);
     }

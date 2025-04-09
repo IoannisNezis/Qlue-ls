@@ -4,7 +4,9 @@ use super::{
     CompletionContext,
 };
 use crate::server::{
-    lsp::CompletionItem, message_handler::completion::context::CompletionLocation, Server,
+    lsp::{CompletionList, InsertTextFormat, ItemDefaults},
+    message_handler::completion::context::CompletionLocation,
+    Server,
 };
 use ll_sparql_parser::ast::{AstNode, QueryUnit};
 use tera::Context;
@@ -15,7 +17,7 @@ static QUERY_TEMPLATE: &str = "object_completion.rq";
 pub(super) async fn completions(
     server: &Server,
     context: CompletionContext,
-) -> Result<Vec<CompletionItem>, CompletionError> {
+) -> Result<CompletionList, CompletionError> {
     if let CompletionLocation::Object(triple) = &context.location {
         let search_term = context
             .search_term
@@ -41,7 +43,7 @@ pub(super) async fn completions(
         template_context.insert("context", &inject);
         template_context.insert("search_term", &search_term);
 
-        fetch_online_completions(
+        let items = fetch_online_completions(
             server,
             &query_unit,
             context.backend.as_ref(),
@@ -49,7 +51,17 @@ pub(super) async fn completions(
             template_context,
             range,
         )
-        .await
+        .await?;
+        Ok(CompletionList {
+            is_incomplete: items.len() < 100,
+            item_defaults: Some(ItemDefaults {
+                edit_range: None,
+                commit_characters: None,
+                data: None,
+                insert_text_format: Some(InsertTextFormat::PlainText),
+            }),
+            items,
+        })
     } else {
         panic!("object completions requested for non object location");
     }

@@ -3,10 +3,12 @@
     import { LanguageClientWrapper } from 'monaco-editor-wrapper';
     import Markers from './markers.svelte';
     import Backend from './backend.svelte';
+    import type { Backend as BackendType } from '$lib/backends';
+
     interface Props {
         languageClientWrapper: LanguageClientWrapper;
         markers: editor.IMarker[];
-        backend;
+        backend: BackendType;
     }
     let { languageClientWrapper, markers, backend = $bindable() }: Props = $props();
 </script>

@@ -15,7 +15,7 @@
     let markers: editor.IMarker[] = $state([]);
     let content = $state('SELECT * WHERE {\n  \n}');
     let cursorOffset = $state(0);
-    let backend = $state(backends[0].backend);
+    let backend = $state(backends.find((backendConf) => backendConf.default)!.backend);
 
     onMount(async () => {
         const { MonacoEditorLanguageClientWrapper } = await import('monaco-editor-wrapper');
@@ -48,7 +48,7 @@
                     '+'
                 );
                 window.open(
-                    `https://qlever.cs.uni-freiburg.de/${backend.name}/?query=${encoded_query}`
+                    `https://qlever.cs.uni-freiburg.de/${backend.slug}/?query=${encoded_query}`
                 );
             }
         });
@@ -74,7 +74,7 @@
     <!-- svelte-ignore a11y_consider_explicit_label -->
     <button
         onclick={() => (showTree = !showTree)}
-        class="absolute right-2 top-2 rounded bg-gray-700 px-2 py-2 font-bold text-white hover:bg-gray-600"
+        class="absolute top-2 right-2 rounded-sm bg-gray-700 px-2 py-2 font-bold text-white hover:bg-gray-600"
     >
         <svg
             xmlns="http://www.w3.org/2000/svg"

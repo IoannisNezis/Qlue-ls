@@ -1,32 +1,27 @@
 <script lang="ts">
     import { backends, type Backend, type BackendConf } from '$lib/backends';
     import { LanguageClientWrapper } from 'monaco-editor-wrapper';
-    import { setContext } from 'svelte';
+    import BackendDetail from './backendDetail.svelte';
     interface Props {
         languageClientWrapper: LanguageClientWrapper;
-        backend;
+        backend: Backend;
     }
     interface BackendState {
-        name: Backend;
+        backend: Backend;
         availibility: 'unknown' | 'up' | 'down';
     }
 
     interface SetBackendResponse {
         availible: boolean;
     }
-    let { languageClientWrapper, backend }: Props = $props();
+    let { languageClientWrapper, backend = $bindable() }: Props = $props();
 
     let backend_state: BackendState = $state({
-        backend: backend,
+        backend: { ...backend },
         availibility: 'unknown'
     });
 
-    setContext('backend', () => backend_state.backend);
-
     function addBackend(conf: BackendConf) {
-        if (conf.default) {
-            backend = conf.backend;
-        }
         languageClientWrapper
             .getLanguageClient()!
             .sendRequest('qlueLs/addBackend', conf)
@@ -56,6 +51,19 @@
         if (languageClientWrapper) {
             backends.forEach(addBackend);
             refreshAvailibility();
+        }
+    });
+
+    $effect(() => {
+        if (backend && languageClientWrapper) {
+            checkAvailibility();
+
+            languageClientWrapper
+                .getLanguageClient()!
+                .sendRequest('qlueLs/updateDefaultBackend', backend.name)
+                .catch((err) => {
+                    console.error(err);
+                });
         }
     });
 </script>
@@ -144,5 +152,5 @@
             />
         </svg>
     {/if}
-    {backend_state.backend.name}
+    <BackendDetail bind:backend />
 </div>

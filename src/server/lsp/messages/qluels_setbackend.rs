@@ -5,7 +5,7 @@ use serde::Deserialize;
 use crate::server::lsp::rpc::NotificationMessageBase;
 
 #[derive(Debug, Deserialize, PartialEq)]
-pub struct SetBackendNotification {
+pub struct AddBackendNotification {
     #[serde(flatten)]
     pub base: NotificationMessageBase,
     pub params: SetBackendParams,

@@ -2,10 +2,32 @@ use crate::server::{
     fetch::check_server_availability,
     lsp::{
         errors::{ErrorCode, LSPError},
-        PingBackendRequest, PingBackendResponse, SetBackendNotification,
+        AddBackendNotification, PingBackendRequest, PingBackendResponse,
+        UpdateDefaultBackendNotification,
     },
     Server,
 };
+
+pub(super) async fn handle_update_backend_default_notification(
+    server: &mut Server,
+    notification: UpdateDefaultBackendNotification,
+) -> Result<(), LSPError> {
+    log::info!("new default backend: {}", notification.params.backend_name);
+    if server
+        .state
+        .get_backend(&notification.params.backend_name)
+        .is_none()
+    {
+        return Err(LSPError::new(
+            ErrorCode::InvalidParams,
+            &format!("Unknown backend \"{}\"", notification.params.backend_name),
+        ));
+    }
+    server
+        .state
+        .set_default_backend(notification.params.backend_name);
+    Ok(())
+}
 
 pub(super) async fn handle_ping_backend_request(
     server: &mut Server,
@@ -28,7 +50,7 @@ pub(super) async fn handle_ping_backend_request(
 
 pub(super) async fn handle_add_backend_notification(
     server: &mut Server,
-    request: SetBackendNotification,
+    request: AddBackendNotification,
 ) -> Result<(), LSPError> {
     server.state.add_backend(request.params.backend.clone());
     if request.params.default {

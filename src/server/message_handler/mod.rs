@@ -9,7 +9,10 @@ mod lifecycle;
 mod misc;
 mod textdocument_syncronization;
 
-use backend::{handle_add_backend_notification, handle_ping_backend_request};
+use backend::{
+    handle_add_backend_notification, handle_ping_backend_request,
+    handle_update_backend_default_notification,
+};
 use code_action::handle_codeaction_request;
 use completion::handle_completion_request;
 use diagnostic::handle_diagnostic_request;
@@ -62,6 +65,7 @@ pub(super) async fn dispatch(server: &mut Server, message_string: &String) -> Re
         // NOTE: LSP extensions
         // Requests
         "qlueLs/addBackend" => link!(handle_add_backend_notification),
+        "qlueLs/updateDefaultBackend" => link!(handle_update_backend_default_notification),
         "qlueLs/pingBackend" => link!(handle_ping_backend_request),
         unknown_method => {
             warn!(

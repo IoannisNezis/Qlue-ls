@@ -9,7 +9,7 @@ pub(super) fn init() -> Tera {
             indoc! {
                 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
                  PREFIX dblp: <https://dblp.org/rdf/schema#>
-                 SELECT ?qlue_ls_value (?alias AS ?qlue_ls_label) ?qlue_ls_detail   WHERE {
+                 SELECT ?qlue_ls_value (?alias AS ?qlue_ls_label) ?qlue_ls_detail WHERE {
                    {
                      SELECT ?qlue_ls_value ?alias ?count ?qlue_ls_detail WHERE {
                        {

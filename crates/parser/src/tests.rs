@@ -26,12 +26,13 @@ fn tokenize_a() {
 
 #[test]
 fn tokenize_variables() {
-    let tokens = tokenize("?var $x ?x2 ?münchen ?42 ?2· ?x");
+    let tokens = tokenize("?var $x ?x2 ?münchen ?42 ?2· ?x ?a_b");
     assert_eq!(
         tokens,
         vec![
             SyntaxKind::VAR1,
             SyntaxKind::VAR2,
+            SyntaxKind::VAR1,
             SyntaxKind::VAR1,
             SyntaxKind::VAR1,
             SyntaxKind::VAR1,

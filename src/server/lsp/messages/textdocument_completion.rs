@@ -56,11 +56,11 @@ pub enum CompletionTriggerKind {
 pub struct CompletionResponse {
     #[serde(flatten)]
     base: ResponseMessageBase,
-    result: CompletionList,
+    result: Option<CompletionList>,
 }
 
 impl CompletionResponse {
-    pub fn new(id: &RequestId, completion_list: CompletionList) -> Self {
+    pub fn new(id: &RequestId, completion_list: Option<CompletionList>) -> Self {
         CompletionResponse {
             base: ResponseMessageBase::success(id),
             result: completion_list,

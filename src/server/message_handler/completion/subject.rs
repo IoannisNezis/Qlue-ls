@@ -13,8 +13,6 @@ use ll_sparql_parser::{
 };
 use tera::Context;
 
-static QUERY_TEMPLATE: &str = "subject_completion.rq";
-
 pub(super) async fn completions(
     server: &Server,
     context: CompletionContext,
@@ -30,31 +28,34 @@ pub(super) async fn completions(
     .iter()
     .any(|kind| context.continuations.contains(kind))
     {
-        if let Some(search_term) = context.search_term.as_ref() {
-            let mut template_context = Context::new();
-            template_context.insert("search_term", search_term);
-            let range = get_replace_range(&context);
-            let query_unit = QueryUnit::cast(context.tree).unwrap();
-            match fetch_online_completions(
-                server,
-                &query_unit,
-                context.backend.as_ref(),
-                QUERY_TEMPLATE,
-                template_context,
-                range,
-            )
-            .await
-            {
-                Ok(online_completions) => {
-                    // TODO: remove magic number: 100 is the maximum number or results...
-                    is_incomplete = online_completions.len() >= 100;
-                    log::info!("result size: {}", online_completions.len());
-                    items.extend(online_completions)
-                }
-                Err(err) => {
-                    log::error!("{:?}", err);
-                }
-            };
+        match (context.backend.as_ref(), context.search_term.as_ref()) {
+            (Some(backend_name), Some(search_term)) => {
+                let mut template_context = Context::new();
+                template_context.insert("search_term", search_term);
+                template_context.insert::<Vec<(&str, &str)>, &str>("prefixes", &vec![]);
+                let range = get_replace_range(&context);
+                let query_unit = QueryUnit::cast(context.tree).unwrap();
+                match fetch_online_completions(
+                    server,
+                    &query_unit,
+                    context.backend.as_ref(),
+                    &format!("{}-{}", backend_name, "subjectCompletion"),
+                    template_context,
+                    range,
+                )
+                .await
+                {
+                    Ok(online_completions) => {
+                        // TODO: remove magic number: 100 is the maximum number or results...
+                        is_incomplete = online_completions.len() >= 100;
+                        items.extend(online_completions)
+                    }
+                    Err(err) => {
+                        log::error!("{:?}", err);
+                    }
+                };
+            }
+            _ => log::info!("No Backend or search term"),
         }
     }
     if context

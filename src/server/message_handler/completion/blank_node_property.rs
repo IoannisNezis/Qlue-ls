@@ -41,7 +41,7 @@ pub(super) async fn completions(
             ))?
             .verb;
         let inject_context = format!(
-            "{} {} ?qlue_ls_inner . ?qlue_ls_inner ?qlue_ls_value []",
+            "{} {} ?qlue_ls_inner . ?qlue_ls_inner ?qlue_ls_entity []",
             subj.text(),
             path.text()
         );

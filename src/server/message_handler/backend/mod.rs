@@ -61,7 +61,7 @@ pub(super) async fn handle_add_backend_notification(
     if let Some(prefix_map) = request.params.prefix_map {
         server
             .state
-            .add_prefix_map(request.params.backend.name, prefix_map)
+            .add_prefix_map(request.params.backend.name.clone(), prefix_map)
             .await
             .map_err(|err| {
                 log::error!("{}", err);
@@ -71,5 +71,23 @@ pub(super) async fn handle_add_backend_notification(
                 )
             })?;
     };
+    if let Some(completion_querys) = request.params.queries {
+        for (query_name, query) in completion_querys.iter() {
+            server
+                .tools
+                .tera
+                .add_raw_template(
+                    &format!("{}-{}", request.params.backend.name, query_name),
+                    query,
+                )
+                .map_err(|err| {
+                    log::error!("{}", err);
+                    LSPError::new(
+                        ErrorCode::InvalidParams,
+                        &format!("Could load template:\n\"{query_name}\"\n{}", err),
+                    )
+                })?;
+        }
+    }
     Ok(())
 }

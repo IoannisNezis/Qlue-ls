@@ -4,9 +4,7 @@ use super::{
     CompletionContext,
 };
 use crate::server::{
-    lsp::{CompletionList, InsertTextFormat, ItemDefaults},
-    message_handler::completion::context::CompletionLocation,
-    Server,
+    lsp::CompletionList, message_handler::completion::context::CompletionLocation, Server,
 };
 use ll_sparql_parser::{
     ast::{AstNode, Path, QueryUnit, Triple},
@@ -16,44 +14,56 @@ use std::collections::HashSet;
 use tera::Context;
 use text_size::TextSize;
 
-static QUERY_TEMPLATE: &str = "predicate_completion.rq";
-
 pub(super) async fn completions(
     server: &Server,
     context: CompletionContext,
 ) -> Result<CompletionList, CompletionError> {
     if let CompletionLocation::Predicate(triple) = &context.location {
-        let range = get_replace_range(&context);
-        let mut template_context = Context::new();
-        let query_unit = QueryUnit::cast(context.tree.clone()).ok_or(
-            CompletionError::ResolveError("Could not cast root to QueryUnit".to_string()),
-        )?;
-        let prefixes = get_prefix_declarations(server, &context, triple);
-        let inject = compute_inject_context(
-            triple,
-            context.anchor_token.unwrap().text_range().end(),
-            context.continuations,
-        )
-        .ok_or(CompletionError::ResolveError(
-            "Could not build inject-string for the template".to_string(),
-        ))?;
-        template_context.insert("context", &inject);
-        template_context.insert("prefixes", &prefixes);
-        let items = fetch_online_completions(
-            server,
-            &query_unit,
-            context.backend.as_ref(),
-            QUERY_TEMPLATE,
-            template_context,
-            range,
-        )
-        .await?;
+        match (context.backend.as_ref(), context.search_term.as_ref()) {
+            (Some(backend_name), Some(search_term)) => {
+                let range = get_replace_range(&context);
+                let mut template_context = Context::new();
+                let query_unit = QueryUnit::cast(context.tree.clone()).ok_or(
+                    CompletionError::ResolveError("Could not cast root to QueryUnit".to_string()),
+                )?;
+                let prefixes = get_prefix_declarations(server, &context, triple);
+                let inject = compute_inject_context(
+                    triple,
+                    context.anchor_token.unwrap().text_range().end(),
+                    context.continuations,
+                )
+                .ok_or(CompletionError::ResolveError(
+                    "Could not build inject-string for the template".to_string(),
+                ))?;
+                template_context.insert("context", &inject);
+                template_context.insert("prefixes", &prefixes);
+                template_context.insert("search_term", search_term);
+                let items = fetch_online_completions(
+                    server,
+                    &query_unit,
+                    context.backend.as_ref(),
+                    &format!("{}-{}", backend_name, "predicateCompletion"),
+                    template_context,
+                    range,
+                )
+                .await?;
 
-        Ok(CompletionList {
-            is_incomplete: items.len() < 100,
-            item_defaults: None,
-            items,
-        })
+                Ok(CompletionList {
+                    // TODO: remove magic number: 100 max result size
+                    is_incomplete: items.len() < 100,
+                    item_defaults: None,
+                    items,
+                })
+            }
+            _ => {
+                log::info!("No Backend or search term");
+                Ok(CompletionList {
+                    is_incomplete: false,
+                    item_defaults: None,
+                    items: vec![],
+                })
+            }
+        }
     } else {
         panic!("object completions requested for non object location");
     }
@@ -68,11 +78,11 @@ fn compute_inject_context(
     if continuations.contains(&SyntaxKind::PropertyListPath)
         || continuations.contains(&SyntaxKind::PropertyListPathNotEmpty)
     {
-        Some(format!("{} ?qlue_ls_value []", subject_string))
+        Some(format!("{} ?qlue_ls_entity []", subject_string))
     } else {
         let properties = triple.properties_list_path()?.properties();
         if continuations.contains(&SyntaxKind::VerbPath) {
-            Some(format!("{} ?qlue_ls_value []", triple.text()))
+            Some(format!("{} ?qlue_ls_entity []", triple.text()))
         } else if properties.len() == 1 {
             reduce_path(&subject_string, &properties[0].verb, "[]", offset)
         } else {
@@ -93,7 +103,7 @@ fn compute_inject_context(
 
 fn reduce_path(subject: &str, path: &Path, object: &str, offset: TextSize) -> Option<String> {
     if path.syntax().text_range().start() >= offset {
-        return Some(format!("{} ?qlue_ls_value {}", subject, object));
+        return Some(format!("{} ?qlue_ls_entity {}", subject, object));
     }
     match path.syntax().kind() {
         SyntaxKind::PathPrimary | SyntaxKind::PathElt | SyntaxKind::Path | SyntaxKind::VerbPath => {
@@ -146,16 +156,16 @@ fn reduce_path(subject: &str, path: &Path, object: &str, offset: TextSize) -> Op
             if let Some(last_child) = path.syntax().last_child() {
                 reduce_path(subject, &Path::cast(last_child)?, object, offset)
             } else {
-                Some(format!("{} ?qlue_ls_value {}", subject, object))
+                Some(format!("{} ?qlue_ls_entity {}", subject, object))
             }
         }
         SyntaxKind::PathOneInPropertySet => {
             let first_child = path.syntax().first_child_or_token()?;
             if first_child.kind() == SyntaxKind::Zirkumflex {
                 if first_child.text_range().end() == offset {
-                    Some(format!("{} ?qlue_ls_value {}", object, subject))
+                    Some(format!("{} ?qlue_ls_entity {}", object, subject))
                 } else {
-                    Some(format!("{} ?qlue_ls_value {}", subject, object))
+                    Some(format!("{} ?qlue_ls_entity {}", subject, object))
                 }
             } else {
                 Some(path.text().to_string())
@@ -178,7 +188,7 @@ mod test {
     fn reduce_sequence_path() {
         //       0123456789012345678901
         let s = "Select * { ?a <p0>/  }";
-        let reduced = "?a <p0> ?qlue_ls_inner . ?qlue_ls_inner ?qlue_ls_value []";
+        let reduced = "?a <p0> ?qlue_ls_inner . ?qlue_ls_inner ?qlue_ls_entity []";
         let offset = 19;
         let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
         let triples = query_unit
@@ -213,7 +223,7 @@ mod test {
     fn reduce_alternating_path() {
         //       012345678901234567890123456
         let s = "Select * { ?a <p0>/<p1>|  <x>}";
-        let reduced = "?a ?qlue_ls_value []";
+        let reduced = "?a ?qlue_ls_entity []";
         let offset = 24;
         let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
         let triples = query_unit
@@ -248,7 +258,7 @@ mod test {
     fn reduce_inverse_path() {
         //       012345678901234567890123456
         let s = "Select * { ?a ^  <x>}";
-        let reduced = "[] ?qlue_ls_value ?a";
+        let reduced = "[] ?qlue_ls_entity ?a";
         let offset = 15;
         let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
         let triples = query_unit
@@ -283,7 +293,7 @@ mod test {
     fn reduce_negated_path() {
         //       012345678901234567890123456
         let s = "Select * { ?a !()}";
-        let reduced = "?a ?qlue_ls_value []";
+        let reduced = "?a ?qlue_ls_entity []";
         let offset = 16;
         let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
         let triples = query_unit
@@ -318,7 +328,7 @@ mod test {
     fn reduce_complex_path1() {
         //       0123456789012345678901234567890123456
         let s = "Select * { ?a <p0>|<p1>/(<p2>)/^  <x>}";
-        let reduced = "?a <p1>/(<p2>) ?qlue_ls_inner . [] ?qlue_ls_value ?qlue_ls_inner";
+        let reduced = "?a <p1>/(<p2>) ?qlue_ls_inner . [] ?qlue_ls_entity ?qlue_ls_inner";
         let offset = 32;
         let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
         let triples = query_unit
@@ -352,7 +362,7 @@ mod test {
     fn reduce_complex_path2() {
         //       01234567890123456789012345678901234567890
         let s = "Select * { ?a <p0>|<p1>/(<p2>)/^<p2>/!(^)  <x>}";
-        let reduced = "?a <p1>/(<p2>)/^<p2> ?qlue_ls_inner . [] ?qlue_ls_value ?qlue_ls_inner";
+        let reduced = "?a <p1>/(<p2>)/^<p2> ?qlue_ls_inner . [] ?qlue_ls_entity ?qlue_ls_inner";
         let offset = 40;
         let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
         let triples = query_unit
@@ -387,7 +397,7 @@ mod test {
     fn reduce_complex_path3() {
         //       0123456789012345678901234567890123456
         let s = "Select * { ?a ^(^<a>/)  <x>}";
-        let reduced = "[] ^<a> ?qlue_ls_inner . ?qlue_ls_inner ?qlue_ls_value ?a";
+        let reduced = "[] ^<a> ?qlue_ls_inner . ?qlue_ls_inner ?qlue_ls_entity ?a";
         let offset = 21;
         let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
         let triples = query_unit
@@ -422,7 +432,7 @@ mod test {
     fn reduce_complex_path4() {
         //       01234567890123456
         let s = "Select * { ?a !^  <x>}";
-        let reduced = "[] ?qlue_ls_value ?a";
+        let reduced = "[] ?qlue_ls_entity ?a";
         let offset = 16;
         let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
         let triples = query_unit

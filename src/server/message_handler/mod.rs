@@ -21,7 +21,6 @@ use lifecycle::{
     handle_exit_notifcation, handle_initialize_request, handle_initialized_notifcation,
     handle_shutdown_request,
 };
-use log::warn;
 use misc::handle_set_trace_notifcation;
 use textdocument_syncronization::{
     handle_did_change_notification, handle_did_open_notification, handle_did_save_notification,
@@ -67,8 +66,13 @@ pub(super) async fn dispatch(server: &mut Server, message_string: &String) -> Re
         "qlueLs/addBackend" => link!(handle_add_backend_notification),
         "qlueLs/updateDefaultBackend" => link!(handle_update_backend_default_notification),
         "qlueLs/pingBackend" => link!(handle_ping_backend_request),
+        // NOTE: Known unsupported message
+        "$/cancelRequest" => {
+            log::warn!("Received cancel request (unsupported)");
+            Ok(())
+        }
         unknown_method => {
-            warn!(
+            log::warn!(
                 "Received message with unknown method \"{}\"",
                 unknown_method
             );

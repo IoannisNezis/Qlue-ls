@@ -67,6 +67,12 @@ impl Server {
 
     pub async fn handle_message(&mut self, message: String) {
         if let Err(error) = dispatch(self, &message).await {
+            log::error!(
+                "Error occured while handling message:\n\"{}\"\n\n{:?}\n{}",
+                message,
+                error.code,
+                error.message
+            );
             if let Ok(id) = serde_json::from_str::<RecoverId>(&message)
                 .map(|msg| RequestIdOrNull::RequestId(msg.id))
             {

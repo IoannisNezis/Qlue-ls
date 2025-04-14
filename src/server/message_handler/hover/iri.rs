@@ -7,17 +7,13 @@ use ll_sparql_parser::{
     ast::{AstNode, Iri},
     SyntaxToken,
 };
-use sparql::results::RDFTerm;
 use tera::Context;
 
-pub(super) async fn hover(server: &Server, token: SyntaxToken) -> Result<String, LSPError> {
-    let iri = token
-        .parent_ancestors()
-        .find_map(Iri::cast)
-        .ok_or(LSPError::new(
-            ErrorCode::InternalError,
-            "Could not find iri node",
-        ))?;
+pub(super) async fn hover(server: &Server, token: SyntaxToken) -> Result<Option<String>, LSPError> {
+    let iri = match token.parent_ancestors().find_map(Iri::cast) {
+        Some(value) => value,
+        None => return Ok(None),
+    };
     let mut context = Context::new();
     context.insert("entity", &iri.text());
 
@@ -50,22 +46,15 @@ pub(super) async fn hover(server: &Server, token: SyntaxToken) -> Result<String,
             "Could not resolve backend url",
         ))?
         .url;
-    let result = fetch_sparql_result(backend_url, &query).await?;
-    if let Some(RDFTerm::Literal {
-        value,
-        lang: _lang,
-        datatype: _datatype,
-    }) = result
-        .results
-        .bindings
-        .first()
-        .and_then(|value| value.get("qlue_ls_value"))
-    {
-        Ok(value.to_owned())
-    } else {
-        Err(LSPError::new(
-            ErrorCode::InternalError,
-            "No RDF literal \"qlue_ls_value\" in result",
-        ))
+    let sparql_response = fetch_sparql_result(backend_url, &query).await?;
+    match sparql_response.results.bindings.first() {
+        Some(binding) => binding
+            .get("qlue_ls_entity")
+            .ok_or(LSPError::new(
+                ErrorCode::InternalError,
+                "No RDF literal \"qlue_ls_entity\" in result",
+            ))
+            .map(|rdf_term| Some(rdf_term.to_string())),
+        None => Ok(None),
     }
 }

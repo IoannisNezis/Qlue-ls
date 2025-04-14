@@ -15,7 +15,8 @@
     let markers: editor.IMarker[] = $state([]);
     let content = $state('SELECT * WHERE {\n  \n}');
     let cursorOffset = $state(0);
-    let backend = $state(backends.find((backendConf) => backendConf.default)!.backend);
+    // let backend = $state(backends.find((backendConf) => backendConf.default)!.backend);
+    let backend = $state(backends[5].backend);
 
     onMount(async () => {
         const { MonacoEditorLanguageClientWrapper } = await import('monaco-editor-wrapper');

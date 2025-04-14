@@ -6,7 +6,7 @@ use logos::Logos;
 pub enum SyntaxKind {
     Eof = 0,
     Error,
-    #[regex(r#"[ \t\n\f]+"#)]
+    #[regex(r#"[ \t\n\r\f]+"#)]
     WHITESPACE,
     #[token("BASE", ignore(case))]
     BASE,
@@ -336,9 +336,15 @@ pub enum SyntaxKind {
     STRING_LITERAL_LONG2,
     #[regex(r"[A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}](?:[A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}0-9\u{00B7}\u{0300}-\u{036F}\u{203F}-\u{2040}_.-]*[A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}0-9\u{00B7}\u{0300}-\u{036F}\u{203F}-\u{2040}_-])?:(?:[A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}_0-9:]|%[0-9A-Fa-f])(?:[A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}0-9\u{00B7}\u{0300}-\u{036F}\u{203F}-\u{2040}_:\.-]|%[0-9A-Fa-f])*(?:[A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}0-9\u{00B7}\u{0300}-\u{036F}\u{203F}-\u{2040}_:-]|%[0-9A-Fa-f])?")]
     PNAME_LN,
+    // TODO: provide regex https://www.w3.org/TR/sparql11-query/#rBLANK_NODE_LABEL
     #[token("BLANK_NODE_LABEL")]
     BLANK_NODE_LABEL,
-    #[regex(r"\[\s*\]")]
+    // FIXME: here we want tu use \[\s*\]
+    // but this is causing issues with LBrack.
+    // There is no known fix.
+    // Here is the issue, currently open (14.04.2025)
+    // https://github.com/maciejhirsz/logos/issues/315
+    #[regex(r"\[\]|\[ \]|\[  \]")]
     ANON,
 
     // Composite nodes

@@ -16,6 +16,20 @@ fn tokenize(input: &str) -> Vec<SyntaxKind> {
 }
 
 #[test]
+fn tokenize_brack() {
+    let tokens = tokenize("[ ] [ ?var ] ");
+    assert_eq!(
+        tokens,
+        vec![
+            SyntaxKind::ANON,
+            SyntaxKind::LBrack,
+            SyntaxKind::VAR1,
+            SyntaxKind::RBrack
+        ]
+    )
+}
+
+#[test]
 fn tokenize_a() {
     let tokens = tokenize("abc a affiliation");
     assert_eq!(

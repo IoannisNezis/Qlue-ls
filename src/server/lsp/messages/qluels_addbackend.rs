@@ -15,8 +15,9 @@ pub struct AddBackendNotification {
 #[serde(rename_all = "camelCase")]
 pub struct SetBackendParams {
     pub backend: Backend,
-    pub prefix_map: Option<HashMap<String, String>>,
     pub default: bool,
+    pub prefix_map: Option<HashMap<String, String>>,
+    pub queries: Option<HashMap<String, String>>,
 }
 
 #[derive(Debug, Deserialize, PartialEq, Clone)]

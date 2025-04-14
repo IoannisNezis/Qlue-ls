@@ -1,8 +1,8 @@
 pub mod diagnostic;
 mod initialize;
 mod progress;
+mod qluels_addbackend;
 mod qluels_pingbackend;
-mod qluels_setbackend;
 mod qluels_updatebackenddefault;
 mod shutdown;
 mod textdocument_codeaction;
@@ -20,8 +20,8 @@ mod window_showmessage;
 
 pub use initialize::*;
 pub use progress::*;
+pub use qluels_addbackend::*;
 pub use qluels_pingbackend::*;
-pub use qluels_setbackend::*;
 pub use qluels_updatebackenddefault::*;
 pub use shutdown::*;
 pub use textdocument_codeaction::*;

@@ -135,6 +135,7 @@ fn merge_comments(
     edits: Vec<ConsolidatedTextEdit>,
     comments: Vec<CommentMarker>,
     text: &String,
+    indent_base: &str,
 ) -> Result<Vec<TextEdit>, LSPError> {
     let mut comment_iter = comments.into_iter().rev().peekable();
     let mut merged_edits =

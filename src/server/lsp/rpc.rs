@@ -5,7 +5,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use super::{
     base_types::LSPAny,
-    errors::{ErrorCode, ResponseError},
+    errors::{ErrorCode, LSPError},
 };
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -25,13 +25,13 @@ impl RPCMessage {
         }
     }
 
-    pub fn parse<T>(&self) -> Result<T, ResponseError>
+    pub fn parse<T>(&self) -> Result<T, LSPError>
     where
-        T: Serialize + DeserializeOwned,
+        T: DeserializeOwned,
     {
         match serde_json::to_string(self) {
             Ok(serialized_message) => serde_json::from_str(&serialized_message).map_err(|error| {
-                ResponseError::new(
+                LSPError::new(
                     ErrorCode::ParseError,
                     &format!(
                         "Could not deserialize RPC-message \"{}\"\n\n{}",
@@ -40,7 +40,7 @@ impl RPCMessage {
                     ),
                 )
             }),
-            Err(error) => Err(ResponseError::new(
+            Err(error) => Err(LSPError::new(
                 ErrorCode::ParseError,
                 &format!("Could not serialize RPC-message\n\n{}", error),
             )),
@@ -86,7 +86,7 @@ pub struct RequestMessage {
     pub params: Option<Params>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Deserialize, Debug, PartialEq)]
 pub struct RequestMessageBase {
     #[serde(flatten)]
     pub base: Message,
@@ -131,11 +131,11 @@ pub struct ResponseMessage {
      * The error object in case a request fails.
      */
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<ResponseError>,
+    pub error: Option<LSPError>,
 }
 
 impl ResponseMessage {
-    pub fn error(id: RequestIdOrNull, error: ResponseError) -> Self {
+    pub fn error(id: RequestIdOrNull, error: LSPError) -> Self {
         Self {
             base: Message::new(),
             id,
@@ -152,7 +152,7 @@ pub enum RequestIdOrNull {
     Null,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Debug, PartialEq)]
 pub struct ResponseMessageBase {
     #[serde(flatten)]
     pub base: Message,
@@ -169,7 +169,7 @@ pub struct ResponseMessageBase {
      */
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<ResponseError>,
+    pub error: Option<LSPError>,
 }
 
 impl ResponseMessageBase {
@@ -215,13 +215,13 @@ impl NotificationMessageBase {
     }
 }
 
-pub fn deserialize_message(message: &String) -> Result<RPCMessage, ResponseError> {
+pub fn deserialize_message(message: &String) -> Result<RPCMessage, LSPError> {
     serde_json::from_str(&message).map_err(|error| {
         error!(
             "Error while serializing message:\n{}-----------------------\n{}",
             error, message,
         );
-        ResponseError::new(
+        LSPError::new(
             ErrorCode::ParseError,
             &format!("Could not serialize RPC-Message:\n\n{}", error),
         )

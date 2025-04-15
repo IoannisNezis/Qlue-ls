@@ -5,7 +5,7 @@ use crate::server::lsp::textdocument::TextDocumentIdentifier;
 
 use super::diagnostic::Diagnostic;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 pub struct DiagnosticRequest {
     #[serde(flatten)]
     pub base: RequestMessageBase,
@@ -18,13 +18,13 @@ impl DiagnosticRequest {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct DocumentDiagnosticParams {
     pub text_document: TextDocumentIdentifier,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct DiagnosticResponse {
     #[serde(flatten)]
     pub base: ResponseMessageBase,
@@ -43,13 +43,13 @@ impl DiagnosticResponse {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct DocumentDiagnosticReport {
     kind: DocumentDiagnosticReportKind,
     pub items: Vec<Diagnostic>,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum DocumentDiagnosticReportKind {
     Full,

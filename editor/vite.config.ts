@@ -1,8 +1,8 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
+import tailwindcss from '@tailwindcss/vite'
 import importMetaUrlPlugin from '@codingame/esbuild-import-meta-url-plugin'
 import wasm from "vite-plugin-wasm";
-import topLevelAwait from "vite-plugin-top-level-await";
 
 export default defineConfig(({ mode }) => ({
 	optimizeDeps: {
@@ -20,14 +20,11 @@ export default defineConfig(({ mode }) => ({
 		format: "es",
 		plugins: () => [
 			wasm(),
-			topLevelAwait()
 		]
 	},
-	resolve: {
-		alias:
-		{
-			"qlue-ls": mode === "development" ? "qlue-ls-dev" : "qlue-ls",
-		},
-	},
-	plugins: [sveltekit(), wasm(), topLevelAwait()]
+	plugins: [
+		sveltekit(),
+		tailwindcss(),
+		wasm(),
+	]
 }));

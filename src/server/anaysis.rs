@@ -1,21 +1,18 @@
-use streaming_iterator::StreamingIterator;
-
-use std::collections::HashSet;
-
-use tree_sitter::{Node, Query, QueryCursor};
-
 use super::{
     lsp::{
-        errors::{ErrorCode, ResponseError},
-        textdocument::{Position, Range},
+        errors::{ErrorCode, LSPError},
+        textdocument::Range,
     },
     state::ServerState,
     Server,
 };
+use std::collections::HashSet;
+use streaming_iterator::StreamingIterator;
+use tree_sitter::{Node, Query, QueryCursor};
 
-fn build_query(query_str: &str) -> Result<Query, ResponseError> {
+fn build_query(query_str: &str) -> Result<Query, LSPError> {
     Query::new(&tree_sitter_sparql::LANGUAGE.into(), query_str).map_err(|error| {
-        ResponseError::new(
+        LSPError::new(
             ErrorCode::InternalError,
             &format!(
                 "Building tree-sitter query failed:\n{}\n{}",
@@ -29,7 +26,7 @@ fn collect_all_unique_captures(
     node: Node,
     query_str: &str,
     text: &str,
-) -> Result<Vec<String>, ResponseError> {
+) -> Result<Vec<String>, LSPError> {
     let query = build_query(query_str)?;
     let mut capture_set: HashSet<String> = HashSet::new();
     let mut query_cursor = QueryCursor::new();
@@ -43,28 +40,11 @@ fn collect_all_unique_captures(
     Ok(capture_set.into_iter().collect())
 }
 
-pub fn get_kind_at_position(
-    analyis_state: &ServerState,
-    uri: &str,
-    position: &Position,
-) -> Result<&'static str, ResponseError> {
-    let tree = analyis_state.get_tree(uri)?;
-    let point = position.to_point();
-
-    tree.root_node()
-        .descendant_for_point_range(point, point)
-        .ok_or(ResponseError::new(
-            ErrorCode::InternalError,
-            &format!("Could not get kind at position {} of {}", position, uri),
-        ))
-        .map(|node| node.kind())
-}
-
 pub fn namespace_is_declared(
     server_state: &ServerState,
     document_uri: &str,
     namespace: &str,
-) -> Result<bool, ResponseError> {
+) -> Result<bool, LSPError> {
     let declared_namespaces: HashSet<String> = get_declared_prefixes(server_state, document_uri)?
         .into_iter()
         .map(|(namespace, _range)| namespace)
@@ -75,7 +55,7 @@ pub fn namespace_is_declared(
 pub fn get_all_uncompacted_uris(
     server: &Server,
     document_uri: &str,
-) -> Result<Vec<(String, Range)>, ResponseError> {
+) -> Result<Vec<(String, Range)>, LSPError> {
     let (document, tree) = server.state.get_state(document_uri)?;
     let declared_uris = collect_all_unique_captures(
         tree.root_node(),
@@ -93,7 +73,7 @@ pub fn get_all_uncompacted_uris(
 fn get_all_uris(
     analyis_state: &ServerState,
     document_uri: &str,
-) -> Result<Vec<(String, Range)>, ResponseError> {
+) -> Result<Vec<(String, Range)>, LSPError> {
     let (document, tree) = analyis_state.get_state(document_uri)?;
     let query_str = "(IRIREF) @iri";
     let query = build_query(query_str)?;
@@ -129,12 +109,12 @@ fn get_all_uris(
 /// * `Ok(Vec<(String, Range)>)` - A vector of tuples where each tuple consists of:
 ///   - A `String` representing the namespace prefix.
 ///   - A `Range` specifying the location of the prefix in the document.
-/// * `Err(ResponseError)` - An error if the document or its syntax tree cannot be
+/// * `Err(LSPError)` - An error if the document or its syntax tree cannot be
 ///   retrieved, or if the query for namespace declarations fails.
 ///
 /// # Errors
 ///
-/// This function can return a `ResponseError` if:
+/// This function can return a `LSPError` if:
 /// * The document specified by `document_uri` cannot be found or loaded.
 /// * The syntax tree for the document cannot be accessed.
 /// * The query for extracting `PrefixDecl` fails to build or execute.
@@ -178,7 +158,7 @@ fn get_all_uris(
 pub(crate) fn get_declared_prefixes(
     server_state: &ServerState,
     document_uri: &str,
-) -> Result<Vec<(String, Range)>, ResponseError> {
+) -> Result<Vec<(String, Range)>, LSPError> {
     let (document, tree) = server_state.get_state(document_uri)?;
     let query = build_query("(PrefixDecl (PNAME_NS (PN_PREFIX) @prefix))")?;
     let mut query_cursor = QueryCursor::new();
@@ -199,7 +179,7 @@ pub(crate) fn get_declared_prefixes(
 pub(crate) fn get_declared_uri_prefixes(
     server_state: &ServerState,
     document_uri: &str,
-) -> Result<Vec<(String, Range)>, ResponseError> {
+) -> Result<Vec<(String, Range)>, LSPError> {
     let (document, tree) = server_state.get_state(document_uri)?;
     let query = build_query("(PrefixDecl (PNAME_NS (PN_PREFIX)) (IRIREF) @uri)")?;
     let mut query_cursor = QueryCursor::new();

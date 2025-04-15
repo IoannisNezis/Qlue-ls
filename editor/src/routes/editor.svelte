@@ -1,15 +1,21 @@
 <script lang="ts">
     import { onDestroy, onMount } from 'svelte';
     import Statusbar from './statusbar.svelte';
-    import type { MonacoEditorLanguageClientWrapper } from 'monaco-editor-wrapper';
+    import type {
+        LanguageClientWrapper,
+        MonacoEditorLanguageClientWrapper
+    } from 'monaco-editor-wrapper';
     import type { editor } from 'monaco-editor';
-    import Tree from './tree.svelte';
+    import { backends } from '$lib/backends';
 
     let editorContainer: HTMLElement;
     let wrapper: MonacoEditorLanguageClientWrapper | undefined;
+    let languageClientWrapper: LanguageClientWrapper | undefined = $state();
     let markers: editor.IMarker[] = $state([]);
-    let content = $state('SELECT * WHERE {\n  ?s <http://www.w3.org/2000/01/rdf-schema#> ?o .\n}');
+    let content = $state('SELECT * WHERE {\n  \n}');
     let cursorOffset = $state(0);
+    // let backend = $state(backends.find((backendConf) => backendConf.default)!.backend);
+    let backend = $state(backends[1].backend);
 
     onMount(async () => {
         const { MonacoEditorLanguageClientWrapper } = await import('monaco-editor-wrapper');
@@ -19,17 +25,33 @@
         wrapper = new MonacoEditorLanguageClientWrapper();
         let wrapperConfig = await buildWrapperConfig(editorContainer, content);
         await wrapper.initAndStart(wrapperConfig);
+        languageClientWrapper = wrapper.getLanguageClientWrapper('sparql');
+        let editor = wrapper.getEditor()!;
+
         monaco.editor.onDidChangeMarkers(() => {
             markers = monaco.editor.getModelMarkers({});
         });
-        wrapper
-            .getEditor()!
-            .getModel()!
-            .onDidChangeContent(() => {
-                content = wrapper?.getEditor()!.getModel()!.getValue();
-            });
-        wrapper.getEditor()!.onDidChangeCursorPosition((e) => {
+        editor.getModel()!.onDidChangeContent(() => {
+            content = wrapper?.getEditor()!.getModel()!.getValue();
+        });
+        editor.onDidChangeCursorPosition((e) => {
             cursorOffset = wrapper?.getEditor()!.getModel()!.getOffsetAt(e.position);
+        });
+        wrapper.getEditor()!.addAction({
+            id: 'Execute Query',
+            label: 'Execute',
+            keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
+            contextMenuGroupId: 'navigation',
+            contextMenuOrder: 1.5,
+            run(editor, ...args) {
+                const encoded_query = encodeURIComponent(editor.getModel()?.getValue()).replaceAll(
+                    '%20',
+                    '+'
+                );
+                window.open(
+                    `https://qlever.cs.uni-freiburg.de/${backend.slug}/?query=${encoded_query}`
+                );
+            }
         });
     });
 
@@ -46,13 +68,11 @@
         class="container transition-all {showTree ? 'col-span-2' : 'col-span-3'}"
         bind:this={editorContainer}
     ></div>
-    {#if showTree}
-        <Tree input={content} {cursorOffset}></Tree>
-    {/if}
 
+    <!-- svelte-ignore a11y_consider_explicit_label -->
     <button
         onclick={() => (showTree = !showTree)}
-        class="absolute right-2 top-2 rounded bg-gray-700 px-2 py-2 font-bold text-white hover:bg-gray-600"
+        class="absolute top-2 right-2 rounded-sm bg-gray-700 px-2 py-2 font-bold text-white hover:bg-gray-600"
     >
         <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -70,7 +90,7 @@
         </svg>
     </button>
 </div>
-<Statusbar {markers}></Statusbar>
+<Statusbar {languageClientWrapper} {markers} bind:backend></Statusbar>
 
 <style>
     #editor {

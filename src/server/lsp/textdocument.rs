@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use tree_sitter::{Node, Point};
 
 use super::{
-    errors::{ErrorCode, ResponseError},
+    errors::{ErrorCode, LSPError},
     TextDocumentContentChangeEvent,
 };
 
@@ -147,13 +147,6 @@ impl Position {
         return None;
     }
 
-    pub(crate) fn to_point(&self) -> Point {
-        Point {
-            row: self.line as usize,
-            column: self.character as usize,
-        }
-    }
-
     pub(crate) fn from_point(position: Point) -> Position {
         Position {
             line: position.row as u32,
@@ -222,13 +215,13 @@ impl Position {
     }
 
     /// Converts a UTF-8 based position to a UTF-16 based position.
-    pub fn translate_to_utf16_encoding(&mut self, text: &String) -> Result<(), ResponseError> {
+    pub fn translate_to_utf16_encoding(&mut self, text: &String) -> Result<(), LSPError> {
         let line = text
             .lines()
             .chain(once(""))
             .nth(self.line as usize)
             .ok_or_else(|| {
-                ResponseError::new(
+                LSPError::new(
                     ErrorCode::InternalError,
                     &format!(
                         "Failed to translate UTF-8 position to UTF-16 position: {} in\n\"{}\" Not enough lines.",
@@ -246,7 +239,7 @@ impl Position {
             utf16_index += char.len_utf16();
 
             if utf8_index > self.character as usize {
-                return Err(ResponseError::new(
+                return Err(LSPError::new(
                     ErrorCode::InternalError,
                     &format!(
                         "UTF-8 index: {} is not on the boundary of a UTF-8 code point in \"{}\"",
@@ -286,6 +279,7 @@ impl fmt::Display for Position {
 // NOTE: Positions are zero based.
 // NOTE: The end position is exclusive.
 // NOTE: To include line ending character(s), set end position to the start of next line.
+/// LSP text range (UTF-16 based)
 pub struct Range {
     pub start: Position,
     pub end: Position,
@@ -337,10 +331,7 @@ impl Range {
         self.start == self.end
     }
 
-    pub(crate) fn translate_to_utf16_encoding(
-        &mut self,
-        text: &String,
-    ) -> Result<(), ResponseError> {
+    pub(crate) fn translate_to_utf16_encoding(&mut self, text: &String) -> Result<(), LSPError> {
         self.start.translate_to_utf16_encoding(text)?;
         self.end.translate_to_utf16_encoding(text)?;
         Ok(())

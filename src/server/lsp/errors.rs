@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use super::base_types::LSPAny;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
-pub struct ResponseError {
+pub struct LSPError {
     /**
      * A number indicating the error type that occurred.
      */
@@ -21,7 +21,7 @@ pub struct ResponseError {
     data: Option<LSPAny>,
 }
 
-impl ResponseError {
+impl LSPError {
     pub(crate) fn new(code: ErrorCode, message: &str) -> Self {
         Self {
             code,

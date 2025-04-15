@@ -1,11 +1,15 @@
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
-use crate::server::lsp::rpc::{RequestId, RequestMessageBase, ResponseMessageBase};
+use crate::server::lsp::{
+    base_types::LSPAny,
+    rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
+    textdocument::{Range, TextEdit},
+};
 
 use super::utils::TextDocumentPositionParams;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 pub struct CompletionRequest {
     #[serde(flatten)]
     base: RequestMessageBase,
@@ -22,25 +26,25 @@ impl CompletionRequest {
     }
 
     pub(crate) fn get_completion_context(&self) -> &CompletionContext {
-        return &self.params.context;
+        &self.params.context
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 pub struct CompletionParams {
     #[serde(flatten)]
     base: TextDocumentPositionParams,
     pub context: CompletionContext,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CompletionContext {
     pub trigger_kind: CompletionTriggerKind,
     pub trigger_character: Option<String>,
 }
 
-#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Clone)]
+#[derive(Debug, Deserialize_repr, PartialEq, Clone)]
 #[repr(u8)]
 pub enum CompletionTriggerKind {
     Invoked = 1,
@@ -48,56 +52,93 @@ pub enum CompletionTriggerKind {
     TriggerForIncompleteCompletions = 3,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct CompletionResponse {
     #[serde(flatten)]
     base: ResponseMessageBase,
-    result: CompletionResult,
+    result: Option<CompletionList>,
 }
 
 impl CompletionResponse {
-    pub fn new(id: &RequestId, items: Vec<CompletionItem>) -> Self {
+    pub fn new(id: &RequestId, completion_list: Option<CompletionList>) -> Self {
         CompletionResponse {
             base: ResponseMessageBase::success(id),
-            result: CompletionResult { items },
+            result: completion_list,
         }
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
-struct CompletionResult {
-    items: Vec<CompletionItem>,
+#[derive(Debug, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CompletionList {
+    pub is_incomplete: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub item_defaults: Option<ItemDefaults>,
+    pub items: Vec<CompletionItem>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+pub struct ItemDefaults {
+    /// A default commit character set.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub commit_characters: Option<Vec<String>>,
+
+    /// A default edit range
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub edit_range: Option<Range>,
+
+    /// A default insert text format
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub insert_text_format: Option<InsertTextFormat>,
+
+    /// A default data value.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<LSPAny>,
+}
+
+#[derive(Debug, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct CompletionItem {
-    label: String,
-    kind: CompletionItemKind,
-    detail: String,
-    insert_text: String,
-    insert_text_format: InsertTextFormat,
+    pub label: String,
+    pub kind: CompletionItemKind,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub detail: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sort_text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub insert_text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text_edit: Option<TextEdit>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub insert_text_format: Option<InsertTextFormat>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub additional_text_edits: Option<Vec<TextEdit>>,
 }
 
 impl CompletionItem {
     pub fn new(
         label: &str,
-        detail: &str,
+        detail: Option<String>,
+        sort_text: Option<String>,
         insert_text: &str,
         kind: CompletionItemKind,
-        insert_text_format: InsertTextFormat,
+        additional_text_edits: Option<Vec<TextEdit>>,
     ) -> Self {
         Self {
             label: label.to_string(),
             kind,
-            detail: detail.to_string(),
-            insert_text: insert_text.to_string(),
-            insert_text_format,
+            detail,
+            sort_text,
+            insert_text: Some(insert_text.to_string()),
+            text_edit: None,
+            insert_text_format: None,
+            additional_text_edits,
         }
     }
 }
 
-#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq)]
+#[derive(Debug, Serialize_repr, PartialEq)]
 #[repr(u8)]
 pub enum CompletionItemKind {
     Text = 1,
@@ -140,7 +181,7 @@ mod tests {
         messages::utils::TextDocumentPositionParams,
         rpc::{Message, RequestId, RequestMessageBase},
         textdocument::{Position, TextDocumentIdentifier},
-        CompletionContext, CompletionItem, CompletionItemKind, CompletionParams,
+        CompletionContext, CompletionItem, CompletionItemKind, CompletionList, CompletionParams,
         CompletionTriggerKind, InsertTextFormat,
     };
 
@@ -179,15 +220,24 @@ mod tests {
 
     #[test]
     fn serialize() {
-        let cmp = CompletionItem::new(
-            "SELECT",
-            "Select query",
-            "SELECT ${1:*} WHERE {\n  $0\n}",
-            CompletionItemKind::Snippet,
-            InsertTextFormat::Snippet,
-        );
-        let completion_response = CompletionResponse::new(&RequestId::Integer(1337), vec![cmp]);
-        let expected_message = r#"{"jsonrpc":"2.0","id":1337,"result":{"items":[{"label":"SELECT","kind":15,"detail":"Select query","insertText":"SELECT ${1:*} WHERE {\n  $0\n}","insertTextFormat":2}]}}"#;
+        let cmp = CompletionItem {
+            label: "SELECT".to_string(),
+            detail: Some("Select query".to_string()),
+            sort_text: None,
+            insert_text: Some("SELECT ${1:*} WHERE {\n  $0\n}".to_string()),
+            text_edit: None,
+            kind: CompletionItemKind::Snippet,
+            insert_text_format: Some(InsertTextFormat::Snippet),
+            additional_text_edits: None,
+        };
+        let completion_list = CompletionList {
+            is_incomplete: true,
+            item_defaults: None,
+            items: vec![cmp],
+        };
+        let completion_response =
+            CompletionResponse::new(&RequestId::Integer(1337), Some(completion_list));
+        let expected_message = r#"{"jsonrpc":"2.0","id":1337,"result":{"isIncomplete":true,"items":[{"label":"SELECT","kind":15,"detail":"Select query","insertText":"SELECT ${1:*} WHERE {\n  $0\n}","insertTextFormat":2}]}}"#;
         let actual_message = serde_json::to_string(&completion_response).unwrap();
         assert_eq!(actual_message, expected_message);
     }

@@ -1,0 +1,1445 @@
+config:
+  backend:
+    id: '8'
+    name: Wikidata
+    slug: wikidata
+    sortKey: A.1
+    baseUrl: https://qlever.cs.uni-freiburg.de/api/wikidata
+    apiToken: aof4Ad
+    isDefault: 'True'
+    isNoSlugMode: 'False'
+    maxDefault: '100'
+    filteredLanguage: en
+    dynamicSuggestions: '2'
+    defaultModeTimeout: '5.0'
+    mixedModeTimeout: '1.0'
+    suggestSubjects: |-
+      %PREFIXES%
+      # IF !CURRENT_WORD_EMPTY #
+
+      SELECT ?qui_entity (SAMPLE(?name) AS ?qui_name) (SAMPLE(?alias) AS ?qui_alias) (SAMPLE(?sitelinks) AS ?qui_count) WHERE {
+        { SELECT ?qui_entity ?name ?alias WHERE {
+            ?qui_entity @en@rdfs:label ?name .
+            ?qui_entity @en@skos:altLabel ?alias .
+            FILTER (REGEX(STR(?name), "^%CURRENT_WORD%") || REGEX(STR(?alias), "^%CURRENT_WORD%")) } }
+        ?qui_entity ^schema:about ?m . ?m wikibase:sitelinks ?sitelinks
+      } GROUP BY ?qui_entity ORDER BY DESC(?qui_count)
+
+      # ENDIF #
+    suggestPredicates: |-
+      %PREFIXES%
+      # IF !CURRENT_SUBJECT_VARIABLE #
+
+      SELECT ?qui_entity (SAMPLE(?name) as ?qui_name) (SAMPLE(?alias) as ?qui_alias) (SAMPLE(?count) as ?qui_count) ?qui_reversed WHERE {
+        { { SELECT ?qui_entity (COUNT(?qui_object) AS ?count)
+          WHERE { %CURRENT_SUBJECT% ?qui_entity ?qui_object  }
+          GROUP BY ?qui_entity } BIND (0 AS ?qui_reversed) }
+        UNION
+        { { SELECT ?qui_entity (COUNT(?qui_subject) AS ?count)
+          WHERE { ?qui_subject ?qui_entity %CURRENT_SUBJECT%  }
+          GROUP BY ?qui_entity } BIND (1 AS ?qui_reversed) }
+        # IF CURRENT_WORD_EMPTY #
+        ?qui_tmp_1 ?qui_tmp_2 ?qui_entity .
+        ?qui_tmp_1 @en@rdfs:label ?name .
+        BIND (?name AS ?alias)
+        # ELSE #
+        ?qui_tmp_1 ?qui_tmp_2 ?qui_entity .
+        ?qui_tmp_1 @en@rdfs:label ?name .
+        OPTIONAL { ?qui_tmp_1 @en@skos:altLabel ?alias }
+        FILTER (REGEX(STR(?name), "%CURRENT_WORD%", "i") || REGEX(STR(?alias), "%CURRENT_WORD%", "i"))
+        # ENDIF #
+      } GROUP BY ?qui_entity ?qui_reversed ORDER BY DESC(?qui_count)
+
+      # ENDIF #
+      # IF CURRENT_SUBJECT_VARIABLE #
+
+      SELECT ?qui_entity (SAMPLE(?name) as ?qui_name) (SAMPLE(?alias) as ?qui_alias) (SAMPLE(?count) as ?qui_count) WHERE {
+        # IF CONNECTED_TRIPLES_EMPTY #
+        { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count)
+          WHERE { ?qui_subject ?qui_entity ?qui_object }
+          GROUP BY ?qui_entity }
+        # ELSE #
+        { SELECT ?qui_entity (COUNT(DISTINCT %CURRENT_SUBJECT%) AS ?count)
+          WHERE { %CONNECTED_TRIPLES% %CURRENT_SUBJECT% ?qui_entity ?qui_object }
+          GROUP BY ?qui_entity }
+        # ENDIF #
+        # IF CURRENT_WORD_EMPTY #
+        ?qui_tmp_1 ?qui_tmp_2 ?qui_entity .
+        ?qui_tmp_1 @en@rdfs:label ?name .
+        BIND (?name AS ?alias)
+        # ELSE #
+        ?qui_tmp_1 ?qui_tmp_2 ?qui_entity .
+        ?qui_tmp_1 @en@rdfs:label ?name .
+        OPTIONAL { ?qui_tmp_1 @en@skos:altLabel ?alias }
+        FILTER (REGEX(STR(?name), "%CURRENT_WORD%", "i") || REGEX(STR(?alias), "%CURRENT_WORD%", "i"))
+        # ENDIF #
+      } GROUP BY ?qui_entity ORDER BY DESC(?qui_count)
+
+      # ENDIF #
+    suggestObjects: |-
+      %PREFIXES%
+      SELECT ?qui_entity (SAMPLE(?name) as ?qui_name) (SAMPLE(?alias) as ?qui_alias) (SAMPLE(?count) as ?qui_count) WHERE {
+        { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count) WHERE {
+          %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity .
+        } GROUP BY ?qui_entity }
+        # IF CURRENT_WORD_EMPTY #
+        OPTIONAL { ?qui_entity @en@rdfs:label ?name }
+        BIND (?qui_entity AS ?alias)
+        # ELSE #
+        OPTIONAL { ?qui_entity @en@rdfs:label ?name }
+        OPTIONAL { ?qui_entity @en@skos:altLabel ?optional_alias }
+        BIND (COALESCE(?optional_alias, ?qui_entity) AS ?alias)
+        FILTER (REGEX(STR(?name), "^%CURRENT_WORD%") || REGEX(STR(?alias), "^%CURRENT_WORD%"))
+        # ENDIF #
+      } GROUP BY ?qui_entity ORDER BY DESC(?qui_count)
+    subjectName: ?qleverui_entity @en@<http://www.w3.org/2000/01/rdf-schema#label> ?qleverui_name .
+    alternativeSubjectName: ?qleverui_entity @en@<http://www.w3.org/2004/02/skos/core#altLabel> ?qleverui_altname .
+    predicateName: |-
+      { { { ?qleverui_claim <http://wikiba.se/ontology#directClaim> ?qleverui_entity .
+      ?qleverui_claim @en@<http://www.w3.org/2000/01/rdf-schema#label> ?qleverui_name } UNION
+      { ?qleverui_claim <http://wikiba.se/ontology#claim> ?qleverui_entity .
+      ?qleverui_claim @en@<http://www.w3.org/2000/01/rdf-schema#label> ?qleverui_name } } UNION
+      { ?qleverui_claim <http://wikiba.se/ontology#statementProperty> ?qleverui_entity .
+      ?qleverui_claim @en@<http://www.w3.org/2000/01/rdf-schema#label> ?qleverui_name } } UNION
+      { ?qleverui_claim <http://wikiba.se/ontology#qualifier> ?qleverui_entity .
+      ?qleverui_claim @en@<http://www.w3.org/2000/01/rdf-schema#label> ?qleverui_name } .
+    alternativePredicateName: |-
+      { { { ?qleverui_claim <http://wikiba.se/ontology#directClaim> ?qleverui_entity .
+      ?qleverui_claim @en@<http://www.w3.org/2004/02/skos/core#altLabel> ?qleverui_altname } UNION
+      { ?qleverui_claim <http://wikiba.se/ontology#claim> ?qleverui_entity .
+      ?qleverui_claim @en@<http://www.w3.org/2004/02/skos/core#altLabel> ?qleverui_altname } } UNION
+      { ?qleverui_claim <http://wikiba.se/ontology#statementProperty> ?qleverui_entity .
+      ?qleverui_claim @en@<http://www.w3.org/2004/02/skos/core#altLabel> ?qleverui_altname } } UNION
+      { ?qleverui_claim <http://wikiba.se/ontology#qualifier> ?qleverui_entity .
+      ?qleverui_claim @en@<http://www.w3.org/2004/02/skos/core#altLabel> ?qleverui_altname } .
+    objectName: ?qleverui_entity @en@<http://www.w3.org/2000/01/rdf-schema#label> ?qleverui_name .
+    alternativeObjectName: ?qleverui_entity @en@<http://www.w3.org/2004/02/skos/core#altLabel> ?qleverui_altname .
+    replacePredicates: |-
+      <http://www.w3.org/2000/01/rdf-schema#label> @en@<http://www.w3.org/2000/01/rdf-schema#label>
+      <http://schema.org/name> @en@<http://schema.org/name>
+      <http://wikiba.se/ontology#label> @en@<http://wikiba.se/ontology#label>
+    supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
+    supportedFunctions: asc, desc, avg, values, score, text, count, sample, min, max, average, concat, group_concat, langMatches, lang, regex, sum, dist, contains, str, strlen, substr, strstarts, strends, strbefore, strafter, contains, year, month, day, rand, abs, ceil, floor, round, log, exp, sqrt, sin, cos, tan, if, coalesce, bound, concat, replace, encode_for_uri, isiri, isblank, isliteral, isNumeric, bound, uri, iri, lcase, ucase, exists
+    supportedPredicateSuggestions: ''
+    suggestPrefixnamesForPredicates: 'False'
+    fillPrefixes: 'True'
+    filterEntities: 'False'
+    suggestedPrefixes: |-
+      @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+      @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+      @prefix ontolex: <http://www.w3.org/ns/lemon/ontolex#> .
+      @prefix dct: <http://purl.org/dc/terms/> .
+      @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+      @prefix owl: <http://www.w3.org/2002/07/owl#> .
+      @prefix wikibase: <http://wikiba.se/ontology#> .
+      @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+      @prefix schema: <http://schema.org/> .
+      @prefix cc: <http://creativecommons.org/ns#> .
+      @prefix geo: <http://www.opengis.net/ont/geosparql#> .
+      @prefix geof: <http://www.opengis.net/def/function/geosparql/> .
+      @prefix prov: <http://www.w3.org/ns/prov#> .
+      @prefix wd: <http://www.wikidata.org/entity/> .
+      @prefix data: <https://www.wikidata.org/wiki/Special:EntityData/> .
+      @prefix s: <http://www.wikidata.org/entity/statement/> .
+      @prefix ref: <http://www.wikidata.org/reference/> .
+      @prefix v: <http://www.wikidata.org/value/> .
+      @prefix wdt: <http://www.wikidata.org/prop/direct/> .
+      @prefix wdtn: <http://www.wikidata.org/prop/direct-normalized/> .
+      @prefix p: <http://www.wikidata.org/prop/> .
+      @prefix ps: <http://www.wikidata.org/prop/statement/> .
+      @prefix psv: <http://www.wikidata.org/prop/statement/value/> .
+      @prefix psn: <http://www.wikidata.org/prop/statement/value-normalized/> .
+      @prefix pq: <http://www.wikidata.org/prop/qualifier/> .
+      @prefix pqv: <http://www.wikidata.org/prop/qualifier/value/> .
+      @prefix pqn: <http://www.wikidata.org/prop/qualifier/value-normalized/> .
+      @prefix pr: <http://www.wikidata.org/prop/reference/> .
+      @prefix prv: <http://www.wikidata.org/prop/reference/value/> .
+      @prefix prn: <http://www.wikidata.org/prop/reference/value-normalized/> .
+      @prefix wdno: <http://www.wikidata.org/prop/novalue/> .
+      @prefix imdb: <https://www.imdb.com/> .
+      @prefix qfn: <http://qlever.cs.uni-freiburg.de/function#> .
+      @prefix ql: <http://qlever.cs.uni-freiburg.de/builtin-functions/> .
+      @prefix math: <http://www.w3.org/2005/xpath-functions/math#> .
+    suggestionEntityVariable: ?qui_entity
+    suggestionNameVariable: ?qui_name
+    suggestionAltNameVariable: ?qui_alias
+    suggestionReversedVariable: ?qui_reversed
+    frequentPredicates: 'wdt:P31 wdt:P279 #wdt:P279+ #schema:about #wikibase:sitelinks #@en@rdfs:label'
+    frequentPatternsWithoutOrder: '#wdt:P31 #wdt:P279 #wdt:P279+ ^schema:about/wikibase:sitelinks'
+    entityNameAndAliasPattern: ?qleverui_entity @en@rdfs:label ?name . ?qleverui_entity @en@rdfs:label|@en@skos:altLabel ?alias .
+    entityScorePattern: '{ SELECT ?qleverui_entity (COUNT(?qleverui_tmp) AS ?count) WHERE { ?qleverui_tmp schema:about ?qleverui_entity } GROUP BY ?qleverui_entity }'
+    predicateNameAndAliasPatternWithoutContext: ?entity wikibase:directClaim ?qleverui_entity . ?entity @en@rdfs:label ?name . ?entity @en@rdfs:label|@en@skos:altLabel ?alias
+    predicateNameAndAliasPatternWithContext: ?entity ?qleverui_tmp ?qleverui_entity . ?entity @en@rdfs:label ?name . ?entity @en@rdfs:label|@en@skos:altLabel ?alias
+    entityNameAndAliasPatternDefault: BIND(?qleverui_entity AS ?name) BIND(?qleverui_entity AS ?alias)
+    predicateNameAndAliasPatternWithoutContextDefault: |-
+      # VALUES ?qleverui_entity { schema:about_TEMPORARILY_DISABLED }
+      BIND(?qleverui_entity AS ?name) BIND(?qleverui_entity AS ?alias)
+    predicateNameAndAliasPatternWithContextDefault: BIND(?qleverui_entity AS ?name) BIND(?qleverui_entity AS ?alias)
+    warmupQuery1: |-
+      SELECT ?qleverui_entity (SAMPLE(?name) AS ?qleverui_name) (SAMPLE(?alias) AS ?qleverui_alias) (SAMPLE(?count) AS ?qleverui_count) WHERE {
+        { SELECT ?qleverui_entity ?name ?alias ?count WHERE {
+          %ENTITY_SCORE_PATTERN%
+          %ENTITY_NAME_AND_ALIAS_PATTERN% }
+        ORDER BY ?qleverui_entity }
+      } GROUP BY ?qleverui_entity ORDER BY DESC(?qleverui_count)
+    warmupQuery2: |-
+      SELECT ?qleverui_entity ?name ?alias ?count WHERE {
+        %ENTITY_SCORE_PATTERN%
+        %ENTITY_NAME_AND_ALIAS_PATTERN%
+      } INTERNAL SORT BY ?alias
+    warmupQuery3: |-
+      SELECT ?qleverui_entity ?name ?alias ?count WHERE {
+        %ENTITY_SCORE_PATTERN%
+        %ENTITY_NAME_AND_ALIAS_PATTERN%
+      } INTERNAL SORT BY ?qleverui_entity
+    warmupQuery4: |-
+      SELECT ?qleverui_entity ?name ?alias ?count_1 WHERE {
+        { { SELECT ?qleverui_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qleverui_entity ?object } GROUP BY ?qleverui_entity }
+          %PREDICATE_NAME_AND_ALIAS_PATTERN_WITHOUT_CONTEXT%
+        } UNION {
+        { { SELECT ?qleverui_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qleverui_entity ?object } GROUP BY ?qleverui_entity }
+          %PREDICATE_NAME_AND_ALIAS_PATTERN_WITHOUT_CONTEXT_DEFAULT%
+        } } }
+    warmupQuery5: |-
+      SELECT ?qleverui_entity ?name ?alias ?count_1 WHERE {
+        { { SELECT ?qleverui_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qleverui_entity ?object } GROUP BY ?qleverui_entity }
+          %PREDICATE_NAME_AND_ALIAS_PATTERN_WITH_CONTEXT%
+        } UNION {
+        { { SELECT ?qleverui_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qleverui_entity ?object } GROUP BY ?qleverui_entity }
+          %PREDICATE_NAME_AND_ALIAS_PATTERN_WITH_CONTEXT_DEFAULT%
+        } } }
+    suggestSubjectsContextInsensitive: |-
+      %PREFIXES%
+      # IF !CURRENT_WORD_EMPTY #
+
+      SELECT ?qui_entity (SAMPLE(?name) AS ?qui_name) (SAMPLE(?alias) AS ?qui_alias) (SAMPLE(?sitelinks) AS ?qui_count) WHERE {
+        { SELECT ?qui_entity ?name ?alias WHERE {
+            ?qui_entity @en@rdfs:label ?name .
+            ?qui_entity @en@skos:altLabel ?alias .
+            FILTER (REGEX(STR(?name), "^%CURRENT_WORD%") || REGEX(STR(?alias), "^%CURRENT_WORD%")) } }
+        ?qui_entity ^schema:about ?m . ?m wikibase:sitelinks ?sitelinks
+      } GROUP BY ?qui_entity ORDER BY DESC(?qui_count)
+
+      # ENDIF #
+    suggestPredicatesContextInsensitive: |-
+      %PREFIXES%
+      SELECT ?qui_entity (SAMPLE(?name) as ?qui_name) (SAMPLE(?alias) as ?qui_alias) (SAMPLE(?count) as ?qui_count) WHERE {
+        { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count)
+          WHERE { ?qui_subject ?qui_entity ?qui_object }
+          GROUP BY ?qui_entity }
+        # IF CURRENT_WORD_EMPTY #
+        ?qui_tmp_1 ?qui_tmp_2 ?qui_entity .
+        ?qui_tmp_1 @en@rdfs:label ?name .
+        BIND (?name AS ?alias)
+        # ELSE #
+        ?qui_tmp_1 ?qui_tmp_2 ?qui_entity .
+        ?qui_tmp_1 @en@rdfs:label ?name .
+        ?qui_tmp_1 @en@skos:altLabel ?alias .
+        FILTER (REGEX(STR(?name), "%CURRENT_WORD%", "i") || REGEX(STR(?alias), "%CURRENT_WORD%", "i"))
+        # ENDIF #
+      } GROUP BY ?qui_entity ORDER BY DESC(?qui_count)
+    suggestObjectsContextInsensitive: |-
+      %PREFIXES%
+      SELECT ?qui_entity (SAMPLE(?name) as ?qui_name) (SAMPLE(?alias) as ?qui_alias) (SAMPLE(?count) as ?qui_count) WHERE {
+        { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count) WHERE {
+          %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity .
+        } GROUP BY ?qui_entity }
+        # IF CURRENT_WORD_EMPTY #
+        OPTIONAL { ?qui_entity @en@rdfs:label ?name }
+        BIND (?qui_entity AS ?alias)
+        # ELSE #
+        OPTIONAL { ?qui_entity @en@rdfs:label ?name }
+        OPTIONAL { ?qui_entity @en@skos:altLabel ?optional_alias }
+        BIND (COALESCE(?optional_alias, ?qui_entity) AS ?alias)
+        FILTER (REGEX(STR(?name), "^%CURRENT_WORD%") || REGEX(STR(?alias), "^%CURRENT_WORD%"))
+        # ENDIF #
+      } GROUP BY ?qui_entity ORDER BY DESC(?qui_count)
+    mapViewBaseURL: https://qlever.cs.uni-freiburg.de/petrimaps
+  examples:
+  - name: German cities with their German names
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT DISTINCT ?name ?population WHERE {
+        ?city wdt:P31/wdt:P279* wd:Q515 .
+        ?city wdt:P17 wd:Q183 .
+        ?city wdt:P1082 ?population .
+        ?city rdfs:label ?name .
+        FILTER (LANG(?name) = "de")
+      }
+      ORDER BY DESC(?population)
+  - name: Highest peak per country
+    sort_key: '~'
+    query: |-
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX psn: <http://www.wikidata.org/prop/statement/value-normalized/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX p: <http://www.wikidata.org/prop/>
+      SELECT DISTINCT ?country ?country_name ?mountain ?mountain_name ?max_height WHERE {
+        { SELECT ?country (MAX(?height) AS ?max_height) WHERE {
+          ?mountain wdt:P31/wdt:P279* wd:Q8502 .
+          ?mountain p:P2044/psn:P2044/wikibase:quantityAmount ?height .
+          ?mountain wdt:P17 ?country .
+        } GROUP BY ?country }
+        ?mountain wdt:P31/wdt:P279* wd:Q8502 .
+        ?mountain p:P2044/psn:P2044/wikibase:quantityAmount ?max_height .
+        ?mountain wdt:P17 ?country .
+        ?mountain rdfs:label ?mountain_name FILTER (LANG(?mountain_name) = "en")
+        ?country rdfs:label ?country_name FILTER (LANG(?country_name) = "en")
+      }
+      ORDER BY DESC(?max_height)
+  - name: People and their professions
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?person_id ?person (COUNT(?profession_id) AS ?count) (GROUP_CONCAT(?profession; separator=", ") AS ?professions) WHERE {
+        ?person_id wdt:P31 wd:Q5 .
+        ?person_id wdt:P106 ?profession_id .
+        ?profession_id rdfs:label ?profession .
+        ?person_id rdfs:label ?person .
+        FILTER (LANG(?person) = "en") .
+        FILTER (LANG(?profession) = "en")
+      }
+      GROUP BY ?person_id ?person
+      ORDER BY DESC(?count)
+  - name: 'All predicates of Paris with name and #triples'
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?p (COUNT(?o) as ?count) (SAMPLE(?label) as ?pname) WHERE {
+        wd:Q90 ?p ?o .
+        ?x wikibase:claim ?p .
+        ?x rdfs:label ?label .
+        FILTER (LANG(?label) = "en")
+      }
+      GROUP BY ?p
+      ORDER BY DESC(?count)
+  - name: All "shared border with" statements for Paris (Q90)
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wikibase: <http://wikiba.se/ontology-beta#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX wds: <http://www.wikidata.org/entity/statement/>
+      SELECT ?o ?p ?oo WHERE {
+        wd:Q90 <http://www.wikidata.org/prop/P47> ?o .
+        ?o ?p ?oo
+      }
+      ORDER BY ASC(?o)
+  - name: Mountains higher than 8000 meters
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX p: <http://www.wikidata.org/prop/>
+      PREFIX psn: <http://www.wikidata.org/prop/statement/value-normalized/>
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?mountain ?mountain_label
+             (MAX(?elevation) AS ?max_elevation)
+             (SAMPLE(?image) AS ?sample_image)
+             (SAMPLE(?coordinates) AS ?sample_coordinates) WHERE {
+        ?mountain wdt:P31 wd:Q8502 .
+        ?mountain p:P2044/psn:P2044/wikibase:quantityAmount ?elevation .
+        ?mountain wdt:P625 ?coordinates .
+        ?mountain rdfs:label ?mountain_label .
+        FILTER (LANG(?mountain_label) = "en")
+        FILTER(?elevation >= 8000.0) .
+        OPTIONAL { ?mountain wdt:P18 ?image }
+      }
+      GROUP BY ?mountain ?mountain_label
+      ORDER BY DESC(?max_elevation)
+  - name: All scientific articles with their author (large result)
+    sort_key: '~'
+    query: |-
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      SELECT ?article (SAMPLE(?author_name_) AS ?author_name) (SAMPLE(?article_name_) AS ?article_name)
+      WHERE {
+        ?article wdt:P31 wd:Q13442814 .
+        ?article rdfs:label ?article_name_ FILTER (LANG(?article_name_) = "en") .
+        OPTIONAL {
+          ?article wdt:P50 ?author .
+          ?author rdfs:label ?author_name_ FILTER (LANG(?author_name_) = "en")
+        }
+      }
+      GROUP BY ?article
+      ORDER BY DESC(?author_name)
+  - name: All scientific papers (ID and Name)
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX sc: <http://schema.org/>
+      SELECT ?x ?name WHERE {
+        ?x wdt:P31 wd:Q13442814 .
+        ?x sc:name ?name .
+        FILTER (lang(?name) = "en")
+      }
+      LIMIT 1000
+  - name: Astronauts and their time spent in space
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT DISTINCT ?astronautLabel ?time_in_space WHERE {
+        ?astronaut wdt:P106 wd:Q11631 .
+        ?astronaut wdt:P2873 ?time_in_space .
+        ?astronaut rdfs:label ?astronautLabel .
+        FILTER (LANG(?astronautLabel) = "en") .
+      }
+      ORDER BY DESC(?time_in_space)
+  - name: Persons and their birthdate if it has precision "9"
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX wds: <http://www.wikidata.org/entity/statement/>
+      PREFIX psv: <http://www.wikidata.org/prop/statement/value/>
+      PREFIX p: <http://www.wikidata.org/prop/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+      SELECT ?person_id ?date_of_birth_statement ?date_of_birth_value ?date_of_birth
+      WHERE {
+        ?person_id p:P569 ?date_of_birth_statement .
+        ?date_of_birth_statement psv:P569 ?date_of_birth_value .
+        ?date_of_birth_value wikibase:timePrecision "9"^^xsd:integer .
+        ?date_of_birth_value wikibase:timeValue ?date_of_birth
+      }
+  - name: Astronauts ordered by number of sitelinks
+    sort_key: '~'
+    query: |-
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX schema: <http://schema.org/>
+      SELECT DISTINCT ?astronaut_name ?sitelinks WHERE {
+        ?astronaut wdt:P106 wd:Q11631 .
+        ?astronaut rdfs:label ?astronaut_name .
+        ?astronaut_node schema:about ?astronaut .
+        ?astronaut_node wikibase:sitelinks ?sitelinks .
+        FILTER (LANG(?astronaut_name) = "en")
+      }
+      ORDER BY DESC(?sitelinks)
+  - name: All persons with their description, ordered by sitelinks
+    sort_key: '~'
+    query: |-
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX schema: <http://schema.org/>
+      SELECT DISTINCT ?person ?description ?sitelinks WHERE {
+        ?person_id wdt:P31 wd:Q5 .
+        ?person_id rdfs:label ?person .
+        ?person_id schema:description ?description .
+        ?person_node schema:about ?person_id .
+        ?person_node wikibase:sitelinks ?sitelinks .
+        FILTER (LANG(?person) = "en") .
+        FILTER (LANG(?description) = "en")
+      }
+      ORDER BY DESC(?sitelinks)
+  - name: All movies with their description, ordered by sitelinks
+    sort_key: '~'
+    query: |-
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX schema: <http://schema.org/>
+      SELECT DISTINCT ?movie ?description ?sitelinks WHERE {
+        ?movie_id wdt:P31 wd:Q11424 .
+        ?movie_id rdfs:label ?movie .
+        ?movie_id schema:description ?description .
+        ?movie_node schema:about ?movie_id .
+        ?movie_node wikibase:sitelinks ?sitelinks .
+        FILTER (LANG(?movie) = "en") .
+        FILTER (LANG(?description) = "en")
+      }
+      ORDER BY DESC(?sitelinks) DESC(?description)
+  - name: Douglas Adams marriage-related triples
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX p: <http://www.wikidata.org/prop/>
+      SELECT ?statement ?predicate ?object WHERE {
+        wd:Q42 p:P26 ?statement .
+        ?statement ?predicate ?object
+      }
+  - name: Average height by occupation and gender, ordered by height
+    sort_key: '~'
+    query: |-
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX p: <http://www.wikidata.org/prop/>
+      PREFIX psv: <http://www.wikidata.org/prop/statement/value/>
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?occupation ?gender (AVG(?height) AS ?avg_height) (COUNT(?height) AS ?count) WHERE {
+        ?x wdt:P31 wd:Q5 .
+        ?x wdt:P106 ?occupation_id . ?occupation_id rdfs:label ?occupation .
+        ?x wdt:P21 ?gender_id . ?gender_id rdfs:label ?gender .
+        ?x p:P2048/psv:P2048/wikibase:quantityNormalized ?quantity .
+        ?quantity wikibase:quantityUnit wd:Q11573 .
+        ?quantity wikibase:quantityAmount ?height .
+        FILTER (LANG(?gender) = "en") .
+        FILTER (LANG(?occupation) = "en")
+      }
+      GROUP BY ?occupation ?gender
+      HAVING (?count > 100)
+      ORDER BY DESC(?avg_height)
+  - name: German Astronauts with Date of Birth
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT DISTINCT  ?dateOfBirth ?astronautLabel  WHERE {
+        ?astronaut wdt:P106 wd:Q11631 .
+        ?astronaut wdt:P27 wd:Q183 .
+        ?astronaut wdt:P569 ?dateOfBirth .
+        ?astronaut rdfs:label ?astronautLabel .
+        FILTER (LANG(?astronautLabel) = "en") .
+      }
+      ORDER BY ASC(?dateOfBirth)
+  - name: Astronauts who walked on the moon and when
+    sort_key: '~'
+    query: |-
+      PREFIX s: <http://www.wikidata.org/entity/statement/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX ps: <http://www.wikidata.org/prop/statement/>
+      PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+      PREFIX p: <http://www.wikidata.org/prop/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      SELECT ?astronaut ?name ?start_time ?end_time WHERE {
+        ?astronaut wdt:P106 wd:Q11631 .
+        ?astronaut p:P793 ?m .
+        ?m ps:P793 wd:Q42882411 .
+        ?m pq:P580 ?start_time .
+        ?m pq:P582 ?end_time .
+        ?astronaut rdfs:label ?name .
+        FILTER (LANG(?name) = "en")
+      }
+      ORDER BY ?start_time
+  - name: Astronauts and their predicates
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      SELECT ?pred ?predLabel ?count WHERE {
+        {
+          SELECT ?pred (COUNT(?pred) AS ?count) WHERE {
+            ?astronaut wdt:P106 wd:Q11631 .
+            ?astronaut ql:has-predicate ?pred .
+          }
+          GROUP BY ?pred
+          ORDER BY DESC(?count)
+        }
+        OPTIONAL {
+          {
+            ?pred rdfs:label ?predLabel .
+            FILTER (lang(?predLabel) = "en")
+          } UNION {
+            { ?claim wikibase:directClaim ?pred } UNION { ?claim wikibase:claim ?pred }
+            ?claim rdfs:label ?predLabel .
+            FILTER (lang(?predLabel) = "en")
+          }
+        }
+      }
+  - name: Movies in 2017 ordered by date
+    sort_key: '~'
+    query: |-
+      PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT DISTINCT ?item ?itemLabel ?pubdate WHERE {
+        ?item wdt:P31 wd:Q11424 .
+        ?item wdt:P577 ?pubdate .
+        FILTER (?pubdate >= "2017-01-01T00:00:00Z"^^xsd:dateTime)
+        FILTER (?pubdate <= "2017-12-31T00:00:00Z"^^xsd:dateTime)
+        ?item rdfs:label ?itemLabel .
+        FILTER (lang(?itemLabel) = "en")
+      }
+      ORDER BY ASC(?pubdate)
+  - name: Horses and information about them
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT DISTINCT ?horse ?horseLabel ?pic ?mother ?father ?genderLabel WHERE {
+        ?horse wdt:P31/wdt:P279* wd:Q726 .
+        OPTIONAL { ?horse wdt:P25 ?mother }
+        OPTIONAL { ?horse wdt:P22 ?father }
+        OPTIONAL { ?horse wdt:P18 ?pic }
+        OPTIONAL { ?horse wdt:P21 ?gender . ?gender rdfs:label ?genderLabel FILTER (LANG(?genderLabel) = "en") }
+        ?horse rdfs:label ?horseLabel .
+        FILTER (LANG(?horseLabel) = "en")
+      }
+      ORDER BY ?horse
+  - name: People with pictures
+    sort_key: '~'
+    query: |-
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX schema: <http://schema.org/>
+      SELECT ?name ?pic ?sitelinks WHERE {
+        ?person wdt:P31 wd:Q5 .
+        ?person ^schema:about/wikibase:sitelinks ?sitelinks .
+        ?person wdt:P18 ?pic .
+        ?person schema:name ?name .
+        FILTER (lang(?name) = "en") .
+      }
+      ORDER BY DESC(?sitelinks)
+  - name: German politicians and their most recent party
+    sort_key: '~'
+    query: |-
+      PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+      PREFIX ps: <http://www.wikidata.org/prop/statement/>
+      PREFIX p: <http://www.wikidata.org/prop/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX schema: <http://schema.org/>
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      SELECT ?person_name ?party_name ?max_join_date ?sitelinks WHERE {
+        { SELECT ?person (MAX(?join_date) AS ?max_join_date) WHERE {
+            ?person wdt:P27 wd:Q183 .
+            ?person p:P102/pq:P580 ?join_date .
+        } GROUP BY ?person }
+        ?person wdt:P27 wd:Q183 .
+        ?person p:P102 ?p102 .
+        ?p102 ps:P102 ?party .
+        ?p102 pq:P580 ?max_join_date .
+        ?person rdfs:label ?person_name . FILTER (LANG(?person_name) = "de") .
+        ?party rdfs:label ?party_name . FILTER (LANG(?party_name) = "de") .
+        ?about schema:about ?person .
+        ?about wikibase:sitelinks ?sitelinks .
+      }
+      ORDER BY DESC(?sitelinks)
+  - name: Scientists who's name starts with Albert
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?scientist ?name WHERE {
+        ?scientist wdt:P106 wd:Q901 .
+        ?scientist rdfs:label ?name .
+        FILTER (LANG(?name) = "en") .
+        FILTER REGEX(STR(?name), "^Albert") .
+      }
+  - name: Films, Title, Countries, Genre, Description
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX schema: <http://schema.org/>
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      SELECT ?film
+             ?title
+           (GROUP_CONCAT(DISTINCT ?country; SEPARATOR = "|") AS ?countries)
+           (GROUP_CONCAT(DISTINCT ?genre; SEPARATOR = "|") AS ?genres)
+                 (SAMPLE(?description_) AS ?description)
+                 (SAMPLE(?sitelinks_) AS ?sitelinks)
+      WHERE {
+        ?film wdt:P31 wd:Q11424 .
+        ?film rdfs:label ?title .
+        FILTER (LANG(?title) = "en") .
+        ?film wdt:P495 ?country_id .
+        ?country_id rdfs:label ?country .
+        FILTER (LANG(?country) = "en") .
+        ?film wdt:P136 ?genre_id .
+        ?genre_id rdfs:label ?genre .
+        FILTER (LANG(?genre) = "en") .
+        ?film schema:description ?description_ .
+        FILTER (LANG(?description_) = "en") .
+        ?about schema:about ?film .
+        ?about wikibase:sitelinks ?sitelinks_
+      }
+      GROUP BY ?film ?title
+      ORDER BY DESC(?sitelinks)
+  - name: All countries and their German name (test for unicode order)
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?name WHERE {
+        ?country wdt:P31 wd:Q6256 .
+        ?country rdfs:label ?name .
+        FILTER (lang(?name) = "de")
+      }
+      ORDER BY ASC(?name)
+  - name: All triples of wdt:P30 (continent), with proper names
+    sort_key: '~'
+    query: |-
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX schema: <http://schema.org/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      SELECT ?s_name ?p_name ?o_name ?statements ?sitelinks WHERE {
+        VALUES ?p { wdt:P30 } .
+        ?s ?p ?o .
+        ?s_name schema:about ?s .
+        ?s_name schema:isPartOf <https://en.wikipedia.org/> .
+        ?o_name schema:about ?o .
+        ?o_name schema:isPartOf <https://en.wikipedia.org/> .
+        ?mp wikibase:directClaim ?p .
+        ?mp schema:name ?p_name .
+        ?ms schema:about ?s .
+        ?ms wikibase:statements ?statements .
+        ?ms wikibase:sitelinks ?sitelinks .
+        FILTER (LANG(?p_name) = "en")
+      }
+      ORDER BY DESC(?sitelinks)
+  - name: Birthplaces of people named Patrick
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX p: <http://www.wikidata.org/prop/>
+      PREFIX psn: <http://www.wikidata.org/prop/statement/value-normalized/>
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?person ?person_label ?place_label ?coord WHERE {
+        ?person wdt:P31 wd:Q5 .
+        ?person wdt:P735/rdfs:label "Patrick"@en .
+        ?person wdt:P19 ?place .
+        ?place wdt:P625 ?coord .
+        ?person rdfs:label ?person_label .
+        ?place rdfs:label ?place_label .
+        FILTER (LANG(?person_label) = "en") .
+        FILTER (LANG(?place_label) = "en") .
+      }
+  - name: All movies and their narrative location
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX p: <http://www.wikidata.org/prop/>
+      PREFIX psn: <http://www.wikidata.org/prop/statement/value-normalized/>
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX schema: <http://schema.org/>
+      SELECT ?movie ?movieLabel ?narrative_location ?narrative_locationLabel ?sitelinks ?coordinates WHERE {
+        ?movie wdt:P840 ?narrative_location ;
+        wdt:P31 wd:Q11424 .
+        ?narrative_location wdt:P625 ?coordinates .
+        ?movie ^schema:about/wikibase:sitelinks ?sitelinks .
+        ?movie rdfs:label ?movieLabel .
+        ?narrative_location rdfs:label ?narrative_locationLabel .
+        FILTER (LANG(?movieLabel) = "en") .
+        FILTER (LANG(?narrative_locationLabel) = "en") .
+      }
+      ORDER BY DESC(?sitelinks)
+  - name: Literals of Germany, except names
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?p ?p_label ?o WHERE {
+        wd:Q183 ?p ?o .
+        FILTER (! REGEX(STR(?o), "http:"))
+        ?p ^wikibase:directClaim ?m . ?m rdfs:label ?p_label .
+        FILTER (LANG(?p_label) = "en")
+      }
+  - name: Meryl Streep Oscars and corresponding movies
+    sort_key: '~'
+    query: |-
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+      PREFIX ps: <http://www.wikidata.org/prop/statement/>
+      PREFIX p: <http://www.wikidata.org/prop/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      SELECT ?film_id ?film ?award WHERE {
+        wd:Q873 p:P166 ?p166 .
+        ?p166 ps:P166 ?award_id .
+        ?p166 pq:P1686 ?film_id .
+        ?award_id wdt:P31 wd:Q19020 .
+        ?award_id rdfs:label ?award . FILTER (LANG(?award) = "en")
+        ?film_id rdfs:label ?film . FILTER (LANG(?film) = "en")
+      }
+  - name: Politicians and their most recent party
+    sort_key: '~'
+    query: |-
+      PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+      PREFIX ps: <http://www.wikidata.org/prop/statement/>
+      PREFIX p: <http://www.wikidata.org/prop/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX schema: <http://schema.org/>
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      SELECT ?person_name ?party_name ?join_date ?sitelinks WHERE {
+        { SELECT ?person (MAX(?join_date_tmp) AS ?join_date) WHERE {
+            ?person p:P102/pq:P580 ?join_date_tmp .
+        } GROUP BY ?person }
+        ?person p:P102 ?p102 .
+        ?p102 ps:P102 ?party .
+        ?p102 pq:P580 ?join_date .
+        ?person schema:name ?person_name . FILTER (LANG(?person_name) = "en") .
+        ?party schema:name ?party_name . FILTER (LANG(?party_name) = "en") .
+        ?about schema:about ?person .
+        ?about wikibase:sitelinks ?sitelinks .
+      }
+      ORDER BY DESC(?sitelinks)
+  - name: People that co-occur with "beatles"
+    sort_key: '~'
+    query: |-
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      SELECT ?person_id ?person_name (SAMPLE(?text) AS ?sample_text) (COUNT(?text) AS ?count_text) WHERE {
+        ?person_id wdt:P31 wd:Q5 .
+        ?person_id rdfs:label ?person_name .
+        FILTER (LANG(?person_name) = "en") .
+        ?text ql:contains-entity ?person_id .
+        ?text ql:contains-word "beatles"
+      }
+      GROUP BY ?person_id ?person_name
+      ORDER BY DESC(?count_text)
+  - name: Airports around Berlin (using DIST)
+    sort_key: '~'
+    query: |-
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX geof: <http://www.opengis.net/def/function/geosparql/>
+      SELECT ?airport ?airport_label ?dist ?location WHERE {
+        ?airport wdt:P31/wdt:P279* wd:Q1248784 .
+        ?airport wdt:P625 ?location .
+        ?airport rdfs:label ?airport_label .
+        FILTER (LANG(?airport_label) = "en") .
+        BIND ("POINT(13.38 52.52)"^^geo:wktLiteral AS ?point)
+        BIND (geof:distance(?location, ?point) AS ?dist)
+        FILTER (?dist <= 100)
+      }
+      ORDER BY ASC(?dist)
+  - name: All objects with an location in a 100km ring around Freiburg
+    sort_key: '~'
+    query: |-
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX geof: <http://www.opengis.net/def/function/geosparql/>
+      SELECT ?anything ?name ?dist ?location WHERE {
+        ?anything wdt:P625 ?location .
+        ?anything rdfs:label ?name .
+        FILTER (LANG(?name) = "en") .
+        BIND ("POINT(7.85 48.00)"^^geo:wktLiteral AS ?point)
+        BIND (geof:distance(?location, ?point) AS ?dist)
+        FILTER (?dist >= 97 && ?dist <= 103)
+      }
+      ORDER BY ASC(?dist)
+  - name: All places in a stripe around the 48°N latitude
+    sort_key: '~'
+    query: |-
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX geof: <http://www.opengis.net/def/function/geosparql/>
+      SELECT ?anything ?name ?latitude ?longitude ?location WHERE {
+        ?anything wdt:P625 ?location .
+        ?anything rdfs:label ?name .
+        FILTER (LANG(?name) = "en") .
+        BIND (geof:latitude(?location) AS ?latitude)
+        BIND (geof:longitude(?location) AS ?longitude)
+        FILTER (?latitude >= 47.99) FILTER (?latitude <= 48.01)
+      }
+      ORDER BY ASC(?longitude)
+  - name: Highest peak per mountain range in country X
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX p: <http://www.wikidata.org/prop/>
+      PREFIX psn: <http://www.wikidata.org/prop/statement/value-normalized/>
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?mountain_range ?highest_peak ?elevation (SAMPLE(?image) AS ?image_) (SAMPLE(?coordinates) AS ?coordinates_) WHERE {
+         { SELECT ?range (MAX(?elevation_tmp) AS ?elevation) (COUNT(?mountain) AS ?count) WHERE {
+           ?mountain wdt:P31 wd:Q8502 .
+           ?mountain p:P2044/psn:P2044/wikibase:quantityAmount ?elevation_tmp .
+           ?mountain wdt:P4552 ?range .
+         } GROUP BY ?range }
+         { SELECT ?mountain ?range ?elevation WHERE {
+           ?mountain wdt:P31 wd:Q8502 .
+           ?mountain p:P2044/psn:P2044/wikibase:quantityAmount ?elevation .
+           ?mountain wdt:P4552 ?range .
+         } }
+         ?mountain wdt:P625 ?coordinates .
+         ?mountain wdt:P17 wd:Q183 .
+         ?range rdfs:label ?mountain_range .
+         ?mountain rdfs:label ?highest_peak .
+         ?mountain wdt:P18 ?image
+         FILTER (LANG(?mountain_range) = "de") .
+         FILTER (LANG(?highest_peak) = "de")
+         FILTER (?count > 10)
+      }
+      GROUP BY ?mountain_range ?highest_peak ?elevation
+      ORDER BY DESC(?elevation)
+  - name: Things that happened on day X
+    sort_key: '~'
+    query: |-
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX schema: <http://schema.org/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      SELECT ?subject_name ?predicate_name ?date WHERE {
+        VALUES ?p { wdt:P569 wdt:P570 wdt:P571 wdt:P585 wdt:P580 wdt:P582 wdt:P576 wdt:P3138 wdt:P1619 wdt:P575 wdt:P710 wdt:P2754 wdt:P1191 wdt:P3602 wdt:P729 wdt:P1249 wdt:P3999 wdt:P991 wdt:P3538 wdt:P730 wdt:P619 wdt:P6465 wdt:P713 wdt:P712 wdt:P2424 wdt:P711 wdt:P726 wdt:P3407 wdt:P1636 wdt:P3893 wdt:P837 wdt:P2669 wdt:P4602 wdt:P1839 wdt:P746 wdt:P1326 wdt:P620 wdt:P7589 wdt:P7588 wdt:P2960 wdt:P621 wdt:P6949 wdt:P4424 wdt:P5204 wdt:P1319 wdt:P2913 wdt:P3148 wdt:P4387 wdt:P574 wdt:P813 wdt:P622 wdt:P7295 wdt:P5017 wdt:P3390 wdt:P2285 wdt:P7495 wdt:P7162 wdt:P4243 wdt:P2311 }
+        ?p_entity wikibase:directClaim ?p . ?p_entity rdfs:label ?predicate_name FILTER (LANG(?predicate_name) = "en")
+        ?subject ?p ?date .
+        ?subject rdfs:label ?subject_name FILTER (LANG(?subject_name) = "en")
+        ?about schema:about ?subject . ?about wikibase:sitelinks ?sitelinks .
+        FILTER (MONTH(?date) = 5 && DAY(?date) = 22)
+      }
+      ORDER BY DESC(?sitelinks)
+  - name: All persons and their date of birth
+    sort_key: '~'
+    query: |-
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      SELECT ?person ?date_of_birth ?str ?year ?month ?day WHERE {
+        ?person wdt:P569 ?date_of_birth .
+        ?person rdfs:label ?person_label FILTER(LANG(?person_label) = "en")
+        BIND (STR(?date_of_birth) AS ?str)
+        BIND (YEAR(?date_of_birth) AS ?year)
+        BIND (MONTH(?date_of_birth) AS ?month)
+        BIND (DAY(?date_of_birth) AS ?day)
+      }
+  - name: German-speaking regions outside of DACH
+    sort_key: '~'
+    query: |-
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX schema: <http://schema.org/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT DISTINCT ?region_wd ?region_name ?sitelinks WHERE {
+        ?region_wd wdt:P31/wdt:P279* wd:Q1048835 .
+        ?region_wd ^schema:about/wikibase:sitelinks ?sitelinks .
+        ?region_wd wdt:P37 wd:Q188 .
+        ?region_wd @en@rdfs:label ?region_name .
+        MINUS { VALUES ?dach { wd:Q183 wd:Q39 wd:Q40 } ?region_wd wdt:P17 ?dach }
+      }
+  - name: Universities in Germany
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX schema: <http://schema.org/>
+      SELECT ?university ?name
+             (MAX(?students_count_) AS ?students_count)
+           (SAMPLE(?coordinates_) AS ?coordinates) WHERE {
+        ?university wdt:P31/wdt:P279* wd:Q3918 .
+        ?university wdt:P17 wd:Q183 .
+        ?university wdt:P2196 ?students_count_ .
+        ?university @de@rdfs:label ?name .
+        ?university @de@schema:description ?description .
+        OPTIONAL { ?university wdt:P625 ?coordinates_ }
+        FILTER (REGEX(?name, "universität", "i") || REGEX(?description, "universität", "i"))
+        FILTER (!(REGEX(?name, "musik", "i")) && !(REGEX(?description, "musik", "i")))
+      }
+      GROUP BY ?university ?name ?description
+      ORDER BY DESC(?students_count)
+  - name: All movies with their Wikipedia abstracts
+    sort_key: '~'
+    query: |-
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX schema: <http://schema.org/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      SELECT DISTINCT ?wikidata_id ?wikipedia_id ?movie_title ?movie_abstract ?sitelinks WHERE {
+        ?wikidata_id wdt:P31/wdt:P279* wd:Q11424 .
+        ?wikidata_id schema:name ?movie_title .
+        ?wikipedia_id schema:about ?wikidata_id.
+        ?wikipedia_id schema:inLanguage "en" .
+        ?wikipedia_id schema:description ?movie_abstract .
+        ?wikidata_id ^schema:about/wikibase:sitelinks ?sitelinks .
+        FILTER (LANG(?movie_title) = "en")
+        FILTER (LANG(?movie_abstract) = "en")
+      }
+      ORDER BY DESC(?sitelinks)
+  - name: Movies with IMDB rating (via SERVICE to qlever:imdb)
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX schema: <http://schema.org/>
+      PREFIX imdb: <https://www.imdb.com/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?movie ?imdb_id ?title (MIN(YEAR(?date)) AS ?year) ?imdb_votes ?imdb_rating WHERE {
+        ?movie wdt:P31 wd:Q11424 .
+        ?movie wdt:P345 ?imdb_id .
+        ?movie wdt:P577 ?date .
+        ?movie rdfs:label ?title FILTER (LANG(?title) = "en") .
+        SERVICE <https://qlever.cs.uni-freiburg.de/api/imdb> {
+        ?movie_imdb imdb:id ?imdb_id .
+        ?movie_imdb imdb:type "movie" .
+          ?movie_imdb imdb:numVotes ?imdb_votes .
+          ?movie_imdb imdb:averageRating ?imdb_rating .
+        }
+      }
+      GROUP BY ?movie ?title ?imdb_id ?imdb_votes ?imdb_rating
+      ORDER BY DESC(?imdb_votes)
+  - name: Movies matching keywords + IMDb rating
+    sort_key: '~'
+    query: |-
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX schema: <http://schema.org/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX imdb: <https://www.imdb.com/>
+      SELECT ?movie ?movie_imdb ?movie_title ?movie_abstract ?imdb_rating ?imdb_votes WHERE {
+        ?movie wdt:P345 ?imdb_id .
+        ?movie rdfs:label ?movie_title .
+        ?wikipedia schema:about ?movie .
+        ?wikipedia schema:description ?movie_abstract .
+        FILTER (LANG(?movie_title) = "en") .
+        FILTER (LANG(?movie_abstract) = "en") .
+        FILTER CONTAINS(?movie_abstract, "dream")
+        SERVICE <https://qlever.cs.uni-freiburg.de/api/imdb> {
+        ?movie_imdb imdb:id ?imdb_id .
+        ?movie_imdb imdb:type "movie" .
+          ?movie_imdb imdb:numVotes ?imdb_votes .
+          ?movie_imdb imdb:averageRating ?imdb_rating .
+        }
+      }
+      ORDER BY DESC(?imdb_votes)
+  - name: All predicates with their name and frequency
+    sort_key: AA.1
+    query: |-
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?p (MIN(?p_name_int) AS ?p_name) (SAMPLE(?count_int) AS ?count) ?percent WHERE {
+        { { SELECT ?p (COUNT(?p) AS ?count_int) WHERE { ?s ?p ?o } GROUP BY ?p }
+          ?m ?tmp ?p . ?m rdfs:label ?p_name_int FILTER(LANG(?p_name_int) = "en") }
+        UNION
+        { { SELECT ?p (COUNT(?p) AS ?count_int) WHERE { ?s ?p ?o } GROUP BY ?p }
+          BIND(?p AS ?p_name_int) }
+        { { SELECT ?p (COUNT(?p) AS ?count_int) WHERE { ?s ?p ?o } GROUP BY ?p }
+        BIND (100 * ?count_int / SUM(?count_int) AS ?percent) }
+      }
+      GROUP BY ?p ?percent
+      ORDER BY DESC(?count)
+  - name: All universities of DBLP authors with their location
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?employer ?employer_label (COUNT(DISTINCT ?person) as ?count_person) (SAMPLE(?coordinates) AS ?coordinates_) WHERE {
+        ?person wdt:P2456 ?dblp_author_id .
+        ?person wdt:P108 ?employer .
+        ?employer @en@rdfs:label ?employer_label .
+        ?employer (wdt:P159|wdt:P625)/wdt:P625 ?coordinates
+      }
+      GROUP BY ?employer ?employer_label
+      ORDER BY DESC(?count_person)
+  - name: People who were born and died on the same day of the year
+    sort_key: '~'
+    query: |-
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX schema: <http://schema.org/>
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX p: <http://www.wikidata.org/prop/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      SELECT ?person ?person_name ?date_of_birth ?date_of_death ?sitelinks WHERE {
+        { SELECT ?person ?date_of_birth ?date_of_death WHERE {
+          ?person wdt:P569 ?date_of_birth .
+          ?person wdt:P570 ?date_of_death .
+        BIND (DAY(?date_of_birth) AS ?dob)
+          BIND (MONTH(?date_of_birth) AS ?mob)
+          BIND (DAY(?date_of_death) AS ?dod)
+          BIND (MONTH(?date_of_death) AS ?mod)
+        FILTER (?dob = ?dod && ?mob = ?mod && !(?dob = 1 && ?mob = 1)) } }
+        ?person ^schema:about/wikibase:sitelinks ?sitelinks .
+        ?person rdfs:label ?person_name .
+        FILTER (LANG(?person_name) = "en") .
+      }
+      ORDER BY DESC(?sitelinks)
+  - name: Periods in earth's history
+    sort_key: '~'
+    query: |-
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?period_label ?era_label ?eon_label (YEAR(?start_time) AS ?start_year) WHERE {
+        ?period wdt:P31 wd:Q392928 .
+        ?period wdt:P580 ?start_time .
+        ?period wdt:P582 ?end_time .
+        ?period wdt:P361 ?era .
+        ?era wdt:P361 ?eon .
+        ?era wdt:P31 wd:Q630830 .
+        ?eon wdt:P31 wd:Q108256 .
+        ?period rdfs:label ?period_label .
+        ?era rdfs:label ?era_label .
+        ?eon rdfs:label ?eon_label .
+        FILTER (LANG(?period_label) = "de") .
+        FILTER (LANG(?era_label) = "de") .
+        FILTER (LANG(?eon_label) = "de") .
+      }
+      ORDER BY ASC(?start_time)
+  - name: Languages ranked by number of countries
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?official_language_label (COUNT(?country) AS ?num_countries) WHERE {
+        { SELECT DISTINCT ?country WHERE { ?country wdt:P31/wdt:P279* wd:Q3624078 } }
+        ?country wdt:P37 ?official_language .
+        ?official_language rdfs:label ?official_language_label .
+        FILTER (LANG(?official_language_label) = "en") .
+      }
+      GROUP BY ?official_language_label
+      ORDER BY DESC(?num_countries)
+  - name: Movies by the Coen brothers, with IMDb ratings and scores
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX schema: <http://schema.org/>
+      PREFIX imdb: <https://www.imdb.com/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX p: <http://www.wikidata.org/prop/>
+      SELECT ?movie ?title ?year ?imdb_id ?imdb_votes ?imdb_rating WHERE {
+        { SELECT ?movie (YEAR(MIN(?date)) AS ?year) WHERE { ?movie wdt:P31 wd:Q11424; wdt:P577 ?date } GROUP BY ?movie }
+        ?movie wdt:P345 ?imdb_id .
+        ?movie wdt:P57 wd:Q13595531 .
+        ?movie rdfs:label ?title FILTER (LANG(?title) = "en") .
+        SERVICE <https://qlever.cs.uni-freiburg.de/api/imdb> {
+        ?movie_imdb imdb:id ?imdb_id .
+        ?movie_imdb imdb:type "movie" .
+          ?movie_imdb imdb:numVotes ?imdb_votes .
+          ?movie_imdb imdb:averageRating ?imdb_rating .
+        }
+      }
+      ORDER BY DESC(?imdb_votes)
+  - name: Astronauts who walked on the moon
+    sort_key: '~'
+    query: |-
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      SELECT ?astronaut ?astronaut_label (SAMPLE(?text) AS ?text_) (COUNT(?text) AS ?count) WHERE {
+        ?astronaut wdt:P106 wd:Q11631 .
+        ?astronaut rdfs:label ?astronaut_label .
+        FILTER (LANG(?astronaut_label) = "en") .
+        ?text ql:contains-entity ?astronaut .
+        ?text ql:contains-word "walk* moon"
+      }
+      GROUP BY ?astronaut ?astronaut_label
+      ORDER BY DESC(?count)
+      TEXTLIMIT 9999
+  - name: Professions ordered by average age
+    sort_key: '~'
+    query: |-
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?occupation ?occupation_label (AVG(?age) AS ?avg_age) (COUNT(?age) AS ?count_age) WHERE {
+        ?person wdt:P31 wd:Q5 .
+        ?person wdt:P106 ?occupation .
+        ?person wdt:P569 ?date_of_birth .
+        ?person wdt:P570 ?date_of_death .
+        ?occupation rdfs:label ?occupation_label .
+        FILTER (LANG(?occupation_label) = "en") .
+        BIND (YEAR(?date_of_death) - YEAR(?date_of_birth) AS ?age)
+        FILTER (?age = ?age) # filter out invalid dates
+        # FILTER (YEAR(?date_of_birth) >= 1900)
+      }
+      GROUP BY ?occupation ?occupation_label
+      HAVING (?count_age > 100)
+      ORDER BY DESC(?avg_age)
+  - name: Add non-existing French city with wrong sort order (local vocab)
+    sort_key: '~'
+    query: |-
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?city ?city_label (SAMPLE(?population) AS ?population_) WHERE {
+        { ?city wdt:P31/wdt:P279* wd:Q515 .
+          ?city wdt:P17 wd:Q142 .
+        ?city wdt:P1082 ?population FILTER (?population > 200000) .
+          ?city rdfs:label ?city_label .
+          FILTER (LANG(?city_label) = "en") }
+        UNION {
+          VALUES (?city ?city_label ?population) { (<http://www.wikidata.org/entity/Qxxx> "Nexistepas" 0) }
+        }
+      }
+      GROUP BY ?city ?city_label
+      ORDER BY ASC(?city_label)
+  - name: For each country, the city with the largest number of museums
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?country_label ?city_label ?max_num_museums ?coordinates WHERE {
+        # For each country, the largest number of museums in a city.
+        { SELECT ?country (MAX(?num_museums) AS ?max_num_museums) WHERE {
+          { SELECT ?city (COUNT(DISTINCT ?museum) AS ?num_museums) WHERE {
+              ?museum wdt:P131+ ?city .
+              ?city wdt:P31/wdt:P279* wd:Q515 .
+              ?museum wdt:P31/wdt:P279* wd:Q33506 .
+          } GROUP BY ?city }
+          ?city wdt:P17 ?country .
+        } GROUP BY ?country }
+        # Join the corresponding city.
+        { SELECT ?city (COUNT(DISTINCT ?museum) AS ?num_museums) WHERE {
+            ?museum wdt:P131+ ?city .
+            ?city wdt:P31/wdt:P279* wd:Q515 .
+            ?museum wdt:P31/wdt:P279* wd:Q33506 .
+        } GROUP BY ?city }
+        ?city wdt:P17 ?country .
+        FILTER (?num_museums = ?max_num_museums)
+        # The name for each city and country and the coordinate of the city.
+        ?city wdt:P625 ?coordinates .
+        ?city rdfs:label ?city_label FILTER (LANG(?city_label) = "en") .
+        ?country rdfs:label ?country_label FILTER (LANG(?country_label) = "en") .
+      } ORDER BY DESC(?max_num_museums)
+  - name: Rivers ordered by length
+    sort_key: '~'
+    query: |-
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX psv: <http://www.wikidata.org/prop/statement/value/>
+      PREFIX p: <http://www.wikidata.org/prop/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      SELECT ?river_wd ?river_name (ROUND(MAX(?length_m)/1000) AS ?length_km) WHERE {
+        ?river_wd wdt:P31/wdt:P279* wd:Q4022 .
+        ?river_wd p:P2043/psv:P2043/wikibase:quantityNormalized/wikibase:quantityAmount ?length_m .
+        OPTIONAL { ?river_wd rdfs:label ?river_name . FILTER (LANG(?river_name) = "de") }
+        OPTIONAL { ?river_wd rdfs:label ?river_name . FILTER (LANG(?river_name) = "en") }
+      }
+      GROUP BY ?river_wd ?river_name
+      ORDER BY DESC(?length_km)
+  - name: Test for isIRI, isBlank, isLiteral
+    sort_key: '~'
+    query: |-
+      PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      SELECT ?x (isIRI(?x) AS ?isiri) (isBlank(?x) AS ?isblank) (isLiteral(?x) AS ?isliteral) WHERE {
+        { VALUES ?x { wd:Q5 "Hannah"@en "local___vocab" "2023-10-02"^^xsd:date 3.14 42 UNDEF } } UNION { wd:Q1001122 wdt:P569 ?x }
+      }
+  - name: Famous people where we don't know the birth date
+    sort_key: '~'
+    query: |-
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX schema: <http://schema.org/>
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?subject ?subject_label ?date_of_birth ?sitelinks WHERE {
+        ?subject wdt:P569 ?date_of_birth .
+        ?subject ^schema:about/wikibase:sitelinks ?sitelinks .
+        ?subject rdfs:label ?subject_label .
+        FILTER (LANG(?subject_label) = "en") .
+        FILTER ISBLANK(?date_of_birth)
+      }
+      ORDER BY DESC(?sitelinks)
+  - name: Frequent groups of professions
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?professions (COUNT(?professions) AS ?count_professions) WHERE {
+        SELECT ?person_id ?person (COUNT(?profession_id) AS ?count) (GROUP_CONCAT(DISTINCT ?profession; separator=", ") AS ?professions) WHERE {
+          SELECT * WHERE {
+            ?person_id wdt:P31 wd:Q5 .
+            ?person_id wdt:P106 ?profession_id .
+            ?profession_id rdfs:label ?profession .
+            ?person_id rdfs:label ?person .
+            FILTER (LANG(?person) = "en") .
+            FILTER (LANG(?profession) = "en")
+          } INTERNAL SORT BY ?person ?person_id ?profession
+        } GROUP BY ?person_id ?person HAVING (?count >= 5)
+      } GROUP BY ?professions ORDER BY DESC(?count_professions)
+  - name: Oscar-winning movies with their IMDb score
+    sort_key: '~'
+    query: |-
+      PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+      PREFIX ps: <http://www.wikidata.org/prop/statement/>
+      PREFIX p: <http://www.wikidata.org/prop/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX schema: <http://schema.org/>
+      PREFIX imdb: <https://www.imdb.com/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?movie ?imdb_id ?title (MIN(YEAR(?date)) AS ?year) ?imdb_votes ?imdb_rating (GROUP_CONCAT(?award_name) AS ?awards) WHERE {
+        ?movie wdt:P31 wd:Q11424 .
+        ?movie wdt:P345 ?imdb_id .
+        ?movie wdt:P577 ?date .
+        ?movie rdfs:label ?title FILTER (LANG(?title) = "en") .
+        ?person p:P166 ?person_award .
+        ?person_award ps:P166 ?award .
+        ?person_award pq:P1686 ?movie .
+        ?award rdfs:label ?award_name FILTER (LANG(?award_name) = "en") .
+        ?award wdt:P31 wd:Q19020 .
+        SERVICE <https://qlever.cs.uni-freiburg.de/api/imdb> {
+        ?movie_imdb imdb:id ?imdb_id .
+        ?movie_imdb imdb:type "movie" .
+          ?movie_imdb imdb:numVotes ?imdb_votes .
+          ?movie_imdb imdb:averageRating ?imdb_rating .
+        }
+      }
+      GROUP BY ?movie ?title ?imdb_id ?imdb_votes ?imdb_rating
+      ORDER BY DESC(?imdb_votes)
+  - name: Version date (wikibase:Dump schema:dateModified ?date)
+    sort_key: '~'
+    query: |-
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX schema: <http://schema.org/>
+      SELECT ?date WHERE {
+        wikibase:Dump schema:dateModified ?date
+      }
+      ORDER BY DESC(?date)
+      LIMIT 1
+  - name: English monarchs
+    sort_key: '~'
+    query: |-
+      PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX ps: <http://www.wikidata.org/prop/statement/>
+      PREFIX p: <http://www.wikidata.org/prop/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?monarch (SAMPLE(?image_) AS ?image) (MIN(?start_time_) as ?start_time) (MAX(?end_time_) AS ?end_time) WHERE {
+        ?monarch p:P39 ?monarch_position_held .
+        ?monarch_position_held ps:P39 ?position_held .
+        ?position_held wdt:P361 wd:Q645968 .
+        ?monarch_position_held pq:P580 ?start_time_ .
+        OPTIONAL { ?monarch_position_held pq:P582 ?end_time_ }
+        ?monarch wdt:P18 ?image_ .
+        ?monarch rdfs:label ?monarch_label .
+        FILTER (LANG(?monarch_label) = "en") .
+      }
+      GROUP BY ?monarch
+      ORDER BY DESC(?start_time)
+  - name: Datatypes of wdt:P625 coordinates
+    sort_key: '~'
+    query: |-
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      SELECT ?datatype (COUNT(?location) as ?num_locations) WHERE {
+        ?subject wdt:P625 ?location .
+        BIND (DATATYPE(?location) AS ?datatype)
+      }
+      GROUP BY ?datatype
+      ORDER BY DESC(?num_locations)
+  - name: Entities with their natural type (random)
+    sort_key: '~'
+    query: |-
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX schema: <http://schema.org/>
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      SELECT ?subject ?subject_label ?type ?type_label ?sitelinks WHERE {
+        ?subject wdt:P31279 ?type .
+        ?subject @en@rdfs:label ?subject_label .
+        ?type @en@rdfs:label ?type_label .
+        ?subject ^schema:about/wikibase:sitelinks ?sitelinks .
+        FILTER (?sitelinks > 10)
+      }
+      ORDER BY RAND()
+  - name: People without birth date [using FILTER NOT EXISTS]
+    sort_key: '~'
+    query: |-
+      PREFIX p: <http://www.wikidata.org/prop/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX schema: <http://schema.org/>
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?person ?label ?sitelinks WHERE {
+        ?person wdt:P31 wd:Q5 .
+        ?person ^schema:about/wikibase:sitelinks ?sitelinks .
+        ?person @en@rdfs:label ?label .
+        FILTER NOT EXISTS {
+          ?person wdt:P569 []
+        }
+      }
+      ORDER BY DESC(?sitelinks)
+  - name: Natural types of subjects with given P31 type
+    sort_key: '~'
+    query: |-
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX schema: <http://schema.org/>
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      SELECT * WHERE {
+        ?subject wdt:P31/wdt:P279* wd:Q8054 .
+        ?subject wdt:P31279 ?type .
+        ?subject @en@rdfs:label ?subject_label .
+        ?type @en@rdfs:label ?type_label .
+        ?subject ^schema:about/wikibase:sitelinks ?sitelinks .
+        FILTER (?sitelinks > 10)
+      }
+      ORDER BY RAND()
+  - name: TV series ordered by IMDb rating
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX schema: <http://schema.org/>
+      PREFIX imdb: <https://www.imdb.com/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?movie ?imdb_id ?title (MIN(YEAR(?start_date)) AS ?year) ?imdb_votes ?imdb_rating WHERE {
+        ?movie wdt:P345 ?imdb_id .
+        ?movie wdt:P580 ?start_date .
+        ?movie rdfs:label ?title FILTER (LANG(?title) = "en") .
+        SERVICE <https://qlever.cs.uni-freiburg.de/api/imdb> {
+        ?movie_imdb imdb:id ?imdb_id .
+        ?movie_imdb imdb:type "tvSeries" .
+          ?movie_imdb imdb:numVotes ?imdb_votes .
+          ?movie_imdb imdb:averageRating ?imdb_rating .
+        }
+      }
+      GROUP BY ?movie ?title ?imdb_id ?imdb_votes ?imdb_rating
+      HAVING (?imdb_votes > 100000)
+      ORDER BY DESC(?imdb_rating)
+  - name: Example for EXISTS query
+    sort_key: '~'
+    query: |-
+      PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT DISTINCT ?name ?young_person_born_here  ?population WHERE {
+        ?city wdt:P31/wdt:P279* wd:Q515 .
+        ?city wdt:P17 wd:Q183 .
+        ?city wdt:P1082 ?population .
+        ?city rdfs:label ?name .
+        FILTER (LANG(?name) = "de")
+        BIND (EXISTS {
+          ?person wdt:P19 ?city .
+          ?person wdt:P569 ?date_of_birth .
+          FILTER (?date_of_birth > "2000-01-01T00:00:00Z"^^xsd:dateTime)
+        } AS ?young_person_born_here)
+      }
+      ORDER BY DESC(?population)

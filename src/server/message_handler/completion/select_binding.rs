@@ -1,26 +1,30 @@
-use super::{CompletionContext, CompletionLocation};
-use crate::server::lsp::{CompletionItem, CompletionItemKind, InsertTextFormat};
+use super::{error::CompletionError, CompletionContext, CompletionLocation};
+use crate::server::lsp::{
+    CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
+};
 use ll_sparql_parser::{ast::AstNode, syntax_kind::SyntaxKind};
 use std::collections::HashSet;
 
-pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
+pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, CompletionError> {
     if let CompletionLocation::SelectBinding(select_clause) = &context.location {
-        let mut res = Vec::new();
+        let mut items = Vec::new();
         if context.continuations.contains(&SyntaxKind::DISTINCT) {
-            res.append(&mut vec![
+            items.append(&mut vec![
                 CompletionItem::new(
                     "DISTINCT",
-                    "Ensure unique results",
+                    Some("Ensure unique results".to_string()),
+                    None,
                     "DISTINCT ",
                     CompletionItemKind::Keyword,
-                    InsertTextFormat::PlainText,
+                    None,
                 ),
                 CompletionItem::new(
                     "REDUCED",
-                    "Permit elimination of some non-distinct solutions",
+                    Some("Permit elimination of some non-distinct solutions".to_string()),
+                    None,
                     "REDUCED ",
                     CompletionItemKind::Keyword,
-                    InsertTextFormat::PlainText,
+                    None,
                 ),
             ]);
         }
@@ -42,21 +46,30 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
                     )
                 });
         let vars = &availible_vars - &result_vars;
-        res.extend(vars.into_iter().map(|var| {
+        items.extend(vars.into_iter().map(|var| {
             CompletionItem::new(
                 &var,
-                "variable",
+                Some("variable".to_string()),
+                None,
                 &format!("{} ", var),
                 CompletionItemKind::Variable,
-                InsertTextFormat::PlainText,
+                None,
             )
         }));
-        return res;
+        Ok(CompletionList {
+            is_incomplete: false,
+            item_defaults: Some(ItemDefaults {
+                edit_range: None,
+                commit_characters: None,
+                data: None,
+                insert_text_format: Some(InsertTextFormat::PlainText),
+            }),
+            items,
+        })
     } else {
-        log::error!(
+        Err(CompletionError::ResolveError(format!(
             "select binding completions was called with location: {:?}",
             context.location
-        );
-        return vec![];
+        )))
     }
 }

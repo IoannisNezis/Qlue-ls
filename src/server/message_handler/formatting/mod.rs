@@ -8,16 +8,16 @@ use wasm_bindgen::prelude::wasm_bindgen;
 use crate::server::{
     configuration::Settings,
     lsp::{
-        errors::ResponseError, textdocument::TextDocumentItem, FormattingOptions,
+        errors::LSPError, textdocument::TextDocumentItem, FormattingOptions,
         FormattingRequest, FormattingResponse,
     },
     Server,
 };
 
-pub(super) fn handle_format_request(
+pub(super) async fn handle_format_request(
     server: &mut Server,
     request: FormattingRequest,
-) -> Result<FormattingResponse, ResponseError> {
+) -> Result<(), LSPError> {
     let (document, tree) = server.state.get_state(request.get_document_uri())?;
     let edits = format_document(
         &document,
@@ -25,7 +25,7 @@ pub(super) fn handle_format_request(
         request.get_options(),
         &server.settings.format,
     )?;
-    Ok(FormattingResponse::new(request.get_id(), edits))
+    server.send_message(FormattingResponse::new(request.get_id(), edits))
 }
 
 #[wasm_bindgen]

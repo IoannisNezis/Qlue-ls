@@ -1,23 +1,62 @@
-use ll_sparql_parser::syntax_kind::SyntaxKind;
+use super::{
+    error::CompletionError,
+    utils::{fetch_online_completions, get_replace_range},
+    CompletionContext,
+};
+use crate::server::{
+    lsp::{CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat},
+    Server,
+};
+use ll_sparql_parser::{
+    ast::{AstNode, QueryUnit},
+    syntax_kind::SyntaxKind,
+};
+use tera::Context;
 
-use crate::server::lsp::{CompletionItem, CompletionItemKind, InsertTextFormat};
-
-use super::CompletionContext;
-
-pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
-    let mut res = Vec::new();
-    if context
-        .continuations
-        .contains(&SyntaxKind::GroupGraphPatternSub)
-        || context.continuations.contains(&SyntaxKind::TriplesBlock)
+pub(super) async fn completions(
+    server: &Server,
+    context: CompletionContext,
+) -> Result<CompletionList, CompletionError> {
+    let mut items = Vec::new();
+    let mut is_incomplete = false;
+    if [
+        SyntaxKind::GroupGraphPatternSub,
+        SyntaxKind::TriplesBlock,
+        SyntaxKind::DataBlockValue,
+        SyntaxKind::GraphNodePath,
+    ]
+    .iter()
+    .any(|kind| context.continuations.contains(kind))
     {
-        res.push(CompletionItem::new(
-            "subject filler",
-            "Hier könnte ihre subject completion stehen",
-            "<subject> ",
-            CompletionItemKind::Value,
-            InsertTextFormat::PlainText,
-        ));
+        match (context.backend.as_ref(), context.search_term.as_ref()) {
+            (Some(backend_name), Some(search_term)) => {
+                let mut template_context = Context::new();
+                template_context.insert("search_term", search_term);
+                template_context.insert::<Vec<(&str, &str)>, &str>("prefixes", &vec![]);
+                let range = get_replace_range(&context);
+                let query_unit = QueryUnit::cast(context.tree).unwrap();
+                match fetch_online_completions(
+                    server,
+                    &query_unit,
+                    context.backend.as_ref(),
+                    &format!("{}-{}", backend_name, "subjectCompletion"),
+                    template_context,
+                    range,
+                )
+                .await
+                {
+                    Ok(online_completions) => {
+                        // TODO: remove magic number: 100 is the maximum number or results...
+                        is_incomplete = online_completions.len() >= 100;
+                        items.extend(online_completions)
+                    }
+                    Err(err) => {
+                        log::error!("{:?}", err);
+                    }
+                };
+            }
+            _ => log::info!("No Backend or search term"),
+        }
     }
     if context
         .continuations
@@ -26,64 +65,92 @@ pub(super) fn completions(context: CompletionContext) -> Vec<CompletionItem> {
             .continuations
             .contains(&SyntaxKind::GraphPatternNotTriples)
     {
-        res.append(&mut vec![
-            CompletionItem::new(
-                "FILTER",
-                "Filter the results",
-                "FILTER ( $0 )",
-                CompletionItemKind::Snippet,
-                InsertTextFormat::Snippet,
-            ),
-            CompletionItem::new(
-                "BIND",
-                "Bind a new variable",
-                "BIND ($1 AS ?$0)",
-                CompletionItemKind::Snippet,
-                InsertTextFormat::Snippet,
-            ),
-            CompletionItem::new(
-                "VALUES",
-                "Inline data definition",
-                "VALUES ?$1 { $0 }",
-                CompletionItemKind::Snippet,
-                InsertTextFormat::Snippet,
-            ),
-            CompletionItem::new(
-                "SERVICE",
-                "Collect data from a fedarated SPARQL endpoint",
-                "SERVICE <$1> {\n  $0\n}",
-                CompletionItemKind::Snippet,
-                InsertTextFormat::Snippet,
-            ),
-            CompletionItem::new(
-                "MINUS",
-                "Subtract data",
-                "MINUS { $0 }",
-                CompletionItemKind::Snippet,
-                InsertTextFormat::Snippet,
-            ),
-            CompletionItem::new(
-                "OPTIONAL",
-                "Optional graphpattern",
-                "OPTIONAL { $0 }",
-                CompletionItemKind::Snippet,
-                InsertTextFormat::Snippet,
-            ),
-            CompletionItem::new(
-                "UNION",
-                "Union of two results",
-                "{\n  $1\n}\nUNION\n{\n  $0\n}",
-                CompletionItemKind::Snippet,
-                InsertTextFormat::Snippet,
-            ),
-            CompletionItem::new(
-                "Sub select",
-                "Sub select query",
-                "{\n  Select * WHERE {\n    $0\n  }\n}",
-                CompletionItemKind::Snippet,
-                InsertTextFormat::Snippet,
-            ),
+        items.append(&mut vec![
+            CompletionItem {
+                label: "FILTER".to_string(),
+                kind: CompletionItemKind::Snippet,
+                detail: Some("Filter the results".to_string()),
+                sort_text: None,
+                insert_text: Some("FILTER ( $0 )".to_string()),
+                text_edit: None,
+                insert_text_format: Some(InsertTextFormat::Snippet),
+                additional_text_edits: None,
+            },
+            CompletionItem {
+                label: "BIND".to_string(),
+                kind: CompletionItemKind::Snippet,
+                detail: Some("Bind a new variable".to_string()),
+                sort_text: None,
+                insert_text: Some("BIND ($1 AS ?$0)".to_string()),
+                text_edit: None,
+                insert_text_format: Some(InsertTextFormat::Snippet),
+                additional_text_edits: None,
+            },
+            CompletionItem {
+                label: "VALUES".to_string(),
+                kind: CompletionItemKind::Snippet,
+                detail: Some("Inline data definition".to_string()),
+                sort_text: None,
+                insert_text: Some("VALUES ?$1 { $0 }".to_string()),
+                text_edit: None,
+                insert_text_format: Some(InsertTextFormat::Snippet),
+                additional_text_edits: None,
+            },
+            CompletionItem {
+                label: "SERVICE".to_string(),
+                kind: CompletionItemKind::Snippet,
+                detail: Some("Collect data from a fedarated SPARQL endpoint".to_string()),
+                sort_text: None,
+                insert_text: Some("SERVICE $1 {\n  $0\n}".to_string()),
+                text_edit: None,
+                insert_text_format: Some(InsertTextFormat::Snippet),
+                additional_text_edits: None,
+            },
+            CompletionItem {
+                label: "MINUS".to_string(),
+                kind: CompletionItemKind::Snippet,
+                detail: Some("Subtract data".to_string()),
+                sort_text: None,
+                insert_text: Some("MINUS { $0 }".to_string()),
+                text_edit: None,
+                insert_text_format: Some(InsertTextFormat::Snippet),
+                additional_text_edits: None,
+            },
+            CompletionItem {
+                label: "OPTIONAL".to_string(),
+                kind: CompletionItemKind::Snippet,
+                detail: Some("Optional graphpattern".to_string()),
+                sort_text: None,
+                insert_text: Some("OPTIONAL { $0 }".to_string()),
+                text_edit: None,
+                insert_text_format: Some(InsertTextFormat::Snippet),
+                additional_text_edits: None,
+            },
+            CompletionItem {
+                label: "UNION".to_string(),
+                kind: CompletionItemKind::Snippet,
+                detail: Some("Union of two results".to_string()),
+                sort_text: None,
+                insert_text: Some("{\n  $1\n}\nUNION\n{\n  $0\n}".to_string()),
+                text_edit: None,
+                insert_text_format: Some(InsertTextFormat::Snippet),
+                additional_text_edits: None,
+            },
+            CompletionItem {
+                label: "Sub select".to_string(),
+                kind: CompletionItemKind::Snippet,
+                detail: Some("Sub select query".to_string()),
+                sort_text: None,
+                insert_text: Some("{\n  SELECT * WHERE {\n    $0\n  }\n}".to_string()),
+                text_edit: None,
+                insert_text_format: Some(InsertTextFormat::Snippet),
+                additional_text_edits: None,
+            },
         ]);
     }
-    res
+    Ok(CompletionList {
+        is_incomplete,
+        item_defaults: None,
+        items,
+    })
 }

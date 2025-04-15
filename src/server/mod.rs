@@ -2,16 +2,20 @@ mod anaysis;
 mod capabilities;
 mod common;
 mod configuration;
+mod fetch;
 mod lsp;
 mod state;
 mod tools;
 
 mod message_handler;
 
+use std::any::type_name;
+
 use capabilities::create_capabilities;
 use configuration::Settings;
 use log::{error, info};
 use lsp::{
+    errors::{ErrorCode, LSPError},
     rpc::{RecoverId, RequestIdOrNull, ResponseMessage},
     ServerInfo,
 };
@@ -22,6 +26,7 @@ use message_handler::dispatch;
 #[allow(unused_imports)]
 pub use message_handler::format_raw;
 
+use serde::Serialize;
 use state::ServerState;
 use tools::Tools;
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -37,7 +42,7 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn new(write_function: impl Fn(String) -> () + 'static) -> Server {
+    pub fn new(write_function: impl Fn(String) + 'static) -> Server {
         let version = env!("CARGO_PKG_VERSION");
         info!("Started Language Server: Qlue-ls - version: {}", version);
         Self {
@@ -48,7 +53,7 @@ impl Server {
                 name: "Qlue-ls".to_string(),
                 version: Some(version.to_string()),
             },
-            tools: Tools::initiate(),
+            tools: Tools::init(),
             send_message_clusure: Box::new(write_function),
         }
     }
@@ -60,36 +65,43 @@ impl Server {
             .unwrap_or("not-specified".to_string())
     }
 
-    pub fn handle_message(&mut self, message: String) {
-        match dispatch(self, &message) {
-            Ok(None) => {
-                // NOTE: message was a notification -> Nothing to do
-            }
-            Ok(Some(response)) => self.send_message(response),
-            Err(error) => {
-                if let Some(id) = serde_json::from_str::<RecoverId>(&message)
-                    .map(|msg| RequestIdOrNull::RequestId(msg.id))
-                    .ok()
-                {
-                    let response = ResponseMessage::error(id, error);
-                    match serde_json::to_string(&response) {
-                        Ok(response_string) => {
-                            self.send_message(response_string);
-                        }
-                        Err(error) => {
-                            error!(
-                            "CRITICAL: could not serialize error message (this very bad):\n{:?}\n{}",
-                            response, error
-                        )
-                        }
-                    }
+    pub async fn handle_message(&mut self, message: String) {
+        if let Err(error) = dispatch(self, &message).await {
+            log::error!(
+                "Error occured while handling message:\n\"{}\"\n\n{:?}\n{}",
+                message,
+                error.code,
+                error.message
+            );
+            if let Ok(id) = serde_json::from_str::<RecoverId>(&message)
+                .map(|msg| RequestIdOrNull::RequestId(msg.id))
+            {
+                if let Err(error) = self.send_message(ResponseMessage::error(id, error)) {
+                    error!(
+                        "CRITICAL: could not serialize error message (this very bad):\n{:?}",
+                        error
+                    )
                 }
             }
         }
     }
 
-    fn send_message(&self, message: String) {
-        (self.send_message_clusure)(message);
+    fn send_message<T>(&self, message: T) -> Result<(), LSPError>
+    where
+        T: Serialize,
+    {
+        let message_string = serde_json::to_string(&message).map_err(|error| {
+            LSPError::new(
+                ErrorCode::ParseError,
+                &format!(
+                    "Could not deserialize RPC-message \"{}\"\n\n{}",
+                    type_name::<T>(),
+                    error
+                ),
+            )
+        })?;
+        (self.send_message_clusure)(message_string);
+        Ok(())
     }
 
     /// Shortens a raw URI into its CURIE (Compact URI) form and retrieves related metadata.
@@ -128,31 +140,9 @@ impl Server {
     /// - The `uri_converter` fails to find a record associated with the URI.
     /// - The `uri_converter` fails to shorten the URI into a CURIE.
     pub(crate) fn shorten_uri(&self, uri: &str) -> Option<(String, String, String)> {
-        let record = self.tools.uri_converter.find_by_uri(uri).ok()?;
-        let curie = self.tools.uri_converter.compress(uri).ok()?;
+        let converter = self.state.get_default_converter()?;
+        let record = converter.find_by_uri(uri).ok()?;
+        let curie = converter.compress(uri).ok()?;
         Some((record.prefix.clone(), record.uri_prefix.clone(), curie))
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::Server;
-
-    use super::message_handler::dispatch;
-
-    #[test]
-    fn initialize() {
-        let mut server = Server::new(|_message| {});
-        assert!(dbg!(dispatch(
-            &mut server,
-            &r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"processId":1}}"#
-                .to_string(),
-        ))
-        .is_ok());
-        assert!(dbg!(dispatch(
-            &mut server,
-            &r#"{"jsonrpc":"2.0","method":"initialized"}"#.to_string(),
-        )
-        .is_ok()));
     }
 }

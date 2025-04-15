@@ -1,0 +1,16 @@
+PREFIX bibtex: <http://purl.org/net/nknouf/ns/bibtex#>
+PREFIX cito: <http://purl.org/spar/cito/>
+PREFIX datacite: <http://purl.org/spar/datacite/>
+PREFIX dblp: <https://dblp.org/rdf/schema#>
+PREFIX dblps: <https://dblp.org/rdf/schema-2020-07-01#>
+PREFIX literal: <http://purl.org/spar/literal/>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX schema: <http://schema.org/>
+PREFIX terms: <http://purl.org/dc/terms/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>

@@ -1,0 +1,1112 @@
+config:
+  backend:
+    id: '17'
+    name: OSM Planet
+    slug: osm-planet
+    sortKey: B.2
+    baseUrl: https://qlever.cs.uni-freiburg.de/api/osm-planet
+    apiToken: aof4Ad
+    isDefault: 'False'
+    isNoSlugMode: 'False'
+    maxDefault: '100'
+    filteredLanguage: en
+    dynamicSuggestions: '2'
+    defaultModeTimeout: '10.0'
+    mixedModeTimeout: '3.0'
+    suggestSubjects: |-
+      %PREFIXES%
+      # IF !CURRENT_WORD_EMPTY #
+      SELECT ?qui_entity (SAMPLE(?name) AS ?qui_name) (SAMPLE(?alias) AS ?qui_alias) (SAMPLE(?count) AS ?qui_count) WHERE {
+        { { SELECT ?qui_entity ?name ?alias WHERE {
+            { ?qui_entity osmkey:name ?name BIND(?name AS ?alias) FILTER REGEX(STR(?name), "^%CURRENT_WORD%") } UNION
+            { ?qui_entity osmkey:name ?name . ?qui_entity osmkey:name:en ?alias FILTER REGEX(STR(?alias), "^%CURRENT_WORD%") } } }
+          ?qui_entity rdf:type osm:relation . ?qui_entity osm2rdf:area ?count }
+          UNION
+          { { SELECT ?qui_entity ?name ?alias WHERE {
+            { ?qui_entity osmkey:name ?name BIND(?name AS ?alias) FILTER REGEX(STR(?name), "^%CURRENT_WORD%") } UNION
+            { ?qui_entity osmkey:name ?name . ?qui_entity osmkey:name:en ?alias FILTER REGEX(STR(?alias), "^%CURRENT_WORD%") } } }
+          { SELECT ?qui_entity (10 * SUM(?length) AS ?count)
+            WHERE { ?qui_entity osmkey:waterway "river" .
+                           ?qui_entity osmrel:member/osm2rdfmember:id/osm2rdf:length ?length } GROUP BY ?qui_entity } }
+      } GROUP BY ?qui_entity ORDER BY DESC(?qui_count)
+      # ENDIF #
+    suggestPredicates: |-
+      %PREFIXES%
+      # IF !CURRENT_SUBJECT_VARIABLE #
+      SELECT ?qui_entity (SAMPLE(?name) as ?qui_name) (SAMPLE(?name) as ?qui_alias) (SAMPLE(?count) as ?qui_count) ?qui_reversed WHERE {
+        { { SELECT ?qui_entity (COUNT(?qui_object) AS ?count)
+          WHERE { %CURRENT_SUBJECT% ?qui_entity ?qui_object  }
+          GROUP BY ?qui_entity } BIND (0 AS ?qui_reversed) }
+        UNION
+        { { SELECT ?qui_entity (COUNT(?qui_subject) AS ?count)
+          WHERE { ?qui_subject ?qui_entity %CURRENT_SUBJECT%  }
+          GROUP BY ?qui_entity } BIND (1 AS ?qui_reversed) }
+        BIND (?qui_entity AS ?name)
+        # IF !CURRENT_WORD_EMPTY #
+        FILTER REGEX(STR(?name), "%CURRENT_WORD%", "i")
+        # ENDIF #
+      } GROUP BY ?qui_entity ?qui_reversed ORDER BY DESC(?qui_count)
+      # ENDIF #
+      # IF CURRENT_SUBJECT_VARIABLE #
+      SELECT ?qui_entity (SAMPLE(?name) as ?qui_name) (SAMPLE(?name) as ?qui_alias) (SAMPLE(?count) as ?qui_count) WHERE {
+        # IF CONNECTED_TRIPLES_EMPTY #
+        { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count)
+          WHERE { ?qui_subject ?qui_entity ?qui_object }
+          GROUP BY ?qui_entity }
+        # ELSE #
+        { SELECT ?qui_entity (COUNT(DISTINCT %CURRENT_SUBJECT%) AS ?count)
+          WHERE { %CONNECTED_TRIPLES% %CURRENT_SUBJECT% ?qui_entity ?qui_object }
+          GROUP BY ?qui_entity }
+        # ENDIF #
+        BIND (?qui_entity AS ?name)
+        # IF !CURRENT_WORD_EMPTY #
+        FILTER REGEX(STR(?name), "%CURRENT_WORD%", "i")
+        # ENDIF #
+      } GROUP BY ?qui_entity ORDER BY DESC(?qui_count)
+      # ENDIF #
+    suggestObjects: |-
+      %PREFIXES%
+      SELECT ?qui_entity (SAMPLE(?name) as ?qui_name) (SAMPLE(?alias) as ?qui_alias) (SAMPLE(?count) as ?qui_count) WHERE {
+        { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count) WHERE {
+          %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity .
+        } GROUP BY ?qui_entity }
+        # IF CURRENT_WORD_EMPTY #
+        OPTIONAL { ?qui_entity osmkey:name ?name }
+        BIND (?qui_entity AS ?alias)
+        # ELSE #
+        OPTIONAL { ?qui_entity osmkey:name ?name }
+        OPTIONAL { ?qui_entity osmkey:name:en ?optional_alias }
+        BIND (COALESCE(?optional_alias, ?qui_entity) AS ?alias)
+        FILTER (REGEX(STR(?name), "^%CURRENT_WORD%") || REGEX(STR(?alias), "^%CURRENT_WORD%"))
+        # ENDIF #
+      } GROUP BY ?qui_entity ORDER BY DESC(?qui_count)
+    subjectName: ?qleverui_entity <https://www.openstreetmap.org/wiki/Key:name> ?qleverui_name .
+    alternativeSubjectName: ''
+    predicateName: ''
+    alternativePredicateName: ''
+    objectName: ?qleverui_entity <https://www.openstreetmap.org/wiki/Key:name> ?qleverui_name .
+    alternativeObjectName: ''
+    replacePredicates: ''
+    supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
+    supportedFunctions: asc, desc, avg, values, score, text, count, sample, min, max, average, concat, group_concat, langMatches, lang, regex, sum, dist, contains, str, strlen, substr, strstarts, strends, strbefore, strafter, contains, year, month, day, rand, abs, ceil, floor, round, log, exp, sqrt, sin, cos, tan, if, coalesce, bound, concat, replace, encode_for_uri, isiri, isblank, isliteral, isNumeric, bound
+    supportedPredicateSuggestions: ''
+    suggestPrefixnamesForPredicates: 'False'
+    fillPrefixes: 'True'
+    filterEntities: 'False'
+    suggestedPrefixes: |-
+      @prefix osmmeta: <https://www.openstreetmap.org/meta/> .
+      @prefix osmway: <https://www.openstreetmap.org/way/> .
+      @prefix osmkey: <https://www.openstreetmap.org/wiki/Key:> .
+      @prefix osmrel: <https://www.openstreetmap.org/relation/> .
+      @prefix osmnode: <https://www.openstreetmap.org/node/> .
+      @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+      @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+      @prefix osm: <https://www.openstreetmap.org/> .
+      @prefix ogc: <http://www.opengis.net/rdf#> .
+      @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+      @prefix wd: <http://www.wikidata.org/entity/> .
+      @prefix wdt: <http://www.wikidata.org/prop/direct/> .
+      @prefix p: <http://www.wikidata.org/prop/> .
+      @prefix ps: <http://www.wikidata.org/prop/statement/> .
+      @prefix pq: <http://www.wikidata.org/prop/qualifier/> .
+      @prefix geo: <http://www.opengis.net/ont/geosparql#> .
+      @prefix geof: <http://www.opengis.net/def/function/geosparql/> .
+      @prefix osm2rdf: <https://osm2rdf.cs.uni-freiburg.de/rdf#> .
+      @prefix osm2rdfkey: <https://osm2rdf.cs.uni-freiburg.de/rdf/key#> .
+      @prefix osm2rdfgeom: <https://osm2rdf.cs.uni-freiburg.de/rdf/geom#> .
+      @prefix osm2rdfmember: <https://osm2rdf.cs.uni-freiburg.de/rdf/member#> .
+      @prefix qlss: <https://qlever.cs.uni-freiburg.de/spatialSearch/> .
+    suggestionEntityVariable: ?qui_entity
+    suggestionNameVariable: ?qui_name
+    suggestionAltNameVariable: ?qui_alias
+    suggestionReversedVariable: ?qui_reversed
+    frequentPredicates: ''
+    frequentPatternsWithoutOrder: geo:hasGeometry/geo:asWKT osmkey:highway osmkey:name
+    entityNameAndAliasPattern: ?qleverui_entity osmkey:name ?name . ?qleverui_entity osmkey:name|osmkey:alt_name|osmkey:name:en|osmkey:name:de ?alias
+    entityScorePattern: '{ SELECT ?qleverui_entity ?count WHERE { ?qleverui_entity rdf:type osm:relation { ?qleverui_entity osm2rdf:area ?count } UNION { ?qleverui_entity osmkey:waterway "river" { SELECT ?qleverui_entity (10 * SUM(?length) AS ?count) WHERE { ?qleverui_entity osmrel:member/osm:id/osm2rdf:length ?length } GROUP BY ?qleverui_entity } } } }'
+    predicateNameAndAliasPatternWithoutContext: BIND(?qleverui_entity AS ?name) BIND(?qleverui_entity AS ?alias)
+    predicateNameAndAliasPatternWithContext: BIND(?qleverui_entity AS ?name) BIND(?qleverui_entity AS ?alias)
+    entityNameAndAliasPatternDefault: BIND(?qleverui_entity AS ?name) BIND(?qleverui_entity AS ?alias)
+    predicateNameAndAliasPatternWithoutContextDefault: BIND(?qleverui_entity AS ?name) BIND(?qleverui_entity AS ?alias)
+    predicateNameAndAliasPatternWithContextDefault: BIND(?qleverui_entity AS ?name) BIND(?qleverui_entity AS ?alias)
+    warmupQuery1: |-
+      SELECT ?qleverui_entity (SAMPLE(?name) AS ?qleverui_name) (SAMPLE(?alias) AS ?qleverui_alias) (SAMPLE(?count) AS ?qleverui_count) WHERE {
+        { SELECT ?qleverui_entity ?name ?alias ?count WHERE {
+          %ENTITY_SCORE_PATTERN%
+          %ENTITY_NAME_AND_ALIAS_PATTERN% }
+        ORDER BY ?qleverui_entity }
+      } GROUP BY ?qleverui_entity ORDER BY DESC(?qleverui_count)
+    warmupQuery2: |-
+      SELECT ?qleverui_entity ?name ?alias ?count WHERE {
+        %ENTITY_SCORE_PATTERN%
+        %ENTITY_NAME_AND_ALIAS_PATTERN%
+      } INTERNAL SORT BY ?alias
+    warmupQuery3: |-
+      SELECT ?qleverui_entity ?name ?alias ?count WHERE {
+        %ENTITY_SCORE_PATTERN%
+        %ENTITY_NAME_AND_ALIAS_PATTERN%
+      } INTERNAL SORT BY ?qleverui_entity
+    warmupQuery4: |-
+      SELECT ?qleverui_entity ?name ?alias ?count_1 WHERE {
+        { { SELECT ?qleverui_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qleverui_entity ?object } GROUP BY ?qleverui_entity }
+          %PREDICATE_NAME_AND_ALIAS_PATTERN_WITHOUT_CONTEXT%
+        } UNION {
+        { { SELECT ?qleverui_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qleverui_entity ?object } GROUP BY ?qleverui_entity }
+          %PREDICATE_NAME_AND_ALIAS_PATTERN_WITHOUT_CONTEXT_DEFAULT%
+        } } }
+    warmupQuery5: |-
+      SELECT ?qleverui_entity ?name ?alias ?count_1 WHERE {
+        { { SELECT ?qleverui_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qleverui_entity ?object } GROUP BY ?qleverui_entity }
+          %PREDICATE_NAME_AND_ALIAS_PATTERN_WITH_CONTEXT%
+        } UNION {
+        { { SELECT ?qleverui_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qleverui_entity ?object } GROUP BY ?qleverui_entity }
+          %PREDICATE_NAME_AND_ALIAS_PATTERN_WITH_CONTEXT_DEFAULT%
+        } } }
+    suggestSubjectsContextInsensitive: |-
+      %PREFIXES%
+      # IF !CURRENT_WORD_EMPTY #
+      SELECT ?qui_entity (SAMPLE(?name) AS ?qui_name) (SAMPLE(?alias) AS ?qui_alias) (SAMPLE(?count) AS ?qui_count) WHERE {
+        { { SELECT ?qui_entity ?name ?alias WHERE {
+            { ?qui_entity osmkey:name ?name BIND(?name AS ?alias) FILTER REGEX(STR(?name), "^%CURRENT_WORD%") } UNION
+            { ?qui_entity osmkey:name ?name . ?qui_entity osmkey:name:en ?alias FILTER REGEX(STR(?alias), "^%CURRENT_WORD%") } } }
+          ?qui_entity rdf:type osm:relation . ?qui_entity osm2rdf:area ?count }
+          UNION
+          { { SELECT ?qui_entity ?name ?alias WHERE {
+            { ?qui_entity osmkey:name ?name BIND(?name AS ?alias) FILTER REGEX(STR(?name), "^%CURRENT_WORD%") } UNION
+            { ?qui_entity osmkey:name ?name . ?qui_entity osmkey:name:en ?alias FILTER REGEX(STR(?alias), "^%CURRENT_WORD%") } } }
+          ?qui_entity osmkey:waterway "river"
+          { SELECT ?qui_entity (10 * SUM(?length) AS ?count)
+            WHERE { ?qui_entity osmrel:member/osm:id/osm2rdf:length ?length } GROUP BY ?qui_entity } }
+      } GROUP BY ?qui_entity ORDER BY DESC(?qui_count)
+      # ENDIF #
+    suggestPredicatesContextInsensitive: |-
+      %PREFIXES%
+      SELECT ?qui_entity (SAMPLE(?name) as ?qui_name) (SAMPLE(?name) as ?qui_alias) (SAMPLE(?count) as ?qui_count) WHERE {
+        { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count)
+          WHERE { ?qui_subject ?qui_entity ?qui_object }
+          GROUP BY ?qui_entity }
+        BIND (?qui_entity AS ?name)
+        # IF !CURRENT_WORD_EMPTY #
+        FILTER REGEX(STR(?name), "%CURRENT_WORD%", "i")
+        # ENDIF #
+      } GROUP BY ?qui_entity ORDER BY DESC(?qui_count)
+    suggestObjectsContextInsensitive: |-
+      %PREFIXES%
+      SELECT ?qui_entity (SAMPLE(?name) as ?qui_name) (SAMPLE(?alias) as ?qui_alias) (SAMPLE(?count) as ?qui_count) WHERE {
+        { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count) WHERE {
+          %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity .
+        } GROUP BY ?qui_entity }
+        # IF CURRENT_WORD_EMPTY #
+        OPTIONAL { ?qui_entity osmkey:name ?name }
+        BIND (?qui_entity AS ?alias)
+        # ELSE #
+        OPTIONAL { ?qui_entity osmkey:name ?name }
+        OPTIONAL { ?qui_entity osmkey:name:en ?optional_alias }
+        BIND (COALESCE(?optional_alias, ?qui_entity) AS ?alias)
+        FILTER (REGEX(STR(?name), "^%CURRENT_WORD%") || REGEX(STR(?alias), "^%CURRENT_WORD%"))
+        # ENDIF #
+      } GROUP BY ?qui_entity ORDER BY DESC(?qui_count)
+    mapViewBaseURL: https://qlever.cs.uni-freiburg.de/petrimaps
+  examples:
+  - name: All buildings in Stühlinger
+    sort_key: '~'
+    query: |-
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      SELECT ?osm_id ?hasgeometry WHERE {
+        osmrel:1960198 ogc:sfContains ?osm_id .
+        ?osm_id geo:hasGeometry/geo:asWKT ?hasgeometry .
+        ?osm_id osmkey:building ?building .
+      }
+  - name: All triples with subject contained in Englischer Garten
+    sort_key: '~'
+    query: |-
+      PREFIX osmway: <https://www.openstreetmap.org/way/>
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      SELECT ?s ?p ?o WHERE {
+        osmway:159075298 ogc:sfContains ?s .
+        ?s ?p ?o
+      }
+  - name: Administrative regions with level 6
+    sort_key: '~'
+    query: |-
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+      SELECT ?region ?name ?geometry WHERE {
+        ?region osmkey:boundary "administrative" .
+        ?region osmkey:admin_level "6"^^xsd:int .
+        ?region rdf:type osm:relation .
+        ?region osmkey:name ?name .
+        ?region geo:hasGeometry/geo:asWKT ?geometry .
+      }
+  - name: All level-4 regions in France
+    sort_key: '~'
+    query: |-
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      SELECT ?region ?name ?geometry WHERE {
+        osmrel:2202162 ogc:sfContains ?region .
+        ?region osmkey:boundary "administrative" .
+        ?region osmkey:admin_level "4"^^xsd:int .
+        ?region rdf:type osm:relation .
+        ?region osmkey:name ?name .
+        ?region geo:hasGeometry/geo:asWKT ?geometry .
+      }
+  - name: Lichtentaler Allee (example for banana-shaped geoemtry)
+    sort_key: '~'
+    query: |-
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+      SELECT ?region ?geometry WHERE {
+        ?region osmkey:leisure "park" .
+        ?region rdf:type osm:relation .
+        ?region osmkey:name "Lichtentaler Allee" .
+        ?region geo:hasGeometry/geo:asWKT ?geometry .
+      }
+  - name: Level-6 division of Germany
+    sort_key: '~'
+    query: |-
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+      SELECT ?region ?name ?geometry WHERE {
+        { ?region osmkey:boundary "administrative" . ?region osmkey:admin_level "6"^^xsd:int . ?region rdf:type osm:relation }
+        UNION
+        { VALUES ?region { osmrel:62782 osmrel:62422 } }
+        ?region osmkey:name ?name .
+        ?region geo:hasGeometry ?geometry .
+      }
+  - name: All Wikidata entities contained in region X, with names
+    sort_key: '~'
+    query: |-
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      SELECT ?osm_id ?wikidata_id ?hasgeometry WHERE {
+        osmrel:62768 ogc:sfContains ?osm_id .
+        ?osm_id osm:wikidata ?wikidata_id .
+        ?osm_id geo:hasGeometry ?hasgeometry .
+        ?osm_id osmkey:name ?osm_name .
+        ?wikidata_id @en@rdfs:label ?wikidata_name
+      }
+  - name: All university buildings in box around Germany
+    sort_key: '~'
+    query: |-
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      SELECT ?name WHERE {
+        ?osm_id osm:envelope ?envelope .
+        ?osm_id osmkey:building "university" .
+        ?osm_id osmkey:name ?name .
+        FILTER contained(?envelope, "LINESTRING(5 47, 16 56)")
+      }
+  - name: All "highway" segments, with distance and max speed
+    sort_key: '~'
+    query: |-
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX osmt: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osmway: <https://www.openstreetmap.org/way/>
+      SELECT DISTINCT ?node_1 ?node_2 ?dist ?highway ?maxspeed WHERE {
+        ?way osmt:highway ?highway .
+        ?way rdf:type osm:way .
+        ?way osmway:node ?m .
+        ?m osmway:node ?node_1 .
+        ?m osmway:next_node ?node_2 .
+        ?m osmway:next_node_distance ?dist .
+        OPTIONAL { ?way osmt:maxspeed ?maxspeed }
+      }
+  - name: All "highway" nodes, with coordinates and optional name
+    sort_key: '~'
+    query: |-
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX osmt: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osmway: <https://www.openstreetmap.org/way/>
+      SELECT DISTINCT ?node ?coordinates ?name WHERE {
+        ?way osmt:highway ?highway .
+        ?way rdf:type osm:way .
+        ?way osmway:node/osmway:node ?node .
+        ?node geo:hasGeometry ?coordinates .
+        OPTIONAL { ?node osmt:name ?name }
+      }
+  - name: All castles in Switzerland
+    sort_key: '~'
+    query: |-
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      SELECT ?castle ?name ?class ?ruins WHERE {
+        osmrel:51701 ogc:contains ?castle .
+        { { ?castle osmkey:historic "castle" } UNION
+        { ?castle osmkey:historic "tower" . ?castle osmkey:castle_type "defensive" } } UNION
+        { ?castle osmkey:historic "archaeological_site" . ?castle osmkey:site_type "fortification" }
+        ?castle osmkey:name ?name .
+        ?castle osmkey:ruins ?ruins .
+        OPTIONAL { ?castle osmkey:historic ?class }
+        OPTIONAL { ?castle osmkey:archaeological_site ?class }
+      }
+  - name: Alls states of Germany without ogc:contains
+    sort_key: '~'
+    query: |-
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      SELECT ?region ?name ?iso31662 ?shape WHERE {
+        ?region rdf:type osm:relation .
+        ?region osmkey:ISO3166-2 ?iso31662 .
+        ?region osmkey:name ?name .
+        ?region geo:hasGeometry ?shape .
+        FILTER REGEX(?iso31662, "^\"DE-")
+      }
+  - name: All post boxes
+    sort_key: '~'
+    query: |-
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      SELECT ?osm_id ?geometry WHERE {
+        ?osm_id osmkey:amenity "post_box" .
+        ?osm_id geo:hasGeometry/geo:asWKT ?geometry
+      }
+  - name: All trees
+    sort_key: '~'
+    query: |-
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      SELECT ?osm_id ?geometry WHERE {
+        ?osm_id osmkey:natural "tree" .
+        ?osm_id geo:hasGeometry/geo:asWKT ?geometry .
+      }
+  - name: All streets
+    sort_key: '~'
+    query: |-
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      SELECT ?osm_id ?geometry WHERE {
+        ?osm_id osmkey:highway ?highway .
+        ?osm_id rdf:type osm:way .
+        ?osm_id geo:hasGeometry ?geometry .
+      }
+  - name: All buildings
+    sort_key: '~'
+    query: |-
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      SELECT ?osm_id ?shape WHERE {
+        ?osm_id osmkey:building ?building .
+        ?osm_id rdf:type osm:way .
+        ?osm_id geo:hasGeometry/geo:asWKT ?shape
+      }
+  - name: Number of objects by type
+    sort_key: '~'
+    query: |-
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      SELECT ?type (COUNT(?type) as ?count) WHERE {
+        ?osm_id rdf:type ?type .
+      }
+      GROUP BY ?type
+      ORDER BY DESC(?count)
+  - name: All buildings in X
+    sort_key: BB.2
+    query: |-
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      SELECT ?osm_id ?shape WHERE {
+        osmrel:62768 ogc:sfContains ?osm_id .
+        ?osm_id osmkey:building ?building .
+        ?osm_id rdf:type osm:way .
+        ?osm_id geo:hasGeometry/geo:asWKT ?shape
+      }
+  - name: All streets in X
+    sort_key: BB.1
+    query: |-
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      SELECT ?osm_id ?shape WHERE {
+        osmrel:62768 ogc:sfContains ?osm_id .
+        ?osm_id osmkey:highway ?highway .
+        ?osm_id rdf:type osm:way .
+        ?osm_id geo:hasGeometry/geo:asWKT ?shape
+      }
+  - name: All countries with official language Spanish (using SERVICE)
+    sort_key: '~'
+    query: |-
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osm2rdfkey: <https://osm2rdf.cs.uni-freiburg.de/rdf/key#>
+      SELECT DISTINCT ?country_name ?country_osm ?country_wd ?population ?geometry WHERE {
+        ?country_osm osm2rdfkey:wikidata ?country_wd .
+        ?country_osm geo:hasGeometry/geo:asWKT ?geometry .
+        ?country_osm osmkey:name ?country_name .
+        ?country_osm rdf:type osm:relation .
+        SERVICE <https://qlever.cs.uni-freiburg.de/api/wikidata> {
+          ?country_wd wdt:P31/wdt:P279* wd:Q6256 .
+          ?country_wd wdt:P37/rdfs:label "Spanish"@en .
+        ?country_wd wdt:P1082 ?population .
+        }
+      } ORDER BY DESC(?population)
+  - name: All restaurants near a bus stop in region X
+    sort_key: '~'
+    query: |-
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX geof: <http://www.opengis.net/def/function/geosparql/>
+      SELECT DISTINCT ?restaurant ?restaurant_name ?stop ?stop_name ?loc_rest WHERE {
+        { SELECT ?restaurant ?restaurant_name ?loc_rest ?tmp WHERE {
+          ?restaurant osmkey:amenity "restaurant" .
+          ?restaurant geo:hasGeometry ?loc_rest .
+          ?restaurant osmkey:name ?restaurant_name .
+          osmrel:2062154 ogc:contains ?restaurant .
+          BIND(1 AS ?tmp) } }
+        { SELECT ?stop ?stop_name ?loc_stop ?tmp WHERE {
+          osmrel:2062154 ogc:contains ?stop .
+        ?stop osmkey:public_transport "platform" .
+          ?stop geo:hasGeometry ?loc_stop .
+          ?stop osmkey:name ?stop_name .
+        BIND(1 AS ?tmp) } }
+        BIND(geof:distance(?loc_rest, ?loc_stop) * 1000 AS ?dist_meters)
+        FILTER (?dist_meters <= 100)
+      }
+  - name: All regions where German is an official language (using SERVICE)
+    sort_key: '~'
+    query: |-
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX schema: <http://schema.org/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      SELECT DISTINCT ?region_osm ?region_wd ?region_name ?sitelinks ?geometry WHERE {
+        ?region_osm osm:wikidata ?region_wd .
+        ?region_osm geo:hasGeometry ?geometry .
+        ?region_osm osmkey:name ?region_name .
+        ?region_osm rdf:type osm:relation .
+        SERVICE <https://qlever.cs.uni-freiburg.de/api/wikidata> {
+          ?region_wd wdt:P31/wdt:P279* wd:Q1048835 .
+          ?region_wd ^schema:about/wikibase:sitelinks ?sitelinks .
+          ?region_wd wdt:P37 wd:Q188 .
+        }
+      } ORDER BY DESC(?sitelinks)
+  - name: Rivers in X with their length (using SERVICE)
+    sort_key: '~'
+    query: |-
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      SELECT ?river_osm ?river_wd ?river_name ?length ?geometry WHERE {
+        ?river_osm osmkey:waterway ?waterway .
+        ?river_osm geo:hasGeometry ?geometry .
+        ?river_osm osmkey:name ?river_name .
+        ?river_osm osm:wikidata ?river_wd .
+        SERVICE <https://qlever.cs.uni-freiburg.de/api/wikidata> {
+          ?river_wd wdt:P31/wdt:P279* wd:Q4022 .
+          ?river_wd wdt:P17 wd:Q38 .
+          ?river_wd wdt:P2043 ?length FILTER (?length > 100)
+        }
+      }
+  - name: Leve-4 division of all countries with official language X
+    sort_key: '~'
+    query: |-
+      PREFIX osm2rdf: <https://osm2rdf.cs.uni-freiburg.de/rdf#>
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX p: <http://www.wikidata.org/prop/>
+      PREFIX ps: <http://www.wikidata.org/prop/statement/>
+      SELECT DISTINCT ?region ?name ?geometry WHERE {
+        ?country osm:wikidata ?country_wd .
+        ?country osm2rdf:contains_area+ ?region .
+        ?region osmkey:boundary "administrative" .
+        ?region osmkey:name ?name .
+        ?region geo:hasGeometry ?geometry .
+        ?region rdf:type osm:relation .
+        ?region osmkey:admin_level "4" .
+        SERVICE <https://qlever.cs.uni-freiburg.de/api/wikidata> {
+        ?country_wd p:P37/ps:P37/@en@rdfs:label "English"@en
+        }
+      }
+  - name: All people born in region X
+    sort_key: '~'
+    query: |-
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX osm2rdf: <https://osm2rdf.cs.uni-freiburg.de/rdf#>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      SELECT ?person ?person_name ?place_of_birth ?place_of_birth_name ?place_of_birth_location WHERE {
+        osmrel:3255371 osm2rdf:contains_area+ ?place_of_birth .
+        ?place_of_birth osm:wikidata ?place_of_birth_wikidata .
+        ?place_of_birth osmkey:name ?place_of_birth_name .
+        SERVICE <https://qlever.cs.uni-freiburg.de/api/wikidata> {
+          ?person wdt:P19 ?place_of_birth_wikidata .
+          ?place_of_birth_wikidata wdt:P625 ?place_of_birth_location .
+          ?place_of_birth_wikidata wdt:P17 wd:Q183 .
+          ?person @en@rdfs:label ?person_name .
+        }
+      }
+  - name: Predicates with their absolute and relative size [all]
+    sort_key: AA.1
+    query: |-
+      SELECT ?p ?count (100 * ?count / ?count_all AS ?percent) WHERE {
+        { SELECT ?p (COUNT(?p) AS ?count) WHERE { ?s ?p ?o } GROUP BY ?p }
+        { SELECT (COUNT(?s) AS ?count_all) WHERE { ?s ?p ?o } }
+      }
+      ORDER BY DESC(?count)
+  - name: All level-4 regions in the EU (using SERVICE)
+    sort_key: '~'
+    query: |-
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+      PREFIX osm2rdf: <https://osm2rdf.cs.uni-freiburg.de/rdf#>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      SELECT ?region ?name ?geometry WHERE {
+        SERVICE <https://qlever.cs.uni-freiburg.de/api/osm-planet> {
+          ?country osm2rdf:contains_area ?region .
+          ?country osm:wikidata ?country_wikidata .
+          ?region osmkey:boundary "administrative" .
+          ?region osmkey:admin_level "4"^^xsd:int .
+          ?region rdf:type osm:relation .
+          ?region osmkey:name ?name .
+          ?region geo:hasGeometry ?geometry .
+        }
+        SERVICE <https://qlever.cs.uni-freiburg.de/api/wikidata> {
+          SELECT DISTINCT ?country_wikidata WHERE {
+            ?country_wikidata wdt:P361 wd:Q458 .
+            ?country_wikidata wdt:P31/wdt:P279* wd:Q3624078 .
+          }
+        }
+      }
+  - name: All countries and their population (via osmrel:member)
+    sort_key: '~'
+    query: |-
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+      SELECT ?country ?name ?population ?geometry WHERE {
+        ?country osmkey:type "boundary" .
+        ?country osmkey:admin_level 2 .
+        ?country osmrel:member ?member .
+        ?country geo:hasGeometry ?geometry .
+        ?country osmkey:name ?name .
+        ?member osm:role "label" .
+        ?member osm:id/osmkey:population ?population
+      }
+      ORDER BY DESC(?population)
+  - name: Largest cities by area
+    sort_key: '~'
+    query: |-
+      PREFIX osmmeta: <https://www.openstreetmap.org/meta/>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      SELECT ?city ?name ?city_wikidata ?population ?area ?geometry WHERE {
+        ?city osm:wikidata ?city_wikidata .
+        ?city osmmeta:area ?area .
+        ?city osmkey:name:en ?name .
+        ?city geo:hasGeometry ?geometry .
+        SERVICE <https://qlever.cs.uni-freiburg.de/api/wikidata> {
+          { SELECT DISTINCT * WHERE { ?city_wikidata wdt:P31/wdt:P279* wd:Q515 } }
+          ?city_wikidata wdt:P1082 ?population
+          MINUS { ?city_wikidata wdt:P17 wd:Q148 }
+        }
+      }
+      ORDER BY DESC(?population)
+      LIMIT 100
+  - name: Neighboring countries of Germany, ordered by length of common border
+    sort_key: '~'
+    query: |-
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osm2rdf: <https://osm2rdf.cs.uni-freiburg.de/rdf#>
+      SELECT ?country ?country_name (SUM(?length) AS ?length_in_country) (100 * SUM(?length) / SAMPLE(?total_length) AS ?percent) WHERE {
+        ?country osmkey:boundary "administrative" .
+        ?country osmkey:admin_level 2 .
+        ?country ogc:sfIntersects ?river_piece .
+        ?river osmkey:name "Rhein" .
+        ?river osmrel:member ?river_member .
+        ?river_member osm:id ?river_piece .
+        ?river_piece geo:hasGeometry ?geometry .
+        ?river_piece osm2rdf:length ?length .
+        BIND (SUM(?length) AS ?total_length)
+        OPTIONAL { ?country osmkey:name:de ?country_name }
+        OPTIONAL { ?country osmkey:name:en ?country_name }
+        OPTIONAL { ?country osmkey:name ?country_name }
+      }
+      GROUP BY ?country ?country_name
+      ORDER BY DESC(?percent)
+  - name: Which countries contain river X how much
+    sort_key: '~'
+    query: |-
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osm2rdf: <https://osm2rdf.cs.uni-freiburg.de/rdf#>
+      SELECT ?country ?country_name (SUM(?length) AS ?length_in_country) (100 * SUM(?length) / SAMPLE(?total_length) AS ?percent) WHERE {
+        # The following subject is the ID of the river, you can use the autocompletion.
+        osmrel:123924 osmrel:member ?river_member .
+        ?river_member osm:id ?river_piece .
+        ?river_piece geo:hasGeometry/geo:asWKT ?geometry .
+        ?river_piece osm2rdf:length ?length .
+        ?country osmkey:boundary "administrative" .
+        ?country osmkey:admin_level 4 .
+        ?country ogc:sfIntersects ?river_piece .
+        BIND (SUM(?length) AS ?total_length)
+        OPTIONAL { ?country osmkey:name:de ?country_name }
+        OPTIONAL { ?country osmkey:name:en ?country_name }
+        OPTIONAL { ?country osmkey:name ?country_name }
+      }
+      GROUP BY ?country ?country_name
+      ORDER BY DESC(?percent)
+  - name: River X divided by region + map view for each part
+    sort_key: CC.2
+    query: |-
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osm2rdf: <https://osm2rdf.cs.uni-freiburg.de/rdf#>
+      PREFIX osm2rdfmember: <https://osm2rdf.cs.uni-freiburg.de/rdf/member#>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      SELECT ?country ?country_name
+             (111.32 * ?length_in_country AS ?length_in_km)
+             (100 * ?length_in_country / ?total_length AS ?percent)
+             (?river_piece_query AS ?river_piece_mapview) WHERE {
+        { SELECT ?country (SUM(?length) AS ?length_in_country) (SAMPLE(?river) AS ?river_) WHERE {
+          osmrel:123924 geo:hasGeometry ?geometry .
+          ?river geo:hasGeometry ?geometry .
+          ?country osmkey:admin_level 2 .
+          ?river osmrel:member ?river_member .
+          ?river_member osm2rdfmember:id ?river_piece .
+          ?river_piece osm2rdf:length ?length .
+          ?country osmkey:boundary "administrative" .
+          ?country rdf:type osm:relation .
+          ?country ogc:sfIntersects ?river_piece .
+        } GROUP BY ?country }
+        OPTIONAL { ?country osmkey:name:en ?country_name }
+        OPTIONAL { ?country osmkey:name ?country_name }
+        BIND(SUM(?length_in_country) AS ?total_length)
+        BIND(CONCAT(
+          "PREFIX osmrel: <https://www.openstreetmap.org/relation/>\n",
+          "PREFIX osm: <https://www.openstreetmap.org/>\n",
+          "PREFIX ogc: <http://www.opengis.net/rdf#>\n",
+          "PREFIX geo: <http://www.opengis.net/ont/geosparql#>\n",
+          "PREFIX osm2rdf: <https://osm2rdf.cs.uni-freiburg.de/rdf#>\n",
+          "PREFIX osm2rdfmember: <https://osm2rdf.cs.uni-freiburg.de/rdf/member#>\n",
+          "SELECT ?river_piece ?length ?geometry WHERE {\n",
+          " <", ?country, "> ogc:sfIntersects ?river_piece .\n",
+          " <", ?river_, "> osmrel:member ?river_member .\n",
+          " ?river_member osm2rdfmember:id ?river_piece .\n",
+          " ?river_piece geo:hasGeometry/geo:asWKT ?geometry .\n",
+          " ?river_piece osm2rdf:length ?length .\n",
+          "} ORDER BY DESC(?length)") AS ?river_piece_query)
+      }
+      ORDER BY DESC(?percent)
+  - name: The power network of the EU
+    sort_key: '~'
+    query: |-
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX p: <http://www.wikidata.org/prop/>
+      PREFIX ps: <http://www.wikidata.org/prop/statement/>
+      PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osm2rdf: <https://osm2rdf.cs.uni-freiburg.de/rdf#>
+      PREFIX osm2rdfkey: <https://osm2rdf.cs.uni-freiburg.de/rdf/key#>
+      SELECT ?powerline ?country_osm ?country_wd ?geometry WHERE {
+        ?country_osm osm2rdfkey:wikidata ?country_wd .
+        ?country_osm ogc:sfContains ?powerline .
+        ?powerline osmkey:power "line" .
+        ?powerline geo:hasGeometry/geo:asWKT ?geometry .
+        SERVICE <https://qlever.cs.uni-freiburg.de/api/wikidata> {
+          SELECT ?country_wd WHERE {
+          ?country_wd wdt:P463 wd:Q458 .
+            MINUS { ?country_wd p:P463 ?m . ?m ps:P463 wd:Q458 . ?m pq:P582 ?end_time }
+        }
+        }
+      }
+  - name: NATO members
+    sort_key: '~'
+    query: |-
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX p: <http://www.wikidata.org/prop/>
+      PREFIX ps: <http://www.wikidata.org/prop/statement/>
+      PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      SELECT ?country_osm ?country_wd ?border WHERE {
+        ?country_osm osm:wikidata ?country_wd .
+        ?country_osm geo:hasGeometry/geo:asWKT ?border .
+        SERVICE <https://qlever.cs.uni-freiburg.de/api/wikidata> {
+          SELECT ?country_wd WHERE {
+          ?country_wd wdt:P463 wd:Q7184 .
+            MINUS { ?country_wd p:P463 ?m . ?m ps:P463 wd:Q7184 . ?m pq:P582 ?end_time }
+        }
+        }
+      }
+  - name: Geometry types in region X
+    sort_key: '~'
+    query: |-
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      SELECT ?geometry_prefix (COUNT(?geometry_prefix) as ?count_geometry_prefix) WHERE {
+        osmrel:192307 ogc:sfContains ?osm_id .
+        ?osm_id rdf:type osm:way .
+        ?osm_id geo:hasGeometry ?geometry .
+        BIND (STRBEFORE(STR(?geometry), "(") AS ?geometry_prefix)
+      }
+      GROUP BY ?geometry_prefix
+  - name: All streets in Africa
+    sort_key: '~'
+    query: |-
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX osm2rdfkey: <https://osm2rdf.cs.uni-freiburg.de/rdf/key#>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      SELECT ?osm_id ?shape WHERE {
+        ?country osm2rdfkey:wikidata ?country_wikidata .
+        ?country ogc:sfContains ?osm_id .
+        ?osm_id osmkey:highway ?highway .
+        ?osm_id rdf:type osm:way .
+        ?osm_id geo:hasGeometry/geo:asWKT ?shape
+        SERVICE <https://qlever.cs.uni-freiburg.de/api/wikidata> {
+          ?country_wikidata wdt:P30/@en@rdfs:label "Africa"@en
+        }
+      }
+  - name: Countries with most neighbors
+    sort_key: '~'
+    query: |-
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      SELECT ?country ?name ?num_neighbors WHERE {
+        { SELECT ?country (COUNT(?neighbor) as ?num_neighbors)  WHERE {
+          ?country ogc:sfIntersects ?neighbor .
+          ?country osmkey:boundary "administrative" .
+          ?country rdf:type osm:relation .
+          ?country osmkey:admin_level 2 .
+          ?neighbor osmkey:boundary "administrative" .
+          ?neighbor osmkey:admin_level 2 .
+          ?neighbor rdf:type osm:relation .
+        FILTER (?neighbor != ?country)
+          } GROUP BY ?country }
+        ?country osmkey:name:en ?name .
+        ?country geo:hasGeometry/geo:asWKT ?shape .
+      }
+      ORDER BY DESC(?num_neighbors)
+  - name: MENA countries and their religion
+    sort_key: '~'
+    query: |-
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osm2rdfkey: <https://osm2rdf.cs.uni-freiburg.de/rdf/key#>
+      SELECT ?country_osm ?country_wd ?country_name ?religion ?shape WHERE {
+        ?country_osm osm2rdfkey:wikidata ?country_wd .
+        ?country_osm osmkey:admin_level 2 .
+        ?country_osm geo:hasGeometry/geo:asWKT ?shape .
+        SERVICE <https://qlever.cs.uni-freiburg.de/api/wikidata> {
+          wd:Q984212 wdt:P17 ?country_wd .
+          { ?country_wd wdt:P463 wd:Q7172 . BIND("Islam"@en AS ?religion) }
+          UNION
+          { BIND (wd:Q801 AS ?country_wd) . BIND("Judaism"@en AS ?religion) }
+          ?country_wd rdfs:label ?country_name FILTER (LANG(?country_name) = "en") .
+        }
+      }
+  - name: Neighboring region of region X
+    sort_key: '~'
+    query: |-
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      SELECT ?region ?admin_level ?name ?shape  WHERE { {
+        osmrel:17657 geo:hasGeometry ?query_shape .
+        ?query_region geo:hasGeometry ?query_shape .
+        ?query_region osmkey:admin_level ?admin_level .
+        ?query_region ogc:sfIntersects ?region .
+        ?region osmkey:boundary "administrative" .
+        ?region osmkey:admin_level ?admin_level .
+        ?region rdf:type osm:relation .
+        ?region osmkey:name ?name .
+        ?region geo:hasGeometry/geo:asWKT ?shape }
+        FILTER (?region != ?query_region)
+      }
+  - name: Turn points into polygons (for spatialjoin)
+    sort_key: '~'
+    query: |-
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX geof: <http://www.opengis.net/def/function/geosparql/>
+      SELECT (REPLACE(STR(?osm_id), "^.*/([0-9]+)", "osmnode:\\1") AS ?id)
+             (CONCAT("POINT(", ?lng, " ", ?lat, ")") AS ?point)
+             (CONCAT("POLYGON((", ?lng - ?radius, " ", ?lat - ?radius,
+                           ",", ?lng + ?radius, " ", ?lat - ?radius,
+                   ",", ?lng + ?radius, " ", ?lat + ?radius,
+                   ",", ?lng - ?radius, " ", ?lat + ?radius,
+                   ",", ?lng - ?radius, " ", ?lat - ?radius, "))") AS ?square)
+      WHERE {
+        ?osm_id osmkey:amenity "restaurant" .
+        ?osm_id rdf:type osm:node .
+        ?osm_id geo:hasGeometry/geo:asWKT ?point_wkt .
+        BIND(geof:longitude(?point_wkt) AS ?lng)
+        BIND(geof:latitude(?point_wkt) AS ?lat)
+        BIND(0.005 AS ?radius)
+      }
+  - name: All buildings under a power line
+    sort_key: '~'
+    query: |-
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      SELECT ?building ?powerline ?building_geometry WHERE {
+        ?building osmkey:building [] .
+        ?powerline osmkey:power "line" .
+        ?building ogc:sfIntersects ?powerline .
+        ?building geo:hasGeometry/geo:asWKT ?building_geometry .
+      }
+  - name: All streets in Africa
+    sort_key: '~'
+    query: |-
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX p: <http://www.wikidata.org/prop/>
+      PREFIX ps: <http://www.wikidata.org/prop/statement/>
+      PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osm2rdf: <https://osm2rdf.cs.uni-freiburg.de/rdf#>
+      PREFIX osm2rdfkey: <https://osm2rdf.cs.uni-freiburg.de/rdf/key#>
+      SELECT ?street ?geometry WHERE {
+        ?country_osm osm2rdfkey:wikidata ?country_wd .
+        ?country_osm ogc:sfContains ?street .
+        ?street osmkey:highway ?any .
+        ?street geo:hasGeometry/geo:asWKT ?geometry .
+        SERVICE <https://qlever.cs.uni-freiburg.de/api/wikidata> {
+          ?country_wd wdt:P31 wd:Q6256 .
+        ?country_wd wdt:P30 wd:Q15 .
+        }
+      }
+  - name: 'Predicates with their absolute and relative size [ogc: only]'
+    sort_key: AA.2
+    query: |-
+      SELECT ?p ?count_p (100 * ?count_p / ?count_all AS ?percent) WHERE {
+        { SELECT ?p ?count_p WHERE {
+          { SELECT ?p (COUNT(?p) AS ?count_p) WHERE { ?s ?p ?o } GROUP BY ?p }
+          FILTER (REGEX(STR(?p), "^http://www\\.opengis\\.net/rdf#")) } }
+        { SELECT (SUM(?count_p) AS ?count_all) WHERE {
+          { SELECT ?p (COUNT(?p) AS ?count_p) WHERE { ?s ?p ?o } GROUP BY ?p }
+          FILTER (REGEX(STR(?p), "^http://www\\.opengis\\.net/rdf#")) } }
+      }
+      ORDER BY DESC(?count_p)
+  - name: All nodes on relation X
+    sort_key: CC.1
+    query: |-
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osm2rdfmember: <https://osm2rdf.cs.uni-freiburg.de/rdf/member#>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX osmway: <https://www.openstreetmap.org/way/>
+      SELECT ?member ?way ?rel_pos ?way_pos ?node ?geometry WHERE {
+        osmrel:62768 osmrel:member ?member .
+        ?member osm2rdfmember:id ?way .
+        ?member osm2rdfmember:pos ?rel_pos .
+        ?member osm2rdfmember:role "outer" .
+        ?way osmway:node ?way_node .
+        ?way_node osm2rdfmember:pos ?way_pos .
+        ?way_node osmway:node ?node .
+        ?node geo:hasGeometry/geo:asWKT ?geometry .
+      }
+      ORDER BY ?rel_pos ?way_pos
+  - name: Average number of points on non-point geometry [long-running query]
+    sort_key: CC.3
+    query: |-
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      SELECT (AVG(STRLEN(REPLACE(STR(?geometry), "[^,]", "")) + 1) AS ?avg_num_points) WHERE {
+        ?subject geo:asWKT ?geometry .
+        FILTER (!ql:isGeoPoint(?geometry))
+      }
+  - name: Buildings in REGION more than KM away from a transit stop
+    sort_key: '~'
+    query: |-
+      # Buildings in REGION more than KM away from a transit stop
+      #!TEMPLATE REGION=osmrel:1686344
+      #!TEMPLATE KM=1
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX qlss: <https://qlever.cs.uni-freiburg.de/spatialSearch/>
+      SELECT ?building ?stop ?dist ?building_geometry WHERE {
+        { SELECT ?building ?stop ?dist WHERE {
+          %REGION% ogc:sfContains ?building . ?building osmkey:building [] . ?building geo:hasCentroid/geo:asWKT ?building_location .
+        SERVICE qlss: {
+          _:config qlss:left ?building_location ; qlss:right ?stop_location ; qlss:numNearestNeighbors 1 ; qlss:payload ?stop ; qlss:bindDistance ?dist .
+          { { ?stop osmkey:highway "bus" } UNION { ?stop osmkey:public_transport "station" } UNION { ?stop osmkey:public_transport "platform" }
+            ?stop geo:hasCentroid/geo:asWKT ?stop_location }
+        }
+          FILTER (?dist > %KM%)
+        } }
+        ?building geo:hasGeometry/geo:asWKT ?building_geometry .
+        ?stop geo:hasGeometry/geo:asWKT ?stop_geometry .
+      } ORDER BY DESC(?dist)
+  - name: All street intersections in region X
+    sort_key: '~'
+    query: |-
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX osmway: <https://www.openstreetmap.org/way/>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      SELECT ?intersection ?street_names ?geometry WHERE {
+        {
+          SELECT ?intersection (GROUP_CONCAT(DISTINCT ?name; SEPARATOR=", ") AS ?street_names) WHERE {
+            osmrel:62422 ogc:sfIntersects ?street .
+            ?street osmkey:highway [] .
+            ?street osmkey:name ?name .
+            ?street osmway:node_ref/osmway:node_id ?intersection .
+          }
+          GROUP BY ?intersection
+          HAVING (COUNT(DISTINCT ?name) >= 2)
+        }
+        ?intersection geo:hasGeometry/geo:asWKT ?geometry .
+      }
+  - name: All nodes on the border of Germany
+    sort_key: '~'
+    query: |-
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osmway: <https://www.openstreetmap.org/way/>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      SELECT ?way_id ?way_pos ?node_id ?node_pos ?geometry WHERE {
+        osmrel:51477 osmrel:member ?way_member .
+        ?way_member osmrel:member_id ?way_id .
+        ?way_member osmrel:member_role "outer" .
+        ?way_member osmrel:member_pos ?way_pos .
+        ?way_id osmway:member ?node_member .
+        ?node_member osmway:member_id ?node_id .
+        ?node_member osmway:member_pos ?node_pos .
+        ?node_id geo:hasGeometry/geo:asWKT ?geometry .
+      }
+      ORDER BY ?way_pos ?node_pos
+  - name: All post boxes in Germany [with libspatialjoin]
+    sort_key: '~'
+    query: |-
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX qlss: <https://qlever.cs.uni-freiburg.de/spatialSearch/>
+      SELECT ?subject ?qlss_right WHERE {
+        osmrel:51477 geo:hasGeometry/geo:asWKT ?qlss_left .
+        SERVICE qlss: {
+          _:config qlss:algorithm <libspatialjoin> ;
+                   qlss:left ?qlss_left ;
+                   qlss:right ?qlss_right ;
+                   qlss:payload ?subject ;
+                   qlss:joinType <contains> .
+          {
+            ?subject osmkey:amenity "post_box" .
+            ?subject geo:hasGeometry/geo:asWKT ?qlss_right .
+          }
+        }
+      }

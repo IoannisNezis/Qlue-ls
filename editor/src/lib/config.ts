@@ -1,6 +1,6 @@
 import languageServerWorkerUrl from "./languageServer.worker?worker&url";
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
-// import TextMateWorker from '@codingame/monaco-vscode-textmate-service-override/worker?worker';
+import TextMateWorker from '@codingame/monaco-vscode-textmate-service-override/worker?worker';
 import sparqlTextmateGrammar from './sparql.tmLanguage.json?raw';
 import sparqlLanguateConfig from './sparql.configuration.json?raw';
 import sparqlTheme from './sparql.theme.json?raw';
@@ -8,10 +8,23 @@ import type { WrapperConfig } from 'monaco-editor-wrapper';
 import { LogLevel, Uri } from 'vscode';
 
 
+type WorkerLoader = () => Worker;
+
 export async function buildWrapperConfig(container: HTMLElement, initial: string): Promise<WrapperConfig> {
+        const workerLoaders: Partial<Record<string, WorkerLoader>> = {
+                TextEditorWorker: () => new editorWorker(),
+                TextMateWorker: () => new TextMateWorker(),
+        };
+
         window.MonacoEnvironment = {
-                getWorker: (_moduleId, _label) => new editorWorker()
-        }
+                getWorker: function(moduleId, label): Worker {
+                        const workerFactory = workerLoaders[label];
+                        if (workerFactory != null) {
+                                return workerFactory();
+                        }
+                        throw new Error(`Unimplemented worker ${label} (${moduleId})`);
+                }
+        };
 
 
         const workerPromise: Promise<Worker> = new Promise((resolve) => {
@@ -121,11 +134,11 @@ export async function buildWrapperConfig(container: HTMLElement, initial: string
                                                         "path": "./sparql-theme.json"
                                                 }
                                         ],
-                                        // grammars: [{
-                                        //         language: 'sparql',
-                                        //         scopeName: 'source.sparql',
-                                        //         path: '/sparql-grammar.json'
-                                        // }]
+                                        grammars: [{
+                                                language: 'sparql',
+                                                scopeName: 'source.sparql',
+                                                path: '/sparql-grammar.json'
+                                        }]
                                 }
                         },
                         filesOrContents: extensionFilesOrContents

@@ -1,30 +1,38 @@
-use crate::server::lsp::errors::{ErrorCode, ResponseError};
+use crate::server::lsp::errors::{ErrorCode, LSPError};
 
 #[derive(Debug)]
 pub(super) enum CompletionError {
-    LocalizationError(LocalizationError),
+    LocalizationError(String),
+    ResolveError(String),
+    TemplateError(String, tera::Error),
+    RequestError(String),
 }
 
-impl CompletionError {
-    pub(super) fn localization_error(code: ErrorCode, message: String) -> Self {
-        CompletionError::LocalizationError(LocalizationError { code, message })
-    }
-}
-
-pub(super) fn to_resonse_error(completion_error: CompletionError) -> ResponseError {
+pub(super) fn to_lsp_error(completion_error: CompletionError) -> LSPError {
     match completion_error {
-        CompletionError::LocalizationError(localization_error) => ResponseError::new(
-            localization_error.code,
-            &format!(
-                "Could not localize curor while handeling Completion-request:\n{}",
-                localization_error.message
-            ),
-        ),
+        CompletionError::LocalizationError(message) => {
+            log::error!("Could not detect completion location\n{}", message);
+            LSPError::new(
+                ErrorCode::InternalError,
+                &format!(
+                    "Could not localize curor while handeling Completion-request:\n{}",
+                    message
+                ),
+            )
+        }
+        CompletionError::ResolveError(message) => {
+            log::error!("Could not resolve completions\n{}", message);
+            LSPError::new(ErrorCode::InternalError, &message)
+        }
+        CompletionError::TemplateError(template, error) => {
+            let message = format!("Could not render template \"{}\"\n{:?}", template, error);
+            log::error!("{}", message);
+            LSPError::new(ErrorCode::InternalError, &message)
+        }
+        CompletionError::RequestError(error) => {
+            let message = format!("Completion query request failed\n{:?}", error);
+            log::error!("{}", message);
+            LSPError::new(ErrorCode::InternalError, &message)
+        }
     }
-}
-
-#[derive(Debug)]
-pub(super) struct LocalizationError {
-    code: ErrorCode,
-    message: String,
 }

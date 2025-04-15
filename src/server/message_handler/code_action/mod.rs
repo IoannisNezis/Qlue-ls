@@ -10,17 +10,17 @@ use crate::server::{
     anaysis::{get_all_uncompacted_uris, get_declared_uri_prefixes},
     lsp::{
         diagnostic::{Diagnostic, DiagnosticCode},
-        errors::{ErrorCode, ResponseError},
+        errors::{ErrorCode, LSPError},
         textdocument::{Range, TextDocumentItem, TextEdit},
         CodeAction, CodeActionKind, CodeActionParams, CodeActionRequest, CodeActionResponse,
     },
     Server,
 };
 
-pub fn handle_codeaction_request(
+pub(super) async fn handle_codeaction_request(
     server: &mut Server,
     request: CodeActionRequest,
-) -> Result<CodeActionResponse, ResponseError> {
+) -> Result<(), LSPError> {
     let mut code_action_response = CodeActionResponse::new(request.get_id());
     code_action_response.add_code_actions(generate_code_actions(server, &request.params)?);
     code_action_response.add_code_actions(
@@ -43,20 +43,20 @@ pub fn handle_codeaction_request(
             })
             .collect(),
     );
-    Ok(code_action_response)
+    server.send_message(code_action_response)
 }
 
 fn generate_code_actions(
     server: &Server,
     params: &CodeActionParams,
-) -> Result<Vec<CodeAction>, ResponseError> {
+) -> Result<Vec<CodeAction>, LSPError> {
     let document_uri = &params.text_document.uri;
     let document = server.state.get_document(document_uri)?;
     let root = parse_query(&document.text);
     let range = params
         .range
         .to_byte_index_range(&document.text)
-        .ok_or(ResponseError::new(
+        .ok_or(LSPError::new(
             ErrorCode::InvalidParams,
             &format!("Range ({:?}) not inside document range", params.range),
         ))?;
@@ -125,12 +125,17 @@ fn shorten_all_uris(server: &Server, document: &TextDocumentItem) -> Option<Code
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashMap;
+
     use indoc::indoc;
     use tree_sitter::Parser;
     use tree_sitter_sparql::LANGUAGE;
 
     use crate::server::{
-        lsp::textdocument::{Range, TextDocumentItem, TextEdit},
+        lsp::{
+            textdocument::{Range, TextDocumentItem, TextEdit},
+            Backend,
+        },
         message_handler::code_action::shorten_all_uris,
         state::ServerState,
         Server,
@@ -138,6 +143,18 @@ mod test {
 
     fn setup_state(text: &str) -> ServerState {
         let mut state = ServerState::new();
+        state.add_backend(Backend {
+            name: "test".to_string(),
+            url: "".to_string(),
+            health_check_url: None,
+        });
+        state.set_default_backend("test".to_string());
+        state
+            .add_prefix_map_test(
+                "test".to_string(),
+                HashMap::from_iter([("schema".to_string(), "https://schema.org/".to_string())]),
+            )
+            .unwrap();
         let mut parser = Parser::new();
         if let Err(err) = parser.set_language(&LANGUAGE.into()) {
             log::error!("Could not initialize parser:\n{}", err)
@@ -145,7 +162,7 @@ mod test {
         let document = TextDocumentItem::new("uri", text);
         let tree = parser.parse(&document.text, None);
         state.add_document(document, tree);
-        return state;
+        state
     }
 
     #[test]
@@ -153,8 +170,8 @@ mod test {
         let mut server = Server::new(|_message| {});
         let state = setup_state(indoc!(
             "SELECT * {
-               ?a <http://schema.org/name> ?b .
-               ?c <http://schema.org/name> ?d
+               ?a <https://schema.org/name> ?b .
+               ?c <https://schema.org/name> ?d
              }"
         ));
         server.state = state;
@@ -163,12 +180,12 @@ mod test {
         assert_eq!(
             code_action.edit.changes.get("uri").unwrap(),
             &vec![
-                TextEdit::new(Range::new(1, 5, 1, 29), "schema:name"),
+                TextEdit::new(Range::new(1, 5, 1, 30), "schema:name"),
                 TextEdit::new(
                     Range::new(0, 0, 0, 0),
-                    "PREFIX schema: <http://schema.org/>\n"
+                    "PREFIX schema: <https://schema.org/>\n"
                 ),
-                TextEdit::new(Range::new(2, 5, 2, 29), "schema:name"),
+                TextEdit::new(Range::new(2, 5, 2, 30), "schema:name"),
             ]
         );
     }
@@ -177,10 +194,10 @@ mod test {
     fn shorten_all_uris_declared() {
         let mut server = Server::new(|_message| {});
         let state = setup_state(indoc!(
-            "PREFIX schema: <http://schema.org/>
+            "PREFIX schema: <https://schema.org/>
              SELECT * {
-               ?a <http://schema.org/name> ?b .
-               ?c <http://schema.org/name> ?d
+               ?a <https://schema.org/name> ?b .
+               ?c <https://schema.org/name> ?d
              }"
         ));
         server.state = state;
@@ -189,8 +206,8 @@ mod test {
         assert_eq!(
             code_action.edit.changes.get("uri").unwrap(),
             &vec![
-                TextEdit::new(Range::new(2, 5, 2, 29), "schema:name"),
-                TextEdit::new(Range::new(3, 5, 3, 29), "schema:name"),
+                TextEdit::new(Range::new(2, 5, 2, 30), "schema:name"),
+                TextEdit::new(Range::new(3, 5, 3, 30), "schema:name"),
             ]
         );
     }

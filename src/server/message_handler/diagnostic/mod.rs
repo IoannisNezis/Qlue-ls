@@ -1,71 +1,47 @@
+mod uncompacted_uri;
 mod undeclared_prefix;
 mod unused_prefix;
+use ll_sparql_parser::parse_query;
+
 use crate::server::{
-    anaysis::get_all_uncompacted_uris,
-    lsp::{
-        base_types::LSPAny,
-        diagnostic::{Diagnostic, DiagnosticCode, DiagnosticSeverity},
-        errors::ResponseError,
-        textdocument::TextDocumentItem,
-        DiagnosticRequest, DiagnosticResponse,
-    },
+    lsp::{errors::LSPError, DiagnosticRequest, DiagnosticResponse},
     Server,
 };
 
-pub fn handle_diagnostic_request(
+pub(super) async fn handle_diagnostic_request(
     server: &mut Server,
     request: DiagnosticRequest,
-) -> Result<DiagnosticResponse, ResponseError> {
-    Ok(DiagnosticResponse::new(
-        request.get_id(),
-        collect_diagnostics(server, &request.params.text_document.uri)?,
-    ))
-}
+) -> Result<(), LSPError> {
+    let document = server
+        .state
+        .get_document(&request.params.text_document.uri)?;
+    let parse_tree = parse_query(&document.text);
 
-pub fn collect_diagnostics(
-    server: &Server,
-    document_uri: &str,
-) -> Result<Vec<Diagnostic>, ResponseError> {
-    let document = server.state.get_document(document_uri)?;
     let mut diagnostics = Vec::new();
-    if let Some(unused_prefix_diagnostics) = unused_prefix::diagnostics(document) {
+    if let Some(unused_prefix_diagnostics) =
+        unused_prefix::diagnostics(document, parse_tree.clone())
+    {
         diagnostics.extend(unused_prefix_diagnostics);
     }
-    if let Some(undeclared_prefix_diagnostics) = undeclared_prefix::diagnostics(document) {
+
+    if let Some(undeclared_prefix_diagnostics) =
+        undeclared_prefix::diagnostics(document, parse_tree.clone())
+    {
         diagnostics.extend(undeclared_prefix_diagnostics);
     }
-    diagnostics.extend(uncompacted_uris(server, document)?);
-    Ok(diagnostics)
+
+    if let Some(uncompacted_uri_diagnostics) =
+        uncompacted_uri::diagnostics(document, server, parse_tree)
+    {
+        diagnostics.extend(uncompacted_uri_diagnostics);
+    }
+
+    server.send_message(DiagnosticResponse::new(request.get_id(), diagnostics))
 }
 
 // fn undefined_select_binding(
 //     server: &Server,
 //     document: &TextDocumentItem,
-// ) -> Result<impl Iterator<Item = Diagnostic>, ResponseError> {
+// ) -> Result<impl Iterator<Item = Diagnostic>, LSPError> {
 //     todo!()
 // }
-
-fn uncompacted_uris<'a>(
-    server: &'a Server,
-    document: &TextDocumentItem,
-) -> Result<impl Iterator<Item = Diagnostic> + use<'a>, ResponseError> {
-    let uncompacted_uris = get_all_uncompacted_uris(server, &document.uri)?;
-    let diagnostics = uncompacted_uris.into_iter().filter_map(|(uri, range)| {
-        match server.shorten_uri(&uri[1..uri.len() - 1]) {
-            Some((prefix, namespace, curie)) => Some(Diagnostic {
-                source: Some("qlue-ls".to_string()),
-                code: Some(DiagnosticCode::String("uncompacted-uri".to_string())),
-                range,
-                severity: DiagnosticSeverity::Information,
-                message: format!("You might want to shorten this Uri\n{} -> {}", uri, curie),
-                data: Some(LSPAny::LSPArray(vec![
-                    LSPAny::String(prefix),
-                    LSPAny::String(namespace),
-                    LSPAny::String(curie),
-                ])),
-            }),
-            None => None,
-        }
-    });
-    Ok(diagnostics)
-}

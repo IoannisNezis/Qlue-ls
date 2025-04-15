@@ -9,7 +9,7 @@ use crate::server::{
     Server,
 };
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 pub struct InitializeRequest {
     #[serde(flatten)]
     pub base: RequestMessageBase,
@@ -22,7 +22,7 @@ impl InitializeRequest {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct InitializeParams {
     pub process_id: ProcessId,
@@ -31,42 +31,44 @@ pub struct InitializeParams {
     pub progress_params: WorkDoneProgressParams,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum ProcessId {
     Integer(i32),
     Null,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 pub struct ClientInfo {
     pub name: String,
     pub version: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, PartialEq, Clone)]
 pub struct ServerInfo {
     pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct InitializeResult {
     pub capabilities: ServerCapabilities,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub server_info: Option<ServerInfo>,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
-pub struct InitializeResonse {
+#[derive(Debug, Serialize, PartialEq)]
+pub struct InitializeResponse {
     #[serde(flatten)]
     pub base: ResponseMessageBase,
     pub result: InitializeResult,
 }
 
-impl InitializeResonse {
+impl InitializeResponse {
     pub fn new(id: &RequestId, server: &Server) -> Self {
-        InitializeResonse {
+        InitializeResponse {
             base: ResponseMessageBase::success(id),
             result: InitializeResult {
                 capabilities: server.capabilities.clone(),

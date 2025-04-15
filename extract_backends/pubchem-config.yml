@@ -1,0 +1,691 @@
+config:
+  backend:
+    id: '31'
+    name: PubChem
+    slug: pubchem
+    sortKey: B.5
+    baseUrl: https://qlever.cs.uni-freiburg.de/api/pubchem
+    apiToken: ''
+    isDefault: 'False'
+    isNoSlugMode: 'False'
+    maxDefault: '100'
+    filteredLanguage: en
+    dynamicSuggestions: '2'
+    defaultModeTimeout: '5.0'
+    mixedModeTimeout: '3.0'
+    suggestSubjects: |-
+      %PREFIXES%
+      # IF !CURRENT_WORD_EMPTY #
+
+      SELECT ?qui_entity ?qui_name ?qui_alias WHERE {
+        ?qui_entity rdf:type [ obo:IAO_0000412 obo:chebi.owl; rdfs:label ?qui_name ]
+        BIND (?qui_name AS ?qui_alias)
+        FILTER REGEX(STR(?qui_name), "^%CURRENT_WORD%")
+      } ORDER BY ASC(?qui_name)
+
+      # ENDIF #
+    suggestPredicates: |-
+      %PREFIXES%
+      # IF !CURRENT_SUBJECT_VARIABLE #
+
+      SELECT ?qui_entity (SAMPLE(?qui_name_) AS ?qui_name) (SAMPLE(?qui_alias_) AS ?qui_alias) ?qui_count ?qui_reversed WHERE {
+        { { SELECT ?qui_entity (COUNT(?qui_object) AS ?qui_count)
+          WHERE { %CURRENT_SUBJECT% ?qui_entity ?qui_object  }
+          GROUP BY ?qui_entity } BIND (0 AS ?qui_reversed) }
+        UNION
+        { { SELECT ?qui_entity (COUNT(?qui_subject) AS ?qui_count)
+          WHERE { ?qui_subject ?qui_entity %CURRENT_SUBJECT%  }
+          GROUP BY ?qui_entity } BIND (1 AS ?qui_reversed) }
+        OPTIONAL { ?qui_entity rdfs:label ?qui_name_or_null }
+        BIND (IF(?qui_name_or_null, ?qui_name_or_null, ?qui_entity) AS ?qui_name_)
+        BIND (?qui_name_ AS ?qui_alias_)
+        # IF !CURRENT_WORD_EMPTY #
+        FILTER REGEX(STR(?qui_alias_), "%CURRENT_WORD%", "i")
+        # ENDIF #
+      } GROUP BY ?qui_entity ?qui_count ?qui_reversed ORDER BY DESC(?qui_count)
+
+      # ENDIF #
+      # IF CURRENT_SUBJECT_VARIABLE #
+
+      SELECT ?qui_entity (SAMPLE(?qui_name_) AS ?qui_name) (SAMPLE(?qui_alias_) AS ?qui_alias) ?qui_count WHERE {
+        # IF CONNECTED_TRIPLES_EMPTY #
+        { SELECT ?qui_entity (COUNT(?qui_entity) AS ?qui_count)
+          WHERE { ?qui_subject ?qui_entity ?qui_object }
+          GROUP BY ?qui_entity }
+        # ELSE #
+        { SELECT ?qui_entity (COUNT(DISTINCT %CURRENT_SUBJECT%) AS ?qui_count)
+          WHERE { %CONNECTED_TRIPLES% %CURRENT_SUBJECT% ?qui_entity ?qui_object }
+          GROUP BY ?qui_entity }
+        # ENDIF #
+        OPTIONAL { ?qui_entity rdfs:label ?qui_name_or_null }
+        BIND (IF(?qui_name_or_null, ?qui_name_or_null, ?qui_entity) AS ?qui_name_)
+        BIND (?qui_name_ AS ?qui_alias_)
+        # IF !CURRENT_WORD_EMPTY #
+        FILTER REGEX(STR(?qui_alias_), "%CURRENT_WORD%", "i")
+        # ENDIF #
+      } GROUP BY ?qui_entity ?qui_count ORDER BY DESC(?qui_count)
+
+      # ENDIF #
+    suggestObjects: |-
+      %PREFIXES%
+      SELECT ?qui_entity ?qui_name ?qui_alias ?qui_count WHERE {
+        { SELECT ?qui_entity (COUNT(?qui_entity) AS ?qui_count) WHERE {
+          %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity .
+        } GROUP BY ?qui_entity }
+        OPTIONAL { ?qui_entity rdf:type [ obo:IAO_0000412 obo:chebi.owl; rdfs:label ?qui_name_or_null ] }
+        OPTIONAL { ?qui_entity rdfs:label ?qui_name_or_null }
+        BIND (IF(?qui_name_or_null, ?qui_name_or_null, ?qui_entity) AS ?qui_name)
+        BIND (?qui_name AS ?qui_alias)
+        # IF !CURRENT_WORD_EMPTY #
+        FILTER REGEX(STR(?qui_name), "^%CURRENT_WORD%")
+        # ENDIF #
+      } ORDER BY DESC(?qui_count)
+    subjectName: ?qleverui_entity <http://www.w3.org/2000/01/rdf-schema#label> ?qleverui_name .
+    alternativeSubjectName: ''
+    predicateName: ?qleverui_entity <http://www.w3.org/2000/01/rdf-schema#label> ?qleverui_name .
+    alternativePredicateName: ''
+    objectName: ?qleverui_entity <http://www.w3.org/2000/01/rdf-schema#label> ?qleverui_name .
+    alternativeObjectName: ''
+    replacePredicates: ''
+    supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
+    supportedFunctions: asc, desc, avg, values, score, text, count, sample, min, max, average, concat, group_concat, langMatches, lang, regex, sum, dist, contains, str, strlen, substr, strstarts, strends, strbefore, strafter, contains, year, month, day, rand, abs, ceil, floor, round, log, exp, sqrt, sin, cos, tan, if, coalesce, bound, concat, replace, encode_for_uri, isiri, isblank, isliteral, isNumeric, bound, from, named, graph
+    supportedPredicateSuggestions: ''
+    suggestPrefixnamesForPredicates: 'True'
+    fillPrefixes: 'True'
+    filterEntities: 'False'
+    suggestedPrefixes: |-
+      @prefix bao: <http://www.bioassayontology.org/bao#> .
+      @prefix bioassay: <http://rdf.ncbi.nlm.nih.gov/pubchem/bioassay/> .
+      @prefix bp: <http://www.biopax.org/release/biopax-level3.owl#> .
+      @prefix chemblchembl: <http://linkedchemistry.info/chembl/chemblid/> .
+      @prefix chembl: <http://rdf.ebi.ac.uk/resource/chembl/molecule/> .
+      @prefix cell: <http://rdf.ncbi.nlm.nih.gov/pubchem/cell/> .
+      @prefix cito: <http://purl.org/spar/cito/> .
+      @prefix compound: <http://rdf.ncbi.nlm.nih.gov/pubchem/compound/> .
+      @prefix concept: <http://rdf.ncbi.nlm.nih.gov/pubchem/concept/> .
+      @prefix conserveddomain: <http://rdf.ncbi.nlm.nih.gov/pubchem/conserveddomain/> .
+      @prefix dcterms: <http://purl.org/dc/terms/> .
+      @prefix descriptor: <http://rdf.ncbi.nlm.nih.gov/pubchem/descriptor/> .
+      @prefix disease: <http://rdf.ncbi.nlm.nih.gov/pubchem/disease/> .
+      @prefix endpoint: <http://rdf.ncbi.nlm.nih.gov/pubchem/endpoint/> .
+      @prefix ensembl: <http://rdf.ebi.ac.uk/resource/ensembl/> .
+      @prefix fabio: <http://purl.org/spar/fabio/> .
+      @prefix foaf: <http://xmlns.com/foaf/0.1/> .
+      @prefix freq: <http://purl.org/cld/freq/> .
+      @prefix gene: <http://rdf.ncbi.nlm.nih.gov/pubchem/gene/> .
+      @prefix : <http://rdf.ncbi.nlm.nih.gov/pubchem/void.ttl#> .
+      @prefix inchikey: <http://rdf.ncbi.nlm.nih.gov/pubchem/inchikey/> .
+      @prefix measuregroup: <http://rdf.ncbi.nlm.nih.gov/pubchem/measuregroup/> .
+      @prefix mesh: <http://id.nlm.nih.gov/mesh/> .
+      @prefix nci: <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#> .
+      @prefix ns0: <http://data.epo.org/linked-data/def/patent/> .
+      @prefix obo: <http://purl.obolibrary.org/obo/> .
+      @prefix owl: <http://www.w3.org/2002/07/owl#> .
+      @prefix patentcpc: <http://rdf.ncbi.nlm.nih.gov/pubchem/patentcpc/> .
+      @prefix patent: <http://rdf.ncbi.nlm.nih.gov/pubchem/patent/> .
+      @prefix patentipc: <http://rdf.ncbi.nlm.nih.gov/pubchem/patentipc/> .
+      @prefix pathway: <http://rdf.ncbi.nlm.nih.gov/pubchem/pathway/> .
+      @prefix pav: <http://purl.org/pav/> .
+      @prefix pav: <http://purl.org/pav/2.0/> .
+      @prefix pdbo: <http://rdf.wwpdb.org/schema/pdbx-v40.owl#> .
+      @prefix protein: <http://rdf.ncbi.nlm.nih.gov/pubchem/protein/> .
+      @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+      @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+      @prefix reactome: <http://identifiers.org/reactome/> .
+      @prefix reference: <http://rdf.ncbi.nlm.nih.gov/pubchem/reference/> .
+      @prefix sio: <http://semanticscience.org/resource/> .
+      @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+      @prefix source: <http://rdf.ncbi.nlm.nih.gov/pubchem/source/> .
+      @prefix substance: <http://rdf.ncbi.nlm.nih.gov/pubchem/substance/> .
+      @prefix synonym: <http://rdf.ncbi.nlm.nih.gov/pubchem/synonym/> .
+      @prefix taxonomy: <http://rdf.ncbi.nlm.nih.gov/pubchem/taxonomy> .
+      @prefix uniprot: <http://purl.uniprot.org/uniprot/> .
+      @prefix up: <http://purl.uniprot.org/core/> .
+      @prefix vcard2006: <http://www.w3.org/2006/vcard/ns#> .
+      @prefix voag: <http://voag.linkedmodel.org/schema/voag#> .
+      @prefix vocab: <http://rdf.ncbi.nlm.nih.gov/pubchem/vocabulary#> .
+      @prefix void: <http://rdfs.org/ns/void#> .
+      @prefix wikidata: <http://www.wikidata.org/entity/> .
+      @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+    suggestionEntityVariable: ?qui_entity
+    suggestionNameVariable: ?qui_name
+    suggestionAltNameVariable: ?qui_alias
+    suggestionReversedVariable: ?qui_reversed
+    frequentPredicates: '#rdfs:label #dcterms:title'
+    frequentPatternsWithoutOrder: ''
+    entityNameAndAliasPattern: |-
+      { { ?qleverui_entity rdf:type ?qleverui_type . ?qleverui_type obo:IAO_0000412 obo:chebi.owl . ?qleverui_type rdfs:label ?name } UNION { ?qleverui_entity rdfs:label ?name } BIND(?name AS ?alias) }
+      UNION
+      { { ?qleverui_entity rdf:type ?qleverui_type . ?qleverui_type obo:IAO_0000412 obo:chebi.owl . ?qleverui_type rdfs:label ?name } UNION { ?qleverui_entity rdfs:label ?name } ?qleverui_entity sio:SIO_000008 ?qleverui_synonym . ?qleverui_synonym rdf:type sio:CHEMINF_000339 . ?qleverui_synonym sio:SIO_000300 ?alias }
+    entityScorePattern: |-
+      { SELECT ?qleverui_entity (COUNT(?qleverui_synonym) AS ?count) WHERE {
+        { ?qleverui_entity sio:SIO_000008 ?qleverui_synonym . ?qleverui_synonym rdf:type sio:CHEMINF_000339 }
+        UNION
+        { ?qleverui_entity rdfs:label ?qleverui_synonym }
+      } GROUP BY ?qleverui_entity }
+    predicateNameAndAliasPatternWithoutContext: ?qleverui_entity rdfs:label ?name . BIND(?name AS ?alias)
+    predicateNameAndAliasPatternWithContext: ?qleverui_entity rdfs:label ?name . BIND(?name AS ?alias)
+    entityNameAndAliasPatternDefault: BIND(STR(?qleverui_entity) AS ?name) BIND(?name AS ?alias)
+    predicateNameAndAliasPatternWithoutContextDefault: BIND(?qleverui_entity AS ?name) BIND(?name AS ?alias)
+    predicateNameAndAliasPatternWithContextDefault: BIND(?qleverui_entity AS ?name) BIND(?qleverui_entity AS ?alias)
+    warmupQuery1: |-
+      SELECT ?qleverui_entity (SAMPLE(?name) AS ?qleverui_name) (SAMPLE(?alias) AS ?qleverui_alias) (SAMPLE(?count) AS ?qleverui_count) WHERE {
+        { SELECT ?qleverui_entity ?name ?alias ?count WHERE {
+          %ENTITY_SCORE_PATTERN%
+          %ENTITY_NAME_AND_ALIAS_PATTERN% }
+        ORDER BY ?qleverui_entity }
+      } GROUP BY ?qleverui_entity ORDER BY DESC(?qleverui_count)
+    warmupQuery2: |-
+      SELECT ?qleverui_entity ?name ?alias ?count WHERE {
+        %ENTITY_SCORE_PATTERN%
+        %ENTITY_NAME_AND_ALIAS_PATTERN%
+      } INTERNAL SORT BY ?alias
+    warmupQuery3: |-
+      SELECT ?qleverui_entity ?name ?alias ?count WHERE {
+        %ENTITY_SCORE_PATTERN%
+        %ENTITY_NAME_AND_ALIAS_PATTERN%
+      } INTERNAL SORT BY ?qleverui_entity
+    warmupQuery4: |-
+      SELECT ?qleverui_entity ?name ?alias ?count_1 WHERE {
+        { SELECT ?qleverui_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qleverui_entity ?object } GROUP BY ?qleverui_entity }
+        OPTIONAL { %PREDICATE_NAME_AND_ALIAS_PATTERN_WITH_CONTEXT% }
+        OPTIONAL {
+          { SELECT ?qleverui_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qleverui_entity ?object } GROUP BY ?qleverui_entity }
+          %PREDICATE_NAME_AND_ALIAS_PATTERN_WITH_CONTEXT_DEFAULT% }
+      }
+    warmupQuery5: |-
+      SELECT ?qleverui_entity ?name ?alias ?count_1 WHERE {
+        { SELECT ?qleverui_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qleverui_entity ?object } GROUP BY ?qleverui_entity }
+        OPTIONAL { %PREDICATE_NAME_AND_ALIAS_PATTERN_WITH_CONTEXT% }
+        OPTIONAL {
+          { SELECT ?qleverui_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qleverui_entity ?object } GROUP BY ?qleverui_entity }
+          %PREDICATE_NAME_AND_ALIAS_PATTERN_WITH_CONTEXT_DEFAULT% }
+      }
+    suggestSubjectsContextInsensitive: |-
+      %PREFIXES%
+      # IF !CURRENT_WORD_EMPTY #
+
+      SELECT ?qui_entity ?qui_name ?qui_alias WHERE {
+        ?qui_entity rdf:type [ obo:IAO_0000412 obo:chebi.owl; rdfs:label ?qui_name ]
+        BIND (?qui_name AS ?qui_alias)
+        FILTER REGEX(STR(?qui_name), "^%CURRENT_WORD%")
+      } ORDER BY ASC(?qui_name)
+
+      # ENDIF #
+    suggestPredicatesContextInsensitive: |-
+      %PREFIXES%
+      SELECT ?qui_entity ?qui_name ?qui_alias ?qui_count WHERE {
+        { SELECT ?qui_entity (COUNT(?qui_entity) AS ?qui_count)
+          WHERE { ?qui_subject ?qui_entity ?qui_object }
+          GROUP BY ?qui_entity }
+        OPTIONAL { ?qui_entity rdfs:label ?qui_name_or_null }
+        BIND (IF(?qui_name_or_null, ?qui_name_or_null, ?qui_entity) AS ?qui_name)
+        BIND (?qui_name AS ?qui_alias)
+        # IF !CURRENT_WORD_EMPTY #
+        FILTER REGEX(STR(?qui_alias), "%CURRENT_WORD%", "i")
+        # ENDIF #
+      } ORDER BY DESC(?qui_count)
+    suggestObjectsContextInsensitive: |-
+      %PREFIXES%
+      SELECT ?qui_entity ?qui_name ?qui_alias ?qui_count WHERE {
+        { SELECT ?qui_entity (COUNT(?qui_entity) AS ?qui_count) WHERE {
+          %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity .
+        } GROUP BY ?qui_entity }
+        OPTIONAL { ?qui_entity rdf:type [ obo:IAO_0000412 obo:chebi.owl; rdfs:label ?qui_name_or_null ] }
+        OPTIONAL { ?qui_entity rdfs:label ?qui_name_or_null }
+        BIND (IF(?qui_name_or_null, ?qui_name_or_null, ?qui_entity) AS ?qui_name)
+        BIND (?qui_name AS ?qui_alias)
+        # IF !CURRENT_WORD_EMPTY #
+        FILTER REGEX(STR(?qui_name), "^%CURRENT_WORD%")
+        # ENDIF #
+      } ORDER BY DESC(?qui_count)
+    mapViewBaseURL: ''
+  examples:
+  - name: 'Case 1: Protein targets inhibited by donepezil with IC50 <= 10 µM *'
+    sort_key: C.01
+    query: |-
+      PREFIX bao: <http://www.bioassayontology.org/bao#>
+      PREFIX obo: <http://purl.obolibrary.org/obo/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX sio: <http://semanticscience.org/resource/>
+      PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+      SELECT DISTINCT ?protein ?title
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/protein>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/measuregroup>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/endpoint>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/substance>
+      WHERE { {
+        ?sub rdf:type obo:CHEBI_53289 ; obo:RO_0000056 ?mg .
+        ?mg obo:RO_0000057 ?protein ; obo:OBI_0000299 ?ep .
+        ?protein rdf:type sio:SIO_010043 ; skos:prefLabel ?title .
+        ?ep rdf:type bao:BAO_0000190 ; obo:IAO_0000136 ?sub ; sio:SIO_000300 ?value . }
+        FILTER (?value < 10 )
+      }
+  - name: 'Case 2: Pharmacological roles of SID46505803 defined by CHEBI'
+    sort_key: C.02
+    query: |-
+      PREFIX obov: <http://purl.obolibrary.org/obo/>
+      PREFIX owl: <http://www.w3.org/2002/07/owl#>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX sio: <http://semanticscience.org/resource/>
+      PREFIX substance: <http://rdf.ncbi.nlm.nih.gov/pubchem/substance/>
+      SELECT DISTINCT ?rolelabel
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/substance>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/compound>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/ruleset>
+      WHERE {
+        substance:SID46505803 sio:CHEMINF_000477 ?comp .
+        ?comp rdf:type ?chebi .
+        ?chebi rdfs:subClassOf [ a owl:Restriction ;
+        owl:onProperty obov:RO_0000087 ;
+        owl:someValuesFrom ?role ] .
+        ?role rdfs:label ?rolelabel .
+      }
+  - name: 'Case 3: NSAID compounds with molecular weight < 200 g/mol *'
+    sort_key: C.03
+    query: |-
+      PREFIX obo: <http://purl.obolibrary.org/obo/>
+      PREFIX owl: <http://www.w3.org/2002/07/owl#>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX sio: <http://semanticscience.org/resource/>
+      SELECT DISTINCT ?compound
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/compound>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/descriptor>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/ruleset>
+      WHERE { {
+        ?compound rdf:type ?chebi .
+        ?chebi rdfs:subClassOf [ a owl:Restriction ;
+        owl:onProperty obo:RO_0000087 ;
+        owl:someValuesFrom obo:CHEBI_35475 ] .
+        ?compound sio:SIO_000008 ?MW .
+        ?MW rdf:type sio:CHEMINF_000334 .
+        ?MW sio:SIO_000300 ?MWValue . }
+        FILTER (?MWValue < 200 )
+      }
+  - name: 'Case 4: NSAID substances according to CHEBI'
+    sort_key: C.04
+    query: |-
+      PREFIX concept: <http://rdf.ncbi.nlm.nih.gov/pubchem/concept/>
+      PREFIX dcterms: <http://purl.org/dc/terms/>
+      PREFIX obo: <http://purl.obolibrary.org/obo/>
+      PREFIX owl: <http://www.w3.org/2002/07/owl#>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT DISTINCT ?substance ?source
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/substance>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/source>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/ruleset>
+      WHERE {
+        ?substance dcterms:source ?source .
+        ?source dcterms:subject concept:Chemical_Vendors .
+        ?substance rdf:type ?chebi .
+        ?chebi rdfs:subClassOf [ a owl:Restriction ;
+        owl:onProperty obo:RO_0000087 ;
+        owl:someValuesFrom obo:CHEBI_35475 ] .
+      }
+  - name: 'Case 5: Protein targets inhibited by cholinesterase inhibitors with IC50 <= 10 µM *'
+    sort_key: C.05
+    query: |-
+      PREFIX bao: <http://www.bioassayontology.org/bao#>
+      PREFIX obo: <http://purl.obolibrary.org/obo/>
+      PREFIX owl: <http://www.w3.org/2002/07/owl#>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX sio: <http://semanticscience.org/resource/>
+      PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+      SELECT DISTINCT ?title
+      FROM <http://purl.obolibrary.org/obo>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/substance>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/measuregroup>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/endpoint>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/protein>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/ruleset>
+      WHERE { {
+        ?chebi rdfs:subClassOf [ a owl:Restriction ; owl:onProperty obo:RO_0000087 ; owl:someValuesFrom obo:CHEBI_37733 ] .
+        ?sub rdf:type ?chebi ; obo:RO_0000056 ?mg .
+        ?mg obo:RO_0000057 ?protein ; obo:OBI_0000299 ?ep .
+        ?protein rdf:type sio:SIO_010043 ; skos:prefLabel ?title .
+        ?ep rdf:type bao:BAO_0000190 ; obo:IAO_0000136 ?sub ; sio:SIO_000300 ?value . }
+        FILTER (?value < 10 )
+      }
+  - name: 'Case 6: Substances inhibiting targets like ACCP05979 with function domain PSSMID188648'
+    sort_key: C.06
+    query: |-
+      PREFIX bao: <http://www.bioassayontology.org/bao#>
+      PREFIX conserveddomain: <http://rdf.ncbi.nlm.nih.gov/pubchem/conserveddomain/>
+      PREFIX obo: <http://purl.obolibrary.org/obo/>
+      PREFIX protein: <http://rdf.ncbi.nlm.nih.gov/pubchem/protein/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX sio: <http://semanticscience.org/resource/>
+      PREFIX vocab: <http://rdf.ncbi.nlm.nih.gov/pubchem/vocabulary#>
+      SELECT DISTINCT ?substance ?protein ?value
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/substance>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/measuregroup>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/endpoint>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/protein>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/conserveddomain>
+      WHERE {
+        ?substance obo:RO_0000056 ?measuregroup .
+        ?measuregroup obo:RO_0000057 ?protein .
+        protein:ACCP00533 vocab:hasSimilarProtein ?protein .
+        ?protein obo:RO_0002180 conserveddomain:PSSMID395614 .
+        ?measuregroup obo:OBI_0000299 ?endpoint .
+        ?endpoint obo:IAO_0000136 ?substance .
+        ?endpoint rdf:type bao:BAO_0000190 .
+        ?endpoint sio:SIO_000300 ?value .
+      }
+  - name: 'Case 7: Protein targets inhibited by donepezil hydrochloride with IC50 <= 10 µM'
+    sort_key: C.07
+    query: |-
+      PREFIX bao: <http://www.bioassayontology.org/bao#>
+      PREFIX compound: <http://rdf.ncbi.nlm.nih.gov/pubchem/compound/>
+      PREFIX obo: <http://purl.obolibrary.org/obo/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX sio: <http://semanticscience.org/resource/>
+      PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+      SELECT DISTINCT ?sub ?protein ?title
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/protein>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/measuregroup>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/endpoint>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/substance>
+      WHERE {
+        ?sub sio:CHEMINF_000477 compound:CID3152 ;
+             obo:RO_0000056 ?mg .
+        ?mg obo:RO_0000057 ?protein ;
+            obo:OBI_0000299 ?ep .
+        ?protein rdf:type sio:SIO_010043 ;
+                 skos:prefLabel ?title .
+        ?ep rdf:type bao:BAO_0000190 ;
+            obo:IAO_0000136 ?sub ;
+            sio:SIO_000300 ?value .
+        FILTER (?value < 10)
+      }
+  - name: 'Case 8: Substances inhibiting proteins involved in prostaglandin biosynthesis with IC50 <= 10µM *'
+    sort_key: C.08
+    query: |-
+      PREFIX bao: <http://www.bioassayontology.org/bao#>
+      PREFIX obo: <http://purl.obolibrary.org/obo/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX sio: <http://semanticscience.org/resource/>
+      PREFIX up: <http://purl.uniprot.org/core/>
+      SELECT DISTINCT ?substance ?protein WHERE { {
+        ?substance obo:RO_0000056 ?measuregroup .
+        ?measuregroup obo:RO_0000057 ?protein .
+        ?protein rdf:type sio:SIO_010043 .
+        ?protein up:encodedBy ?gene .
+        ?gene rdf:type sio:SIO_010035 .
+        ?gene obo:RO_0000056 obo:GO_0001516 .
+        ?measuregroup obo:OBI_0000299 ?endpoint .
+        ?endpoint obo:IAO_0000136 ?substance .
+        ?endpoint rdf:type bao:BAO_0000190 .
+        ?endpoint sio:SIO_000300 ?value . }
+        FILTER (?value < 10)
+      }
+  - name: 'Case 9: Pharmacological roles for substances inhibiting ACCQ1280 with IC50 <= 10 µM'
+    sort_key: C.09
+    query: |-
+      PREFIX bao: <http://www.bioassayontology.org/bao#>
+      PREFIX obo: <http://purl.obolibrary.org/obo/>
+      PREFIX owl: <http://www.w3.org/2002/07/owl#>
+      PREFIX protein: <http://rdf.ncbi.nlm.nih.gov/pubchem/protein/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX sio: <http://semanticscience.org/resource/>
+      SELECT DISTINCT ?rolelabel
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/measuregroup>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/endpoint>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/substance>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/ruleset>
+      FROM <http://purl.obolibrary.org/obo>
+      WHERE { {
+        ?sub obo:RO_0000056 ?mg .
+        ?mg obo:RO_0000057 protein:ACCQ12809 ;
+            obo:OBI_0000299 ?ep .
+        ?sub rdf:type ?chebi .
+        ?chebi rdfs:subClassOf _:I .
+        _:I a owl:Restriction ;
+            owl:onProperty obo:RO_0000087 ;
+            owl:someValuesFrom ?role .
+        ?role rdfs:label ?rolelabel .
+        ?ep obo:IAO_0000136 ?sub ;
+            rdf:type bao:BAO_0000190 ;
+            sio:SIO_000300 ?value . }
+        FILTER (?value < 10)
+      }
+  - name: 'Case 10: For each protein, the number of substances tested'
+    sort_key: C.10
+    query: |-
+      PREFIX bao: <http://www.bioassayontology.org/bao#>
+      PREFIX obo: <http://purl.obolibrary.org/obo/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX sio: <http://semanticscience.org/resource/>
+      SELECT (COUNT(?sub) AS ?subcnt) ?protein
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/substance>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/measuregroup>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/endpoint>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/protein>
+      WHERE {
+        ?sub obo:RO_0000056 ?mg .
+        ?mg obo:RO_0000057 ?protein .
+        ?protein rdf:type sio:SIO_010043 .
+        ?mg obo:OBI_0000299 ?ep .
+        ?ep rdf:type bao:BAO_0000190 ; obo:IAO_0000136 ?sub ; sio:SIO_000300 ?value .
+      }
+      GROUP BY ?protein
+      ORDER BY ?subcnt
+  - name: All types, ordered by number of subjects
+    sort_key: '~'
+    query: |-
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?type ?type_label ?count WHERE {
+        { SELECT ?type (COUNT(?subject) as ?count)
+          WHERE { ?subject rdf:type ?type }
+        GROUP BY ?type }
+        OPTIONAL { ?type rdfs:label ?type_label }
+      }
+      ORDER BY DESC(?count)
+  - name: All predicates, ordered by number of subjects
+    sort_key: '~'
+    query: |-
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?predicate ?predicate_label ?count WHERE {
+        { SELECT ?predicate (COUNT(?subject) AS ?count)
+          WHERE { ?subject ?predicate [] }
+          GROUP BY ?predicate }
+        OPTIONAL { ?predicate rdfs:label ?predicate_label }
+      }
+      ORDER BY DESC(?count)
+  - name: All synonym types, ordered by frequency
+    sort_key: '~'
+    query: |-
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX sio: <http://semanticscience.org/resource/>
+      SELECT ?type ?type_label ?sample_compound ?sample_value ?count_synonyms WHERE {
+        { SELECT ?type (SAMPLE(?compound) AS ?sample_compound) (SAMPLE(?value) AS ?sample_value) (COUNT(?synonym) as ?count_synonyms)
+          WHERE { ?synonym sio:SIO_000011 ?compound . ?synonym rdf:type ?type . ?synonym sio:SIO_000300 ?value }
+          GROUP BY ?type }
+        OPTIONAL { ?type rdfs:label ?type_label }
+      }
+      ORDER BY DESC(?count_synonyms)
+  - name: Synonyms of compound X, grouped by synonym type
+    sort_key: '~'
+    query: |-
+      PREFIX compound: <http://rdf.ncbi.nlm.nih.gov/pubchem/compound/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX sio: <http://semanticscience.org/resource/>
+      SELECT ?type ?type_label ?value (SAMPLE(?synonym) AS ?sample_synonym) (COUNT(?substance) AS ?count) WHERE {
+        compound:CID3033 ^sio:SIO_000011 ?synonym .
+        ?substance sio:SIO_000008 ?synonym .
+        ?synonym rdf:type ?type .
+        ?type rdfs:label ?type_label .
+        ?synonym sio:SIO_000300 ?value .
+      }
+      GROUP BY ?type ?type_label ?value
+      ORDER BY DESC(?count)
+  - name: 'Breakdown of #triples by category'
+    sort_key: '~'
+    query: |-
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX sio: <http://semanticscience.org/resource/>
+      PREFIX cito: <http://purl.org/spar/cito/>
+      PREFIX dcterms: <http://purl.org/dc/terms/>
+      PREFIX fabio: <http://purl.org/spar/fabio/>
+      PREFIX vocab: <http://rdf.ncbi.nlm.nih.gov/pubchem/vocabulary#>
+      PREFIX obo: <http://purl.obolibrary.org/obo/>
+      SELECT ?category (SUM(?count) as ?numTriples) (100 * SUM(?count) / SAMPLE(?total_count) as ?percent) WHERE {
+        { SELECT ?p (COUNT(?p) AS ?count) WHERE { ?s ?p ?o } GROUP BY ?p }
+        BIND (?p = sio:has-attribute || ?p = sio:has-value || ?p = sio:has-unit || ?p = sio:is-attribute-of ||
+              ?p = fabio:hasSubjectTerm || ?p = fabio:hasPrimarySubjectTerm as ?prop)
+        BIND (?p = cito:isDiscussedBy || ?p = dcterms:source || ?p = dcterms:modified ||
+              ?p = dcterms:available || ?p = cito:isCitedBy as ?meta)
+        BIND (?p = rdf:type AS ?type)
+        BIND (REGEX(?p, "<http://semanticscience.org/resource/CHEMINF") || ?p = vocab:PubChemAssayOutcome ||
+              ?p = obo:RO_0000056 || ?p = obo:IAO_0000136 || ?p = obo:OBI_0000299 as ?truthy)
+        BIND (SUM(?count) as ?total_count)
+        VALUES (?prop ?meta ?type ?truthy ?category) { (0 0 0 0 "other") (1 0 0 0 "reified") (0 1 0 0 "type") (0 0 1 0 "normal") }
+      } GROUP BY ?category
+  - name: All predicates with their absolute and relative size
+    sort_key: '~'
+    query: |-
+      SELECT ?p ?count ?percent WHERE {
+        { SELECT ?p (COUNT(?p) AS ?count) WHERE { ?s ?p ?o } GROUP BY ?p }
+        BIND(100 * ?count / SUM(?count) AS ?percent)
+      }
+      ORDER BY DESC(?count)
+  - name: 'Case 11: Top five diseases commonly mentioned with indomethacin'
+    sort_key: C.11
+    query: |-
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX sio: <http://semanticscience.org/resource/>
+      PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+      PREFIX compound: <http://rdf.ncbi.nlm.nih.gov/pubchem/compound/>
+      SELECT ?disease ?score ?disease_prefLabel
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/cooccurrence>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/disease>
+      WHERE {
+        ?cooccurrence rdf:subject compound:CID3715 .
+        ?cooccurrence rdf:object ?disease .
+        ?cooccurrence rdf:type sio:SIO_000993 .
+        ?cooccurrence sio:SIO_000300 ?score .
+        ?disease skos:prefLabel ?disease_prefLabel .
+      }
+      ORDER BY DESC(?score)
+      LIMIT 5
+  - name: 'Case 12: Three most recent references that mention indomethacin and inflammation'
+    sort_key: C.12
+    query: |-
+      PREFIX prism: <http://prismstandard.org/namespaces/basic/3.0/>
+      PREFIX dcterms: <http://purl.org/dc/terms/>
+      PREFIX pcvocab: <http://rdf.ncbi.nlm.nih.gov/pubchem/vocabulary#>
+      PREFIX disease: <http://rdf.ncbi.nlm.nih.gov/pubchem/disease/>
+      PREFIX compound: <http://rdf.ncbi.nlm.nih.gov/pubchem/compound/>
+      SELECT ?ref ?date ?journal ?title
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/reference>
+      WHERE {
+        ?ref pcvocab:discussesAsDerivedByTextMining compound:CID3715 .
+        ?ref pcvocab:discussesAsDerivedByTextMining disease:DZID8173 .
+        ?ref dcterms:date ?date .
+        ?ref dcterms:title ?title .
+        ?ref prism:publicationName ?journal .
+      }
+      ORDER BY DESC(?date)
+      LIMIT 3
+  - name: 'Case 13: Top 20 genes co-mentioned with indomethacin'
+    sort_key: C.13
+    query: |-
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX sio: <http://semanticscience.org/resource/>
+      PREFIX compound: <http://rdf.ncbi.nlm.nih.gov/pubchem/compound/>
+      SELECT ?gene ?geneid ?prefLabel
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/cooccurrence>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/gene>
+      WHERE {
+        ?cooccurrence rdf:subject compound:CID3715 .
+        ?cooccurrence rdf:object ?gene .
+        ?cooccurrence rdf:type sio:SIO_001257 .
+        ?cooccurrence sio:SIO_000300 ?score .
+        ?geneid <http://www.bioassayontology.org/bao#BAO_0002870> ?gene.
+        ?geneid <http://purl.uniprot.org/core/organism> <http://rdf.ncbi.nlm.nih.gov/pubchem/taxonomy/TAXID9606>.
+        ?geneid <http://www.w3.org/2004/02/skos/core#prefLabel> ?prefLabel.
+      }
+      ORDER BY DESC(?score)
+      LIMIT 20
+  - name: 'Case 14: Top ten diseases co-occurring with the gene most commonly mentioned with maribavir'
+    sort_key: C.14
+    query: |-
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX sio: <http://semanticscience.org/resource/>
+      PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+      PREFIX compound: <http://rdf.ncbi.nlm.nih.gov/pubchem/compound/>
+      SELECT ?gene ?disease ?disease_prefLabel
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/cooccurrence>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/disease>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/cooccurrence>
+      WHERE {
+        {
+          SELECT ?gene
+          WHERE {
+            ?cooccurrence1 rdf:subject compound:CID471161 .
+            ?cooccurrence1 rdf:object ?gene .
+            ?cooccurrence1 rdf:type sio:SIO_001257 .
+            ?cooccurrence1 sio:SIO_000300 ?score1 .
+          }
+          ORDER BY DESC(?score1)
+          LIMIT 1
+        }
+        ?cooccurrence2 rdf:subject ?gene .
+        ?cooccurrence2 rdf:object ?disease .
+        ?cooccurrence2 rdf:type sio:SIO_000983 .
+        ?cooccurrence2 sio:SIO_000300 ?score2 .
+        ?disease skos:prefLabel ?disease_prefLabel .
+      }
+      ORDER BY DESC(?score2)
+      LIMIT 10
+  - name: 'Case 15: Chemicals commonly mentioned with the fibroblast growth factor receptor 1 gene'
+    sort_key: C.15
+    query: |-
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX sio: <http://semanticscience.org/resource/>
+      PREFIX gene: <http://rdf.ncbi.nlm.nih.gov/pubchem/gene/>
+      SELECT ?compound
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/cooccurrence>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/gene>
+      WHERE {
+        ?cooccurrence rdf:subject ?genesymbol .
+        ?genesymbol rdf:type sio:SIO_001383 ; sio:SIO_000300 "fgfr1" .
+        ?cooccurrence rdf:object ?compound .
+        ?cooccurrence rdf:type sio:SIO_001257 .
+        ?cooccurrence sio:SIO_000300 ?score .
+      }
+  - name: 'Case 16: Chemicals co-mentioned with KDR, PDGFRB, and FGFR1'
+    sort_key: C.16
+    query: |-
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX sio: <http://semanticscience.org/resource/>
+      PREFIX gene: <http://rdf.ncbi.nlm.nih.gov/pubchem/gene/>
+      SELECT ?score1 ?score2 ?score3 ?compound
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/cooccurrence>
+      FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/gene>
+      WHERE {
+        ?cooccurrence1 rdf:subject ?genesymbol1 .
+        ?genesymbol1 rdf:type sio:SIO_001383 ; sio:SIO_000300 "kdr" .
+        ?cooccurrence1 rdf:object ?compound .
+        ?cooccurrence1 rdf:type sio:SIO_001257 .
+        ?cooccurrence1 sio:SIO_000300 ?score1 .
+        ?cooccurrence2 rdf:subject ?genesymbol2 .
+        ?genesymbol2 rdf:type sio:SIO_001383 ; sio:SIO_000300 "pdgfrb" .
+        ?cooccurrence2 rdf:object ?compound .
+        ?cooccurrence2 rdf:type sio:SIO_001257 .
+        ?cooccurrence2 sio:SIO_000300 ?score2 .
+        ?cooccurrence3 rdf:subject ?genesymbol3 .
+        ?genesymbol3 rdf:type sio:SIO_001383 ; sio:SIO_000300 "fgfr1" .
+        ?cooccurrence3 rdf:object ?compound .
+        ?cooccurrence3 rdf:type sio:SIO_001257 .
+        ?cooccurrence3 sio:SIO_000300 ?score3 .
+      }
+      ORDER BY DESC(?score1) DESC(?score2) DESC(?score3)

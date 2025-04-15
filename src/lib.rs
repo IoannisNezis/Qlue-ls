@@ -16,6 +16,8 @@ fn send_message(writer: &web_sys::WritableStreamDefaultWriter, message: String) 
 pub fn init_language_server(writer: web_sys::WritableStreamDefaultWriter) -> Server {
     #[cfg(target_arch = "wasm32")]
     wasm_logger::init(wasm_logger::Config::default());
+    #[cfg(target_arch = "wasm32")]
+    console_error_panic_hook::set_once();
     Server::new(move |message| send_message(&writer, message))
 }
 
@@ -44,7 +46,7 @@ impl Server {
         loop {
             match read_message(&reader).await {
                 Ok((value, done)) => {
-                    self.handle_message(value);
+                    self.handle_message(value).await;
                     if done {
                         break;
                     }

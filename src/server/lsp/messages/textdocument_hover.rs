@@ -7,7 +7,7 @@ use crate::server::lsp::{
 
 use super::utils::TextDocumentPositionParams;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 pub struct HoverRequest {
     #[serde(flatten)]
     base: RequestMessageBase,
@@ -28,39 +28,43 @@ impl HoverRequest {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 struct HoverParams {
     #[serde(flatten)]
     text_document_position: TextDocumentPositionParams,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct HoverResponse {
     #[serde(flatten)]
     base: ResponseMessageBase,
-    result: HoverResult,
+    result: Option<Hover>,
 }
 
 impl HoverResponse {
-    pub fn new(id: &RequestId, content: String) -> Self {
+    pub fn new(id: &RequestId) -> Self {
         HoverResponse {
             base: ResponseMessageBase::success(id),
-            result: HoverResult {
-                contents: HoverResultContents::MarkupContent(MarkupContent::Content {
-                    kind: Markupkind::Markdown,
-                    value: content,
-                }),
-            },
+            result: None,
         }
+    }
+
+    pub fn set_markdown_content(&mut self, content: String) {
+        self.result = Some(Hover {
+            contents: HoverResultContents::MarkupContent(MarkupContent::Content {
+                kind: Markupkind::Markdown,
+                value: content,
+            }),
+        })
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
-struct HoverResult {
+#[derive(Debug, Serialize, PartialEq)]
+struct Hover {
     contents: HoverResultContents,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 #[serde(untagged)]
 enum HoverResultContents {
     SingleMarkedString(MarkedString),
@@ -70,19 +74,19 @@ enum HoverResultContents {
     //see: https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_hover
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 #[serde(untagged)]
 enum MarkedString {
     Content { language: String, value: String },
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 #[serde(untagged)]
 enum MarkupContent {
     Content { kind: Markupkind, value: String },
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum Markupkind {
     Plaintext,
@@ -129,8 +133,8 @@ mod tests {
 
     #[test]
     fn serialize() {
-        let hover_response =
-            HoverResponse::new(&RequestId::Integer(42), "hover content".to_string());
+        let mut hover_response = HoverResponse::new(&RequestId::Integer(42));
+        hover_response.set_markdown_content("hover content".to_string());
         let expected_message = r#"{"jsonrpc":"2.0","id":42,"result":{"contents":{"kind":"markdown","value":"hover content"}}}"#;
         assert_eq!(
             serde_json::to_string(&hover_response).unwrap(),

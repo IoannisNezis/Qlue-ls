@@ -1,0 +1,273 @@
+config:
+  backend:
+    id: '55'
+    name: IMDb
+    slug: imdb
+    sortKey: C.4
+    baseUrl: https://qlever.cs.uni-freiburg.de/api/imdb
+    apiToken: ''
+    isDefault: 'False'
+    isNoSlugMode: 'False'
+    maxDefault: '100'
+    filteredLanguage: en
+    dynamicSuggestions: '2'
+    defaultModeTimeout: '5.0'
+    mixedModeTimeout: '1.0'
+    suggestSubjects: |-
+      %PREFIXES%
+      # IF CURRENT_WORD_EMPTY #
+
+      %WARMUP_QUERY_1%
+
+      # ELSE #
+
+      SELECT ?qleverui_entity (SAMPLE(?name) AS ?qleverui_name) (SAMPLE(?alias) AS ?qleverui_alias) (SAMPLE(?count) AS ?qleverui_count) WHERE {
+        { %WARMUP_QUERY_2% }
+        # IF !CURRENT_WORD_EMPTY #
+        FILTER (REGEX(?alias, "^\"%CURRENT_WORD%") || REGEX(?alias, "^<%CURRENT_WORD%"))
+        # ENDIF #
+      } GROUP BY ?qleverui_entity ORDER BY DESC(?qleverui_count)
+
+      # ENDIF #
+    suggestPredicates: |-
+      %PREFIXES%
+      # IF !CURRENT_SUBJECT_VARIABLE #
+
+      SELECT ?qleverui_entity
+                    (MIN(?name) as ?qleverui_name)
+                    (MIN(?alias) as ?qleverui_alias)
+                    (SAMPLE(?count_2) as ?qleverui_count)
+                    ?qleverui_reversed WHERE {
+
+        { { SELECT ?qleverui_entity (COUNT(?qleverui_tmp) AS ?count_2)
+          WHERE { %CURRENT_SUBJECT% ?qleverui_entity ?qleverui_tmp  }
+          GROUP BY ?qleverui_entity }
+        BIND (0 AS ?qleverui_reversed) }
+        UNION
+        { { SELECT ?qleverui_entity (COUNT(?qleverui_tmp) AS ?count_2)
+          WHERE { ?qleverui_tmp ?qleverui_entity %CURRENT_SUBJECT%  }
+          GROUP BY ?qleverui_entity }
+          BIND (1 AS ?qleverui_reversed) }
+        { %WARMUP_QUERY_5% }
+        # IF !CURRENT_WORD_EMPTY #
+        FILTER REGEX(?alias, "%CURRENT_WORD%", "i")
+        # ENDIF #
+      } GROUP BY ?qleverui_entity ?qleverui_reversed ORDER BY DESC(?qleverui_count)
+
+      # ENDIF #
+      # IF CONNECTED_TRIPLES_EMPTY AND CURRENT_SUBJECT_VARIABLE #
+
+      SELECT ?qleverui_entity
+                    (MIN(?name) as ?qleverui_name)
+                    (MIN(?alias) as ?qleverui_alias)
+                    (SAMPLE(?count_1) as ?qleverui_count) WHERE {
+        { %WARMUP_QUERY_4% }
+        # IF !CURRENT_WORD_EMPTY #
+        FILTER REGEX(?alias, "%CURRENT_WORD%", "i")
+        # ENDIF #
+      } GROUP BY ?qleverui_entity ORDER BY DESC(?qleverui_count)
+
+      # ENDIF #
+
+      # IF !CONNECTED_TRIPLES_EMPTY AND CURRENT_SUBJECT_VARIABLE #
+
+      SELECT ?qleverui_entity
+                    (MIN(?name) as ?qleverui_name)
+                    (MIN(?alias) as ?qleverui_alias)
+                    (SAMPLE(?count_2) as ?qleverui_count) WHERE {
+        { SELECT ?qleverui_entity (COUNT(DISTINCT %CURRENT_SUBJECT%) AS ?count_2)
+          WHERE { %CONNECTED_TRIPLES% %CURRENT_SUBJECT% ?qleverui_entity ?object }
+          GROUP BY ?qleverui_entity }
+        { %WARMUP_QUERY_5% }
+        # IF !CURRENT_WORD_EMPTY #
+        FILTER REGEX(?alias, "%CURRENT_WORD%", "i")
+        # ENDIF #
+      } GROUP BY ?qleverui_entity ORDER BY DESC(?qleverui_count)
+
+      # ENDIF #
+    suggestObjects: |-
+      %PREFIXES%
+      SELECT ?qleverui_entity
+                    (MIN(?name) AS ?qleverui_name)
+                    (MIN(?alias) AS ?qleverui_alias)
+                    (MAX(?count_1) AS ?qleverui_count) WHERE {
+        {
+
+          { SELECT ?qleverui_entity ?name ?alias ?count_1 WHERE {
+            { SELECT ?qleverui_entity (COUNT(?qleverui_entity) AS ?count_1) WHERE {
+              %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qleverui_entity .
+            } GROUP BY ?qleverui_entity }
+            { %WARMUP_QUERY_3% }
+            # IF !CURRENT_WORD_EMPTY #
+            FILTER (REGEX(?alias, "^\"%CURRENT_WORD%") || REGEX(?alias, "^<%CURRENT_WORD%"))
+            # ENDIF #
+          } }
+
+        } UNION {
+
+          { SELECT ?qleverui_entity ?name ?alias ?count_1 WHERE {
+            { SELECT ?qleverui_entity (COUNT(?qleverui_entity) AS ?count_1) WHERE {
+              %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qleverui_entity
+            } GROUP BY ?qleverui_entity }
+            %ENTITY_NAME_AND_ALIAS_PATTERN_DEFAULT%
+            # IF !CURRENT_WORD_EMPTY #
+            FILTER REGEX(?alias, "^%CURRENT_WORD%")
+            # ENDIF #
+          } }
+
+        }
+      } GROUP BY ?qleverui_entity ORDER BY DESC(?qleverui_count)
+    subjectName: ''
+    alternativeSubjectName: ''
+    predicateName: ''
+    alternativePredicateName: ''
+    objectName: ''
+    alternativeObjectName: ''
+    replacePredicates: ''
+    supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
+    supportedFunctions: asc, desc, avg, values, score, text, count, sample, min, max, average, concat, group_concat, langMatches, lang, regex, sum, dist, contains, str, strlen, substr, strstarts, strends, strbefore, strafter, contains, year, month, day, rand, abs, ceil, floor, round, log, exp, sqrt, sin, cos, tan, if, coalesce, bound, concat, replace, encode_for_uri, isiri, isblank, isliteral, isNumeric, bound
+    supportedPredicateSuggestions: ''
+    suggestPrefixnamesForPredicates: 'True'
+    fillPrefixes: 'True'
+    filterEntities: 'False'
+    suggestedPrefixes: 'PREFIX imdb: <https://www.imdb.com/>'
+    suggestionEntityVariable: ?qleverui_entity
+    suggestionNameVariable: ?qleverui_name
+    suggestionAltNameVariable: ?qleverui_alias
+    suggestionReversedVariable: ?qleverui_reversed
+    frequentPredicates: ''
+    frequentPatternsWithoutOrder: ''
+    entityNameAndAliasPattern: ?qleverui_entity imdb:title ?name . BIND(?name AS ?alias)
+    entityScorePattern: ?qleverui_entity imdb:numVotes ?count .
+    predicateNameAndAliasPatternWithoutContext: BIND(?qleverui_entity AS ?name) BIND(?qleverui_entity AS ?alias)
+    predicateNameAndAliasPatternWithContext: BIND(?qleverui_entity AS ?name) BIND(?qleverui_entity AS ?alias)
+    entityNameAndAliasPatternDefault: BIND(?qleverui_entity AS ?name) BIND(?qleverui_entity AS ?alias)
+    predicateNameAndAliasPatternWithoutContextDefault: BIND(?qleverui_entity AS ?name) BIND(?qleverui_entity AS ?alias)
+    predicateNameAndAliasPatternWithContextDefault: BIND(?qleverui_entity AS ?name) BIND(?qleverui_entity AS ?alias)
+    warmupQuery1: |-
+      SELECT ?qleverui_entity (SAMPLE(?name) AS ?qleverui_name) (SAMPLE(?alias) AS ?qleverui_alias) (SAMPLE(?count) AS ?qleverui_count) WHERE {
+        { SELECT ?qleverui_entity ?name ?alias ?count WHERE {
+          %ENTITY_SCORE_PATTERN%
+          %ENTITY_NAME_AND_ALIAS_PATTERN% }
+        ORDER BY ?qleverui_entity }
+      } GROUP BY ?qleverui_entity ORDER BY DESC(?qleverui_count)
+    warmupQuery2: |-
+      SELECT ?qleverui_entity ?name ?alias ?count WHERE {
+        %ENTITY_SCORE_PATTERN%
+        %ENTITY_NAME_AND_ALIAS_PATTERN%
+      } ORDER BY ?alias
+    warmupQuery3: |-
+      SELECT ?qleverui_entity ?name ?alias ?count WHERE {
+        %ENTITY_SCORE_PATTERN%
+        %ENTITY_NAME_AND_ALIAS_PATTERN%
+      } ORDER BY ?qleverui_entity
+    warmupQuery4: |-
+      SELECT ?qleverui_entity ?name ?alias ?count_1 WHERE {
+        { { SELECT ?qleverui_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qleverui_entity ?object } GROUP BY ?qleverui_entity }
+          %PREDICATE_NAME_AND_ALIAS_PATTERN_WITHOUT_CONTEXT% .
+          FILTER (?qleverui_entity != <QLever-internal-function/langtag>)
+        } UNION {
+          { SELECT ?qleverui_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qleverui_entity ?object } GROUP BY ?qleverui_entity }
+          %PREDICATE_NAME_AND_ALIAS_PATTERN_WITHOUT_CONTEXT_DEFAULT% .
+          FILTER (?qleverui_entity != <QLever-internal-function/langtag>)
+        } }
+    warmupQuery5: |-
+      SELECT ?qleverui_entity ?name ?alias ?count_1 WHERE {
+        { { SELECT ?qleverui_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qleverui_entity ?object } GROUP BY ?qleverui_entity }
+          %PREDICATE_NAME_AND_ALIAS_PATTERN_WITH_CONTEXT% .
+          FILTER (?qleverui_entity != <QLever-internal-function/langtag>)
+        } UNION {
+          { SELECT ?qleverui_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qleverui_entity ?object } GROUP BY ?qleverui_entity }
+          %PREDICATE_NAME_AND_ALIAS_PATTERN_WITH_CONTEXT_DEFAULT% .
+          FILTER (?qleverui_entity != <QLever-internal-function/langtag>)
+        } }
+    suggestSubjectsContextInsensitive: |-
+      %PREFIXES%
+      # IF CURRENT_WORD_EMPTY #
+
+      %WARMUP_QUERY_1%
+
+      # ELSE #
+
+      SELECT ?qleverui_entity (SAMPLE(?name) AS ?qleverui_name) (SAMPLE(?alias) AS ?qleverui_alias) (SAMPLE(?count) AS ?qleverui_count) WHERE {
+        { %WARMUP_QUERY_2% }
+        # IF !CURRENT_WORD_EMPTY #
+        FILTER (REGEX(?alias, "^\"%CURRENT_WORD%") || REGEX(?alias, "^<%CURRENT_WORD%"))
+        # ENDIF #
+      } GROUP BY ?qleverui_entity ORDER BY DESC(?qleverui_count)
+
+      # ENDIF #
+    suggestPredicatesContextInsensitive: |-
+      %PREFIXES%
+
+      SELECT ?qleverui_entity
+                    (MIN(?name) as ?qleverui_name)
+                    (MIN(?alias) as ?qleverui_alias)
+                    (SAMPLE(?count_1) as ?qleverui_count) WHERE {
+        { %WARMUP_QUERY_4% }
+        # IF !CURRENT_WORD_EMPTY #
+        FILTER REGEX(?alias, "%CURRENT_WORD%", "i")
+        # ENDIF #
+      } GROUP BY ?qleverui_entity ORDER BY DESC(?qleverui_count)
+    suggestObjectsContextInsensitive: |-
+      %PREFIXES%
+      # IF CURRENT_WORD_EMPTY #
+
+      %WARMUP_QUERY_1%
+
+      # ELSE #
+
+      SELECT ?qleverui_entity (SAMPLE(?name) AS ?qleverui_name) (SAMPLE(?alias) AS ?qleverui_alias) (SAMPLE(?count) AS ?qleverui_count) WHERE {
+        { %WARMUP_QUERY_2% }
+        # IF !CURRENT_WORD_EMPTY #
+        FILTER (REGEX(?alias, "^\"%CURRENT_WORD%") || REGEX(?alias, "^<%CURRENT_WORD%"))
+        # ENDIF #
+      } GROUP BY ?qleverui_entity ORDER BY DESC(?qleverui_count)
+
+      # ENDIF #
+    mapViewBaseURL: ''
+  examples:
+  - name: All movies where title matches keywords
+    sort_key: '~'
+    query: |-
+      PREFIX imdb: <https://www.imdb.com/>
+      SELECT ?movie ?title ?rating ?votes WHERE {
+        ?movie imdb:title ?title .
+        ?movie imdb:numVotes ?votes .
+        ?movie imdb:averageRating ?rating .
+        FILTER CONTAINS(?title, "matrix")
+      }
+      ORDER BY DESC(?votes)
+  - name: Films directed by Quentin Tarantino (using SERVICE)
+    sort_key: '~'
+    query: |-
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX imdb: <https://www.imdb.com/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?movie ?title ?rating ?votes WHERE {
+        ?movie imdb:title ?title .
+        ?movie imdb:id ?imdb_id .
+        ?movie imdb:numVotes ?votes .
+        ?movie imdb:averageRating ?rating .
+        SERVICE <https://qlever.cs.uni-freiburg.de/api/wikidata> {
+          ?imdb_id ^wdt:P345/wdt:P57/@en@rdfs:label "Quentin Tarantino"@en .
+        }
+      }
+      ORDER BY DESC(?votes)
+  - name: SERVICE query (for testing purposes)
+    sort_key: '~'
+    query: |-
+      PREFIX imdb: <https://www.imdb.com/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      SELECT ?movie ?imdb_id ?title ?votes ?rating WHERE {
+        ?movie imdb:id ?imdb_id .
+        ?movie imdb:title ?title .
+        ?movie imdb:numVotes ?votes .
+        ?movie imdb:averageRating ?rating .
+        SERVICE <https://qlever.cs.uni-freiburg.de/api/wikidata> {
+        SELECT ?imdb_id WHERE { ?film wdt:P31 wd:Q11424 . ?film wdt:P57 wd:Q3772 . ?film wdt:P345 ?imdb_id }
+        }
+      }
+      ORDER BY DESC(?votes)

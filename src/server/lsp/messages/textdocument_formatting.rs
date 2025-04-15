@@ -5,7 +5,7 @@ use crate::server::lsp::{
     textdocument::{TextDocumentIdentifier, TextEdit},
 };
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 pub struct FormattingRequest {
     #[serde(flatten)]
     base: RequestMessageBase,
@@ -25,14 +25,14 @@ impl FormattingRequest {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 struct DocumentFormattingParams {
     text_document: TextDocumentIdentifier,
     options: FormattingOptions,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct FormattingOptions {
     pub tab_size: u8,
@@ -40,7 +40,7 @@ pub struct FormattingOptions {
     // TODO: further options
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct FormattingResponse {
     #[serde(flatten)]
     base: ResponseMessageBase,

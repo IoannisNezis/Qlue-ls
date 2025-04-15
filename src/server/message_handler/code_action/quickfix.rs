@@ -1,26 +1,23 @@
-use std::collections::HashMap;
-
-use log::error;
-
+use super::{Diagnostic, DiagnosticCode};
 use crate::server::{
     anaysis::namespace_is_declared,
     common::{serde_parse, UncompactedUrisDiagnosticData},
     lsp::{
         base_types::LSPAny,
-        errors::{ErrorCode, ResponseError},
+        errors::{ErrorCode, LSPError},
         textdocument::{Range, TextEdit},
         CodeAction, CodeActionKind, WorkspaceEdit,
     },
     Server,
 };
-
-use super::{Diagnostic, DiagnosticCode};
+use log::error;
+use std::collections::HashMap;
 
 pub(super) fn get_quickfix(
     server: &Server,
     document_uri: &String,
     diagnostic: Diagnostic,
-) -> Result<Option<CodeAction>, ResponseError> {
+) -> Result<Option<CodeAction>, LSPError> {
     match diagnostic.code {
         Some(DiagnosticCode::String(ref diagnostic_code)) => match diagnostic_code.as_str() {
             "undeclared-prefix" => declare_prefix(server, document_uri, diagnostic),
@@ -39,7 +36,7 @@ fn remove_prefix_declaration(
     _server: &Server,
     document_uri: &String,
     diagnostic: Diagnostic,
-) -> Result<Option<CodeAction>, ResponseError> {
+) -> Result<Option<CodeAction>, LSPError> {
     let mut code_action =
         CodeAction::new("remove prefix declaration", Some(CodeActionKind::QuickFix));
     code_action.add_edit(document_uri, TextEdit::new(diagnostic.range, ""));
@@ -50,7 +47,7 @@ fn shorten_uri(
     server: &Server,
     document_uri: &String,
     diagnostic: Diagnostic,
-) -> Result<Option<CodeAction>, ResponseError> {
+) -> Result<Option<CodeAction>, LSPError> {
     match diagnostic.data {
         Some(data) => {
             let UncompactedUrisDiagnosticData(prefix, namespace, curie): UncompactedUrisDiagnosticData =
@@ -70,7 +67,7 @@ fn shorten_uri(
         }
         None => {
             error!("Data-field is missing in \"uncompacted-uri\" diagnostic");
-            Err(ResponseError::new(
+            Err(LSPError::new(
                 ErrorCode::InvalidRequest,
                 "Data-field is missing in \"uncompacted-uri\" diagnostic",
             ))
@@ -82,9 +79,13 @@ fn declare_prefix(
     server: &Server,
     document_uri: &str,
     diagnostic: Diagnostic,
-) -> Result<Option<CodeAction>, ResponseError> {
+) -> Result<Option<CodeAction>, LSPError> {
     if let Some(LSPAny::String(prefix)) = &diagnostic.data {
-        if let Ok(record) = server.tools.uri_converter.find_by_prefix(&prefix) {
+        if let Some(Ok(record)) = server
+            .state
+            .get_default_converter()
+            .and_then(|converter| Some(converter.find_by_prefix(&prefix)))
+        {
             Ok(Some(CodeAction {
                 title: format!("Declare prefix \"{}\"", prefix),
                 kind: Some(CodeActionKind::QuickFix),
@@ -103,7 +104,7 @@ fn declare_prefix(
             Ok(None)
         }
     } else {
-        Err(ResponseError::new(
+        Err(LSPError::new(
             ErrorCode::InvalidParams,
             "expected prefix in undeclared-prefix data... was disapointed",
         ))

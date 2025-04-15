@@ -1,0 +1,393 @@
+config:
+  backend:
+    id: '15'
+    name: DBLP
+    slug: dblp
+    sortKey: C.1
+    baseUrl: https://qlever.cs.uni-freiburg.de/api/dblp
+    apiToken: ''
+    isDefault: 'False'
+    isNoSlugMode: 'False'
+    maxDefault: '100'
+    filteredLanguage: en
+    dynamicSuggestions: '2'
+    defaultModeTimeout: '5.0'
+    mixedModeTimeout: '1.0'
+    suggestSubjects: |-
+      %PREFIXES%
+      SELECT ?qui_entity (?qui_alias AS ?qui_name) ?qui_alias ?qui_count WHERE {
+        { SELECT ?qui_entity ?qui_alias ?qui_count WHERE {
+          { { SELECT ?qui_entity (COUNT(?paper) AS ?qui_count) WHERE { ?paper dblp:publishedIn ?qui_entity } GROUP BY ?qui_entity } BIND(?qui_entity AS ?qui_alias) } UNION
+          { { SELECT ?qui_entity (COUNT(?paper) AS ?qui_count) WHERE { ?paper dblp:authoredBy ?qui_entity } GROUP BY ?qui_entity } ?qui_entity rdfs:label ?qui_alias } UNION
+          { { SELECT ?qui_entity (COUNT(?author) AS ?qui_count) WHERE { ?qui_entity dblp:authoredBy ?author } GROUP BY ?qui_entity } ?qui_entity dblp:title ?qui_alias }
+        } INTERNAL SORT BY ?qui_alias }
+        FILTER REGEX(STR(?qui_alias), "^%CURRENT_WORD%")
+      } ORDER BY DESC(?qui_count)
+    suggestPredicates: |-
+      %PREFIXES%
+      SELECT ?qui_entity ?qui_name ?qui_alias ?qui_count ?qui_reversed WHERE {
+        # IF !CURRENT_SUBJECT_VARIABLE #
+        { { SELECT ?qui_entity (COUNT(?qui_object) AS ?qui_count)
+          WHERE { %CURRENT_SUBJECT% ?qui_entity ?qui_object  }
+          GROUP BY ?qui_entity } BIND (0 AS ?qui_reversed) }
+        UNION
+        { { SELECT ?qui_entity (COUNT(?qui_subject) AS ?qui_count)
+          WHERE { ?qui_subject ?qui_entity %CURRENT_SUBJECT%  }
+          GROUP BY ?qui_entity } BIND (1 AS ?qui_reversed) }
+        # ENDIF #
+        # IF CURRENT_SUBJECT_VARIABLE AND CONNECTED_TRIPLES_EMPTY #
+        { SELECT ?qui_entity (COUNT(?qui_entity) AS ?qui_count)
+          WHERE { ?qui_subject ?qui_entity ?qui_object }
+          GROUP BY ?qui_entity } BIND (0 AS ?qui_reversed)
+        # ENDIF #
+        # IF CURRENT_SUBJECT_VARIABLE AND !CONNECTED_TRIPLES_EMPTY #
+        { SELECT ?qui_entity (COUNT(DISTINCT %CURRENT_SUBJECT%) AS ?qui_count)
+          WHERE { %CONNECTED_TRIPLES% %CURRENT_SUBJECT% ?qui_entity ?qui_object }
+          GROUP BY ?qui_entity } BIND (0 AS ?qui_reversed)
+        # ENDIF #
+        BIND (?qui_entity AS ?qui_name)
+        # IF !CURRENT_WORD_EMPTY #
+        FILTER REGEX(STR(?qui_name), "%CURRENT_WORD%", "i")
+        # ENDIF #
+      } ORDER BY DESC(?qui_count)
+    suggestObjects: |-
+      %PREFIXES%
+      # IF CURRENT_WORD_EMPTY #
+      SELECT ?qui_entity ?qui_name ?qui_alias ?qui_count WHERE {
+        { SELECT ?qui_entity (COUNT(?qui_entity) AS ?qui_count) WHERE {
+          %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity .
+        } GROUP BY ?qui_entity }
+        OPTIONAL { ?qui_entity rdfs:label ?qui_alias }
+        BIND (COALESCE(?qui_alias, ?qui_entity) AS ?qui_name)
+      } ORDER BY DESC(?qui_count)
+      # ELSE #
+      SELECT ?qui_entity ?qui_name ?qui_alias ?qui_count WHERE {
+        { SELECT ?qui_entity (COUNT(?qui_entity) AS ?qui_count) WHERE {
+          %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity .
+        } GROUP BY ?qui_entity }
+        OPTIONAL { ?qui_entity rdfs:label ?qui_alias }
+        BIND (?qui_entity AS ?qui_name)
+        FILTER (REGEX(STR(?qui_name), "^%CURRENT_WORD%") || REGEX(STR(?qui_alias), "^%CURRENT_WORD%"))
+      } ORDER BY DESC(?qui_count)
+      # ENDIF #
+    subjectName: ''
+    alternativeSubjectName: ''
+    predicateName: ''
+    alternativePredicateName: ''
+    objectName: ''
+    alternativeObjectName: ''
+    replacePredicates: ''
+    supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
+    supportedFunctions: asc, desc, avg, values, score, text, count, sample, min, max, average, concat, group_concat, langMatches, lang, regex, sum, dist, contains, str, strlen, substr, strstarts, strends, strbefore, strafter, contains, year, month, day, rand, abs, ceil, floor, round, log, exp, sqrt, sin, cos, tan, if, coalesce, bound, concat, replace, encode_for_uri, isiri, isblank, isliteral, isNumeric, bound
+    supportedPredicateSuggestions: ''
+    suggestPrefixnamesForPredicates: 'True'
+    fillPrefixes: 'True'
+    filterEntities: 'False'
+    suggestedPrefixes: |-
+      PREFIX dblps: <https://dblp.org/rdf/schema-2020-07-01#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX dblp: <https://dblp.org/rdf/schema#>
+      PREFIX datacite: <http://purl.org/spar/datacite/>
+      PREFIX literal: <http://purl.org/spar/literal/>
+      PREFIX owl: <http://www.w3.org/2002/07/owl#>
+      PREFIX terms: <http://purl.org/dc/terms/>
+      PREFIX cito: <http://purl.org/spar/cito/>
+      PREFIX bibtex: <http://purl.org/net/nknouf/ns/bibtex#>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX schema: <http://schema.org/>
+      PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    suggestionEntityVariable: ?qui_entity
+    suggestionNameVariable: ?qui_name
+    suggestionAltNameVariable: ?qui_alias
+    suggestionReversedVariable: ?qui_reversed
+    frequentPredicates: rdfs:label dblp:authoredBy
+    frequentPatternsWithoutOrder: ''
+    entityNameAndAliasPattern: ?qui_entity rdfs:label ?alias
+    entityScorePattern: '{ SELECT ?qui_entity ?name (COUNT(?qui_tmp) AS ?count) WHERE { ?qui_entity @en@rdfs:label ?name . ?qui_entity ?predicate ?qui_tmp } GROUP BY ?qui_entity ?name }'
+    predicateNameAndAliasPatternWithoutContext: BIND(?qui_entity AS ?name) BIND(?qui_entity AS ?alias)
+    predicateNameAndAliasPatternWithContext: BIND(?qui_entity AS ?name) BIND(?qui_entity AS ?alias)
+    entityNameAndAliasPatternDefault: BIND(?qui_entity AS ?name) BIND(?qui_entity AS ?alias)
+    predicateNameAndAliasPatternWithoutContextDefault: BIND(?qui_entity AS ?name) BIND(?qui_entity AS ?alias)
+    predicateNameAndAliasPatternWithContextDefault: BIND(?qui_entity AS ?name) BIND(?qui_entity AS ?alias)
+    warmupQuery1: |-
+      SELECT ?qui_entity ?qui_name ?qui_alias ?qui_count WHERE {
+        { SELECT ?qui_entity (COUNT(?predicate) AS ?qui_count) WHERE { ?qui_entity ?predicate ?qui_tmp } GROUP BY ?qui_entity }
+        ?qui_entity rdfs:label ?qui_name .
+        BIND (?qui_name AS ?qui_alias)
+      } ORDER BY DESC(?qui_count)
+    warmupQuery2: |-
+      SELECT ?qui_entity ?qui_name ?qui_alias ?qui_count WHERE {
+        { SELECT ?qui_entity (COUNT(?predicate) AS ?qui_count) WHERE { ?qui_entity ?predicate ?qui_tmp } GROUP BY ?qui_entity }
+        ?qui_entity rdfs:label ?qui_name .
+        BIND (?qui_name AS ?qui_alias)
+      } INTERNAL SORT BY ?qui_alias
+    warmupQuery3: |-
+      SELECT ?qui_entity (COALESCE(?qui_name_tmp, ?qui_entity) AS ?qui_name) (?qui_name AS ?qui_alias) ?qui_count WHERE {
+        { SELECT ?qui_entity (COUNT(DISTINCT ?qui_tmp_1) AS ?qui_count) WHERE { ?qui_tmp_1 ?qui_entity ?qui_tmp_2 } GROUP BY ?qui_entity }
+        OPTIONAL { ?qui_entity rdfs:label ?qui_name_tmp }
+      } ORDER BY DESC(?qui_count)
+    warmupQuery4: |-
+      SELECT ?qui_entity ?name ?alias ?count_1 WHERE {
+        { { SELECT ?qui_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qui_entity ?object } GROUP BY ?qui_entity }
+          %PREDICATE_NAME_AND_ALIAS_PATTERN_WITHOUT_CONTEXT%
+        } UNION {
+        { { SELECT ?qui_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qui_entity ?object } GROUP BY ?qui_entity }
+          %PREDICATE_NAME_AND_ALIAS_PATTERN_WITHOUT_CONTEXT_DEFAULT%
+        } } }
+    warmupQuery5: |-
+      SELECT ?qui_entity ?name ?alias ?count_1 WHERE {
+        { { SELECT ?qui_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qui_entity ?object } GROUP BY ?qui_entity }
+          %PREDICATE_NAME_AND_ALIAS_PATTERN_WITH_CONTEXT%
+        } UNION {
+        { { SELECT ?qui_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qui_entity ?object } GROUP BY ?qui_entity }
+          %PREDICATE_NAME_AND_ALIAS_PATTERN_WITH_CONTEXT_DEFAULT%
+        } } }
+    suggestSubjectsContextInsensitive: |-
+      %PREFIXES%
+      SELECT ?qui_entity (?qui_alias AS ?qui_name) ?qui_alias ?qui_count WHERE {
+        { SELECT ?qui_entity ?qui_alias ?qui_count WHERE {
+          { { SELECT ?qui_entity (COUNT(?paper) AS ?qui_count) WHERE { ?paper dblp:publishedIn ?qui_entity } GROUP BY ?qui_entity } BIND(?qui_entity AS ?qui_alias) } UNION
+          { { SELECT ?qui_entity (COUNT(?paper) AS ?qui_count) WHERE { ?paper dblp:authoredBy ?qui_entity } GROUP BY ?qui_entity } ?qui_entity rdfs:label ?qui_alias } UNION
+          { { SELECT ?qui_entity (COUNT(?author) AS ?qui_count) WHERE { ?qui_entity dblp:authoredBy ?author } GROUP BY ?qui_entity } ?qui_entity dblp:title ?qui_alias }
+        } INTERNAL SORT BY ?qui_alias }
+        FILTER REGEX(STR(?qui_alias), "^%CURRENT_WORD%")
+      } ORDER BY DESC(?qui_count)
+    suggestPredicatesContextInsensitive: |-
+      %PREFIXES%
+      SELECT ?qui_entity ?qui_name ?qui_alias ?qui_count WHERE {
+        { SELECT ?qui_entity (COUNT(?qui_entity) AS ?qui_count)
+          WHERE { ?qui_subject ?qui_entity ?qui_object }
+          GROUP BY ?qui_entity } BIND (0 AS ?qui_reversed)
+        BIND (?qui_entity AS ?qui_name)
+        # IF !CURRENT_WORD_EMPTY #
+        FILTER REGEX(STR(?qui_name), "%CURRENT_WORD%", "i")
+        # ENDIF #
+      } ORDER BY DESC(?qui_count)
+    suggestObjectsContextInsensitive: |-
+      %PREFIXES%
+      # IF CURRENT_WORD_EMPTY #
+      SELECT ?qui_entity ?qui_name ?qui_alias ?qui_count WHERE {
+        { SELECT ?qui_entity (COUNT(?qui_entity) AS ?qui_count) WHERE {
+          %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity .
+        } GROUP BY ?qui_entity }
+        OPTIONAL { ?qui_entity rdfs:label ?qui_alias }
+        BIND (COALESCE(?qui_alias, ?qui_entity) AS ?qui_name)
+      } ORDER BY DESC(?qui_count)
+      # ELSE #
+      SELECT ?qui_entity ?qui_name ?qui_alias ?qui_count WHERE {
+        { SELECT ?qui_entity (COUNT(?qui_entity) AS ?qui_count) WHERE {
+          %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity .
+        } GROUP BY ?qui_entity }
+        OPTIONAL { ?qui_entity rdfs:label ?qui_alias }
+        BIND (?qui_entity AS ?qui_name)
+        FILTER (REGEX(STR(?qui_name), "^%CURRENT_WORD%") || REGEX(STR(?qui_alias), "^%CURRENT_WORD%"))
+      } ORDER BY DESC(?qui_count)
+      # ENDIF #
+    mapViewBaseURL: ''
+  examples:
+  - name: Most prolific authors about autonomous driving
+    sort_key: '~'
+    query: |-
+      PREFIX dblp: <https://dblp.org/rdf/schema#>
+      SELECT ?name (COUNT(?paper) as ?count)  WHERE {
+        ?paper dblp:title ?title .
+        ?paper dblp:authoredBy ?author .
+        ?author dblp:primaryCreatorName ?name .
+        [ ql:contains-entity ?title; ql:contains-word "auto* driving" ]
+      }
+      GROUP BY ?author ?name
+      ORDER BY DESC(?count)
+  - name: Most prolific conferences on autonomous driving
+    sort_key: '~'
+    query: |-
+      PREFIX dblp: <https://dblp.org/rdf/schema#>
+      SELECT ?venue (COUNT(?paper) as ?count) WHERE {
+        ?paper dblp:title ?title .
+        ?paper dblp:publishedIn ?venue .
+        [ ql:contains-entity ?title; ql:contains-word "auto* driving" ]
+      }
+      GROUP BY ?venue
+      ORDER BY DESC(?count)
+  - name: Author names matching REGEX
+    sort_key: '~'
+    query: |-
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX dblp: <https://dblp.org/rdf/schema#>
+      SELECT ?author ?author_label ?count WHERE {
+        { SELECT ?author ?author_label (COUNT(?paper) as ?count) WHERE {
+          ?paper dblp:authoredBy ?author .
+          ?paper dblp:publishedIn "SIGIR" .
+          ?author rdfs:label ?author_label .
+        } GROUP BY ?author ?author_label }
+        FILTER REGEX(STR(?author_label), "M.*D.*", "i")
+      }
+      ORDER BY DESC(?count)
+  - name: All predicates, ordered by number of subjects
+    sort_key: '~'
+    query: |-
+      SELECT ?predicate (COUNT(?subject) as ?count) WHERE {
+        ?subject ?predicate ?object
+      }
+      GROUP BY ?predicate
+      ORDER BY DESC(?count)
+  - name: All papers published in SIGIR
+    sort_key: '~'
+    query: |-
+      PREFIX dblp: <https://dblp.org/rdf/schema#>
+      SELECT ?paper ?title ?year WHERE {
+        ?paper dblp:title ?title .
+        ?paper dblp:publishedIn "SIGIR" .
+        ?paper dblp:yearOfPublication ?year
+      }
+      ORDER BY DESC(?year)
+  - name: Number of papers by venue
+    sort_key: '~'
+    query: |-
+      PREFIX dblp: <https://dblp.org/rdf/schema#>
+      SELECT ?venue (COUNT(?paper) as ?count) WHERE {
+        ?paper dblp:publishedIn ?venue .
+      }
+      GROUP BY ?venue
+      ORDER BY DESC(?count)
+  - name: Name search, ranked
+    sort_key: '~'
+    query: |-
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX dblp: <https://dblp.org/rdf/schema#>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      SELECT ?author_name (COUNT(?paper) as ?count_paper) WHERE {
+        ?author rdf:type dblp:Person .
+        ?author rdfs:label ?author_name .
+        ?paper dblp:authoredBy ?author .
+        FILTER CONTAINS(?author_name, "mich")
+      }
+      GROUP BY ?author_name
+      ORDER BY DESC(?count_paper)
+  - name: All types, sorted by their frequency
+    sort_key: '~'
+    query: |-
+      SELECT ?type (COUNT(?subject) as ?count) WHERE {
+        ?subject a ?type
+      }
+      GROUP BY ?type
+      ORDER BY DESC(?count)
+  - name: Average number of authors by year
+    sort_key: '~'
+    query: |-
+      PREFIX dblp: <https://dblp.org/rdf/schema#>
+      SELECT ?year (COUNT(?author)/COUNT(DISTINCT ?paper) AS ?authors_per_paper) WHERE {
+        ?paper dblp:authoredBy ?author .
+        ?paper dblp:yearOfPublication ?year .
+        # FILTER (?year != "2023")
+      }
+      GROUP BY ?year
+      ORDER BY DESC(?year)
+  - name: All papers in DBLP until 1940
+    sort_key: '~'
+    query: |-
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX dblp: <https://dblp.org/rdf/schema#>
+      PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+      SELECT ?title ?author ?author_label ?year WHERE {
+        ?paper dblp:title ?title .
+        ?paper dblp:authoredBy ?author .
+        ?paper dblp:yearOfPublication ?year .
+        ?author rdfs:label ?author_label .
+        FILTER (?year <= "1940"^^xsd:gYear)
+      }
+      ORDER BY ASC(?year) ASC(?title)
+  - name: All predicates and their absolute and relative size
+    sort_key: AA.1
+    query: |-
+      SELECT ?p ?count ?percent WHERE {
+        { SELECT ?p (COUNT(?p) AS ?count) WHERE { ?s ?p ?o } GROUP BY ?p }
+        BIND(100 * ?count / SUM(?count) AS ?percent)
+      }
+      ORDER BY DESC(?count)
+  - name: Birth place of all persons with a Wikidata link (using SERVICE)
+    sort_key: '~'
+    query: |-
+      PREFIX dblp: <https://dblp.org/rdf/schema#>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      SELECT ?person_name ?person_wikidata_id ?place_of_birth (COUNT(DISTINCT ?paper_title) AS ?count) ?coordinates WHERE {
+        ?person_dblp rdf:type dblp:Person .
+        ?person_dblp dblp:wikidata ?person_wikidata_id .
+        ?person_dblp ^dblp:authoredBy/dblp:title ?paper_title .
+        ?person_dblp rdfs:label ?person_name .
+        ?text ql:contains-entity ?paper_title .
+        ?text ql:contains-word "graph algo*" .
+        SERVICE <https://qlever.cs.uni-freiburg.de/api/wikidata> {
+          SELECT ?person_wikidata_id ?place_of_birth ?coordinates {
+          ?person_wikidata_id wdt:P2456 ?person_dblp_id .
+          ?person_wikidata_id wdt:P19 ?place_of_birth_id .
+          ?place_of_birth_id @en@rdfs:label ?place_of_birth .
+            ?place_of_birth_id wdt:P625 ?coordinates
+        }
+        }
+      }
+      GROUP BY ?person_name ?person_wikidata_id ?place_of_birth ?coordinates
+      ORDER BY DESC(?count)
+  - name: Birth places for particular venues (using SERVICE)
+    sort_key: '~'
+    query: |-
+      PREFIX dblp: <https://dblp.org/rdf/schema#>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      SELECT ?person_name ?person_wikidata_id ?place_of_birth (COUNT(DISTINCT ?paper) AS ?count) ?coordinates WHERE {
+        ?person_dblp rdf:type dblp:Person .
+        ?person_dblp dblp:wikidata ?person_wikidata_id .
+        ?person_dblp ^dblp:authoredBy ?paper .
+        ?paper dblp:publishedIn ?venue .
+        ?person_dblp rdfs:label ?person_name .
+        FILTER REGEX(?venue, "SIGIR|CIKM|ECIR")
+        SERVICE <https://qlever.cs.uni-freiburg.de/api/wikidata> {
+          SELECT ?person_wikidata_id ?place_of_birth ?coordinates {
+            ?person_wikidata_id wdt:P2456 ?person_dblp_id .
+            ?person_wikidata_id wdt:P19 ?place_of_birth_id .
+            ?place_of_birth_id @en@rdfs:label ?place_of_birth .
+            ?place_of_birth_id wdt:P625 ?coordinates
+          }
+        }
+      }
+      GROUP BY ?person_name ?person_wikidata_id ?place_of_birth ?coordinates
+      HAVING (?count > 10)
+      ORDER BY DESC(?count)
+  - name: Affiliations by conference (using SERVICE)
+    sort_key: '~'
+    query: |-
+      PREFIX dblp: <https://dblp.org/rdf/schema#>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      SELECT ?affiliation (COUNT(?venue) AS ?count) (GROUP_CONCAT(DISTINCT ?person_name) AS ?people) ?coordinates WHERE {
+        ?person_dblp rdf:type dblp:Person .
+        ?person_dblp dblp:wikidata ?person_wikidata_id .
+        ?person_dblp ^dblp:authoredBy/dblp:publishedIn ?venue .
+        ?person_dblp rdfs:label ?person_name .
+        FILTER REGEX(?venue, "SIGIR|CIKM|ECIR")
+        SERVICE <https://qlever.cs.uni-freiburg.de/api/wikidata> {
+          SELECT ?person_wikidata_id ?affiliation ?coordinates {
+            ?person_wikidata_id wdt:P2456 ?person_dblp_id .
+            ?person_wikidata_id wdt:P108 ?affiliation_id .
+            ?affiliation_id @en@rdfs:label ?affiliation .
+            ?affiliation_id wdt:P625 ?coordinates
+          }
+        }
+      }
+      GROUP BY ?affiliation ?coordinates
+      HAVING (?count > 10)
+      ORDER BY DESC(?count)
+  - name: All papers with their title (large result)
+    sort_key: '~'
+    query: |-
+      PREFIX dblp: <https://dblp.org/rdf/schema#>
+      SELECT ?paper ?title WHERE {
+        ?paper dblp:title ?title .
+      }

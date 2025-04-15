@@ -1,5 +1,5 @@
 <nav class="border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
-    <div class="mx-auto flex max-w-screen-xl flex-wrap items-center justify-between p-4">
+    <div class="mx-auto flex max-w-(--breakpoint-xl) flex-wrap items-center justify-between p-4">
         <a href="/" class="flex items-center space-x-3 rtl:space-x-reverse">
             <img src="favicon.png" class="logo h-10" alt="Logo" />
             <span class="self-center whitespace-nowrap text-2xl font-semibold dark:text-[#d79921]">

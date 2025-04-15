@@ -1,0 +1,513 @@
+config:
+  backend:
+    id: '32'
+    name: UniProt
+    slug: uniprot
+    sortKey: B.4
+    baseUrl: https://qlever.cs.uni-freiburg.de/api/uniprot
+    apiToken: aof4Ad
+    isDefault: 'False'
+    isNoSlugMode: 'False'
+    maxDefault: '100'
+    filteredLanguage: en
+    dynamicSuggestions: '2'
+    defaultModeTimeout: '30.0'
+    mixedModeTimeout: '1.0'
+    suggestSubjects: |-
+      %PREFIXES%
+      # IF CURRENT_WORD_EMPTY #
+
+      # ELSE #
+
+      SELECT ?qleverui_entity (SAMPLE(?name) AS ?qleverui_name) (SAMPLE(?alias) AS ?qleverui_alias) (SAMPLE(?count) AS ?qleverui_count) WHERE {
+        { %WARMUP_QUERY_2% }
+        # IF !CURRENT_WORD_EMPTY #
+        FILTER REGEX(STR(?alias), "^%CURRENT_WORD%")
+        # ENDIF #
+      } GROUP BY ?qleverui_entity ORDER BY DESC(?qleverui_count)
+
+      # ENDIF #
+    suggestPredicates: |-
+      %PREFIXES%
+      # IF !CURRENT_SUBJECT_VARIABLE #
+
+      SELECT ?qui_entity (MIN(?name) as ?qui_name) (MIN(?alias) as ?qui_alias) (SAMPLE(?count_2) as ?qui_count) ?qui_reversed WHERE {
+        { { SELECT ?qui_entity (COUNT(?qui_tmp) AS ?count_2)
+          WHERE { %CURRENT_SUBJECT% ?qui_entity ?qui_tmp  }
+          GROUP BY ?qui_entity }
+        BIND (0 AS ?qui_reversed) }
+        UNION
+        { { SELECT ?qui_entity (COUNT(?qui_tmp) AS ?count_2)
+          WHERE { ?qui_tmp ?qui_entity %CURRENT_SUBJECT%  }
+          GROUP BY ?qui_entity }
+          BIND (1 AS ?qui_reversed) }
+        { %WARMUP_QUERY_5% }
+        # IF !CURRENT_WORD_EMPTY #
+        FILTER REGEX(STR(?qui_entity), "%CURRENT_WORD%", "i")
+        # ENDIF #
+      } GROUP BY ?qui_entity ?qui_reversed ORDER BY DESC(?qui_count)
+
+      # ENDIF #
+      # IF CONNECTED_TRIPLES_EMPTY AND CURRENT_SUBJECT_VARIABLE #
+
+      SELECT ?qui_entity (?qui_entity AS ?qui_name) (?qui_entity AS ?qui_alias) (?count AS ?qui_count) WHERE {
+        { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count) WHERE { ?qui_subject ?qui_entity ?qui_object } GROUP BY ?qui_entity }
+        # IF !CURRENT_WORD_EMPTY #
+        FILTER REGEX(STR(?qui_entity), "%CURRENT_WORD%", "i")
+        # ENDIF #
+      } ORDER BY DESC(?qui_count)
+
+      # ENDIF #
+
+      # IF !CONNECTED_TRIPLES_EMPTY AND CURRENT_SUBJECT_VARIABLE #
+
+      SELECT ?qui_entity (?qui_entity AS ?qui_name) (?qui_entity AS ?qui_alias) (?count AS ?qui_count) WHERE {
+        { SELECT ?qui_entity (COUNT(DISTINCT %CURRENT_SUBJECT%) AS ?count)
+          WHERE { %CONNECTED_TRIPLES% %CURRENT_SUBJECT% ?qui_entity ?qui_object }
+          GROUP BY ?qui_entity }
+        # IF !CURRENT_WORD_EMPTY #
+        FILTER REGEX(STR(?qui_entity), "%CURRENT_WORD%", "i")
+        # ENDIF #
+      } ORDER BY DESC(?qui_count)
+
+      # ENDIF #
+    suggestObjects: |-
+      %PREFIXES%
+      SELECT ?qui_entity (MIN(?name) AS ?qui_name) (MIN(?alias) AS ?qui_alias) (MAX(?count) AS ?qui_count) WHERE {
+        {
+          { SELECT ?qui_entity ?name ?alias ?count WHERE {
+            { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count) WHERE {
+              # %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity .
+              %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity
+            } GROUP BY ?qui_entity }
+            ?qui_entity rdfs:label ?name BIND(?name AS ?alias)
+            # IF !CURRENT_WORD_EMPTY #
+            FILTER REGEX(STR(?alias), "^%CURRENT_WORD%")
+            # ENDIF #
+          } }
+        } UNION {
+         { SELECT ?qui_entity ?name ?alias ?count WHERE {
+            { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count) WHERE {
+              # %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity .
+              %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity
+            } GROUP BY ?qui_entity }
+            ?qui_entity up:scientificName ?name BIND(?name AS ?alias)
+            # IF !CURRENT_WORD_EMPTY #
+            FILTER REGEX(STR(?alias), "^%CURRENT_WORD%")
+            # ENDIF #
+          } }
+        } UNION {
+          { SELECT ?qui_entity ?name ?alias ?count WHERE {
+            { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count) WHERE {
+              # %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity .
+              %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity
+            } GROUP BY ?qui_entity }
+            BIND(?qui_entity AS ?name) BIND(?qui_entity AS ?alias)
+            # IF !CURRENT_WORD_EMPTY #
+            FILTER REGEX(STR(?alias), "^%CURRENT_WORD%")
+            # ENDIF #
+          } }
+        }
+      } GROUP BY ?qui_entity ORDER BY DESC(?qui_count)
+    subjectName: ?qleverui_entity up:scientificName ?qleverui_name
+    alternativeSubjectName: ''
+    predicateName: ''
+    alternativePredicateName: ''
+    objectName: ?qleverui_entity up:scientificName ?qleverui_name
+    alternativeObjectName: ''
+    replacePredicates: ''
+    supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
+    supportedFunctions: asc, desc, avg, values, score, text, count, sample, min, max, average, concat, group_concat, langMatches, lang, regex, sum, dist, contains, str, strlen, substr, strstarts, strends, strbefore, strafter, contains, year, month, day, rand, abs, ceil, floor, round, log, exp, sqrt, sin, cos, tan, if, coalesce, bound, concat, replace, encode_for_uri, isiri, isblank, isliteral, isNumeric, bound
+    supportedPredicateSuggestions: ''
+    suggestPrefixnamesForPredicates: 'True'
+    fillPrefixes: 'True'
+    filterEntities: 'False'
+    suggestedPrefixes: |-
+      @prefix annotation: <http://purl.uniprot.org/annotation/> .
+      @prefix bibo:  <http://purl.org/ontology/bibo/> .
+      @prefix busco: <http://busco.ezlab.org/schema#> .
+      @prefix chebi: <http://purl.obolibrary.org/obo/CHEBI_> .
+      @prefix citation: <http://purl.uniprot.org/citations/> .
+      @prefix cito:  <http://purl.org/spar/cito/> .
+      @prefix dcat:  <http://www.w3.org/ns/dcat#> .
+      @prefix dcmit: <http://purl.org/dc/dcmitype/> .
+      @prefix dcterms: <http://purl.org/dc/terms/> .
+      @prefix disease: <http://purl.uniprot.org/diseases/> .
+      @prefix ECO:   <http://purl.obolibrary.org/obo/ECO_> .
+      @prefix embl-cds: <http://purl.uniprot.org/embl-cds/> .
+      @prefix ensembl: <http://rdf.ebi.ac.uk/resource/ensembl/> .
+      @prefix enzyme: <http://purl.uniprot.org/enzyme/> .
+      @prefix faldo: <http://biohackathon.org/resource/faldo#> .
+      @prefix foaf:  <http://xmlns.com/foaf/0.1/> .
+      @prefix go:    <http://purl.obolibrary.org/obo/GO_> .
+      @prefix hs:    <https://hamap.expasy.org/rdf/vocab#> .
+      @prefix isoform: <http://purl.uniprot.org/isoforms/> .
+      @prefix keywords: <http://purl.uniprot.org/keywords/> .
+      @prefix location: <http://purl.uniprot.org/locations/> .
+      @prefix obo:   <http://purl.obolibrary.org/obo/> .
+      @prefix oboInOwl: <http://www.geneontology.org/formats/oboInOwl#> .
+      @prefix owl:   <http://www.w3.org/2002/07/owl#> .
+      @prefix patent: <http://purl.uniprot.org/EPO/> .
+      @prefix pav:   <http://purl.org/pav/> .
+      @prefix position: <http://purl.uniprot.org/position/> .
+      @prefix prism: <http://prismstandard.org/namespaces/basic/2.0/> .
+      @prefix pubmed: <http://purl.uniprot.org/pubmed/> .
+      @prefix range: <http://purl.uniprot.org/range/> .
+      @prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+      @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+      @prefix rh:    <http://rdf.rhea-db.org/> .
+      @prefix schema: <http://schema.org/> .
+      @prefix sd:    <http://www.w3.org/ns/sparql-service-description#> .
+      @prefix sh:    <http://www.w3.org/ns/shacl#> .
+      @prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+      @prefix sp:    <http://spinrdf.org/sp#> .
+      @prefix ssmRegion: <http://purl.uniprot.org/signatureSequenceMatch/> .
+      @prefix stato: <http://purl.obolibrary.org/obo/STATO_> .
+      @prefix taxon: <http://purl.uniprot.org/taxonomy/> .
+      @prefix tissue: <http://purl.uniprot.org/tissues/> .
+      @prefix uniparc: <http://purl.uniprot.org/uniparc/> .
+      @prefix uniprot: <http://purl.uniprot.org/uniprot/> .
+      @prefix up:    <http://purl.uniprot.org/core/> .
+      @prefix voag:  <http://voag.linkedmodel.org/schema/voag#> .
+      @prefix void:  <http://rdfs.org/ns/void#> .
+      @prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+    suggestionEntityVariable: ?qui_entity
+    suggestionNameVariable: ?qui_name
+    suggestionAltNameVariable: ?qui_alias
+    suggestionReversedVariable: ?qui_reversed
+    frequentPredicates: ''
+    frequentPatternsWithoutOrder: rdfs:label
+    entityNameAndAliasPattern: BIND(?qleverui_entity AS ?name) BIND(?qleverui_entity AS ?alias)
+    entityScorePattern: '{ SELECT ?qleverui_entity (COUNT(?predicate) AS ?count) WHERE { ?qleverui_entity ?predicate ?object } GROUP BY ?qleverui_entity }'
+    predicateNameAndAliasPatternWithoutContext: BIND(?qleverui_entity AS ?name) BIND(?qleverui_entity AS ?alias)
+    predicateNameAndAliasPatternWithContext: BIND(?qleverui_entity AS ?name) BIND(?qleverui_entity AS ?alias)
+    entityNameAndAliasPatternDefault: BIND(?qleverui_entity AS ?name) BIND(?qleverui_entity AS ?alias)
+    predicateNameAndAliasPatternWithoutContextDefault: BIND(?qleverui_entity AS ?name) BIND(?qleverui_entity AS ?alias)
+    predicateNameAndAliasPatternWithContextDefault: BIND(?qleverui_entity AS ?name) BIND(?qleverui_entity AS ?alias)
+    warmupQuery1: |-
+      SELECT ?qleverui_entity (SAMPLE(?name) AS ?qleverui_name) (SAMPLE(?alias) AS ?qleverui_alias) (SAMPLE(?count) AS ?qleverui_count) WHERE {
+        { SELECT ?qleverui_entity ?name ?alias ?count WHERE {
+          %ENTITY_SCORE_PATTERN%
+          %ENTITY_NAME_AND_ALIAS_PATTERN% }
+        ORDER BY ?qleverui_entity }
+      } GROUP BY ?qleverui_entity ORDER BY DESC(?qleverui_count)
+    warmupQuery2: |-
+      SELECT ?qleverui_entity ?name ?alias ?count WHERE {
+        %ENTITY_SCORE_PATTERN%
+        %ENTITY_NAME_AND_ALIAS_PATTERN%
+      } INTERNAL SORT BY ?alias
+    warmupQuery3: |-
+      SELECT ?qleverui_entity ?name ?alias ?count WHERE {
+        %ENTITY_SCORE_PATTERN%
+        %ENTITY_NAME_AND_ALIAS_PATTERN%
+      } INTERNAL SORT BY ?qleverui_entity
+    warmupQuery4: |-
+      SELECT ?qui_entity ?name ?alias ?count WHERE {
+        { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count) WHERE { ?qui_subject ?qui_entity ?qui_object } GROUP BY ?qui_entity }
+        BIND(?qleverui_entity AS ?name) BIND(?qleverui_entity AS ?alias)
+      }
+    warmupQuery5: |-
+      SELECT ?qui_entity ?name ?alias ?count WHERE {
+        { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count) WHERE { ?qui_subject ?qui_entity ?qui_object } GROUP BY ?qui_entity }
+        BIND(?qleverui_entity AS ?name) BIND(?qleverui_entity AS ?alias)
+      }
+    suggestSubjectsContextInsensitive: |-
+      %PREFIXES%
+      # IF CURRENT_WORD_EMPTY #
+
+      # ELSE #
+
+      SELECT ?qleverui_entity (SAMPLE(?name) AS ?qleverui_name) (SAMPLE(?alias) AS ?qleverui_alias) (SAMPLE(?count) AS ?qleverui_count) WHERE {
+        { %WARMUP_QUERY_2% }
+        # IF !CURRENT_WORD_EMPTY #
+        FILTER REGEX(STR(?alias), "^%CURRENT_WORD%")
+        # ENDIF #
+      } GROUP BY ?qleverui_entity ORDER BY DESC(?qleverui_count)
+
+      # ENDIF #
+    suggestPredicatesContextInsensitive: |-
+      %PREFIXES%
+
+      SELECT ?qui_entity (?qui_entity AS ?qui_name) (?qui_entity AS ?qui_alias) (?count AS ?qui_count) WHERE {
+        { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count) WHERE { ?qui_subject ?qui_entity ?qui_object } GROUP BY ?qui_entity }
+        # IF !CURRENT_WORD_EMPTY #
+        FILTER REGEX(STR(?qui_entity), "%CURRENT_WORD%", "i")
+        # ENDIF #
+      } ORDER BY DESC(?qleverui_count)
+    suggestObjectsContextInsensitive: |-
+      %PREFIXES%
+      SELECT ?qui_entity (MIN(?name) AS ?qui_name) (MIN(?alias) AS ?qui_alias) (MAX(?count) AS ?qui_count) WHERE {
+        {
+          { SELECT ?qui_entity ?name ?alias ?count WHERE {
+            { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count) WHERE {
+              %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity
+            } GROUP BY ?qui_entity }
+            ?qui_entity rdfs:label ?name BIND(?name AS ?alias)
+            # IF !CURRENT_WORD_EMPTY #
+            FILTER REGEX(STR(?alias), "^%CURRENT_WORD%")
+            # ENDIF #
+          } }
+        } UNION {
+         { SELECT ?qui_entity ?name ?alias ?count WHERE {
+            { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count) WHERE {
+              %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity
+            } GROUP BY ?qui_entity }
+            ?qui_entity up:scientificName ?name BIND(?name AS ?alias)
+            # IF !CURRENT_WORD_EMPTY #
+            FILTER REGEX(STR(?alias), "^%CURRENT_WORD%")
+            # ENDIF #
+          } }
+        } UNION {
+          { SELECT ?qui_entity ?name ?alias ?count WHERE {
+            { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count) WHERE {
+              %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity
+            } GROUP BY ?qui_entity }
+            BIND(?qui_entity AS ?name) BIND(?qui_entity AS ?alias)
+            # IF !CURRENT_WORD_EMPTY #
+            FILTER REGEX(STR(?alias), "^%CURRENT_WORD%")
+            # ENDIF #
+          } }
+        }
+      } GROUP BY ?qui_entity ORDER BY DESC(?qui_count)
+    mapViewBaseURL: ''
+  examples:
+  - name: '#1: All taxa'
+    sort_key: '~'
+    query: |-
+      PREFIX up: <http://purl.uniprot.org/core/>
+      SELECT ?taxon WHERE {
+        ?taxon a up:Taxon .
+      }
+  - name: '#2: All bacterial taxa and their scientific name'
+    sort_key: '~'
+    query: |-
+      PREFIX up: <http://purl.uniprot.org/core/>
+      PREFIX taxon: <http://purl.uniprot.org/taxonomy/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?taxon ?name WHERE {
+        ?taxon a up:Taxon .
+        ?taxon up:scientificName ?name .
+        ?taxon rdfs:subClassOf taxon:2 .
+      }
+  - name: '#3: All proteins with their organism and amino acid sequences'
+    sort_key: '~'
+    query: |-
+      PREFIX up: <http://purl.uniprot.org/core/>
+      PREFIX taxon: <http://purl.uniprot.org/taxonomy/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      SELECT ?protein ?organism ?isoform ?aa_sequence WHERE {
+        ?protein a up:Protein .
+        ?protein up:organism ?organism .
+        ?organism rdfs:subClassOf taxon:83333 .
+        ?protein up:sequence ?isoform .
+        ?isoform rdf:value ?aa_sequence .
+      }
+  - name: '#4: The protein with the mnemonic A4_HUMAN'
+    sort_key: '~'
+    query: |-
+      PREFIX up: <http://purl.uniprot.org/core/>
+      SELECT ?protein WHERE {
+        ?protein a up:Protein .
+        ?protein up:mnemonic 'A4_HUMAN'
+      }
+  - name: '#5: Mapping of UniProt to PDB entries using the UniProt cross-references'
+    sort_key: '~'
+    query: |-
+      PREFIX up: <http://purl.uniprot.org/core/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX keywords: <http://purl.uniprot.org/keywords/>
+      SELECT ?protein ?db WHERE {
+        ?protein a up:Protein ;
+          up:classifiedWith keywords:5 ;
+          rdfs:seeAlso ?db .
+        ?db up:database <http://purl.uniprot.org/database/PDB>
+      }
+  - name: '#6: All cross-references to external databases with certain keyword and category'
+    sort_key: '~'
+    query: |-
+      PREFIX up: <http://purl.uniprot.org/core/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX keywords: <http://purl.uniprot.org/keywords/>
+      SELECT DISTINCT ?link WHERE {
+        ?protein a up:Protein .
+        ?protein up:classifiedWith keywords:5 .
+        ?protein rdfs:seeAlso ?link .
+        ?link up:database ?db .
+        ?db up:category '3D structure databases'
+      }
+  - name: '#7: Reviewed proteins with a preferred gene name containing ''DNA'''
+    sort_key: '~'
+    query: |-
+      PREFIX up: <http://purl.uniprot.org/core/>
+      PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+      SELECT ?protein ?name WHERE {
+        ?protein a up:Protein .
+        ?protein up:reviewed true .
+        ?protein up:recommendedName ?recommended .
+        ?recommended up:fullName ?name .
+        ?protein up:encodedBy ?gene .
+        ?gene skos:prefLabel ?text .
+        FILTER REGEX(?text, "DNA")
+      }
+  - name: '#8: Gene name and annotations of all human proteins for a certain disease'
+    sort_key: '~'
+    query: |-
+      PREFIX up: <http://purl.uniprot.org/core/>
+      PREFIX taxon: <http://purl.uniprot.org/taxonomy/>
+      PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?name ?text WHERE {
+        ?protein a up:Protein .
+        ?protein up:organism taxon:9606 .
+        ?protein up:encodedBy ?gene .
+        ?gene skos:prefLabel ?name .
+        ?protein up:annotation ?annotation .
+        ?annotation a up:Disease_Annotation .
+        ?annotation rdfs:comment ?text
+      }
+  - name: '#9: All human proteins with a sequence variant that leads to a ''loss of function'''
+    sort_key: '~'
+    query: |-
+      PREFIX up: <http://purl.uniprot.org/core/>
+      PREFIX taxon: <http://purl.uniprot.org/taxonomy/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?protein ?text WHERE {
+        ?protein a up:Protein .
+        ?protein up:organism taxon:9606 .
+        ?protein up:annotation ?annotation .
+        ?annotation a up:Natural_Variant_Annotation .
+        ?annotation rdfs:comment ?text .
+        FILTER REGEX(?text, "loss of function")
+      }
+  - name: '#10: Human proteins with sequence variant that lead to substitutions'
+    sort_key: '~'
+    query: |-
+      PREFIX up: <http://purl.uniprot.org/core/>
+      PREFIX taxon: <http://purl.uniprot.org/taxonomy/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+      SELECT ?protein ?annotation ?begin ?text WHERE {
+        ?protein a up:Protein ;
+          up:organism taxon:9606 ;
+          up:annotation ?annotation .
+        ?annotation a up:Natural_Variant_Annotation ;
+          rdfs:comment ?text ;
+          up:substitution ?substitution ;
+          up:range ?m1 .
+        ?m1 faldo:begin ?m2 .
+        ?m2 faldo:position ?begin .
+        ?m2 faldo:reference ?sequence .
+        ?sequence rdf:value ?value .
+      }
+  - name: '#11: All proteins with annotated transmembrane regions'
+    sort_key: '~'
+    query: |-
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+      PREFIX up: <http://purl.uniprot.org/core/>
+      SELECT ?protein ?begin ?end WHERE {
+        ?protein rdf:type up:Protein .
+        ?protein up:annotation ?annotation .
+        ?annotation rdf:type up:Transmembrane_Annotation .
+        ?annotation up:range ?range .
+        ?range faldo:begin ?m1 . ?m1 faldo:position ?begin .
+        ?range faldo:end ?m2 . ?m2 faldo:position ?end
+      }
+  - name: All predicates and their relative and absolute size
+    sort_key: '~'
+    query: |-
+      SELECT ?p ?count ?percent WHERE {
+        { SELECT ?p (COUNT(?p) AS ?count) WHERE { ?s ?p ?o } GROUP BY ?p }
+        BIND(100 * ?count / SUM(?count) AS ?percent)
+      }
+      ORDER BY DESC(?count)
+  - name: Breakdown of number of triples by type
+    sort_key: '~'
+    query: |-
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX p: <http://www.wikidata.org/prop/>
+      PREFIX ps: <http://www.wikidata.org/prop/statement/>
+      PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX schema: <http://schema.org/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX prov: <http://www.w3.org/ns/prov#>
+      PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+      PREFIX dcterms: <http://purl.org/dc/terms/>
+      SELECT ?type ?label ?description ?prop ?meta ?truthy (SUM(?count) AS ?sum_count) (SUM(?count) / SAMPLE(?total_count) * 100.0 AS ?percent) WHERE {
+        {
+          SELECT ?p (COUNT(?p) AS ?count) WHERE {
+            ?s ?p ?o
+          }
+          GROUP BY ?p
+        }
+        BIND (<QLever-internal-function/langtag> AS ?langtagPred)
+        BIND (REGEX(?p, "<http://www.wikidata.org/prop/") && !REGEX(?p, "<http://www.wikidata.org/prop/direct") AS ?prop)
+        BIND (REGEX(?p, "<http://www.wikidata.org/prop/direct") && ?p != wdt:P31 && ?p != wdt:P279 AS ?truthy)
+        BIND (?p = rdfs:label || ?p = skos:prefLabel AS ?label)
+        BIND (?p = rdfs:comment AS ?description)
+        BIND (?p = rdf:type AS ?type)
+        BIND (?p = dcterms:creator && !?label && !?description AS ?meta)
+        BIND (?p = ?langtagPred AS ?langtag)
+        BIND (SUM(?count) - SUM(?count * ?langtag) AS ?total_count)
+        BIND (SUM(?count) AS ?very_total_count)
+      }
+      GROUP BY ?prop ?label ?description ?truthy ?type ?meta
+      ORDER BY DESC(?type) DESC(?label) DESC(?description) DESC(?prop) DESC(?meta) DESC(?truthy)
+  - name: Breakdown of number of triples by category
+    sort_key: '~'
+    query: |-
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX up: <http://purl.uniprot.org/core/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+      PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+      SELECT ?category (SUM(?count) as ?sum_count) (SUM(?count) / SAMPLE(?total_count) * 100.0 AS ?_perc ) WHERE {
+        { SELECT ?p (COUNT(?p) AS ?count) WHERE { ?s ?p ?o } GROUP BY ?p }
+        BIND (?p = rdf:predicate || ?p = rdf:object || ?p = rdf:subject as ?prop)
+        BIND (?p = up:organism || ?p = up:sequenceFor || ?p = up:encodedBy || ?p = up:proteome || ?p = faldo:position as ?truthy)
+        BIND (?p = up:structuredName || ?p = skos:prefLabel || ?p = rdfs:label || ?p = up:structuredNameType AS ?label)
+        BIND (?p = rdf:comment AS ?description)
+        BIND (?p = rdf:type AS ?type)
+        BIND (?p = up:attribution || ?p = up:modified || ?p = up:version || ?p = up:created || ?p = up:reportedVersion || ?p = up:obsolete || ?p = faldo:reference || ?p = up:evidence AS ?meta)
+        BIND (SUM(?count) AS ?total_count)
+        VALUES (?prop ?truthy ?label ?description ?type ?meta ?category) {
+          (0 0 0 0 0 0 "other") (1 0 0 0 0 0 "reified") (0 1 0 0 0 0 "normal") (0 0 1 0 0 0 "label")
+        (0 0 0 1 0 0 "description") (0 0 0 0 1 0 "type") (0 0 0 0 0 1 "meta")
+        }
+      }
+      GROUP BY ?category
+  - name: All taxa, ordered by the number of organisms
+    sort_key: '~'
+    query: |-
+      PREFIX up: <http://purl.uniprot.org/core/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX taxon: <http://purl.uniprot.org/taxonomy/>
+      SELECT ?taxon ?name (COUNT(?taxon) as ?count_taxon) WHERE {
+        ?taxon a up:Taxon .
+        ?taxon up:scientificName ?name .
+        ?organism rdfs:subClassOf ?taxon .
+      }
+      GROUP BY ?taxon ?name
+      ORDER BY DESC(?count_taxon)
+  - name: Organisms with their protein sequences
+    sort_key: '~'
+    query: |-
+      PREFIX up: <http://purl.uniprot.org/core/>
+      PREFIX taxon: <http://purl.uniprot.org/taxonomy/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      SELECT ?organism ?organism_name ?protein_count ?sample_protein ?protein_label ?aa_sequence WHERE {
+        { SELECT ?organism (COUNT(?protein) AS ?protein_count) (SAMPLE(?protein) as ?sample_protein) WHERE {
+          ?protein a up:Protein .
+          ?protein up:organism ?organism .
+        } GROUP BY ?organism }
+        ?organism up:scientificName ?organism_name .
+        ?sample_protein rdfs:label ?protein_label .
+        ?sample_protein up:sequence ?isoform .
+        ?isoform rdf:value ?aa_sequence .
+      }
+      ORDER BY DESC(?protein_count)

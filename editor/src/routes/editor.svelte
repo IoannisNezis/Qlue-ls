@@ -6,7 +6,6 @@
         MonacoEditorLanguageClientWrapper
     } from 'monaco-editor-wrapper';
     import type { editor } from 'monaco-editor';
-    import Tree from './tree.svelte';
     import { backends } from '$lib/backends';
 
     let editorContainer: HTMLElement;
@@ -16,7 +15,7 @@
     let content = $state('SELECT * WHERE {\n  \n}');
     let cursorOffset = $state(0);
     // let backend = $state(backends.find((backendConf) => backendConf.default)!.backend);
-    let backend = $state(backends[5].backend);
+    let backend = $state(backends[1].backend);
 
     onMount(async () => {
         const { MonacoEditorLanguageClientWrapper } = await import('monaco-editor-wrapper');
@@ -28,6 +27,7 @@
         await wrapper.initAndStart(wrapperConfig);
         languageClientWrapper = wrapper.getLanguageClientWrapper('sparql');
         let editor = wrapper.getEditor()!;
+
         monaco.editor.onDidChangeMarkers(() => {
             markers = monaco.editor.getModelMarkers({});
         });
@@ -68,9 +68,6 @@
         class="container transition-all {showTree ? 'col-span-2' : 'col-span-3'}"
         bind:this={editorContainer}
     ></div>
-    {#if showTree}
-        <Tree input={content} {cursorOffset}></Tree>
-    {/if}
 
     <!-- svelte-ignore a11y_consider_explicit_label -->
     <button

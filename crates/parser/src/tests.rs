@@ -16,6 +16,20 @@ fn tokenize(input: &str) -> Vec<SyntaxKind> {
 }
 
 #[test]
+fn tokenize_langtag() {
+    let tokens = tokenize(r#""dings"@de "foo"@a-109283"#);
+    assert_eq!(
+        tokens,
+        vec![
+            SyntaxKind::STRING_LITERAL2,
+            SyntaxKind::LANGTAG,
+            SyntaxKind::STRING_LITERAL2,
+            SyntaxKind::LANGTAG
+        ]
+    )
+}
+
+#[test]
 fn tokenize_brack() {
     let tokens = tokenize("[ ] [ ?var ] ");
     assert_eq!(

@@ -298,7 +298,7 @@ pub enum SyntaxKind {
     GROUP_CONCAT,
     #[token("SEPARATOR")]
     SEPARATOR,
-    #[token("LANGTAG")]
+    #[regex("@[a-zA-Z]+(?:-[a-zA-Z0-9]+)*")]
     LANGTAG,
     #[token("DoubleZirkumflex")]
     DoubleZirkumflex,

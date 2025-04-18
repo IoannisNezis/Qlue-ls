@@ -11,7 +11,7 @@ build-native:
 	cargo build --release --bin qlue-ls
 	hyprctl notify 1 1000 0 build done
 
-build-wasm profile="release" target="bundler":
+build-wasm profile="release" target="web":
 	hyprctl notify 1 2000 0 starting build...
 	wasm-pack build --{{profile}} --target {{target}}
 	hyprctl notify 1 1000 0 build done

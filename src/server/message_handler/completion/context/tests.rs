@@ -144,11 +144,22 @@ fn localize_subject_4() {
 }
 
 #[test]
+fn localize_subject_5() {
+    //           0123456789012345
+    let input = "Select * { ?var  }";
+    assert!(match_location_at_offset(
+        input,
+        CompletionLocation::Subject,
+        15
+    ));
+}
+
+#[test]
 fn localize_predicate_1() {
     //           0123456789012345
     let input = "Select * { ?a }";
     assert!(matches!(
-        location(input, 13),
+        location(input, 14),
         CompletionLocation::Predicate(_),
     ));
 }

@@ -154,6 +154,90 @@ npm i qlue-ls
 You will have to wrap this in a Web Worker and provide a language server client.
 There will be more documentation on this in the future...
 
+Until then you can check out the demo in ./editor/
+
+# 🏗 Development Setup
+
+Here is a quick guide to set this project up for development.
+
+## Requirements
+
+ - [rust](https://www.rust-lang.org/tools/install) >= 1.83.0
+ - [wasm-pack](https://rustwasm.github.io/wasm-pack/) >= 0.13.1
+ - [node & npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) >= 22.14.0 & >= 11.3.0
+ - (Optional) [just](https://github.com/casey/just)
+
+## Initial Setup
+
+You will only have to do this once.
+
+### install node dependencies
+
+```bash
+cd editor
+npm install
+```
+
+### build wasm & bindings
+
+If you have [just](https://github.com/casey/just) installed:
+
+```bash
+just build-wasm
+```
+
+If you have [make](https://wiki.ubuntuusers.de/Makefile/) installed:
+
+```bash
+make wasm
+```
+
+If you don't have [just](https://github.com/casey/just) or [make](https://wiki.ubuntuusers.de/Makefile/) installed:
+
+**Install [just](https://github.com/casey/just)**
+
+
+### link against local package
+
+```bash
+cd pkg
+npm link
+cd ../editor
+npm link qlue-ls
+```
+
+## Run application
+
+```bash
+cd editor
+npm run dev
+```
+
+Now the webapp should be running, open the browser on `localhost:5173`.
+
+## Automatically rebuild on change
+
+When developping the cycle is:
+
+- Change the code
+- Compile to wasm (or run tests)
+- Evaluate
+
+To avoid having to run a command each time to Compile I strongly recommend setting up a
+auto runner like [watchexec](https://github.com/watchexec/watchexec).
+
+```bash
+watchexec --restart --exts rs --exts toml just build-wasm
+```
+
+or just:
+
+```bash
+just watch-and-run build-wasm
+```
+
+have fun!
+
 # 🙏 Special Thanks
 
 * [TJ DeVries](https://github.com/tjdevries) for the inspiration and great tutorials

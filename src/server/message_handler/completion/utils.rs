@@ -1,6 +1,8 @@
 use ll_sparql_parser::ast::{QueryUnit, Triple};
 use sparql::results::RDFTerm;
+use std::time::Instant;
 use tera::Context;
+use wasm_bindgen::JsCast;
 
 use crate::server::{
     fetch::fetch_sparql_result,
@@ -39,10 +41,22 @@ pub(super) async fn fetch_online_completions(
             "No default SPARQL backend defined".to_string(),
         ))?
         .url;
+    let performance = js_sys::global()
+        .unchecked_into::<web_sys::WorkerGlobalScope>()
+        .performance()
+        .unwrap();
     log::debug!("Query:\n{}", query);
+    let start = performance.now();
     let result = fetch_sparql_result(url, &query, server.settings.completion.timeout_ms)
         .await
         .map_err(|err| CompletionError::RequestError(err.message))?;
+    let end = performance.now();
+
+    log::debug!(
+        "Query took {:?}ms, returned {} results",
+        (end - start) as i32,
+        result.results.bindings.len()
+    );
     Ok(result
         .results
         .bindings

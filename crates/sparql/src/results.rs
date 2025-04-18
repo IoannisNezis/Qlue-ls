@@ -1,4 +1,7 @@
-use std::{collections::HashMap, fmt::Display};
+use std::{
+    collections::HashMap,
+    fmt::{self, Display},
+};
 
 use serde::Deserialize;
 
@@ -35,22 +38,32 @@ pub enum RDFTerm {
         value: String,
     },
 }
+
 impl Display for RDFTerm {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             RDFTerm::Uri { value } => write!(f, "<{}>", value),
             RDFTerm::Literal {
                 value,
                 lang,
                 datatype,
-            } => match (lang.as_ref(), datatype.as_ref()) {
-                (None, None) => write!(f, "\"{}\"", value),
-                (None, Some(_dt)) => write!(f, "\"{}\"", value),
-                (Some(lang_tag), None) => write!(f, "\"{}\"@{}", value, lang_tag),
-                (Some(_), Some(_)) => {
-                    panic!("No RDFTERm should have a language tag and a datatype")
+            } => {
+                if let Some(lang) = lang {
+                    write!(f, "\"{}\"@{}", value, lang)
+                } else if let Some(datatype) = datatype {
+                    match datatype.as_str() {
+                        "http://www.w3.org/2001/XMLSchema#string" => write!(f, "\"{}\"", value),
+                        "http://www.w3.org/2001/XMLSchema#integer"
+                        | "http://www.w3.org/2001/XMLSchema#int"
+                        | "http://www.w3.org/2001/XMLSchema#decimal"
+                        | "http://www.w3.org/2001/XMLSchema#double"
+                        | "http://www.w3.org/2001/XMLSchema#boolean" => write!(f, "{}", value),
+                        _ => write!(f, "\"{}\"^^<{}>", value, datatype),
+                    }
+                } else {
+                    write!(f, "\"{}\"", value)
                 }
-            },
+            }
             RDFTerm::Bnode { value } => write!(f, "_:{}", value),
         }
     }
@@ -61,6 +74,45 @@ mod test {
     use crate::results::RDFTerm;
 
     use super::SparqlResult;
+
+    #[test]
+    fn test_rdfterm_to_string() {
+        // Test rendering of Uri variant
+        let uri = RDFTerm::Uri {
+            value: "http://example.org/resource".to_string(),
+        };
+        assert_eq!(uri.to_string(), "<http://example.org/resource>");
+
+        // Test rendering of Literal variant with only value
+        let literal_value_only = RDFTerm::Literal {
+            value: "Hello".to_string(),
+            lang: None,
+            datatype: None,
+        };
+        assert_eq!(literal_value_only.to_string(), "\"Hello\"");
+
+        // Test rendering of Literal variant with language
+        let literal_with_lang = RDFTerm::Literal {
+            value: "Bonjour".to_string(),
+            lang: Some("fr".to_string()),
+            datatype: None,
+        };
+        assert_eq!(literal_with_lang.to_string(), "\"Bonjour\"@fr");
+
+        // Test rendering of Literal variant with datatype
+        let literal_with_datatype = RDFTerm::Literal {
+            value: "42".to_string(),
+            lang: None,
+            datatype: Some("http://www.w3.org/2001/XMLSchema#integer".to_string()),
+        };
+        assert_eq!(literal_with_datatype.to_string(), "42");
+
+        // Test rendering of Bnode variant
+        let bnode = RDFTerm::Bnode {
+            value: "b123".to_string(),
+        };
+        assert_eq!(bnode.to_string(), "_:b123");
+    }
 
     #[test]
     fn deserialize() {

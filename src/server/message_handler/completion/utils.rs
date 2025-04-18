@@ -49,10 +49,10 @@ pub(super) async fn fetch_online_completions(
         .into_iter()
         .enumerate()
         .map(|(idx, binding)| {
-            let value = binding
+            let rdf_term = binding
                 .get("qlue_ls_entity")
                 .expect("Every completion query should provide a `qlue_ls_entity`");
-            let (value, import_edit) = compress_rdf_term(server, query_unit, value);
+            let (value, import_edit) = render_rdf_term(server, query_unit, rdf_term);
             let label = binding
                 .get("qlue_ls_label")
                 .map_or(value.clone(), |label| label.to_string());
@@ -77,31 +77,13 @@ pub(super) async fn fetch_online_completions(
         .collect())
 }
 
-/// Get the range the completion is supposed to replace
-/// The context.search_term MUST be not None!
-pub(super) fn get_replace_range(context: &CompletionContext) -> Range {
-    Range {
-        start: context.trigger_textdocument_position,
-        end: Position::new(
-            context.trigger_textdocument_position.line,
-            context.trigger_textdocument_position.character
-                - context
-                    .search_term
-                    .as_ref()
-                    .expect("search_term should be Some")
-                    .chars()
-                    .fold(0, |accu, char| accu + char.len_utf16()) as u32,
-        ),
-    }
-}
-
-pub(super) fn compress_rdf_term(
+fn render_rdf_term(
     server: &Server,
     query_unit: &QueryUnit,
     rdf_term: &RDFTerm,
 ) -> (String, Option<TextEdit>) {
     match rdf_term {
-        RDFTerm::Uri { ref value } => match server.shorten_uri(value) {
+        RDFTerm::Uri { value } => match server.shorten_uri(value) {
             Some((prefix, uri, curie)) => {
                 let prefix_decl_edit = if query_unit.prologue().as_ref().map_or(true, |prologue| {
                     prologue
@@ -125,6 +107,24 @@ pub(super) fn compress_rdf_term(
             None => (rdf_term.to_string(), None),
         },
         _ => (rdf_term.to_string(), None),
+    }
+}
+
+/// Get the range the completion is supposed to replace
+/// The context.search_term MUST be not None!
+pub(super) fn get_replace_range(context: &CompletionContext) -> Range {
+    Range {
+        start: context.trigger_textdocument_position,
+        end: Position::new(
+            context.trigger_textdocument_position.line,
+            context.trigger_textdocument_position.character
+                - context
+                    .search_term
+                    .as_ref()
+                    .expect("search_term should be Some")
+                    .chars()
+                    .fold(0, |accu, char| accu + char.len_utf16()) as u32,
+        ),
     }
 }
 

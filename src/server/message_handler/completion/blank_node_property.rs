@@ -64,7 +64,7 @@ pub(super) async fn completions(
         )
         .await?;
         Ok(CompletionList {
-            is_incomplete: items.len() < server.settings.completion.result_size_limit as usize,
+            is_incomplete: items.len() == server.settings.completion.result_size_limit as usize,
             item_defaults: Some(ItemDefaults {
                 edit_range: None,
                 commit_characters: None,

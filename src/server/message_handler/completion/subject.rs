@@ -46,9 +46,8 @@ pub(super) async fn completions(
                 .await
                 {
                     Ok(online_completions) => {
-                        // TODO: remove magic number: 100 is the maximum number or results...
                         is_incomplete = online_completions.len()
-                            < server.settings.completion.result_size_limit as usize;
+                            == server.settings.completion.result_size_limit as usize;
                         items.extend(online_completions)
                     }
                     Err(err) => {

@@ -50,7 +50,7 @@ pub(super) async fn completions(
 
                 Ok(CompletionList {
                     is_incomplete: items.len()
-                        < server.settings.completion.result_size_limit as usize,
+                        == server.settings.completion.result_size_limit as usize,
                     item_defaults: None,
                     items,
                 })

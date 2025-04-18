@@ -8,6 +8,7 @@ pub(super) fn completions(_context: CompletionContext) -> Result<CompletionList,
         item_defaults: None,
         items: vec![CompletionItem {
             label: "<graph>".to_string(),
+            label_details: None,
             kind: CompletionItemKind::Value,
             detail: Some("hier könnte ihr Graph stehen".to_string()),
             sort_text: None,

@@ -20,6 +20,7 @@ pub(super) fn completions(server: &Server) -> Result<CompletionList, CompletionE
             })
             .map(|backend| CompletionItem {
                 label: backend.name.clone(),
+                label_details: None,
                 kind: CompletionItemKind::Value,
                 detail: Some(backend.url.clone()),
                 sort_text: None,

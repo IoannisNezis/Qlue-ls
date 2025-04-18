@@ -68,6 +68,7 @@ pub(super) async fn completions(
         items.append(&mut vec![
             CompletionItem {
                 label: "FILTER".to_string(),
+                label_details: None,
                 kind: CompletionItemKind::Snippet,
                 detail: Some("Filter the results".to_string()),
                 sort_text: None,
@@ -78,6 +79,7 @@ pub(super) async fn completions(
             },
             CompletionItem {
                 label: "BIND".to_string(),
+                label_details: None,
                 kind: CompletionItemKind::Snippet,
                 detail: Some("Bind a new variable".to_string()),
                 sort_text: None,
@@ -88,6 +90,7 @@ pub(super) async fn completions(
             },
             CompletionItem {
                 label: "VALUES".to_string(),
+                label_details: None,
                 kind: CompletionItemKind::Snippet,
                 detail: Some("Inline data definition".to_string()),
                 sort_text: None,
@@ -98,6 +101,7 @@ pub(super) async fn completions(
             },
             CompletionItem {
                 label: "SERVICE".to_string(),
+                label_details: None,
                 kind: CompletionItemKind::Snippet,
                 detail: Some("Collect data from a fedarated SPARQL endpoint".to_string()),
                 sort_text: None,
@@ -108,6 +112,7 @@ pub(super) async fn completions(
             },
             CompletionItem {
                 label: "MINUS".to_string(),
+                label_details: None,
                 kind: CompletionItemKind::Snippet,
                 detail: Some("Subtract data".to_string()),
                 sort_text: None,
@@ -118,6 +123,7 @@ pub(super) async fn completions(
             },
             CompletionItem {
                 label: "OPTIONAL".to_string(),
+                label_details: None,
                 kind: CompletionItemKind::Snippet,
                 detail: Some("Optional graphpattern".to_string()),
                 sort_text: None,
@@ -128,6 +134,7 @@ pub(super) async fn completions(
             },
             CompletionItem {
                 label: "UNION".to_string(),
+                label_details: None,
                 kind: CompletionItemKind::Snippet,
                 detail: Some("Union of two results".to_string()),
                 sort_text: None,
@@ -138,6 +145,7 @@ pub(super) async fn completions(
             },
             CompletionItem {
                 label: "Sub select".to_string(),
+                label_details: None,
                 kind: CompletionItemKind::Snippet,
                 detail: Some("Sub select query".to_string()),
                 sort_text: None,

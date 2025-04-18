@@ -6,7 +6,7 @@ use crate::server::{
     fetch::fetch_sparql_result,
     lsp::{
         textdocument::{Position, Range, TextEdit},
-        CompletionItem, CompletionItemKind,
+        CompletionItem, CompletionItemKind, CompletionItemLabelDetails,
     },
     Server,
 };
@@ -62,7 +62,8 @@ pub(super) async fn fetch_online_completions(
                 .or(Some(value.clone()));
             CompletionItem {
                 label: format!("{} ", label),
-                detail,
+                label_details: detail.map(|value| CompletionItemLabelDetails { detail: value }),
+                detail: None,
                 sort_text: Some(format!("{:0>5}", idx)),
                 insert_text: None,
                 text_edit: Some(TextEdit {

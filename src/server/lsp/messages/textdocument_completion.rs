@@ -101,6 +101,8 @@ pub struct ItemDefaults {
 #[serde(rename_all = "camelCase")]
 pub struct CompletionItem {
     pub label: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub label_details: Option<CompletionItemLabelDetails>,
     pub kind: CompletionItemKind,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub detail: Option<String>,
@@ -127,6 +129,7 @@ impl CompletionItem {
     ) -> Self {
         Self {
             label: label.to_string(),
+            label_details: None,
             kind,
             detail,
             sort_text,
@@ -136,6 +139,11 @@ impl CompletionItem {
             additional_text_edits,
         }
     }
+}
+
+#[derive(Debug, Serialize, PartialEq)]
+pub struct CompletionItemLabelDetails {
+    pub detail: String,
 }
 
 #[derive(Debug, Serialize_repr, PartialEq)]

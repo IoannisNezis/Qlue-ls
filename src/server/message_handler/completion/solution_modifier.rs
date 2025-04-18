@@ -9,6 +9,7 @@ pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, 
     if context.continuations.contains(&SolutionModifier) {
         items.push(CompletionItem {
             label: "GROUP BY".to_string(),
+            label_details: None,
             kind: CompletionItemKind::Snippet,
             detail: Some("Group the results".to_string()),
             sort_text: None,
@@ -23,6 +24,7 @@ pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, 
     {
         items.push(CompletionItem {
             label: "HAVING".to_string(),
+            label_details: None,
             kind: CompletionItemKind::Snippet,
             detail: Some("Filter Groups".to_string()),
             sort_text: None,
@@ -37,6 +39,7 @@ pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, 
     {
         items.push(CompletionItem {
             label: "ORDER BY".to_string(),
+            label_details: None,
             kind: CompletionItemKind::Snippet,
             detail: Some("Sort the results".to_string()),
             sort_text: None,
@@ -52,6 +55,7 @@ pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, 
     {
         items.push(CompletionItem {
             label: "LIMIT".to_string(),
+            label_details: None,
             kind: CompletionItemKind::Snippet,
             detail: Some("Limit the results".to_string()),
             sort_text: None,
@@ -67,6 +71,7 @@ pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, 
     {
         items.push(CompletionItem {
             label: "OFFSET".to_string(),
+            label_details: None,
             kind: CompletionItemKind::Snippet,
             detail: Some("OFFSET the results".to_string()),
             sort_text: None,

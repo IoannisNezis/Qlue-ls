@@ -4,27 +4,32 @@ use js_sys::JsString;
 use sparql::results::SparqlResult;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
-use web_sys::{Request, RequestInit, RequestMode, Response};
+use web_sys::{AbortSignal, Request, RequestInit, RequestMode, Response};
 
 use super::lsp::errors::{ErrorCode, LSPError};
 
-pub(crate) async fn fetch_sparql_result(url: &str, query: &str) -> Result<SparqlResult, LSPError> {
+pub(crate) async fn fetch_sparql_result(
+    url: &str,
+    query: &str,
+    timeout_ms: u32,
+) -> Result<SparqlResult, LSPError> {
     let opts = RequestInit::new();
     opts.set_method("POST");
     opts.set_body(&JsString::from_str(query).unwrap());
+    opts.set_signal(Some(&AbortSignal::timeout_with_u32(timeout_ms)));
     let request = Request::new_with_str_and_init(url, &opts).map_err(|err| {
         LSPError::new(
             ErrorCode::InternalError,
             &format!("Could not init request:\n{:?}", err),
         )
     })?;
-    request
-        .headers()
+    let headers = request.headers();
+    headers
         .set("Content-Type", "application/sparql-query")
         .map_err(|err| {
             LSPError::new(
                 ErrorCode::InternalError,
-                &format!("Could not set Header:\n{:?}", err),
+                &format!("Could not set Content-Type Header:\n{:?}", err),
             )
         })?;
 

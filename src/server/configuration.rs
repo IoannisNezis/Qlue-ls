@@ -3,6 +3,22 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(default)]
+pub struct CompletionSettings {
+    pub timeout_ms: u32,
+    pub result_size_limit: u32,
+}
+
+impl Default for CompletionSettings {
+    fn default() -> Self {
+        Self {
+            timeout_ms: 5000,
+            result_size_limit: 42,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct FormatSettings {
     pub align_predicates: bool,
     pub align_prefixes: bool,
@@ -32,6 +48,7 @@ impl Default for FormatSettings {
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Settings {
     pub format: FormatSettings,
+    pub completion: CompletionSettings,
 }
 
 fn load_user_configuration() -> Result<Settings, ConfigError> {

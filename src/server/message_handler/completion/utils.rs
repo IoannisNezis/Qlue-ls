@@ -18,9 +18,11 @@ pub(super) async fn fetch_online_completions(
     query_unit: &QueryUnit,
     backend_name: Option<&String>,
     query_template: &str,
-    query_template_context: Context,
+    mut query_template_context: Context,
     range: Range,
 ) -> Result<Vec<CompletionItem>, CompletionError> {
+    query_template_context.insert("limit", &server.settings.completion.result_size_limit);
+    query_template_context.insert("offset", &0);
     let query = server
         .tools
         .tera
@@ -37,7 +39,8 @@ pub(super) async fn fetch_online_completions(
             "No default SPARQL backend defined".to_string(),
         ))?
         .url;
-    let result = fetch_sparql_result(url, &query)
+    log::debug!("Query:\n{}", query);
+    let result = fetch_sparql_result(url, &query, server.settings.completion.timeout_ms)
         .await
         .map_err(|err| CompletionError::RequestError(err.message))?;
     Ok(result

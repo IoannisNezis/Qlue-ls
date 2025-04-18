@@ -46,7 +46,8 @@ pub(super) async fn hover(server: &Server, token: SyntaxToken) -> Result<Option<
             "Could not resolve backend url",
         ))?
         .url;
-    let sparql_response = fetch_sparql_result(backend_url, &query).await?;
+    let sparql_response =
+        fetch_sparql_result(backend_url, &query, server.settings.completion.timeout_ms).await?;
     match sparql_response.results.bindings.first() {
         Some(binding) => binding
             .get("qlue_ls_entity")

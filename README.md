@@ -165,7 +165,8 @@ Here is a quick guide to set this project up for development.
  - [rust](https://www.rust-lang.org/tools/install) >= 1.83.0
  - [wasm-pack](https://rustwasm.github.io/wasm-pack/) >= 0.13.1
  - [node & npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) >= 22.14.0 & >= 11.3.0
- - (Optional) [just](https://github.com/casey/just)
+ - \[Optional\] [just](https://github.com/casey/just)
+ - \[Optional\] [watchexec](https://github.com/watchexec/watchexec)
 
 ## Initial Setup
 

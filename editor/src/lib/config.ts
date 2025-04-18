@@ -85,6 +85,8 @@ export async function buildWrapperConfig(container: HTMLElement, initial: string
                                 }
                         },
                         editorOptions: {
+                                tabCompletion: "on",
+                                suggestOnTriggerCharacters: true,
                                 theme: 'vs-dark',
                                 fontSize: 16,
                                 fontFamily: 'Source Code Pro',

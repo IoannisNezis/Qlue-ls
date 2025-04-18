@@ -37,6 +37,10 @@ pub(super) async fn handle_completion_request(
                         .trigger_character
                         .as_ref()
                         .map_or(false, |tc| tc == "?")
+                    || context
+                        .search_term
+                        .as_ref()
+                        .map_or(false, |search_term| search_term.starts_with("?"))
                 {
                     variable::completions(context)
                 } else {

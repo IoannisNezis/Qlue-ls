@@ -52,7 +52,7 @@ pub(super) async fn fetch_online_completions(
             let rdf_term = binding
                 .get("qlue_ls_entity")
                 .expect("Every completion query should provide a `qlue_ls_entity`");
-            let (value, import_edit) = render_rdf_term(server, query_unit, rdf_term);
+            let (value, import_edit) = render_rdf_term(server, query_unit, rdf_term, backend_name);
             let label = binding
                 .get("qlue_ls_label")
                 .map_or(value.clone(), |label| label.to_string());
@@ -81,9 +81,10 @@ fn render_rdf_term(
     server: &Server,
     query_unit: &QueryUnit,
     rdf_term: &RDFTerm,
+    backend_name: Option<&String>,
 ) -> (String, Option<TextEdit>) {
     match rdf_term {
-        RDFTerm::Uri { value } => match server.shorten_uri(value) {
+        RDFTerm::Uri { value } => match server.shorten_uri(value, backend_name) {
             Some((prefix, uri, curie)) => {
                 let prefix_decl_edit = if query_unit.prologue().as_ref().map_or(true, |prologue| {
                     prologue

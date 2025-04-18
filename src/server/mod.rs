@@ -139,8 +139,14 @@ impl Server {
     /// Returns `None` if:
     /// - The `uri_converter` fails to find a record associated with the URI.
     /// - The `uri_converter` fails to shorten the URI into a CURIE.
-    pub(crate) fn shorten_uri(&self, uri: &str) -> Option<(String, String, String)> {
-        let converter = self.state.get_default_converter()?;
+    pub(crate) fn shorten_uri(
+        &self,
+        uri: &str,
+        backend_name: Option<&String>,
+    ) -> Option<(String, String, String)> {
+        let converter = backend_name
+            .and_then(|name| self.state.get_converter(name))
+            .or(self.state.get_default_converter())?;
         let record = converter.find_by_uri(uri).ok()?;
         let curie = converter.compress(uri).ok()?;
         Some((record.prefix.clone(), record.uri_prefix.clone(), curie))

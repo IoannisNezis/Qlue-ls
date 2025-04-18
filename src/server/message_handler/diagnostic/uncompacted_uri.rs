@@ -25,7 +25,7 @@ pub(super) fn diagnostics(
             .into_iter()
             .filter_map(Iri::cast)
             .filter_map(|iri| match iri.raw_iri() {
-                Some(raw_iri) => match server.shorten_uri(&raw_iri) {
+                Some(raw_iri) => match server.shorten_uri(&raw_iri, None) {
                     Some((prefix, namespace, curie)) => Some(Diagnostic {
                         source: None,
                         code: Some(DiagnosticCode::String("uncompacted-uri".to_string())),

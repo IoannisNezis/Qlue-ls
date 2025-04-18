@@ -102,7 +102,8 @@ fn shorten_all_uris(server: &Server, document: &TextDocumentItem) -> Option<Code
             .collect();
 
     uncompacted_uris.iter().for_each(|(uri, range)| {
-        if let Some((prefix, uri_prefix, curie)) = server.shorten_uri(&uri[1..uri.len() - 1]) {
+        if let Some((prefix, uri_prefix, curie)) = server.shorten_uri(&uri[1..uri.len() - 1], None)
+        {
             code_action.add_edit(&document.uri, TextEdit::new(range.clone(), &curie));
             if !declared_uri_prefix_set.contains(&uri_prefix) {
                 code_action.add_edit(

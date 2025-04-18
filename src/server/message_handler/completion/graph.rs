@@ -4,7 +4,7 @@ use super::{context::CompletionContext, error::CompletionError};
 
 pub(super) fn completions(_context: CompletionContext) -> Result<CompletionList, CompletionError> {
     Ok(CompletionList {
-        is_incomplete: true,
+        is_incomplete: false,
         item_defaults: None,
         items: vec![CompletionItem {
             label: "<graph>".to_string(),

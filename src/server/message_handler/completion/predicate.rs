@@ -49,8 +49,8 @@ pub(super) async fn completions(
                 .await?;
 
                 Ok(CompletionList {
-                    // TODO: remove magic number: 100 max result size
-                    is_incomplete: items.len() < 100,
+                    is_incomplete: items.len()
+                        < server.settings.completion.result_size_limit as usize,
                     item_defaults: None,
                     items,
                 })

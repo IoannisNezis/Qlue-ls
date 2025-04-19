@@ -200,8 +200,7 @@
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_score)
           WHERE { {{context}} }
           GROUP BY ?qlue_ls_entity }
-        OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label_or_null }
-        BIND (IF(?qlue_ls_label_or_null, ?qlue_ls_label_or_null, ?qlue_ls_entity) AS ?qlue_ls_label)
+        OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label }
         {% if search_term and search_term != "" %}
         FILTER REGEX(STR(?qlue_ls_alias), "{{ search_term }}", "i")
         {% endif %}

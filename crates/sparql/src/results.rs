@@ -39,6 +39,20 @@ pub enum RDFTerm {
     },
 }
 
+impl RDFTerm {
+    pub fn value(&self) -> &str {
+        match self {
+            RDFTerm::Bnode { value }
+            | RDFTerm::Literal {
+                value,
+                lang: _,
+                datatype: _,
+            }
+            | RDFTerm::Uri { value } => &value,
+        }
+    }
+}
+
 impl Display for RDFTerm {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

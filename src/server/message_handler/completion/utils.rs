@@ -67,16 +67,17 @@ pub(super) async fn fetch_online_completions(
                 .get("qlue_ls_entity")
                 .expect("Every completion query should provide a `qlue_ls_entity`");
             let (value, import_edit) = render_rdf_term(server, query_unit, rdf_term, backend_name);
-            let label = binding
-                .get("qlue_ls_label")
-                .map_or(value.clone(), |label| label.to_string());
-            let detail = binding
-                .get("qlue_ls_detail")
-                .map(|detail| detail.to_string())
-                .or(Some(value.clone()));
+            let label = binding.get("qlue_ls_label");
+            let detail = binding.get("qlue_ls_detail");
             CompletionItem {
-                label: format!("{} ", label),
-                label_details: detail.map(|value| CompletionItemLabelDetails { detail: value }),
+                label: format!("{} ", label.map_or(value.as_ref(), |label| label.value())),
+                label_details: detail
+                    .map(|value| CompletionItemLabelDetails {
+                        detail: value.to_string(),
+                    })
+                    .or(label.and(Some(CompletionItemLabelDetails {
+                        detail: value.to_string(),
+                    }))),
                 detail: None,
                 sort_text: Some(format!("{:0>5}", idx)),
                 insert_text: None,

@@ -29,7 +29,7 @@
         ?qlue_ls_entity imdb:numVotes ?count .
         ?qlue_ls_entity imdb:title ?name . BIND(?name AS ?alias)
       } ORDER BY ?alias }
-        {% if search_term %}
+        {% if search_term and search_term != "" %}
         FILTER (REGEX(?alias, "^\"{{ search_term }}") || REGEX(?alias, "^<{{ search_term }}"))
         {% endif %}
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
@@ -43,7 +43,7 @@
       {% endfor %}
       SELECT ?qlue_ls_entity (SAMPLE(?name) AS ?qlue_ls_label) (SAMPLE(?alias) AS ?qlue_ls_alias) (SAMPLE(?count) AS ?qlue_ls_count) WHERE {
         {{context}}
-        {% if search_term %}
+        {% if search_term and search_term != "" %}
         FILTER (REGEX(?alias, "^\"{{ search_term }}") || REGEX(?alias, "^<{{ search_term }}"))
         {% endif %}
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
@@ -95,7 +95,7 @@
           WHERE { {{context}} }
           GROUP BY ?qlue_ls_entity } BIND (0 AS ?qui_reversed)
         BIND (?qlue_ls_entity AS ?qlue_ls_label)
-        {% if search_term %}
+        {% if search_term and search_term != "" %}
         FILTER REGEX(STR(?qlue_ls_label), "{{ search_term }}", "i")
         {% endif %}
       } ORDER BY DESC(?qlue_ls_count)
@@ -105,14 +105,13 @@
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-      SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
+      SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_count WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_count) WHERE {
           {{context}} .
         } GROUP BY ?qlue_ls_entity }
-        OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_alias }
-        BIND (?qlue_ls_entity AS ?qlue_ls_label)
-      {% if not search_term %}
-        FILTER (REGEX(STR(?qlue_ls_label), "^{{ search_term }}") || REGEX(STR(?qlue_ls_alias), "^{{ search_term }}"))
+        OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label }
+      {% if search_term  and search_term != "" %}
+        FILTER (REGEX(STR(?qlue_ls_entity), "^{{ search_term }}") || REGEX(STR(?qlue_ls_label), "^{{ search_term }}"))
       {% endif %}
       } ORDER BY DESC(?qlue_ls_count)
       LIMIT {{ limit }} OFFSET {{ offset }}
@@ -187,7 +186,7 @@
       SELECT ?qlue_ls_entity ?qlue_ls_label (?qlue_ls_entity as ?qlue_ls_detail) WHERE {
         ?qlue_ls_entity rdf:type [ obo:IAO_0000412 obo:chebi.owl; rdfs:label ?qlue_ls_label ]
         BIND (?qlue_ls_label AS ?qlue_ls_alias)
-      {% if search_term %}
+      {% if search_term and search_term != "" %}
         FILTER REGEX(STR(?qlue_ls_label), "^{{ search_term }}")
       {% endif %}
       } ORDER BY ASC(?qlue_ls_label)
@@ -203,7 +202,7 @@
           GROUP BY ?qlue_ls_entity }
         OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label_or_null }
         BIND (IF(?qlue_ls_label_or_null, ?qlue_ls_label_or_null, ?qlue_ls_entity) AS ?qlue_ls_label)
-        {% if search_term %}
+        {% if search_term and search_term != "" %}
         FILTER REGEX(STR(?qlue_ls_alias), "{{ search_term }}", "i")
         {% endif %}
       } ORDER BY DESC(?qlue_ls_count)
@@ -223,7 +222,7 @@
         OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label_or_null }
         BIND (COALESCE(?qlue_ls_label_or_null, ?qlue_ls_entity) AS ?qlue_ls_label)
         BIND (?qlue_ls_label AS ?qlue_ls_alias)
-        {% if search_term %}
+        {% if search_term and search_term != "" %}
         FILTER REGEX(STR(?qlue_ls_label), "^{{ search_term }}")
         {% endif %}
       } ORDER BY DESC(?qlue_ls_count)
@@ -294,7 +293,7 @@
       PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
       SELECT ?qlue_ls_entity (SAMPLE(?label) as ?qlue_ls_label) WHERE {
         ?qlue_ls_entity rdf:type up:Protein ; rdfs:label ?label .
-        {% if search_term %}
+        {% if search_term and search_term != "" %}
         FILTER REGEX(?label, "^{{ search_term }}")
         {% endif %}
       }
@@ -310,7 +309,7 @@
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE
           { {{context}} }
           GROUP BY ?qlue_ls_entity }
-        {% if search_term %}
+        {% if search_term and search_term != "" %}
         FILTER REGEX(STR(?qlue_ls_entity), "{{ search_term }}", "i")
         {% endif %}
       } ORDER BY DESC(?qlue_ls_count)
@@ -327,7 +326,7 @@
               {{context}}
             } GROUP BY ?qlue_ls_entity }
             ?qlue_ls_entity rdfs:label ?name BIND(?name AS ?alias)
-            {% if search_term %}
+            {% if search_term and search_term != "" %}
             FILTER REGEX(STR(?alias), "^{{ search_term }}")
             {% endif %}
           } }
@@ -337,7 +336,7 @@
               {{context}}
             } GROUP BY ?qlue_ls_entity }
             ?qlue_ls_entity up:scientificName ?name BIND(?name AS ?alias)
-            {% if search_term %}
+            {% if search_term and search_term != "" %}
             FILTER REGEX(STR(?alias), "^{{ search_term }}")
             {% endif %}
           } }
@@ -347,7 +346,7 @@
               {{context}}
             } GROUP BY ?qlue_ls_entity }
             BIND(?qlue_ls_entity AS ?name) BIND(?qlue_ls_entity AS ?alias)
-            {% if search_term %}
+            {% if search_term and search_term != "" %}
             FILTER REGEX(STR(?alias), "^{{ search_term }}")
             {% endif %}
           } }
@@ -388,7 +387,7 @@
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      {% if search_term %}
+      {% if search_term and search_term != "" %}
       PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
       PREFIX osmrel: <https://www.openstreetmap.org/relation/>
       PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -418,7 +417,7 @@
           WHERE { {{context}} }
           GROUP BY ?qlue_ls_entity }
         BIND (?qlue_ls_entity AS ?name)
-        {% if search_term %}
+        {% if search_term and search_term != "" %}
         FILTER REGEX(STR(?name), "{{ search_term }}", "i")
         {% endif %}
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
@@ -490,7 +489,7 @@
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      {% if search_term %}
+      {% if search_term and search_term != "" %}
 
       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
       PREFIX wikibase: <http://wikiba.se/ontology#>

@@ -9,7 +9,7 @@ mod tools;
 
 mod message_handler;
 
-use std::{any::type_name, cell::RefCell, future::Future, rc::Rc};
+use std::{any::type_name, cell::RefCell, future::Future, rc::Rc, sync::Mutex};
 
 use capabilities::create_capabilities;
 use configuration::Settings;
@@ -40,6 +40,7 @@ pub struct Server {
     pub(crate) server_info: ServerInfo,
     tools: Tools,
     send_message_clusure: Box<dyn Fn(String)>,
+    pub(crate) lock: Rc<Mutex<()>>,
 }
 
 impl Server {
@@ -56,6 +57,7 @@ impl Server {
             },
             tools: Tools::init(),
             send_message_clusure: Box::new(write_function),
+            lock: Rc::new(Mutex::new(())),
         }
     }
 

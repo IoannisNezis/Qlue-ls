@@ -14,18 +14,14 @@
   suggestSubjects: |-
     %PREFIXES%
     # IF CURRENT_WORD_EMPTY #
-
     %WARMUP_QUERY_1%
-
     # ELSE #
-
     SELECT ?qleverui_entity (SAMPLE(?name) AS ?qleverui_name) (SAMPLE(?alias) AS ?qleverui_alias) (SAMPLE(?count) AS ?qleverui_count) WHERE {
       { %WARMUP_QUERY_2% }
       # IF !CURRENT_WORD_EMPTY #
       FILTER (REGEX(?alias, "^\"%CURRENT_WORD%") || REGEX(?alias, "^<%CURRENT_WORD%"))
       # ENDIF #
     } GROUP BY ?qleverui_entity ORDER BY DESC(?qleverui_count)
-
     # ENDIF #
   suggestPredicates: |-
     %PREFIXES%
@@ -185,7 +181,6 @@
 
     PREFIX imdb: <https://www.imdb.com/>
     %WARMUP_QUERY_1%
-    LIMIT 100
 
     # ELSE #
 
@@ -196,7 +191,6 @@
       FILTER (REGEX(?alias, "^\"%CURRENT_WORD%") || REGEX(?alias, "^<%CURRENT_WORD%"))
       # ENDIF #
     } GROUP BY ?qleverui_entity ORDER BY DESC(?qleverui_count)
-    LIMIT 100
 
     # ENDIF #
   suggestPredicatesContextInsensitive: |-
@@ -372,7 +366,7 @@
         { { SELECT ?qui_entity (COUNT(?author) AS ?qui_count) WHERE { ?qui_entity dblp:authoredBy ?author } GROUP BY ?qui_entity } ?qui_entity dblp:title ?qui_alias }
       } INTERNAL SORT BY ?qui_alias }
       FILTER REGEX(STR(?qui_alias), "^%CURRENT_WORD%")
-    } ORDER BY DESC(?qui_count) LIMIT 100
+    } ORDER BY DESC(?qui_count)
   suggestPredicatesContextInsensitive: |-
     %PREFIXES%
     SELECT ?qui_entity WHERE {
@@ -612,7 +606,6 @@
       FILTER REGEX(STR(?qui_name), "^%CURRENT_WORD%")
     # ENDIF #
     } ORDER BY ASC(?qui_name)
-    LIMIT 40
 
   suggestPredicatesContextInsensitive: |-
     %PREFIXES%
@@ -870,7 +863,6 @@
     }
     GROUP BY ?qlue_ls_entity
     ORDER BY DESC(COUNT(?qlue_ls_entity))
-    LIMIT 100
   suggestPredicatesContextInsensitive: |-
     %PREFIXES%
 
@@ -1114,7 +1106,6 @@
       FILTER REGEX(STR(?name), "%CURRENT_WORD%", "i")
       # ENDIF #
     } GROUP BY ?qui_entity ORDER BY DESC(?qui_count)
-    LIMIT 100
   suggestObjectsContextInsensitive: |-
     %PREFIXES%
     PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
@@ -1132,7 +1123,6 @@
       FILTER (REGEX(STR(?name), "^%CURRENT_WORD%") || REGEX(STR(?alias), "^%CURRENT_WORD%"))
       # ENDIF #
     } GROUP BY ?qui_entity ORDER BY DESC(?qui_count)
-    LIMIT 100
   mapViewBaseURL: https://qlever.cs.uni-freiburg.de/petrimaps
 - id: '8'
   name: Wikidata
@@ -1357,8 +1347,6 @@
           FILTER (REGEX(STR(?name), "^%CURRENT_WORD%") || REGEX(STR(?alias), "^%CURRENT_WORD%")) } }
       ?qui_entity ^schema:about ?m . ?m wikibase:sitelinks ?sitelinks
     } GROUP BY ?qui_entity ORDER BY DESC(?qui_count)
-    LIMIT 100
-
     # ENDIF #
   suggestPredicatesContextInsensitive: |-
     %PREFIXES%
@@ -1396,5 +1384,4 @@
       FILTER (REGEX(STR(?name), "^%CURRENT_WORD%") || REGEX(STR(?alias), "^%CURRENT_WORD%"))
       # ENDIF #
     } GROUP BY ?qui_entity ORDER BY DESC(?qui_count)
-    LIMIT 100
   mapViewBaseURL: https://qlever.cs.uni-freiburg.de/petrimaps

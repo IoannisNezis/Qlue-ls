@@ -31,31 +31,29 @@ pub(super) async fn handle_did_change_notification(
     did_change_notification: DidChangeTextDocumentNotification,
 ) -> Result<(), LSPError> {
     let uri = &did_change_notification.params.text_document.base.uri;
-    if let Some(document) = server_rc
+    server_rc
         .borrow_mut()
         .state
-        .change_document(uri, did_change_notification.params.content_changes)
-    {
-        let bytes = document.text.as_bytes();
-        // let old_tree = server.state.get_tree(&uri).ok();
-        let new_tree = server_rc.borrow_mut().tools.parser.parse(bytes, None);
-        if new_tree.is_none() {
-            warn!("Could not build new parse-tree for \"{}\"", uri);
-        }
-        if let Err(err) = server_rc.borrow_mut().state.update_tree(uri, new_tree) {
-            error!("{}", err.message);
-            return Err(LSPError::new(
-                ErrorCode::InternalError,
-                &format!("Error while building parse-tree:\n{}", err.message),
-            ));
-        }
-
-        Ok(())
-    } else {
-        let message = format!("Did-Change request failed, document not found: \"{}\"", uri);
-        error!("{}", message);
-        Err(LSPError::new(ErrorCode::InvalidRequest, &message))
+        .change_document(uri, did_change_notification.params.content_changes)?;
+    let text = server_rc.borrow().state.get_document(uri)?.text.clone();
+    // let old_tree = server.state.get_tree(&uri).ok();
+    let new_tree = server_rc
+        .borrow_mut()
+        .tools
+        .parser
+        .parse(text.as_bytes(), None);
+    if new_tree.is_none() {
+        warn!("Could not build new parse-tree for \"{}\"", uri);
     }
+    if let Err(err) = server_rc.borrow_mut().state.update_tree(uri, new_tree) {
+        error!("{}", err.message);
+        return Err(LSPError::new(
+            ErrorCode::InternalError,
+            &format!("Error while building parse-tree:\n{}", err.message),
+        ));
+    }
+
+    Ok(())
 }
 
 pub(super) async fn handle_did_save_notification(

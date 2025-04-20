@@ -9,7 +9,7 @@ mod lifecycle;
 mod misc;
 mod textdocument_syncronization;
 
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, sync::Mutex};
 
 use backend::{
     handle_add_backend_notification, handle_ping_backend_request,
@@ -29,6 +29,7 @@ use textdocument_syncronization::{
 };
 
 pub use formatting::format_raw;
+use wasm_bindgen_futures::spawn_local;
 
 use crate::server::lsp::errors::ErrorCode;
 
@@ -40,16 +41,17 @@ use super::{
 };
 
 pub(super) async fn dispatch(
-    server: Rc<RefCell<Server>>,
+    server_rc: Rc<RefCell<Server>>,
     message_string: &String,
 ) -> Result<(), LSPError> {
     let message = deserialize_message(message_string)?;
     let method = message.get_method().unwrap_or("");
     macro_rules! link {
         ($handler:ident) => {
-            $handler(server, message.parse()?).await
+            $handler(server_rc, message.parse()?).await
         };
     }
+    log::info!("method: {}", method);
     match method {
         // NOTE: Requests
         "initialize" => link!(handle_initialize_request),
@@ -58,7 +60,12 @@ pub(super) async fn dispatch(
         "textDocument/diagnostic" => link!(handle_diagnostic_request),
         "textDocument/codeAction" => link!(handle_codeaction_request),
         "textDocument/hover" => link!(handle_hover_request),
-        "textDocument/completion" => link!(handle_completion_request),
+        "textDocument/completion" => {
+            spawn_local(async move {
+                handle_completion_request(server_rc, message.parse().unwrap()).await;
+            });
+            Ok(())
+        }
         // NOTE: Notifications
         "initialized" => link!(handle_initialized_notifcation),
         "exit" => link!(handle_exit_notifcation),
@@ -70,7 +77,7 @@ pub(super) async fn dispatch(
         // Requests
         "qlueLs/addBackend" => link!(handle_add_backend_notification),
         "qlueLs/updateDefaultBackend" => link!(handle_update_backend_default_notification),
-        // "qlueLs/pingBackend" => link!(handle_ping_backend_request),
+        "qlueLs/pingBackend" => link!(handle_ping_backend_request),
         // NOTE: Known unsupported message
         "$/cancelRequest" => {
             log::warn!("Received cancel request (unsupported)");

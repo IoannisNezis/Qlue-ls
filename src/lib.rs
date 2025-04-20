@@ -45,11 +45,10 @@ async fn read_message(
 #[wasm_bindgen]
 pub async fn listen(server: Server, reader: web_sys::ReadableStreamDefaultReader) {
     let server_rc = Rc::new(RefCell::new(server));
-
     loop {
         match read_message(&reader).await {
             Ok((value, done)) => {
-                wasm_bindgen_futures::spawn_local(handle_message(server_rc.clone(), value));
+                handle_message(server_rc.clone(), value).await;
                 if done {
                     break;
                 }

@@ -1,3 +1,5 @@
+use std::{cell::RefCell, rc::Rc};
+
 use ll_sparql_parser::{
     ast::{AstNode, Iri, QueryUnit},
     syntax_kind::SyntaxKind,
@@ -15,9 +17,10 @@ use crate::server::{
 
 pub(super) fn diagnostics(
     document: &TextDocumentItem,
-    server: &Server,
+    server_rc: Rc<RefCell<Server>>,
     parse_tree: SyntaxNode,
 ) -> Option<Vec<Diagnostic>> {
+    let server = server_rc.borrow();
     Some(
         QueryUnit::cast(parse_tree)?
             .select_query()?

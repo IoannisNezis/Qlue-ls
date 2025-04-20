@@ -1,3 +1,5 @@
+use std::{cell::RefCell, rc::Rc};
+
 use super::{
     context::{CompletionContext, CompletionLocation},
     error::CompletionError,
@@ -13,9 +15,10 @@ use tera::Context;
 static QUERY_TEMPLATE: &str = "predicate_completion.rq";
 
 pub(super) async fn completions(
-    server: &Server,
+    server_rc: Rc<RefCell<Server>>,
     context: CompletionContext,
 ) -> Result<CompletionList, CompletionError> {
+    let server = server_rc.borrow();
     if let CompletionLocation::BlankNodeProperty(blank_node_props) = &context.location {
         let query_unit = QueryUnit::cast(context.tree.clone()).ok_or(
             CompletionError::ResolveError("Could not cast root to QueryUnit".to_string()),
@@ -45,12 +48,12 @@ pub(super) async fn completions(
             subj.text(),
             path.text()
         );
-        let prefixes = get_prefix_declarations(server, &context, &triple);
+        let prefixes = get_prefix_declarations(server_rc.clone(), &context, &triple);
         let mut template_context = Context::new();
         template_context.insert("context", &inject_context);
         template_context.insert("prefixes", &prefixes);
         let items = fetch_online_completions(
-            server,
+            server_rc.clone(),
             &query_unit,
             context.backend.as_ref(),
             QUERY_TEMPLATE,

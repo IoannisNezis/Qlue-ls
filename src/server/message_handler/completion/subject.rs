@@ -1,9 +1,12 @@
+use std::{cell::RefCell, rc::Rc};
+
 use super::{
     error::CompletionError,
     utils::{fetch_online_completions, get_replace_range},
     CompletionContext,
 };
 use crate::server::{
+    fetch::fetch_sparql_result,
     lsp::{CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat},
     Server,
 };
@@ -14,9 +17,10 @@ use ll_sparql_parser::{
 use tera::Context;
 
 pub(super) async fn completions(
-    server: &Server,
+    server_rc: Rc<RefCell<Server>>,
     context: CompletionContext,
 ) -> Result<CompletionList, CompletionError> {
+    let server = server_rc.borrow();
     let mut items = Vec::new();
     let mut is_incomplete = false;
     if [
@@ -36,7 +40,7 @@ pub(super) async fn completions(
                 let range = get_replace_range(&context);
                 let query_unit = QueryUnit::cast(context.tree).unwrap();
                 match fetch_online_completions(
-                    server,
+                    server_rc.clone(),
                     &query_unit,
                     context.backend.as_ref(),
                     &format!("{}-{}", backend_name, "subjectCompletion"),

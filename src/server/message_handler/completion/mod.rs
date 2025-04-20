@@ -12,6 +12,8 @@ mod subject;
 mod utils;
 mod variable;
 
+use std::{cell::RefCell, rc::Rc};
+
 use context::{CompletionContext, CompletionLocation};
 use error::{to_lsp_error, CompletionError};
 
@@ -21,11 +23,12 @@ use crate::server::{
 };
 
 pub(super) async fn handle_completion_request(
-    server: &mut Server,
+    server_rc: Rc<RefCell<Server>>,
     request: CompletionRequest,
 ) -> Result<(), LSPError> {
-    let context =
-        CompletionContext::from_completion_request(server, &request).map_err(to_lsp_error)?;
+    let server = server_rc.borrow();
+    let context = CompletionContext::from_completion_request(server_rc.clone(), &request)
+        .map_err(to_lsp_error)?;
     if context.location == CompletionLocation::Unknown {
         server.send_message(CompletionResponse::new(request.get_id(), None))
     } else {
@@ -49,19 +52,25 @@ pub(super) async fn handle_completion_request(
                         CompletionLocation::SelectBinding(_) => {
                             select_binding::completions(context)
                         }
-                        CompletionLocation::Subject => subject::completions(server, context).await,
-                        CompletionLocation::Predicate(_) => {
-                            predicate::completions(server, context).await
+                        CompletionLocation::Subject => {
+                            subject::completions(server_rc.clone(), context).await
                         }
-                        CompletionLocation::Object(_) => object::completions(server, context).await,
+                        CompletionLocation::Predicate(_) => {
+                            predicate::completions(server_rc.clone(), context).await
+                        }
+                        CompletionLocation::Object(_) => {
+                            object::completions(server_rc.clone(), context).await
+                        }
                         CompletionLocation::SolutionModifier => {
                             solution_modifier::completions(context)
                         }
                         CompletionLocation::Graph => graph::completions(context),
                         CompletionLocation::BlankNodeProperty(_) => {
-                            blank_node_property::completions(server, context).await
+                            blank_node_property::completions(server_rc.clone(), context).await
                         }
-                        CompletionLocation::ServiceUrl => service_url::completions(server),
+                        CompletionLocation::ServiceUrl => {
+                            service_url::completions(server_rc.clone())
+                        }
                         location => Err(CompletionError::LocalizationError(format!(
                             "Unknown location \"{:?}\"",
                             location

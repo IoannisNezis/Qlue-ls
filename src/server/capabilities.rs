@@ -20,7 +20,7 @@ pub(super) fn create_capabilities() -> ServerCapabilities {
             workspace_diagnostics: false,
         },
         completion_provider: CompletionOptions {
-            trigger_characters: vec!["?".to_string()],
+            trigger_characters: vec!["?".to_string(), " ".to_string()],
         },
         document_formatting_provider: DocumentFormattingOptions {},
     }

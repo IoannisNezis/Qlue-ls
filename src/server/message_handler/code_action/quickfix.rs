@@ -11,18 +11,18 @@ use crate::server::{
     Server,
 };
 use log::error;
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 pub(super) fn get_quickfix(
-    server: &Server,
+    server_rc: Rc<RefCell<Server>>,
     document_uri: &String,
     diagnostic: Diagnostic,
 ) -> Result<Option<CodeAction>, LSPError> {
     match diagnostic.code {
         Some(DiagnosticCode::String(ref diagnostic_code)) => match diagnostic_code.as_str() {
-            "undeclared-prefix" => declare_prefix(server, document_uri, diagnostic),
-            "uncompacted-uri" => shorten_uri(server, document_uri, diagnostic),
-            "unused-prefix" => remove_prefix_declaration(server, document_uri, diagnostic),
+            "undeclared-prefix" => declare_prefix(server_rc.clone(), document_uri, diagnostic),
+            "uncompacted-uri" => shorten_uri(server_rc.clone(), document_uri, diagnostic),
+            "unused-prefix" => remove_prefix_declaration(document_uri, diagnostic),
             _ => {
                 log::warn!("Unknown diagnostic code: {}", diagnostic_code);
                 Ok(None)
@@ -33,7 +33,6 @@ pub(super) fn get_quickfix(
 }
 
 fn remove_prefix_declaration(
-    _server: &Server,
     document_uri: &String,
     diagnostic: Diagnostic,
 ) -> Result<Option<CodeAction>, LSPError> {
@@ -44,10 +43,11 @@ fn remove_prefix_declaration(
 }
 
 fn shorten_uri(
-    server: &Server,
+    server_rc: Rc<RefCell<Server>>,
     document_uri: &String,
     diagnostic: Diagnostic,
 ) -> Result<Option<CodeAction>, LSPError> {
+    let server = server_rc.borrow();
     match diagnostic.data {
         Some(data) => {
             let UncompactedUrisDiagnosticData(prefix, namespace, curie): UncompactedUrisDiagnosticData =
@@ -76,10 +76,11 @@ fn shorten_uri(
 }
 
 fn declare_prefix(
-    server: &Server,
+    server_rc: Rc<RefCell<Server>>,
     document_uri: &str,
     diagnostic: Diagnostic,
 ) -> Result<Option<CodeAction>, LSPError> {
+    let server = server_rc.borrow();
     if let Some(LSPAny::String(prefix)) = &diagnostic.data {
         if let Some(Ok(record)) = server
             .state

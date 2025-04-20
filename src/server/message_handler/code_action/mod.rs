@@ -1,12 +1,13 @@
 mod add_to_result;
 mod filter_var;
 mod quickfix;
-use std::collections::HashSet;
+use std::{cell::RefCell, collections::HashSet, rc::Rc};
 
 use ll_sparql_parser::{parse_query, syntax_kind::SyntaxKind, TokenAtOffset};
 use quickfix::get_quickfix;
 
 use crate::server::{
+    self,
     anaysis::{get_all_uncompacted_uris, get_declared_uri_prefixes},
     lsp::{
         diagnostic::{Diagnostic, DiagnosticCode},
@@ -18,11 +19,13 @@ use crate::server::{
 };
 
 pub(super) async fn handle_codeaction_request(
-    server: &mut Server,
+    server_rc: Rc<RefCell<Server>>,
     request: CodeActionRequest,
 ) -> Result<(), LSPError> {
+    let server = server_rc.borrow();
     let mut code_action_response = CodeActionResponse::new(request.get_id());
-    code_action_response.add_code_actions(generate_code_actions(server, &request.params)?);
+    code_action_response
+        .add_code_actions(generate_code_actions(server_rc.clone(), &request.params)?);
     code_action_response.add_code_actions(
         request
             .params
@@ -30,7 +33,11 @@ pub(super) async fn handle_codeaction_request(
             .diagnostics
             .into_iter()
             .filter_map(|diagnostic| {
-                match get_quickfix(server, &request.params.text_document.uri, diagnostic) {
+                match get_quickfix(
+                    server_rc.clone(),
+                    &request.params.text_document.uri,
+                    diagnostic,
+                ) {
                     Ok(code_action) => code_action,
                     Err(err) => {
                         log::error!(
@@ -47,9 +54,10 @@ pub(super) async fn handle_codeaction_request(
 }
 
 fn generate_code_actions(
-    server: &Server,
+    server_rc: Rc<RefCell<Server>>,
     params: &CodeActionParams,
 ) -> Result<Vec<CodeAction>, LSPError> {
+    let server = server_rc.borrow();
     let document_uri = &params.text_document.uri;
     let document = server.state.get_document(document_uri)?;
     let root = parse_query(&document.text);
@@ -72,7 +80,7 @@ fn generate_code_actions(
                     .parent()
                     .map_or(false, |parent| parent.kind() == SyntaxKind::iri)
             {
-                if let Some(code_action) = shorten_all_uris(server, document) {
+                if let Some(code_action) = shorten_all_uris(server_rc.clone(), document) {
                     code_actions.push(code_action)
                 }
             } else if [SyntaxKind::VAR1, SyntaxKind::VAR2].contains(&token.kind()) {
@@ -91,9 +99,13 @@ fn generate_code_actions(
 }
 
 // TODO: Handle errors properly.
-fn shorten_all_uris(server: &Server, document: &TextDocumentItem) -> Option<CodeAction> {
+fn shorten_all_uris(
+    server_rc: Rc<RefCell<Server>>,
+    document: &TextDocumentItem,
+) -> Option<CodeAction> {
+    let server = server_rc.borrow();
     let mut code_action = CodeAction::new("Shorten all URI's", Some(CodeActionKind::Refactor));
-    let uncompacted_uris = get_all_uncompacted_uris(server, &document.uri).ok()?;
+    let uncompacted_uris = get_all_uncompacted_uris(server_rc.clone(), &document.uri).ok()?;
     let mut declared_uri_prefix_set: HashSet<String> =
         get_declared_uri_prefixes(&server.state, &document.uri)
             .ok()?

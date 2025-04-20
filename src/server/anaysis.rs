@@ -6,7 +6,7 @@ use super::{
     state::ServerState,
     Server,
 };
-use std::collections::HashSet;
+use std::{cell::RefCell, collections::HashSet, rc::Rc};
 use streaming_iterator::StreamingIterator;
 use tree_sitter::{Node, Query, QueryCursor};
 
@@ -53,9 +53,10 @@ pub fn namespace_is_declared(
 }
 
 pub fn get_all_uncompacted_uris(
-    server: &Server,
+    server_rc: Rc<RefCell<Server>>,
     document_uri: &str,
 ) -> Result<Vec<(String, Range)>, LSPError> {
+    let server = server_rc.borrow();
     let (document, tree) = server.state.get_state(document_uri)?;
     let declared_uris = collect_all_unique_captures(
         tree.root_node(),

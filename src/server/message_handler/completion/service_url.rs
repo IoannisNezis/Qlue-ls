@@ -1,10 +1,15 @@
+use std::{cell::RefCell, rc::Rc};
+
 use super::error::CompletionError;
 use crate::server::{
     lsp::{CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat},
     Server,
 };
 
-pub(super) fn completions(server: &Server) -> Result<CompletionList, CompletionError> {
+pub(super) fn completions(
+    server_rc: Rc<RefCell<Server>>,
+) -> Result<CompletionList, CompletionError> {
+    let server = server_rc.borrow();
     let default_backend = server.state.get_default_backend();
     Ok(CompletionList {
         is_incomplete: false,

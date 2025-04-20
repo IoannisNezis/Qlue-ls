@@ -1,3 +1,5 @@
+use std::{cell::RefCell, rc::Rc};
+
 use serde::{Deserialize, Serialize};
 
 use crate::server::{
@@ -67,12 +69,12 @@ pub struct InitializeResponse {
 }
 
 impl InitializeResponse {
-    pub fn new(id: &RequestId, server: &Server) -> Self {
+    pub fn new(id: &RequestId, server: Rc<RefCell<Server>>) -> Self {
         InitializeResponse {
             base: ResponseMessageBase::success(id),
             result: InitializeResult {
-                capabilities: server.capabilities.clone(),
-                server_info: Some(server.server_info.clone()),
+                capabilities: server.borrow().capabilities.clone(),
+                server_info: Some(server.borrow().server_info.clone()),
             },
         }
     }

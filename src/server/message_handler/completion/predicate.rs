@@ -10,14 +10,15 @@ use ll_sparql_parser::{
     ast::{AstNode, Path, QueryUnit, Triple},
     syntax_kind::SyntaxKind,
 };
-use std::collections::HashSet;
+use std::{cell::RefCell, collections::HashSet, rc::Rc};
 use tera::Context;
 use text_size::TextSize;
 
 pub(super) async fn completions(
-    server: &Server,
+    server_rc: Rc<RefCell<Server>>,
     context: CompletionContext,
 ) -> Result<CompletionList, CompletionError> {
+    let server = server_rc.borrow();
     if let CompletionLocation::Predicate(triple) = &context.location {
         match (context.backend.as_ref(), context.search_term.as_ref()) {
             (Some(backend_name), Some(search_term)) => {
@@ -26,7 +27,7 @@ pub(super) async fn completions(
                 let query_unit = QueryUnit::cast(context.tree.clone()).ok_or(
                     CompletionError::ResolveError("Could not cast root to QueryUnit".to_string()),
                 )?;
-                let prefixes = get_prefix_declarations(server, &context, triple);
+                let prefixes = get_prefix_declarations(server_rc.clone(), &context, triple);
                 let inject = compute_inject_context(
                     triple,
                     context.anchor_token.unwrap().text_range().end(),
@@ -39,7 +40,7 @@ pub(super) async fn completions(
                 template_context.insert("prefixes", &prefixes);
                 template_context.insert("search_term", search_term);
                 let items = fetch_online_completions(
-                    server,
+                    server_rc.clone(),
                     &query_unit,
                     context.backend.as_ref(),
                     &format!("{}-{}", backend_name, "predicateCompletion"),

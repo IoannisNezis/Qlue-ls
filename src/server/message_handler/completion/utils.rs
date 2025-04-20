@@ -1,6 +1,6 @@
 use ll_sparql_parser::ast::{QueryUnit, Triple};
 use sparql::results::RDFTerm;
-use std::time::Instant;
+use std::{cell::RefCell, rc::Rc, time::Instant};
 use tera::Context;
 use wasm_bindgen::JsCast;
 
@@ -16,13 +16,14 @@ use crate::server::{
 use super::{context::CompletionContext, error::CompletionError};
 
 pub(super) async fn fetch_online_completions(
-    server: &Server,
+    server_rc: Rc<RefCell<Server>>,
     query_unit: &QueryUnit,
     backend_name: Option<&String>,
     query_template: &str,
     mut query_template_context: Context,
     range: Range,
 ) -> Result<Vec<CompletionItem>, CompletionError> {
+    let server = server_rc.borrow();
     query_template_context.insert("limit", &server.settings.completion.result_size_limit);
     query_template_context.insert("offset", &0);
     let query = server
@@ -66,7 +67,8 @@ pub(super) async fn fetch_online_completions(
             let rdf_term = binding
                 .get("qlue_ls_entity")
                 .expect("Every completion query should provide a `qlue_ls_entity`");
-            let (value, import_edit) = render_rdf_term(server, query_unit, rdf_term, backend_name);
+            let (value, import_edit) =
+                render_rdf_term(server_rc.clone(), query_unit, rdf_term, backend_name);
             let label = binding.get("qlue_ls_label");
             let detail = binding.get("qlue_ls_detail");
             CompletionItem {
@@ -94,13 +96,13 @@ pub(super) async fn fetch_online_completions(
 }
 
 fn render_rdf_term(
-    server: &Server,
+    server_rc: Rc<RefCell<Server>>,
     query_unit: &QueryUnit,
     rdf_term: &RDFTerm,
     backend_name: Option<&String>,
 ) -> (String, Option<TextEdit>) {
     match rdf_term {
-        RDFTerm::Uri { value } => match server.shorten_uri(value, backend_name) {
+        RDFTerm::Uri { value } => match server_rc.borrow().shorten_uri(value, backend_name) {
             Some((prefix, uri, curie)) => {
                 let prefix_decl_edit = if query_unit.prologue().as_ref().map_or(true, |prologue| {
                     prologue
@@ -146,10 +148,11 @@ pub(super) fn get_replace_range(context: &CompletionContext) -> Range {
 }
 
 pub(super) fn get_prefix_declarations<'a>(
-    server: &'a Server,
+    server_rc: Rc<RefCell<Server>>,
     context: &CompletionContext,
     triple: &'a Triple,
-) -> Vec<(&'a String, &'a String)> {
+) -> Vec<(String, String)> {
+    let server = server_rc.borrow();
     triple
         .used_prefixes()
         .into_iter()
@@ -161,6 +164,6 @@ pub(super) fn get_prefix_declarations<'a>(
                     .and_then(|converter| converter.find_by_prefix(&prefix).ok())
             })
         })
-        .map(|record| (&record.prefix, &record.uri_prefix))
+        .map(|record| (record.prefix.clone(), record.uri_prefix.clone()))
         .collect()
 }

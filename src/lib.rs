@@ -1,7 +1,9 @@
 mod server;
 
+use std::{cell::RefCell, rc::Rc};
+
 use log::error;
-use server::Server;
+use server::{handle_message, Server};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::js_sys;
@@ -41,18 +43,35 @@ async fn read_message(
 }
 
 #[wasm_bindgen]
-impl Server {
-    pub async fn listen(&mut self, reader: web_sys::ReadableStreamDefaultReader) {
-        loop {
-            match read_message(&reader).await {
-                Ok((value, done)) => {
-                    self.handle_message(value).await;
-                    if done {
-                        break;
-                    }
+pub async fn listen(server: Server, reader: web_sys::ReadableStreamDefaultReader) {
+    let server_rc = Rc::new(RefCell::new(server));
+
+    loop {
+        match read_message(&reader).await {
+            Ok((value, done)) => {
+                wasm_bindgen_futures::spawn_local(handle_message(server_rc.clone(), value));
+                if done {
+                    break;
                 }
-                Err(e) => error!("{}", e),
             }
+            Err(e) => error!("{}", e),
         }
     }
 }
+
+// #[wasm_bindgen]
+// impl Server {
+//     pub async fn listen(&mut self, reader: web_sys::ReadableStreamDefaultReader) {
+//         loop {
+//             match read_message(&reader).await {
+//                 Ok((value, done)) => {
+//                     handle_message(rc_server.clone(), value).await;
+//                     if done {
+//                         break;
+//                     }
+//                 }
+//                 Err(e) => error!("{}", e),
+//             }
+//         }
+//     }
+// }

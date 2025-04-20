@@ -1,4 +1,7 @@
+use std::{cell::RefCell, rc::Rc};
+
 use crate::server::{
+    self,
     fetch::fetch_sparql_result,
     lsp::errors::{ErrorCode, LSPError},
     Server,
@@ -9,7 +12,11 @@ use ll_sparql_parser::{
 };
 use tera::Context;
 
-pub(super) async fn hover(server: &Server, token: SyntaxToken) -> Result<Option<String>, LSPError> {
+pub(super) async fn hover(
+    server_rc: Rc<RefCell<Server>>,
+    token: SyntaxToken,
+) -> Result<Option<String>, LSPError> {
+    let server = server_rc.borrow();
     let iri = match token.parent_ancestors().find_map(Iri::cast) {
         Some(value) => value,
         None => return Ok(None),

@@ -9,6 +9,8 @@ mod lifecycle;
 mod misc;
 mod textdocument_syncronization;
 
+use std::{cell::RefCell, rc::Rc};
+
 use backend::{
     handle_add_backend_notification, handle_ping_backend_request,
     handle_update_backend_default_notification,
@@ -37,7 +39,10 @@ use super::{
     Server,
 };
 
-pub(super) async fn dispatch(server: &mut Server, message_string: &String) -> Result<(), LSPError> {
+pub(super) async fn dispatch(
+    server: Rc<RefCell<Server>>,
+    message_string: &String,
+) -> Result<(), LSPError> {
     let message = deserialize_message(message_string)?;
     let method = message.get_method().unwrap_or("");
     macro_rules! link {
@@ -65,7 +70,7 @@ pub(super) async fn dispatch(server: &mut Server, message_string: &String) -> Re
         // Requests
         "qlueLs/addBackend" => link!(handle_add_backend_notification),
         "qlueLs/updateDefaultBackend" => link!(handle_update_backend_default_notification),
-        "qlueLs/pingBackend" => link!(handle_ping_backend_request),
+        // "qlueLs/pingBackend" => link!(handle_ping_backend_request),
         // NOTE: Known unsupported message
         "$/cancelRequest" => {
             log::warn!("Received cancel request (unsupported)");

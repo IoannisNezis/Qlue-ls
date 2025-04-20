@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{cell::RefCell, collections::HashSet, rc::Rc};
 
 use ll_sparql_parser::{
     ast::{AstNode, BlankPropertyList, SelectClause, ServiceGraphPattern, Triple},
@@ -9,6 +9,7 @@ use ll_sparql_parser::{
 use text_size::{TextRange, TextSize};
 
 use crate::server::{
+    self,
     lsp::{textdocument::Position, CompletionRequest, CompletionTriggerKind},
     Server,
 };
@@ -161,9 +162,10 @@ pub(super) struct CompletionContext {
 
 impl CompletionContext {
     pub(super) fn from_completion_request(
-        server: &Server,
+        server_rc: Rc<RefCell<Server>>,
         request: &CompletionRequest,
     ) -> Result<Self, CompletionError> {
+        let server = server_rc.borrow();
         let document_position = request.get_text_position();
         let document = server
             .state

@@ -497,6 +497,15 @@ impl PrefixedName {
             .0
             .to_string()
     }
+
+    pub fn name(&self) -> String {
+        self.syntax
+            .to_string()
+            .split_once(":")
+            .expect("Every PrefixedName should contain a ':'")
+            .1
+            .to_string()
+    }
 }
 
 #[derive(Debug)]

@@ -5,7 +5,7 @@
     healthCheckUrl: https://qlever.cs.uni-freiburg.de/api/imdb/ping
   prefixMap:
     imdb: https://www.imdb.com/
-  default: true
+  default: false
   queries:
     subjectCompletion: |-
       {% for prefix in prefixes %}
@@ -482,7 +482,7 @@
     qfn: http://qlever.cs.uni-freiburg.de/function#
     ql: http://qlever.cs.uni-freiburg.de/builtin-functions/
     math: http://www.w3.org/2005/xpath-functions/math#
-  default: false
+  default: true
   queries:
     subjectCompletion: |-
       {% for prefix in prefixes %}

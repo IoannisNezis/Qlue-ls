@@ -1,5 +1,6 @@
-use std::{cell::RefCell, rc::Rc};
+use std::rc::Rc;
 
+use futures::lock::Mutex;
 use log::{error, info, warn};
 
 use crate::server::{
@@ -12,10 +13,10 @@ use crate::server::{
 };
 
 pub(super) async fn handle_did_open_notification(
-    server_rc: Rc<RefCell<Server>>,
+    server_rc: Rc<Mutex<Server>>,
     did_open_notification: DidOpenTextDocumentNotification,
 ) -> Result<(), LSPError> {
-    let mut server = server_rc.borrow_mut();
+    let mut server = server_rc.lock().await;
     info!(
         "opened text document: \"{}\"",
         did_open_notification.params.text_document.uri
@@ -27,25 +28,21 @@ pub(super) async fn handle_did_open_notification(
 }
 
 pub(super) async fn handle_did_change_notification(
-    server_rc: Rc<RefCell<Server>>,
+    server_rc: Rc<Mutex<Server>>,
     did_change_notification: DidChangeTextDocumentNotification,
 ) -> Result<(), LSPError> {
+    let mut server = server_rc.lock().await;
     let uri = &did_change_notification.params.text_document.base.uri;
-    server_rc
-        .borrow_mut()
+    server
         .state
         .change_document(uri, did_change_notification.params.content_changes)?;
-    let text = server_rc.borrow().state.get_document(uri)?.text.clone();
+    let text = server.state.get_document(uri)?.text.clone();
     // let old_tree = server.state.get_tree(&uri).ok();
-    let new_tree = server_rc
-        .borrow_mut()
-        .tools
-        .parser
-        .parse(text.as_bytes(), None);
+    let new_tree = server.tools.parser.parse(text.as_bytes(), None);
     if new_tree.is_none() {
         warn!("Could not build new parse-tree for \"{}\"", uri);
     }
-    if let Err(err) = server_rc.borrow_mut().state.update_tree(uri, new_tree) {
+    if let Err(err) = server.state.update_tree(uri, new_tree) {
         error!("{}", err.message);
         return Err(LSPError::new(
             ErrorCode::InternalError,
@@ -57,7 +54,7 @@ pub(super) async fn handle_did_change_notification(
 }
 
 pub(super) async fn handle_did_save_notification(
-    _server: Rc<RefCell<Server>>,
+    _server: Rc<Mutex<Server>>,
     did_save_notification: DidSaveTextDocumentNotification,
 ) -> Result<(), LSPError> {
     log::warn!(

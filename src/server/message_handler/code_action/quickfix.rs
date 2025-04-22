@@ -11,17 +11,17 @@ use crate::server::{
     Server,
 };
 use log::error;
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 
 pub(super) fn get_quickfix(
-    server_rc: Rc<RefCell<Server>>,
+    server: &Server,
     document_uri: &String,
     diagnostic: Diagnostic,
 ) -> Result<Option<CodeAction>, LSPError> {
     match diagnostic.code {
         Some(DiagnosticCode::String(ref diagnostic_code)) => match diagnostic_code.as_str() {
-            "undeclared-prefix" => declare_prefix(server_rc.clone(), document_uri, diagnostic),
-            "uncompacted-uri" => shorten_uri(server_rc.clone(), document_uri, diagnostic),
+            "undeclared-prefix" => declare_prefix(server, document_uri, diagnostic),
+            "uncompacted-uri" => shorten_uri(server, document_uri, diagnostic),
             "unused-prefix" => remove_prefix_declaration(document_uri, diagnostic),
             _ => {
                 log::warn!("Unknown diagnostic code: {}", diagnostic_code);
@@ -43,11 +43,10 @@ fn remove_prefix_declaration(
 }
 
 fn shorten_uri(
-    server_rc: Rc<RefCell<Server>>,
+    server: &Server,
     document_uri: &String,
     diagnostic: Diagnostic,
 ) -> Result<Option<CodeAction>, LSPError> {
-    let server = server_rc.borrow();
     match diagnostic.data {
         Some(data) => {
             let UncompactedUrisDiagnosticData(prefix, namespace, curie): UncompactedUrisDiagnosticData =
@@ -76,11 +75,10 @@ fn shorten_uri(
 }
 
 fn declare_prefix(
-    server_rc: Rc<RefCell<Server>>,
+    server: &Server,
     document_uri: &str,
     diagnostic: Diagnostic,
 ) -> Result<Option<CodeAction>, LSPError> {
-    let server = server_rc.borrow();
     if let Some(LSPAny::String(prefix)) = &diagnostic.data {
         if let Some(Ok(record)) = server
             .state
@@ -114,6 +112,10 @@ fn declare_prefix(
 
 #[cfg(test)]
 mod test {
+
+    use std::rc::Rc;
+
+    use futures::lock::Mutex;
     use indoc::indoc;
     use tree_sitter::Parser;
     use tree_sitter_sparql::LANGUAGE;
@@ -163,7 +165,7 @@ mod test {
             ])),
         };
 
-        let code_action = shorten_uri(&server, &document.uri, diagnostic)
+        let code_action = shorten_uri(Rc::new(Mutex::new(server)), &document.uri, diagnostic)
             .unwrap()
             .unwrap();
 

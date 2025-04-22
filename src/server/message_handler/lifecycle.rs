@@ -1,4 +1,6 @@
-use std::{cell::RefCell, process::exit, rc::Rc};
+use std::{process::exit, rc::Rc};
+
+use futures::lock::Mutex;
 
 use crate::server::{
     lsp::{
@@ -11,11 +13,12 @@ use crate::server::{
 };
 
 pub(super) async fn handle_shutdown_request(
-    server: Rc<RefCell<Server>>,
+    server_rc: Rc<Mutex<Server>>,
     request: RequestMessage,
 ) -> Result<(), LSPError> {
+    let mut server = server_rc.lock().await;
     log::info!("Recieved shutdown request, preparing to shut down");
-    match server.borrow().state.status {
+    match server.state.status {
         ServerStatus::Initializing => Err(LSPError::new(
             ErrorCode::InvalidRequest,
             "The Server is not yet initialized",
@@ -25,19 +28,18 @@ pub(super) async fn handle_shutdown_request(
             "The Server is already shutting down",
         )),
         ServerStatus::Running => {
-            server.borrow_mut().state.status = ServerStatus::ShuttingDown;
-            server
-                .borrow()
-                .send_message(ShutdownResponse::new(&request.id))
+            server.state.status = ServerStatus::ShuttingDown;
+            server.send_message(ShutdownResponse::new(&request.id))
         }
     }
 }
 
 pub(super) async fn handle_initialize_request(
-    server: Rc<RefCell<Server>>,
+    server_rc: Rc<Mutex<Server>>,
     initialize_request: InitializeRequest,
 ) -> Result<(), LSPError> {
-    match server.borrow().state.status {
+    let server = server_rc.lock().await;
+    match server.state.status {
         ServerStatus::Initializing => {
             if let Some(ref client_info) = initialize_request.params.client_info {
                 log::info!(
@@ -54,12 +56,12 @@ pub(super) async fn handle_initialize_request(
             {
                 let init_progress_begin_notification = ProgressNotification::begin_notification(
                     work_done_token.clone(),
-                    &format!("setup qlue-ls v{}", server.borrow().get_version()),
+                    &format!("setup qlue-ls v{}", server.get_version()),
                     Some(false),
                     Some("init"),
                     Some(0),
                 );
-                server.borrow().send_message(
+                server.send_message(
                     serde_json::to_string(&init_progress_begin_notification).unwrap(),
                 )?;
 
@@ -69,9 +71,7 @@ pub(super) async fn handle_initialize_request(
                     Some("testing availibility of endpoint"),
                     Some(30),
                 );
-                server
-                    .borrow()
-                    .send_message(serde_json::to_string(&progress_report_1).unwrap())?;
+                server.send_message(serde_json::to_string(&progress_report_1).unwrap())?;
 
                 let progress_report_2 = ProgressNotification::report_notification(
                     work_done_token.clone(),
@@ -79,22 +79,21 @@ pub(super) async fn handle_initialize_request(
                     Some("request prefixes from endpoint"),
                     Some(60),
                 );
-                server
-                    .borrow()
-                    .send_message(serde_json::to_string(&progress_report_2).unwrap())?;
+                server.send_message(serde_json::to_string(&progress_report_2).unwrap())?;
 
                 let init_progress_end_notification = ProgressNotification::end_notification(
                     work_done_token.clone(),
                     Some("qlue-ls initialized"),
                 );
 
-                server.borrow().send_message(
+                server.send_message(
                     serde_json::to_string(&init_progress_end_notification).unwrap(),
                 )?;
             }
-            server.borrow().send_message(InitializeResponse::new(
+            server.send_message(InitializeResponse::new(
                 initialize_request.get_id(),
-                server.clone(),
+                &server.capabilities,
+                &server.server_info,
             ))
         }
         _ => Err(LSPError::new(
@@ -105,16 +104,16 @@ pub(super) async fn handle_initialize_request(
 }
 
 pub(super) async fn handle_initialized_notifcation(
-    server_rc: Rc<RefCell<Server>>,
+    server_rc: Rc<Mutex<Server>>,
     _initialized_notification: NotificationMessage,
 ) -> Result<(), LSPError> {
     log::info!("initialization completed");
-    server_rc.borrow_mut().state.status = ServerStatus::Running;
+    server_rc.lock().await.state.status = ServerStatus::Running;
     Ok(())
 }
 
 pub(super) async fn handle_exit_notifcation(
-    _server_rc: Rc<RefCell<Server>>,
+    _server_rc: Rc<Mutex<Server>>,
     _initialized_notification: NotificationMessage,
 ) -> Result<(), LSPError> {
     log::info!("Recieved exit notification, shutting down!");

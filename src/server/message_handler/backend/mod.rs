@@ -1,4 +1,6 @@
-use std::{cell::RefCell, rc::Rc};
+use std::rc::Rc;
+
+use futures::lock::Mutex;
 
 use crate::server::{
     fetch::check_server_availability,
@@ -11,12 +13,12 @@ use crate::server::{
 };
 
 pub(super) async fn handle_update_backend_default_notification(
-    server_rc: Rc<RefCell<Server>>,
+    server_rc: Rc<Mutex<Server>>,
     notification: UpdateDefaultBackendNotification,
 ) -> Result<(), LSPError> {
     log::info!("new default backend: {}", notification.params.backend_name);
-    if server_rc
-        .borrow()
+    let mut server = server_rc.lock().await;
+    if server
         .state
         .get_backend(&notification.params.backend_name)
         .is_none()
@@ -26,18 +28,17 @@ pub(super) async fn handle_update_backend_default_notification(
             &format!("Unknown backend \"{}\"", notification.params.backend_name),
         ));
     }
-    server_rc
-        .borrow_mut()
+    server
         .state
         .set_default_backend(notification.params.backend_name);
     Ok(())
 }
 
 pub(super) async fn handle_ping_backend_request(
-    server_rc: Rc<RefCell<Server>>,
+    server_rc: Rc<Mutex<Server>>,
     request: PingBackendRequest,
 ) -> Result<(), LSPError> {
-    let server = server_rc.borrow();
+    let server = server_rc.lock().await;
     let backend = match request.params.backend_name {
         Some(ref name) => server.state.get_backend(name).ok_or(LSPError::new(
             ErrorCode::InvalidParams,
@@ -54,10 +55,10 @@ pub(super) async fn handle_ping_backend_request(
 }
 
 pub(super) async fn handle_add_backend_notification(
-    server_rc: Rc<RefCell<Server>>,
+    server_rc: Rc<Mutex<Server>>,
     request: AddBackendNotification,
 ) -> Result<(), LSPError> {
-    let mut server = server_rc.borrow_mut();
+    let mut server = server_rc.lock().await;
     server.state.add_backend(request.params.backend.clone());
     if request.params.default {
         server

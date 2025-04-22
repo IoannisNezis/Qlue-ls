@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+use std::rc::Rc;
 
 use super::{
     error::CompletionError,
@@ -6,10 +6,10 @@ use super::{
     CompletionContext,
 };
 use crate::server::{
-    fetch::fetch_sparql_result,
     lsp::{CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat},
     Server,
 };
+use futures::lock::Mutex;
 use ll_sparql_parser::{
     ast::{AstNode, QueryUnit},
     syntax_kind::SyntaxKind,
@@ -17,10 +17,9 @@ use ll_sparql_parser::{
 use tera::Context;
 
 pub(super) async fn completions(
-    server_rc: Rc<RefCell<Server>>,
+    server_rc: Rc<Mutex<Server>>,
     context: CompletionContext,
 ) -> Result<CompletionList, CompletionError> {
-    let server = server_rc.borrow();
     let mut items = Vec::new();
     let mut is_incomplete = false;
     if [
@@ -39,6 +38,7 @@ pub(super) async fn completions(
                 template_context.insert::<Vec<(&str, &str)>, &str>("prefixes", &vec![]);
                 let range = get_replace_range(&context);
                 let query_unit = QueryUnit::cast(context.tree).unwrap();
+
                 match fetch_online_completions(
                     server_rc.clone(),
                     &query_unit,
@@ -51,7 +51,8 @@ pub(super) async fn completions(
                 {
                     Ok(online_completions) => {
                         is_incomplete = online_completions.len()
-                            == server.settings.completion.result_size_limit as usize;
+                            == server_rc.lock().await.settings.completion.result_size_limit
+                                as usize;
                         items.extend(online_completions)
                     }
                     Err(err) => {

@@ -9,7 +9,7 @@ mod lifecycle;
 mod misc;
 mod textdocument_syncronization;
 
-use std::{cell::RefCell, rc::Rc, sync::Mutex};
+use std::rc::Rc;
 
 use backend::{
     handle_add_backend_notification, handle_ping_backend_request,
@@ -18,6 +18,7 @@ use backend::{
 use code_action::handle_codeaction_request;
 use completion::handle_completion_request;
 use diagnostic::handle_diagnostic_request;
+use futures::lock::Mutex;
 use hover::handle_hover_request;
 use lifecycle::{
     handle_exit_notifcation, handle_initialize_request, handle_initialized_notifcation,
@@ -41,7 +42,7 @@ use super::{
 };
 
 pub(super) async fn dispatch(
-    server_rc: Rc<RefCell<Server>>,
+    server_rc: Rc<Mutex<Server>>,
     message_string: &String,
 ) -> Result<(), LSPError> {
     let message = deserialize_message(message_string)?;
@@ -70,7 +71,9 @@ pub(super) async fn dispatch(
         "initialized" => link!(handle_initialized_notifcation),
         "exit" => link!(handle_exit_notifcation),
         "textDocument/didOpen" => link!(handle_did_open_notification),
-        "textDocument/didChange" => link!(handle_did_change_notification),
+        "textDocument/didChange" => {
+            link!(handle_did_change_notification)
+        }
         "textDocument/didSave" => link!(handle_did_save_notification),
         "$/setTrace" => link!(handle_set_trace_notifcation),
         // NOTE: LSP extensions

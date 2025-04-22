@@ -1,4 +1,6 @@
-use std::{cell::RefCell, rc::Rc};
+use std::rc::Rc;
+
+use futures::lock::Mutex;
 
 use super::error::CompletionError;
 use crate::server::{
@@ -6,10 +8,10 @@ use crate::server::{
     Server,
 };
 
-pub(super) fn completions(
-    server_rc: Rc<RefCell<Server>>,
+pub(super) async fn completions(
+    server_rc: Rc<Mutex<Server>>,
 ) -> Result<CompletionList, CompletionError> {
-    let server = server_rc.borrow();
+    let server = server_rc.lock().await;
     let default_backend = server.state.get_default_backend();
     Ok(CompletionList {
         is_incomplete: false,

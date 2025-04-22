@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+use std::rc::Rc;
 
 use crate::server::{
     self,
@@ -6,17 +6,14 @@ use crate::server::{
     lsp::errors::{ErrorCode, LSPError},
     Server,
 };
+use futures::lock::Mutex;
 use ll_sparql_parser::{
     ast::{AstNode, Iri},
     SyntaxToken,
 };
 use tera::Context;
 
-pub(super) async fn hover(
-    server_rc: Rc<RefCell<Server>>,
-    token: SyntaxToken,
-) -> Result<Option<String>, LSPError> {
-    let server = server_rc.borrow();
+pub(super) async fn hover(server: &Server, token: SyntaxToken) -> Result<Option<String>, LSPError> {
     let iri = match token.parent_ancestors().find_map(Iri::cast) {
         Some(value) => value,
         None => return Ok(None),

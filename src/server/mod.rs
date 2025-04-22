@@ -9,11 +9,11 @@ mod tools;
 
 mod message_handler;
 
-use std::{any::type_name, cell::RefCell, future::Future, rc::Rc, sync::Mutex};
+use std::{any::type_name, rc::Rc};
 
 use capabilities::create_capabilities;
 use configuration::Settings;
-use fetch::fetch_sparql_result;
+use futures::lock::Mutex;
 use log::{error, info};
 use lsp::{
     errors::{ErrorCode, LSPError},
@@ -40,7 +40,6 @@ pub struct Server {
     pub(crate) server_info: ServerInfo,
     tools: Tools,
     send_message_clusure: Box<dyn Fn(String)>,
-    pub(crate) lock: Rc<Mutex<()>>,
 }
 
 impl Server {
@@ -57,7 +56,6 @@ impl Server {
             },
             tools: Tools::init(),
             send_message_clusure: Box::new(write_function),
-            lock: Rc::new(Mutex::new(())),
         }
     }
 
@@ -135,7 +133,7 @@ impl Server {
     }
 }
 
-pub async fn handle_message(server: Rc<RefCell<Server>>, message: String) {
+pub async fn handle_message(server: Rc<Mutex<Server>>, message: String) {
     if let Err(error) = dispatch(server.clone(), &message).await {
         log::error!(
             "Error occured while handling message:\n\"{}\"\n\n{:?}\n{}",
@@ -147,7 +145,8 @@ pub async fn handle_message(server: Rc<RefCell<Server>>, message: String) {
             .map(|msg| RequestIdOrNull::RequestId(msg.id))
         {
             if let Err(error) = server
-                .borrow()
+                .lock()
+                .await
                 .send_message(ResponseMessage::error(id, error))
             {
                 error!(

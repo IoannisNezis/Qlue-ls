@@ -1,8 +1,9 @@
 mod uncompacted_uri;
 mod undeclared_prefix;
 mod unused_prefix;
-use std::{cell::RefCell, rc::Rc};
+use std::rc::Rc;
 
+use futures::lock::Mutex;
 use ll_sparql_parser::parse_query;
 
 use crate::server::{
@@ -12,10 +13,10 @@ use crate::server::{
 };
 
 pub(super) async fn handle_diagnostic_request(
-    server_rc: Rc<RefCell<Server>>,
+    server_rc: Rc<Mutex<Server>>,
     request: DiagnosticRequest,
 ) -> Result<(), LSPError> {
-    let server = server_rc.borrow();
+    let server = server_rc.lock().await;
     let document = server
         .state
         .get_document(&request.params.text_document.uri)?;
@@ -35,7 +36,7 @@ pub(super) async fn handle_diagnostic_request(
     }
 
     if let Some(uncompacted_uri_diagnostics) =
-        uncompacted_uri::diagnostics(document, server_rc.clone(), parse_tree)
+        uncompacted_uri::diagnostics(document, &*server, parse_tree)
     {
         diagnostics.extend(uncompacted_uri_diagnostics);
     }

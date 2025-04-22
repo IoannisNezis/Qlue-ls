@@ -6,19 +6,19 @@ use super::{
 use crate::server::{
     lsp::CompletionList, message_handler::completion::context::CompletionLocation, Server,
 };
+use futures::lock::Mutex;
 use ll_sparql_parser::{
     ast::{AstNode, Path, QueryUnit, Triple},
     syntax_kind::SyntaxKind,
 };
-use std::{cell::RefCell, collections::HashSet, rc::Rc};
+use std::{collections::HashSet, rc::Rc};
 use tera::Context;
 use text_size::TextSize;
 
 pub(super) async fn completions(
-    server_rc: Rc<RefCell<Server>>,
+    server_rc: Rc<Mutex<Server>>,
     context: CompletionContext,
 ) -> Result<CompletionList, CompletionError> {
-    let server = server_rc.borrow();
     if let CompletionLocation::Predicate(triple) = &context.location {
         match (context.backend.as_ref(), context.search_term.as_ref()) {
             (Some(backend_name), Some(search_term)) => {
@@ -27,7 +27,7 @@ pub(super) async fn completions(
                 let query_unit = QueryUnit::cast(context.tree.clone()).ok_or(
                     CompletionError::ResolveError("Could not cast root to QueryUnit".to_string()),
                 )?;
-                let prefixes = get_prefix_declarations(server_rc.clone(), &context, triple);
+                let prefixes = get_prefix_declarations(&*server_rc.lock().await, &context, triple);
                 let inject = compute_inject_context(
                     triple,
                     context.anchor_token.unwrap().text_range().end(),
@@ -51,7 +51,7 @@ pub(super) async fn completions(
 
                 Ok(CompletionList {
                     is_incomplete: items.len()
-                        == server.settings.completion.result_size_limit as usize,
+                        == server_rc.lock().await.settings.completion.result_size_limit as usize,
                     item_defaults: None,
                     items,
                 })

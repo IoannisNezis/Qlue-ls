@@ -1,7 +1,8 @@
 mod server;
 
-use std::{cell::RefCell, rc::Rc};
+use std::rc::Rc;
 
+use futures::lock::Mutex;
 use log::error;
 use server::{handle_message, Server};
 use wasm_bindgen::prelude::*;
@@ -44,7 +45,7 @@ async fn read_message(
 
 #[wasm_bindgen]
 pub async fn listen(server: Server, reader: web_sys::ReadableStreamDefaultReader) {
-    let server_rc = Rc::new(RefCell::new(server));
+    let server_rc = Rc::new(Mutex::new(server));
     loop {
         match read_message(&reader).await {
             Ok((value, done)) => {

@@ -1,5 +1,6 @@
-use std::{cell::RefCell, collections::HashSet, rc::Rc};
+use std::{collections::HashSet, rc::Rc};
 
+use futures::lock::Mutex;
 use ll_sparql_parser::{
     ast::{AstNode, BlankPropertyList, SelectClause, ServiceGraphPattern, Triple},
     continuations_at, parse_query,
@@ -161,11 +162,11 @@ pub(super) struct CompletionContext {
 }
 
 impl CompletionContext {
-    pub(super) fn from_completion_request(
-        server_rc: Rc<RefCell<Server>>,
+    pub(super) async fn from_completion_request(
+        server_rc: Rc<Mutex<Server>>,
         request: &CompletionRequest,
     ) -> Result<Self, CompletionError> {
-        let server = server_rc.borrow();
+        let server = server_rc.lock().await;
         let document_position = request.get_text_position();
         let document = server
             .state

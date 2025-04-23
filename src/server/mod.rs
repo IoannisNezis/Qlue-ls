@@ -9,10 +9,11 @@ mod tools;
 
 mod message_handler;
 
-use std::any::type_name;
+use std::{any::type_name, rc::Rc};
 
 use capabilities::create_capabilities;
 use configuration::Settings;
+use futures::lock::Mutex;
 use log::{error, info};
 use lsp::{
     errors::{ErrorCode, LSPError},
@@ -63,27 +64,6 @@ impl Server {
             .version
             .clone()
             .unwrap_or("not-specified".to_string())
-    }
-
-    pub async fn handle_message(&mut self, message: String) {
-        if let Err(error) = dispatch(self, &message).await {
-            log::error!(
-                "Error occured while handling message:\n\"{}\"\n\n{:?}\n{}",
-                message,
-                error.code,
-                error.message
-            );
-            if let Ok(id) = serde_json::from_str::<RecoverId>(&message)
-                .map(|msg| RequestIdOrNull::RequestId(msg.id))
-            {
-                if let Err(error) = self.send_message(ResponseMessage::error(id, error)) {
-                    error!(
-                        "CRITICAL: could not serialize error message (this very bad):\n{:?}",
-                        error
-                    )
-                }
-            }
-        }
     }
 
     fn send_message<T>(&self, message: T) -> Result<(), LSPError>
@@ -150,5 +130,30 @@ impl Server {
         let record = converter.find_by_uri(uri).ok()?;
         let curie = converter.compress(uri).ok()?;
         Some((record.prefix.clone(), record.uri_prefix.clone(), curie))
+    }
+}
+
+pub async fn handle_message(server: Rc<Mutex<Server>>, message: String) {
+    if let Err(error) = dispatch(server.clone(), &message).await {
+        log::error!(
+            "Error occured while handling message:\n\"{}\"\n\n{:?}\n{}",
+            message,
+            error.code,
+            error.message
+        );
+        if let Ok(id) = serde_json::from_str::<RecoverId>(&message)
+            .map(|msg| RequestIdOrNull::RequestId(msg.id))
+        {
+            if let Err(error) = server
+                .lock()
+                .await
+                .send_message(ResponseMessage::error(id, error))
+            {
+                error!(
+                    "CRITICAL: could not serialize error message (this very bad):\n{:?}",
+                    error
+                )
+            }
+        }
     }
 }

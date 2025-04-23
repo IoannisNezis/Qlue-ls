@@ -1,6 +1,7 @@
+use futures::lock::Mutex;
 use ll_sparql_parser::ast::{QueryUnit, Triple};
 use sparql::results::RDFTerm;
-use std::time::Instant;
+use std::rc::Rc;
 use tera::Context;
 use wasm_bindgen::JsCast;
 
@@ -16,40 +17,47 @@ use crate::server::{
 use super::{context::CompletionContext, error::CompletionError};
 
 pub(super) async fn fetch_online_completions(
-    server: &Server,
+    server_rc: Rc<Mutex<Server>>,
     query_unit: &QueryUnit,
     backend_name: Option<&String>,
     query_template: &str,
     mut query_template_context: Context,
     range: Range,
 ) -> Result<Vec<CompletionItem>, CompletionError> {
-    query_template_context.insert("limit", &server.settings.completion.result_size_limit);
-    query_template_context.insert("offset", &0);
-    let query = server
-        .tools
-        .tera
-        .render(query_template, &query_template_context)
-        .map_err(|err| CompletionError::TemplateError(query_template.to_string(), err))?;
+    let (url, query, timeout_ms) = {
+        let server = server_rc.lock().await;
+        query_template_context.insert("limit", &server.settings.completion.result_size_limit);
+        query_template_context.insert("offset", &0);
+        let query = server
+            .tools
+            .tera
+            .render(query_template, &query_template_context)
+            .map_err(|err| CompletionError::TemplateError(query_template.to_string(), err))?;
 
-    let backend = backend_name.ok_or(CompletionError::ResolveError(
-        "Could not resolve online completion, no backend provided.".to_string(),
-    ))?;
-    let url = &server
-        .state
-        .get_backend(backend)
-        .ok_or(CompletionError::ResolveError(
-            "No default SPARQL backend defined".to_string(),
-        ))?
-        .url;
+        let backend = backend_name.ok_or(CompletionError::ResolveError(
+            "Could not resolve online completion, no backend provided.".to_string(),
+        ))?;
+        let url = server
+            .state
+            .get_backend(backend)
+            .ok_or(CompletionError::ResolveError(
+                "No default SPARQL backend defined".to_string(),
+            ))?
+            .url
+            .clone();
+        let timeout_ms = server.settings.completion.timeout_ms;
+        (url, query, timeout_ms)
+    };
     let performance = js_sys::global()
         .unchecked_into::<web_sys::WorkerGlobalScope>()
         .performance()
         .unwrap();
     log::debug!("Query:\n{}", query);
     let start = performance.now();
-    let result = fetch_sparql_result(url, &query, server.settings.completion.timeout_ms)
+    let result = fetch_sparql_result(&url, &query, timeout_ms)
         .await
         .map_err(|err| CompletionError::RequestError(err.message))?;
+
     let end = performance.now();
 
     log::debug!(
@@ -57,6 +65,7 @@ pub(super) async fn fetch_online_completions(
         (end - start) as i32,
         result.results.bindings.len()
     );
+    let server = server_rc.lock().await;
     Ok(result
         .results
         .bindings
@@ -66,7 +75,8 @@ pub(super) async fn fetch_online_completions(
             let rdf_term = binding
                 .get("qlue_ls_entity")
                 .expect("Every completion query should provide a `qlue_ls_entity`");
-            let (value, import_edit) = render_rdf_term(server, query_unit, rdf_term, backend_name);
+            let (value, import_edit) =
+                render_rdf_term(&*server, query_unit, rdf_term, backend_name);
             let label = binding.get("qlue_ls_label");
             let detail = binding.get("qlue_ls_detail");
             CompletionItem {
@@ -146,10 +156,10 @@ pub(super) fn get_replace_range(context: &CompletionContext) -> Range {
 }
 
 pub(super) fn get_prefix_declarations<'a>(
-    server: &'a Server,
+    server: &Server,
     context: &CompletionContext,
     triple: &'a Triple,
-) -> Vec<(&'a String, &'a String)> {
+) -> Vec<(String, String)> {
     triple
         .used_prefixes()
         .into_iter()
@@ -161,6 +171,6 @@ pub(super) fn get_prefix_declarations<'a>(
                     .and_then(|converter| converter.find_by_prefix(&prefix).ok())
             })
         })
-        .map(|record| (&record.prefix, &record.uri_prefix))
+        .map(|record| (record.prefix.clone(), record.uri_prefix.clone()))
         .collect()
 }

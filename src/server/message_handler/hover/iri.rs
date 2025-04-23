@@ -1,8 +1,12 @@
+use std::rc::Rc;
+
 use crate::server::{
+    self,
     fetch::fetch_sparql_result,
     lsp::errors::{ErrorCode, LSPError},
     Server,
 };
+use futures::lock::Mutex;
 use ll_sparql_parser::{
     ast::{AstNode, Iri},
     SyntaxToken,

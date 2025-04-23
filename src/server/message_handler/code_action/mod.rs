@@ -1,12 +1,14 @@
 mod add_to_result;
 mod filter_var;
 mod quickfix;
-use std::collections::HashSet;
+use std::{collections::HashSet, rc::Rc};
 
+use futures::lock::Mutex;
 use ll_sparql_parser::{parse_query, syntax_kind::SyntaxKind, TokenAtOffset};
 use quickfix::get_quickfix;
 
 use crate::server::{
+    self,
     anaysis::{get_all_uncompacted_uris, get_declared_uri_prefixes},
     lsp::{
         diagnostic::{Diagnostic, DiagnosticCode},
@@ -18,11 +20,12 @@ use crate::server::{
 };
 
 pub(super) async fn handle_codeaction_request(
-    server: &mut Server,
+    server_rc: Rc<Mutex<Server>>,
     request: CodeActionRequest,
 ) -> Result<(), LSPError> {
+    let server = server_rc.lock().await;
     let mut code_action_response = CodeActionResponse::new(request.get_id());
-    code_action_response.add_code_actions(generate_code_actions(server, &request.params)?);
+    code_action_response.add_code_actions(generate_code_actions(&*server, &request.params)?);
     code_action_response.add_code_actions(
         request
             .params
@@ -30,7 +33,7 @@ pub(super) async fn handle_codeaction_request(
             .diagnostics
             .into_iter()
             .filter_map(|diagnostic| {
-                match get_quickfix(server, &request.params.text_document.uri, diagnostic) {
+                match get_quickfix(&*server, &request.params.text_document.uri, diagnostic) {
                     Ok(code_action) => code_action,
                     Err(err) => {
                         log::error!(

@@ -34,7 +34,7 @@ def "main transform" [] {
 		}
 	}
 	| upsert subjectCompletionQuery {|backend| 
-		$backend.subjectCompletionQuery
+		$backend.subjectCompletionQuery + "\nLIMIT {{ limit }} OFFSET {{ offset }}"
 		| str replace --all "%WARMUP_QUERY_1%" $backend.warmupQuery1
 		| str replace --all "%WARMUP_QUERY_2%" $backend.warmupQuery2
 		| str replace --all "%ENTITY_SCORE_PATTERN%" $backend.entityScorePattern
@@ -55,7 +55,7 @@ def "main transform" [] {
 		| str replace --all "%PREFIXES%" "{% for prefix in prefixes %}\nPREFIX {{prefix.0}}: <{{prefix.1}}>\n{% endfor %}"
 	}
 	| upsert predicateCompletionQuery {|backend|
-		$backend.predicateCompletionQuery
+		$backend.predicateCompletionQuery + "\nLIMIT {{ limit }} OFFSET {{ offset }}"
 		| str replace --all "%WARMUP_QUERY_1%" $backend.warmupQuery1
 		| str replace --all "%WARMUP_QUERY_2%" $backend.warmupQuery2
 		| str replace --all "%WARMUP_QUERY_4%" $backend.warmupQuery4
@@ -79,14 +79,14 @@ def "main transform" [] {
 		| str replace --all "%PREFIXES%" "{% for prefix in prefixes %}\nPREFIX {{prefix.0}}: <{{prefix.1}}>\n{% endfor %}"
 	}
 	| upsert objectCompletionQuery {|backend|
-		$backend.objectCompletionQuery
+		$backend.objectCompletionQuery + "\nLIMIT {{ limit }} OFFSET {{ offset }}"
 		| str replace --all "%WARMUP_QUERY_1%" $backend.warmupQuery1
 		| str replace --all "%WARMUP_QUERY_2%" $backend.warmupQuery2
 		| str replace --all "%WARMUP_QUERY_4%" $backend.warmupQuery4
 		| str replace --all "%ENTITY_SCORE_PATTERN%" $backend.entityScorePattern
 		| str replace --all "%ENTITY_NAME_AND_ALIAS_PATTERN%" $backend.entityNameAndAliasPattern
 		| str replace --all "%PREDICATE_NAME_AND_ALIAS_PATTERN_WITHOUT_CONTEXT%" $backend.predicateNameAndAliasPatternWithoutContext
-		| str replace --all "%PREDICATE_NAME_AND_ALIAS_PATTERN_WITHOUT_CONTEXT_DEFAULT%" $backend.predicateNameAndAliasPatternWithoutContextDefault
+		| str replace --all "%PREDICAgE_NAME_AND_ALIAS_PATTERN_WITHOUT_CONTEXT_DEFAULT%" $backend.predicateNameAndAliasPatternWithoutContextDefault
 		| str replace --all "?qui_entity" "?qlue_ls_entity"
 		| str replace --all "?qleverui_entity" "?qlue_ls_entity"
 		| str replace --all "?qui_count" "?qlue_ls_count"

@@ -1,23 +1,26 @@
 mod core;
 mod utils;
 use core::*;
+use std::rc::Rc;
 
+use futures::lock::Mutex;
 use tree_sitter::Parser;
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::server::{
     configuration::Settings,
     lsp::{
-        errors::LSPError, textdocument::TextDocumentItem, FormattingOptions,
-        FormattingRequest, FormattingResponse,
+        errors::LSPError, textdocument::TextDocumentItem, FormattingOptions, FormattingRequest,
+        FormattingResponse,
     },
     Server,
 };
 
 pub(super) async fn handle_format_request(
-    server: &mut Server,
+    server_rc: Rc<Mutex<Server>>,
     request: FormattingRequest,
 ) -> Result<(), LSPError> {
+    let server = server_rc.lock().await;
     let (document, tree) = server.state.get_state(request.get_document_uri())?;
     let edits = format_document(
         &document,

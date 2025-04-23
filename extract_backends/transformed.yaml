@@ -20,7 +20,6 @@
           ?qlue_ls_entity imdb:title ?name . BIND(?name AS ?alias) }
         ORDER BY ?qlue_ls_entity }
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
-      LIMIT 100
 
       {% else %}
 
@@ -34,10 +33,10 @@
         FILTER (REGEX(?alias, "^\"{{ search_term }}") || REGEX(?alias, "^<{{ search_term }}"))
         {% endif %}
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
-      LIMIT 100
 
       {% endif %}
-    predicateCompletion: "{% for prefix in prefixes %}\nPREFIX {{prefix.0}}: <{{prefix.1}}>\n{% endfor %}\nSELECT ?qlue_ls_entity WHERE {\n  {{context}}\n}\nGROUP BY ?qlue_ls_entity "
+      LIMIT {{ limit }} OFFSET {{ offset }}
+    predicateCompletion: "{% for prefix in prefixes %}\nPREFIX {{prefix.0}}: <{{prefix.1}}>\n{% endfor %}\nSELECT ?qlue_ls_entity WHERE {\n  {{context}}\n}\nGROUP BY ?qlue_ls_entity \nLIMIT {{ limit }} OFFSET {{ offset }}"
     objectCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
@@ -48,6 +47,7 @@
         FILTER (REGEX(?alias, "^\"{{ search_term }}") || REGEX(?alias, "^<{{ search_term }}"))
         {% endif %}
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
+      LIMIT {{ limit }} OFFSET {{ offset }}
 - backend:
     name: DBLP
     slug: dblp
@@ -84,7 +84,8 @@
           { { SELECT ?qlue_ls_entity (COUNT(?author) AS ?qlue_ls_count) WHERE { ?qlue_ls_entity dblp:authoredBy ?author } GROUP BY ?qlue_ls_entity } ?qlue_ls_entity dblp:title ?qlue_ls_alias }
         } INTERNAL SORT BY ?qlue_ls_alias }
         FILTER REGEX(STR(?qlue_ls_alias), "^{{ search_term }}")
-      } ORDER BY DESC(?qlue_ls_count) LIMIT 100
+      } ORDER BY DESC(?qlue_ls_count)
+      LIMIT {{ limit }} OFFSET {{ offset }}
     predicateCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
@@ -98,6 +99,7 @@
         FILTER REGEX(STR(?qlue_ls_label), "{{ search_term }}", "i")
         {% endif %}
       } ORDER BY DESC(?qlue_ls_count)
+      LIMIT {{ limit }} OFFSET {{ offset }}
     objectCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
@@ -113,6 +115,7 @@
         FILTER (REGEX(STR(?qlue_ls_label), "^{{ search_term }}") || REGEX(STR(?qlue_ls_alias), "^{{ search_term }}"))
       {% endif %}
       } ORDER BY DESC(?qlue_ls_count)
+      LIMIT {{ limit }} OFFSET {{ offset }}
 - backend:
     name: PubChem
     slug: pubchem
@@ -188,7 +191,7 @@
         FILTER REGEX(STR(?qlue_ls_label), "^{{ search_term }}")
       {% endif %}
       } ORDER BY ASC(?qlue_ls_label)
-      LIMIT 40
+      LIMIT {{ limit }} OFFSET {{ offset }}
     predicateCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
@@ -204,6 +207,7 @@
         FILTER REGEX(STR(?qlue_ls_alias), "{{ search_term }}", "i")
         {% endif %}
       } ORDER BY DESC(?qlue_ls_count)
+      LIMIT {{ limit }} OFFSET {{ offset }}
     objectCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
@@ -223,6 +227,7 @@
         FILTER REGEX(STR(?qlue_ls_label), "^{{ search_term }}")
         {% endif %}
       } ORDER BY DESC(?qlue_ls_count)
+      LIMIT {{ limit }} OFFSET {{ offset }}
 - backend:
     name: UniProt
     slug: uniprot
@@ -295,7 +300,7 @@
       }
       GROUP BY ?qlue_ls_entity
       ORDER BY DESC(COUNT(?qlue_ls_entity))
-      LIMIT 100
+      LIMIT {{ limit }} OFFSET {{ offset }}
     predicateCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
@@ -309,6 +314,7 @@
         FILTER REGEX(STR(?qlue_ls_entity), "{{ search_term }}", "i")
         {% endif %}
       } ORDER BY DESC(?qlue_ls_count)
+      LIMIT {{ limit }} OFFSET {{ offset }}
     objectCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
@@ -347,6 +353,7 @@
           } }
         }
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
+      LIMIT {{ limit }} OFFSET {{ offset }}
 - backend:
     name: OSM Planet
     slug: osm-planet
@@ -401,6 +408,7 @@
             WHERE { ?qlue_ls_entity osmrel:member/osm:id/osm2rdf:length ?length } GROUP BY ?qlue_ls_entity } }
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
       {% endif %}
+      LIMIT {{ limit }} OFFSET {{ offset }}
     predicateCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
@@ -414,7 +422,7 @@
         FILTER REGEX(STR(?name), "{{ search_term }}", "i")
         {% endif %}
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
-      LIMIT 100
+      LIMIT {{ limit }} OFFSET {{ offset }}
     objectCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
@@ -434,7 +442,7 @@
         FILTER (REGEX(STR(?name), "^{{ search_term }}") || REGEX(STR(?alias), "^{{ search_term }}"))
         {% endif %}
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
-      LIMIT 100
+      LIMIT {{ limit }} OFFSET {{ offset }}
 - backend:
     name: Wikidata
     slug: wikidata
@@ -495,9 +503,8 @@
             FILTER (REGEX(STR(?name), "^{{ search_term }}") || REGEX(STR(?alias), "^{{ search_term }}")) } }
         ?qlue_ls_entity ^schema:about ?m . ?m wikibase:sitelinks ?sitelinks
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
-      LIMIT 100
-
       {% endif %}
+      LIMIT {{ limit }} OFFSET {{ offset }}
     predicateCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
@@ -518,6 +525,7 @@
         FILTER (REGEX(STR(?name), "{{ search_term }}", "i") || REGEX(STR(?alias), "{{ search_term }}", "i"))
         {% endif %}
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
+      LIMIT {{ limit }} OFFSET {{ offset }}
     objectCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
@@ -538,4 +546,4 @@
         FILTER (REGEX(STR(?name), "^{{ search_term }}") || REGEX(STR(?alias), "^{{ search_term }}"))
         {% endif %}
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
-      LIMIT 100
+      LIMIT {{ limit }} OFFSET {{ offset }}

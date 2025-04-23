@@ -92,15 +92,23 @@ impl ServerState {
         &mut self,
         uri: &String,
         content_changes: Vec<TextDocumentContentChangeEvent>,
-    ) -> Option<&TextDocumentItem> {
-        let document = &mut self.documents.get_mut(uri)?.0;
+    ) -> Result<(), LSPError> {
+        let document = &mut self
+            .documents
+            .get_mut(uri)
+            .ok_or(LSPError::new(
+                ErrorCode::InvalidParams,
+                &format!("Could not change unknown document {}", uri),
+            ))?
+            .0;
+
         document.apply_text_edits(
             content_changes
                 .into_iter()
                 .map(TextEdit::from_text_document_content_change_event)
                 .collect::<Vec<TextEdit>>(),
         );
-        Some(document)
+        Ok(())
     }
 
     pub(super) fn get_state(&self, uri: &str) -> Result<(&TextDocumentItem, &Tree), LSPError> {

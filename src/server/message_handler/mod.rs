@@ -9,6 +9,8 @@ mod lifecycle;
 mod misc;
 mod textdocument_syncronization;
 
+use std::rc::Rc;
+
 use backend::{
     handle_add_backend_notification, handle_ping_backend_request,
     handle_update_backend_default_notification,
@@ -16,6 +18,7 @@ use backend::{
 use code_action::handle_codeaction_request;
 use completion::handle_completion_request;
 use diagnostic::handle_diagnostic_request;
+use futures::lock::Mutex;
 use hover::handle_hover_request;
 use lifecycle::{
     handle_exit_notifcation, handle_initialize_request, handle_initialized_notifcation,
@@ -27,6 +30,7 @@ use textdocument_syncronization::{
 };
 
 pub use formatting::format_raw;
+use wasm_bindgen_futures::spawn_local;
 
 use crate::server::lsp::errors::ErrorCode;
 
@@ -37,14 +41,18 @@ use super::{
     Server,
 };
 
-pub(super) async fn dispatch(server: &mut Server, message_string: &String) -> Result<(), LSPError> {
+pub(super) async fn dispatch(
+    server_rc: Rc<Mutex<Server>>,
+    message_string: &String,
+) -> Result<(), LSPError> {
     let message = deserialize_message(message_string)?;
     let method = message.get_method().unwrap_or("");
     macro_rules! link {
         ($handler:ident) => {
-            $handler(server, message.parse()?).await
+            $handler(server_rc, message.parse()?).await
         };
     }
+    log::info!("method: {}", method);
     match method {
         // NOTE: Requests
         "initialize" => link!(handle_initialize_request),
@@ -53,12 +61,19 @@ pub(super) async fn dispatch(server: &mut Server, message_string: &String) -> Re
         "textDocument/diagnostic" => link!(handle_diagnostic_request),
         "textDocument/codeAction" => link!(handle_codeaction_request),
         "textDocument/hover" => link!(handle_hover_request),
-        "textDocument/completion" => link!(handle_completion_request),
+        "textDocument/completion" => {
+            spawn_local(async move {
+                handle_completion_request(server_rc, message.parse().unwrap()).await;
+            });
+            Ok(())
+        }
         // NOTE: Notifications
         "initialized" => link!(handle_initialized_notifcation),
         "exit" => link!(handle_exit_notifcation),
         "textDocument/didOpen" => link!(handle_did_open_notification),
-        "textDocument/didChange" => link!(handle_did_change_notification),
+        "textDocument/didChange" => {
+            link!(handle_did_change_notification)
+        }
         "textDocument/didSave" => link!(handle_did_save_notification),
         "$/setTrace" => link!(handle_set_trace_notifcation),
         // NOTE: LSP extensions

@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use super::{
     error::CompletionError,
     utils::{fetch_online_completions, get_replace_range},
@@ -7,6 +9,7 @@ use crate::server::{
     lsp::{CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat},
     Server,
 };
+use futures::lock::Mutex;
 use ll_sparql_parser::{
     ast::{AstNode, QueryUnit},
     syntax_kind::SyntaxKind,
@@ -14,7 +17,7 @@ use ll_sparql_parser::{
 use tera::Context;
 
 pub(super) async fn completions(
-    server: &Server,
+    server_rc: Rc<Mutex<Server>>,
     context: CompletionContext,
 ) -> Result<CompletionList, CompletionError> {
     let mut items = Vec::new();
@@ -35,8 +38,9 @@ pub(super) async fn completions(
                 template_context.insert::<Vec<(&str, &str)>, &str>("prefixes", &vec![]);
                 let range = get_replace_range(&context);
                 let query_unit = QueryUnit::cast(context.tree).unwrap();
+
                 match fetch_online_completions(
-                    server,
+                    server_rc.clone(),
                     &query_unit,
                     context.backend.as_ref(),
                     &format!("{}-{}", backend_name, "subjectCompletion"),
@@ -47,7 +51,8 @@ pub(super) async fn completions(
                 {
                     Ok(online_completions) => {
                         is_incomplete = online_completions.len()
-                            == server.settings.completion.result_size_limit as usize;
+                            == server_rc.lock().await.settings.completion.result_size_limit
+                                as usize;
                         items.extend(online_completions)
                     }
                     Err(err) => {

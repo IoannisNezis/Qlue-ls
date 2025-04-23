@@ -22,7 +22,7 @@ pub(super) fn get_quickfix(
         Some(DiagnosticCode::String(ref diagnostic_code)) => match diagnostic_code.as_str() {
             "undeclared-prefix" => declare_prefix(server, document_uri, diagnostic),
             "uncompacted-uri" => shorten_uri(server, document_uri, diagnostic),
-            "unused-prefix" => remove_prefix_declaration(server, document_uri, diagnostic),
+            "unused-prefix" => remove_prefix_declaration(document_uri, diagnostic),
             _ => {
                 log::warn!("Unknown diagnostic code: {}", diagnostic_code);
                 Ok(None)
@@ -33,7 +33,6 @@ pub(super) fn get_quickfix(
 }
 
 fn remove_prefix_declaration(
-    _server: &Server,
     document_uri: &String,
     diagnostic: Diagnostic,
 ) -> Result<Option<CodeAction>, LSPError> {
@@ -113,6 +112,10 @@ fn declare_prefix(
 
 #[cfg(test)]
 mod test {
+
+    use std::rc::Rc;
+
+    use futures::lock::Mutex;
     use indoc::indoc;
     use tree_sitter::Parser;
     use tree_sitter_sparql::LANGUAGE;
@@ -162,7 +165,7 @@ mod test {
             ])),
         };
 
-        let code_action = shorten_uri(&server, &document.uri, diagnostic)
+        let code_action = shorten_uri(Rc::new(Mutex::new(server)), &document.uri, diagnostic)
             .unwrap()
             .unwrap();
 

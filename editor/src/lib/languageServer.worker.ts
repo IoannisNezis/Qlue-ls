@@ -1,4 +1,4 @@
-import init, { init_language_server } from 'qlue-ls';
+import init, { init_language_server, listen } from 'qlue-ls';
 import { BrowserMessageReader, BrowserMessageWriter } from "vscode-languageserver/browser";
 import wasmUrl from 'qlue-ls/qlue_ls_bg.wasm?url'
 
@@ -17,7 +17,7 @@ init({
 
         // Initialize & start language server
         const server = init_language_server(wasmOutputStream.writable.getWriter());
-        server.listen(wasmInputStream.readable.getReader());
+        listen(server, wasmInputStream.readable.getReader());
 
         // Language Client -> Language Server
         editorReader.listen((data) => {

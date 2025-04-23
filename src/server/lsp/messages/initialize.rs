@@ -1,8 +1,11 @@
+use std::rc::Rc;
+
+use futures::lock::Mutex;
 use serde::{Deserialize, Serialize};
 
 use crate::server::{
     lsp::{
-        capabilities::ServerCapabilities,
+        capabilities::{self, ServerCapabilities},
         rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
         workdoneprogress::WorkDoneProgressParams,
     },
@@ -67,12 +70,16 @@ pub struct InitializeResponse {
 }
 
 impl InitializeResponse {
-    pub fn new(id: &RequestId, server: &Server) -> Self {
+    pub fn new(
+        id: &RequestId,
+        capabilities: &ServerCapabilities,
+        server_info: &ServerInfo,
+    ) -> Self {
         InitializeResponse {
             base: ResponseMessageBase::success(id),
             result: InitializeResult {
-                capabilities: server.capabilities.clone(),
-                server_info: Some(server.server_info.clone()),
+                capabilities: capabilities.clone(),
+                server_info: Some(server_info.clone()),
             },
         }
     }

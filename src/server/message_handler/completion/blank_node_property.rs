@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use super::{
     context::{CompletionContext, CompletionLocation},
     error::CompletionError,
@@ -7,13 +9,14 @@ use crate::server::{
     message_handler::completion::utils::{fetch_online_completions, get_prefix_declarations},
     Server,
 };
+use futures::lock::Mutex;
 use ll_sparql_parser::ast::{AstNode, QueryUnit};
 use tera::Context;
 
 static QUERY_TEMPLATE: &str = "predicate_completion.rq";
 
 pub(super) async fn completions(
-    server: &Server,
+    server_rc: Rc<Mutex<Server>>,
     context: CompletionContext,
 ) -> Result<CompletionList, CompletionError> {
     if let CompletionLocation::BlankNodeProperty(blank_node_props) = &context.location {
@@ -45,12 +48,12 @@ pub(super) async fn completions(
             subj.text(),
             path.text()
         );
-        let prefixes = get_prefix_declarations(server, &context, &triple);
+        let prefixes = get_prefix_declarations(&*server_rc.lock().await, &context, &triple);
         let mut template_context = Context::new();
         template_context.insert("context", &inject_context);
         template_context.insert("prefixes", &prefixes);
         let items = fetch_online_completions(
-            server,
+            server_rc.clone(),
             &query_unit,
             context.backend.as_ref(),
             QUERY_TEMPLATE,
@@ -64,7 +67,8 @@ pub(super) async fn completions(
         )
         .await?;
         Ok(CompletionList {
-            is_incomplete: items.len() == server.settings.completion.result_size_limit as usize,
+            is_incomplete: items.len()
+                == server_rc.lock().await.settings.completion.result_size_limit as usize,
             item_defaults: Some(ItemDefaults {
                 edit_range: None,
                 commit_characters: None,

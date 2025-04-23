@@ -77,7 +77,7 @@ pub(super) async fn completions(
                 kind: CompletionItemKind::Snippet,
                 detail: Some("Filter the results".to_string()),
                 sort_text: None,
-                insert_text: Some("FILTER ( $0 )".to_string()),
+                insert_text: Some("FILTER ($0)".to_string()),
                 text_edit: None,
                 insert_text_format: Some(InsertTextFormat::Snippet),
                 additional_text_edits: None,

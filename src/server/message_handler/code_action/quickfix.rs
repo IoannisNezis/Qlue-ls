@@ -115,7 +115,6 @@ mod test {
 
     use std::rc::Rc;
 
-    use futures::lock::Mutex;
     use indoc::indoc;
     use tree_sitter::Parser;
     use tree_sitter_sparql::LANGUAGE;
@@ -165,7 +164,7 @@ mod test {
             ])),
         };
 
-        let code_action = shorten_uri(Rc::new(Mutex::new(server)), &document.uri, diagnostic)
+        let code_action = shorten_uri(&server, &document.uri, diagnostic)
             .unwrap()
             .unwrap();
 

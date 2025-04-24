@@ -30,7 +30,7 @@ pub struct CodeActionParams {
     pub context: CodeActionContext,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Hash, Eq, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum CodeActionKind {
     #[serde(rename = "")]
@@ -55,8 +55,8 @@ pub enum CodeActionKind {
 #[derive(Debug, Deserialize)]
 pub struct CodeActionContext {
     pub diagnostics: Vec<Diagnostic>,
-    only: Option<Vec<CodeActionKind>>,
-    trigger_kind: Option<CodeActionTriggerKind>,
+    // pub only: Option<Vec<CodeActionKind>>,
+    // trigger_kind: Option<CodeActionTriggerKind>,
 }
 
 #[derive(Debug, Serialize_repr, Deserialize_repr)]

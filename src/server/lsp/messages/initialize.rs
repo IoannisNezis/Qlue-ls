@@ -1,16 +1,9 @@
-use std::rc::Rc;
-
-use futures::lock::Mutex;
-use serde::{Deserialize, Serialize};
-
-use crate::server::{
-    lsp::{
-        capabilities::{self, ServerCapabilities},
-        rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
-        workdoneprogress::WorkDoneProgressParams,
-    },
-    Server,
+use crate::server::lsp::{
+    capabilities::ServerCapabilities,
+    rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
+    workdoneprogress::WorkDoneProgressParams,
 };
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct InitializeRequest {

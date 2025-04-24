@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use ll_sparql_parser::{
     ast::{AstNode, Iri, QueryUnit},
     syntax_kind::SyntaxKind,

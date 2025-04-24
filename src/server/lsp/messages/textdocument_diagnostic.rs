@@ -53,5 +53,5 @@ pub struct DocumentDiagnosticReport {
 #[serde(rename_all = "lowercase")]
 pub enum DocumentDiagnosticReportKind {
     Full,
-    Unchanged,
+    // Unchanged,
 }

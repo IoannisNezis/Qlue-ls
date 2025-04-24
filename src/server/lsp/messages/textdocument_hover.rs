@@ -66,8 +66,9 @@ struct Hover {
 
 #[derive(Debug, Serialize, PartialEq)]
 #[serde(untagged)]
+#[allow(dead_code)]
 enum HoverResultContents {
-    SingleMarkedString(MarkedString),
+    //SingleMarkedString(MarkedString),
     MultipleMarkedString(Vec<MarkedString>),
     MarkupContent(MarkupContent),
     //WARNING: This is not to spec, the hover.contents also support markup content
@@ -76,6 +77,7 @@ enum HoverResultContents {
 
 #[derive(Debug, Serialize, PartialEq)]
 #[serde(untagged)]
+#[allow(dead_code)]
 enum MarkedString {
     Content { language: String, value: String },
 }
@@ -88,6 +90,7 @@ enum MarkupContent {
 
 #[derive(Debug, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub enum Markupkind {
     Plaintext,
     Markdown,

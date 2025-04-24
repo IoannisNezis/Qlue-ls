@@ -148,6 +148,7 @@ pub struct CompletionItemLabelDetails {
 
 #[derive(Debug, Serialize_repr, PartialEq)]
 #[repr(u8)]
+#[allow(dead_code)]
 pub enum CompletionItemKind {
     Text = 1,
     Method = 2,

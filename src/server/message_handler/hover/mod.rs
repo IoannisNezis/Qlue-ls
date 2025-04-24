@@ -7,7 +7,6 @@ use futures::lock::Mutex;
 use ll_sparql_parser::{parse_query, syntax_kind::SyntaxKind, TokenAtOffset};
 
 use crate::server::{
-    self,
     lsp::{
         errors::{ErrorCode, LSPError},
         HoverRequest, HoverResponse,

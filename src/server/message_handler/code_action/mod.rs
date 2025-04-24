@@ -8,7 +8,6 @@ use ll_sparql_parser::{parse_query, syntax_kind::SyntaxKind, TokenAtOffset};
 use quickfix::get_quickfix;
 
 use crate::server::{
-    self,
     anaysis::{get_all_uncompacted_uris, get_declared_uri_prefixes},
     lsp::{
         diagnostic::{Diagnostic, DiagnosticCode},

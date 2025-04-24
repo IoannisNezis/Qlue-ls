@@ -133,27 +133,31 @@ impl Server {
     }
 }
 
-pub async fn handle_message(server: Rc<Mutex<Server>>, message: String) {
-    if let Err(error) = dispatch(server.clone(), &message).await {
-        log::error!(
-            "Error occured while handling message:\n\"{}\"\n\n{:?}\n{}",
-            message,
-            error.code,
-            error.message
-        );
-        if let Ok(id) = serde_json::from_str::<RecoverId>(&message)
-            .map(|msg| RequestIdOrNull::RequestId(msg.id))
+async fn handle_error(server_rc: Rc<Mutex<Server>>, message: &String, error: LSPError) {
+    log::error!(
+        "Error occured while handling message:\n\"{}\"\n\n{:?}\n{}",
+        message,
+        error.code,
+        error.message
+    );
+    if let Ok(id) =
+        serde_json::from_str::<RecoverId>(&message).map(|msg| RequestIdOrNull::RequestId(msg.id))
+    {
+        if let Err(error) = server_rc
+            .lock()
+            .await
+            .send_message(ResponseMessage::error(id, error))
         {
-            if let Err(error) = server
-                .lock()
-                .await
-                .send_message(ResponseMessage::error(id, error))
-            {
-                error!(
-                    "CRITICAL: could not serialize error message (this very bad):\n{:?}",
-                    error
-                )
-            }
+            error!(
+                "CRITICAL: could not serialize error message (this very bad):\n{:?}",
+                error
+            )
         }
+    }
+}
+
+pub async fn handle_message(server_rc: Rc<Mutex<Server>>, message: String) {
+    if let Err(err) = dispatch(server_rc.clone(), &message).await {
+        handle_error(server_rc.clone(), &message, err).await;
     }
 }

@@ -10,7 +10,6 @@ use ll_sparql_parser::{
 use text_size::{TextRange, TextSize};
 
 use crate::server::{
-    self,
     lsp::{textdocument::Position, CompletionRequest, CompletionTriggerKind},
     Server,
 };

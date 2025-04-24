@@ -6,10 +6,12 @@ use std::{
     io::{self, BufRead, BufReader, Read, Seek, Write},
     path::PathBuf,
     process::exit,
+    rc::Rc,
     sync::mpsc::channel,
 };
 
 use camino::Utf8PathBuf;
+use futures::lock::Mutex;
 use log::LevelFilter;
 use log4rs::{
     append::file::FileAppender,
@@ -18,7 +20,7 @@ use log4rs::{
     Config,
 };
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
-use server::{format_raw, Server};
+use server::{format_raw, handle_message, Server};
 
 use clap::{Parser, Subcommand};
 use stdio_reader::StdioMessages;
@@ -87,9 +89,10 @@ async fn main() {
     match cli.command {
         Command::Server => {
             // Start server and listen to stdio
-            let mut server = Server::new(send_message);
+            let server = Server::new(send_message);
+            let server_rc = Rc::new(Mutex::new(server));
             for message in StdioMessages::new() {
-                server.handle_message(message).await;
+                handle_message(server_rc.clone(), message).await
             }
         }
         Command::Format {

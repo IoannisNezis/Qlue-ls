@@ -32,7 +32,7 @@ use textdocument_syncronization::{
 pub use formatting::format_raw;
 use wasm_bindgen_futures::spawn_local;
 
-use crate::server::lsp::errors::ErrorCode;
+use crate::server::{handle_error, lsp::errors::ErrorCode};
 
 use self::formatting::handle_format_request;
 
@@ -62,8 +62,13 @@ pub(super) async fn dispatch(
         "textDocument/codeAction" => link!(handle_codeaction_request),
         "textDocument/hover" => link!(handle_hover_request),
         "textDocument/completion" => {
+            let message_copy = message_string.clone();
             spawn_local(async move {
-                handle_completion_request(server_rc, message.parse().unwrap()).await;
+                if let Err(err) =
+                    handle_completion_request(server_rc.clone(), message.parse().unwrap()).await
+                {
+                    handle_error(server_rc, &message_copy, err).await;
+                }
             });
             Ok(())
         }

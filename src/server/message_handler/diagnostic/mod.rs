@@ -7,7 +7,6 @@ use futures::lock::Mutex;
 use ll_sparql_parser::parse_query;
 
 use crate::server::{
-    self,
     lsp::{errors::LSPError, DiagnosticRequest, DiagnosticResponse},
     Server,
 };

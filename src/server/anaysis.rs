@@ -6,7 +6,7 @@ use super::{
     state::ServerState,
     Server,
 };
-use std::{collections::HashSet, rc::Rc};
+use std::collections::HashSet;
 use streaming_iterator::StreamingIterator;
 use tree_sitter::{Node, Query, QueryCursor};
 

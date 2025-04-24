@@ -85,7 +85,17 @@ pub(super) async fn dispatch(
         // Requests
         "qlueLs/addBackend" => call!(handle_add_backend_notification),
         "qlueLs/updateDefaultBackend" => call!(handle_update_backend_default_notification),
-        "qlueLs/pingBackend" => call!(handle_ping_backend_request),
+        "qlueLs/pingBackend" => {
+            let message_copy = message_string.clone();
+            spawn_local(async move {
+                if let Err(err) =
+                    handle_ping_backend_request(server_rc.clone(), message.parse().unwrap()).await
+                {
+                    handle_error(server_rc, &message_copy, err).await;
+                }
+            });
+            Ok(())
+        }
         // NOTE: Known unsupported message
         "$/cancelRequest" => {
             log::warn!("Received cancel request (unsupported)");

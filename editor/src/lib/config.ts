@@ -60,7 +60,12 @@ export async function buildWrapperConfig(container: HTMLElement, initial: string
                                                 index: 0,
                                                 name: "workspace",
                                                 uri: Uri.file("/"),
-                                        }
+                                        },
+                                        progressOnInitialization: true,
+                                        diagnosticPullOptions: {
+                                                onChange: true,
+                                                onSave: false
+                                        },
                                 },
                                 connection: {
                                         options: {

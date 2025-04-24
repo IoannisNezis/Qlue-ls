@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- configurable completion query timeout
+- configurable completion query result limit
+- development setup documentation
+- debug log for completion queries
+- samantic variable completions: hasHeight -> ?height
+- async processing of long running requests (completion and ping)
+
+### Changed
+
+- backends configuration in demo editor is now yaml not json
+- completion details are in completion item label_details instead of detail 
+  (gets always rendered in monaco, not just when hovering)
+
+
+### Fixed
+
+- langtag tokenization
+- prefix-compression in service blocks
+- varable completions
+- textual rendering of rdf-terms
+- variouse completion query templates
+
+
 ## [0.5.6] - 2025-04-01
 
 ### Fixed

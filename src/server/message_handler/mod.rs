@@ -47,7 +47,7 @@ pub(super) async fn dispatch(
 ) -> Result<(), LSPError> {
     let message = deserialize_message(message_string)?;
     let method = message.get_method().unwrap_or("");
-    macro_rules! link {
+    macro_rules! call {
         ($handler:ident) => {
             $handler(server_rc, message.parse()?).await
         };
@@ -55,12 +55,12 @@ pub(super) async fn dispatch(
     log::info!("method: {}", method);
     match method {
         // NOTE: Requests
-        "initialize" => link!(handle_initialize_request),
-        "shutdown" => link!(handle_shutdown_request),
-        "textDocument/formatting" => link!(handle_format_request),
-        "textDocument/diagnostic" => link!(handle_diagnostic_request),
-        "textDocument/codeAction" => link!(handle_codeaction_request),
-        "textDocument/hover" => link!(handle_hover_request),
+        "initialize" => call!(handle_initialize_request),
+        "shutdown" => call!(handle_shutdown_request),
+        "textDocument/formatting" => call!(handle_format_request),
+        "textDocument/diagnostic" => call!(handle_diagnostic_request),
+        "textDocument/codeAction" => call!(handle_codeaction_request),
+        "textDocument/hover" => call!(handle_hover_request),
         "textDocument/completion" => {
             let message_copy = message_string.clone();
             spawn_local(async move {
@@ -73,19 +73,19 @@ pub(super) async fn dispatch(
             Ok(())
         }
         // NOTE: Notifications
-        "initialized" => link!(handle_initialized_notifcation),
-        "exit" => link!(handle_exit_notifcation),
-        "textDocument/didOpen" => link!(handle_did_open_notification),
+        "initialized" => call!(handle_initialized_notifcation),
+        "exit" => call!(handle_exit_notifcation),
+        "textDocument/didOpen" => call!(handle_did_open_notification),
         "textDocument/didChange" => {
-            link!(handle_did_change_notification)
+            call!(handle_did_change_notification)
         }
-        "textDocument/didSave" => link!(handle_did_save_notification),
-        "$/setTrace" => link!(handle_set_trace_notifcation),
+        "textDocument/didSave" => call!(handle_did_save_notification),
+        "$/setTrace" => call!(handle_set_trace_notifcation),
         // NOTE: LSP extensions
         // Requests
-        "qlueLs/addBackend" => link!(handle_add_backend_notification),
-        "qlueLs/updateDefaultBackend" => link!(handle_update_backend_default_notification),
-        "qlueLs/pingBackend" => link!(handle_ping_backend_request),
+        "qlueLs/addBackend" => call!(handle_add_backend_notification),
+        "qlueLs/updateDefaultBackend" => call!(handle_update_backend_default_notification),
+        "qlueLs/pingBackend" => call!(handle_ping_backend_request),
         // NOTE: Known unsupported message
         "$/cancelRequest" => {
             log::warn!("Received cancel request (unsupported)");

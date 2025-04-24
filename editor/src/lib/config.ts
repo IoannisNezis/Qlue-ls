@@ -109,7 +109,10 @@ export async function buildWrapperConfig(container: HTMLElement, initial: string
                                         'editor.guides.bracketPairsHorizontal': 'active',
                                         'editor.lightbulb.enabled': 'On',
                                         'editor.wordBasedSuggestions': 'off',
-                                        'editor.experimental.asyncTokenization': true
+                                        'editor.experimental.asyncTokenization': true,
+                                        'editor.tabSize': 2,
+                                        'editor.insertSpaces': true,
+                                        'editor.detectIndentation': false
                                 })
                         },
                 },

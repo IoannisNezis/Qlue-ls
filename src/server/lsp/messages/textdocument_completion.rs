@@ -230,6 +230,7 @@ mod tests {
     fn serialize() {
         let cmp = CompletionItem {
             label: "SELECT".to_string(),
+            label_details: None,
             detail: Some("Select query".to_string()),
             sort_text: None,
             insert_text: Some("SELECT ${1:*} WHERE {\n  $0\n}".to_string()),

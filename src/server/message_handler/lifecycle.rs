@@ -61,9 +61,7 @@ pub(super) async fn handle_initialize_request(
                     Some("init"),
                     Some(0),
                 );
-                server.send_message(
-                    serde_json::to_string(&init_progress_begin_notification).unwrap(),
-                )?;
+                server.send_message(init_progress_begin_notification)?;
 
                 let progress_report_1 = ProgressNotification::report_notification(
                     work_done_token.clone(),
@@ -71,7 +69,7 @@ pub(super) async fn handle_initialize_request(
                     Some("testing availibility of endpoint"),
                     Some(30),
                 );
-                server.send_message(serde_json::to_string(&progress_report_1).unwrap())?;
+                server.send_message(progress_report_1)?;
 
                 let progress_report_2 = ProgressNotification::report_notification(
                     work_done_token.clone(),
@@ -79,16 +77,14 @@ pub(super) async fn handle_initialize_request(
                     Some("request prefixes from endpoint"),
                     Some(60),
                 );
-                server.send_message(serde_json::to_string(&progress_report_2).unwrap())?;
+                server.send_message(progress_report_2)?;
 
                 let init_progress_end_notification = ProgressNotification::end_notification(
                     work_done_token.clone(),
                     Some("qlue-ls initialized"),
                 );
 
-                server.send_message(
-                    serde_json::to_string(&init_progress_end_notification).unwrap(),
-                )?;
+                server.send_message(init_progress_end_notification)?;
             }
             server.send_message(InitializeResponse::new(
                 initialize_request.get_id(),

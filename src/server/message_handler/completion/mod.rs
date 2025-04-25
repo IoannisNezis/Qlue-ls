@@ -1,3 +1,4 @@
+mod blank_node_object;
 mod blank_node_property;
 mod context;
 mod error;
@@ -64,6 +65,9 @@ pub(super) async fn handle_completion_request(
                 CompletionLocation::Graph => graph::completions(context),
                 CompletionLocation::BlankNodeProperty(_) => {
                     blank_node_property::completions(server_rc.clone(), context).await
+                }
+                CompletionLocation::BlankNodeObject(_) => {
+                    blank_node_object::completions(server_rc.clone(), context).await
                 }
                 CompletionLocation::ServiceUrl => service_url::completions(server_rc.clone()).await,
                 location => Err(CompletionError::LocalizationError(format!(

@@ -135,6 +135,24 @@ pub(super) enum CompletionLocation {
     /// }
     /// ```
     BlankNodeProperty(BlankPropertyList),
+    /// A Blank node object list in a triple
+    ///
+    /// ---
+    ///
+    /// **Example**
+    /// ```sparql
+    /// SELECT * WHERE {
+    ///   ?s ?p [ ?p2 >here< ]
+    /// }
+    ///
+    /// or
+    ///
+    /// ```sparql
+    /// SELECT * WHERE {
+    ///   \[ ?p >here< \]
+    /// }
+    /// ```
+    BlankNodeObject(BlankPropertyList),
     /// URL of a SERVICE endpoint
     ///
     /// ---
@@ -309,7 +327,11 @@ fn get_location(
             SyntaxKind::ObjectList,
             SyntaxKind::Object
         ]) {
-            if let Some(triple) = anchor.parent_ancestors().find_map(Triple::cast) {
+            if let Some(blank_node_property) =
+                anchor.parent_ancestors().find_map(BlankPropertyList::cast)
+            {
+                CompletionLocation::BlankNodeObject(blank_node_property)
+            } else if let Some(triple) = anchor.parent_ancestors().find_map(Triple::cast) {
                 CompletionLocation::Object(triple)
             } else {
                 CompletionLocation::Unknown

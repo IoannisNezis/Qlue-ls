@@ -52,7 +52,6 @@ pub(super) async fn dispatch(
             $handler(server_rc, message.parse()?).await
         };
     }
-    log::info!("method: {}", method);
     match method {
         // NOTE: Requests
         "initialize" => call!(handle_initialize_request),

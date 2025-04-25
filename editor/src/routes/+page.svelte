@@ -3,12 +3,12 @@
     import Header from './header.svelte';
     import LoadingAnimation from './loadingAnimation.svelte';
 
-    let editorReady = $state(true);
+    let ready = $state(false);
 </script>
 
 <Header></Header>
 <div class="container m-auto">
-    {#if !editorReady}
+    {#if !ready}
         <div class="mt-10 grid h-[650px] place-content-center rounded-xs border-2 bg-[#282828] p-2">
             <div class="flex flex-col items-center gap-3">
                 <LoadingAnimation></LoadingAnimation>
@@ -16,7 +16,7 @@
             </div>
         </div>
     {/if}
-    <div class="mt-10 rounded-xs border-2 border-gray-700 bg-[#282828]" class:hidden={!editorReady}>
-        <Editor></Editor>
+    <div class="mt-10 rounded-xs border-2 border-gray-700 bg-[#282828]" class:hidden={!ready}>
+        <Editor bind:ready></Editor>
     </div>
 </div>

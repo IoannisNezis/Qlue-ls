@@ -8,6 +8,8 @@
     import type { editor } from 'monaco-editor';
     import { backends } from '$lib/backends';
 
+    let { ready = $bindable() } = $props();
+
     let editorContainer: HTMLElement;
     let wrapper: MonacoEditorLanguageClientWrapper | undefined;
     let languageClientWrapper: LanguageClientWrapper | undefined = $state();
@@ -25,6 +27,7 @@
         wrapper = new MonacoEditorLanguageClientWrapper();
         let wrapperConfig = await buildWrapperConfig(editorContainer, content);
         await wrapper.initAndStart(wrapperConfig);
+        ready = true;
         languageClientWrapper = wrapper.getLanguageClientWrapper('sparql');
         let editor = wrapper.getEditor()!;
 

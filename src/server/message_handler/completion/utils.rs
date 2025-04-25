@@ -1,8 +1,12 @@
 use futures::lock::Mutex;
-use ll_sparql_parser::ast::{QueryUnit, Triple};
+use ll_sparql_parser::{
+    ast::{AstNode, Path, QueryUnit, Triple},
+    syntax_kind::SyntaxKind,
+};
 use sparql::results::RDFTerm;
 use std::rc::Rc;
 use tera::Context;
+use text_size::TextSize;
 use wasm_bindgen::JsCast;
 
 use crate::server::{
@@ -158,10 +162,9 @@ pub(super) fn get_replace_range(context: &CompletionContext) -> Range {
 pub(super) fn get_prefix_declarations<'a>(
     server: &Server,
     context: &CompletionContext,
-    triple: &'a Triple,
+    prefixes: Vec<String>,
 ) -> Vec<(String, String)> {
-    triple
-        .used_prefixes()
+    prefixes
         .into_iter()
         .filter_map(|prefix| {
             context.backend.as_ref().and_then(|backend| {
@@ -173,4 +176,372 @@ pub(super) fn get_prefix_declarations<'a>(
         })
         .map(|record| (record.prefix.clone(), record.uri_prefix.clone()))
         .collect()
+}
+
+pub(super) fn reduce_path(
+    subject: &str,
+    path: &Path,
+    object: &str,
+    offset: TextSize,
+) -> Option<String> {
+    if path.syntax().text_range().start() >= offset {
+        return Some(format!("{} ?qlue_ls_entity {}", subject, object));
+    }
+    match path.syntax().kind() {
+        SyntaxKind::PathPrimary | SyntaxKind::PathElt | SyntaxKind::Path | SyntaxKind::VerbPath => {
+            reduce_path(
+                subject,
+                &Path::cast(path.syntax().first_child()?)?,
+                object,
+                offset,
+            )
+        }
+        SyntaxKind::PathAlternative => {
+            reduce_path(subject, &path.sub_paths().last()?, object, offset)
+        }
+        SyntaxKind::PathSequence => {
+            let sub_paths = path
+                .sub_paths()
+                .map(|sub_path| sub_path.text())
+                .collect::<Vec<_>>();
+            let path_seq_len = sub_paths.len();
+            if path_seq_len > 1 {
+                let path_prefix = sub_paths[..path_seq_len - 1].join("/");
+                let prefix = format!("{} {} {}", subject, path_prefix, "?qlue_ls_inner");
+                Some(format!(
+                    "{} . {}",
+                    prefix,
+                    reduce_path("?qlue_ls_inner", &path.sub_paths().last()?, object, offset)?
+                ))
+            } else {
+                reduce_path(subject, &path.sub_paths().last()?, object, offset)
+            }
+        }
+        SyntaxKind::PathEltOrInverse => {
+            if path.syntax().first_child_or_token()?.kind() == SyntaxKind::Zirkumflex {
+                reduce_path(
+                    object,
+                    &Path::cast(path.syntax().last_child()?)?,
+                    subject,
+                    offset,
+                )
+            } else {
+                reduce_path(
+                    subject,
+                    &Path::cast(path.syntax().last_child()?)?,
+                    object,
+                    offset,
+                )
+            }
+        }
+        SyntaxKind::PathNegatedPropertySet => {
+            if let Some(last_child) = path.syntax().last_child() {
+                reduce_path(subject, &Path::cast(last_child)?, object, offset)
+            } else {
+                Some(format!("{} ?qlue_ls_entity {}", subject, object))
+            }
+        }
+        SyntaxKind::PathOneInPropertySet => {
+            let first_child = path.syntax().first_child_or_token()?;
+            if first_child.kind() == SyntaxKind::Zirkumflex {
+                if first_child.text_range().end() == offset {
+                    Some(format!("{} ?qlue_ls_entity {}", object, subject))
+                } else {
+                    Some(format!("{} ?qlue_ls_entity {}", subject, object))
+                }
+            } else {
+                Some(path.text().to_string())
+            }
+        }
+        _ => panic!("unknown path kind"),
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use ll_sparql_parser::{
+        ast::{AstNode, QueryUnit},
+        parse_query,
+    };
+
+    use super::reduce_path;
+
+    #[test]
+    fn reduce_sequence_path() {
+        //       0123456789012345678901
+        let s = "Select * { ?a <p0>/  }";
+        let reduced = "?a <p0> ?qlue_ls_inner . ?qlue_ls_inner ?qlue_ls_entity []";
+        let offset = 19;
+        let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
+        let triples = query_unit
+            .select_query()
+            .unwrap()
+            .where_clause()
+            .unwrap()
+            .group_graph_pattern()
+            .unwrap()
+            .triple_blocks()
+            .first()
+            .unwrap()
+            .triples();
+        let triple = triples.first().unwrap();
+        let res = reduce_path(
+            &triple.subject().unwrap().text(),
+            &triple
+                .properties_list_path()
+                .unwrap()
+                .properties()
+                .last()
+                .unwrap()
+                .verb,
+            "[]",
+            offset.into(),
+        )
+        .unwrap();
+        assert_eq!(res, reduced);
+    }
+
+    #[test]
+    fn reduce_alternating_path() {
+        //       012345678901234567890123456
+        let s = "Select * { ?a <p0>/<p1>|  <x>}";
+        let reduced = "?a ?qlue_ls_entity []";
+        let offset = 24;
+        let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
+        let triples = query_unit
+            .select_query()
+            .unwrap()
+            .where_clause()
+            .unwrap()
+            .group_graph_pattern()
+            .unwrap()
+            .triple_blocks()
+            .first()
+            .unwrap()
+            .triples();
+        let triple = triples.first().unwrap();
+        let res = reduce_path(
+            &triple.subject().unwrap().text(),
+            &triple
+                .properties_list_path()
+                .unwrap()
+                .properties()
+                .last()
+                .unwrap()
+                .verb,
+            "[]",
+            offset.into(),
+        )
+        .unwrap();
+        assert_eq!(res, reduced);
+    }
+
+    #[test]
+    fn reduce_inverse_path() {
+        //       012345678901234567890123456
+        let s = "Select * { ?a ^  <x>}";
+        let reduced = "[] ?qlue_ls_entity ?a";
+        let offset = 15;
+        let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
+        let triples = query_unit
+            .select_query()
+            .unwrap()
+            .where_clause()
+            .unwrap()
+            .group_graph_pattern()
+            .unwrap()
+            .triple_blocks()
+            .first()
+            .unwrap()
+            .triples();
+        let triple = triples.first().unwrap();
+        let res = reduce_path(
+            &triple.subject().unwrap().text(),
+            &triple
+                .properties_list_path()
+                .unwrap()
+                .properties()
+                .last()
+                .unwrap()
+                .verb,
+            "[]",
+            offset.into(),
+        )
+        .unwrap();
+        assert_eq!(res, reduced);
+    }
+
+    #[test]
+    fn reduce_negated_path() {
+        //       012345678901234567890123456
+        let s = "Select * { ?a !()}";
+        let reduced = "?a ?qlue_ls_entity []";
+        let offset = 16;
+        let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
+        let triples = query_unit
+            .select_query()
+            .unwrap()
+            .where_clause()
+            .unwrap()
+            .group_graph_pattern()
+            .unwrap()
+            .triple_blocks()
+            .first()
+            .unwrap()
+            .triples();
+        let triple = triples.first().unwrap();
+        let res = reduce_path(
+            &triple.subject().unwrap().text(),
+            &triple
+                .properties_list_path()
+                .unwrap()
+                .properties()
+                .last()
+                .unwrap()
+                .verb,
+            "[]",
+            offset.into(),
+        )
+        .unwrap();
+        assert_eq!(res, reduced);
+    }
+
+    #[test]
+    fn reduce_complex_path1() {
+        //       0123456789012345678901234567890123456
+        let s = "Select * { ?a <p0>|<p1>/(<p2>)/^  <x>}";
+        let reduced = "?a <p1>/(<p2>) ?qlue_ls_inner . [] ?qlue_ls_entity ?qlue_ls_inner";
+        let offset = 32;
+        let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
+        let triples = query_unit
+            .select_query()
+            .unwrap()
+            .where_clause()
+            .unwrap()
+            .group_graph_pattern()
+            .unwrap()
+            .triple_blocks()
+            .first()
+            .unwrap()
+            .triples();
+        let triple = triples.first().unwrap();
+        let res = reduce_path(
+            &triple.subject().unwrap().text(),
+            &triple
+                .properties_list_path()
+                .unwrap()
+                .properties()
+                .last()
+                .unwrap()
+                .verb,
+            "[]",
+            offset.into(),
+        )
+        .unwrap();
+        assert_eq!(res, reduced);
+    }
+    #[test]
+    fn reduce_complex_path2() {
+        //       01234567890123456789012345678901234567890
+        let s = "Select * { ?a <p0>|<p1>/(<p2>)/^<p2>/!(^)  <x>}";
+        let reduced = "?a <p1>/(<p2>)/^<p2> ?qlue_ls_inner . [] ?qlue_ls_entity ?qlue_ls_inner";
+        let offset = 40;
+        let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
+        let triples = query_unit
+            .select_query()
+            .unwrap()
+            .where_clause()
+            .unwrap()
+            .group_graph_pattern()
+            .unwrap()
+            .triple_blocks()
+            .first()
+            .unwrap()
+            .triples();
+        let triple = triples.first().unwrap();
+        let res = reduce_path(
+            &triple.subject().unwrap().text(),
+            &triple
+                .properties_list_path()
+                .unwrap()
+                .properties()
+                .last()
+                .unwrap()
+                .verb,
+            "[]",
+            offset.into(),
+        )
+        .unwrap();
+        assert_eq!(res, reduced);
+    }
+
+    #[test]
+    fn reduce_complex_path3() {
+        //       0123456789012345678901234567890123456
+        let s = "Select * { ?a ^(^<a>/)  <x>}";
+        let reduced = "[] ^<a> ?qlue_ls_inner . ?qlue_ls_inner ?qlue_ls_entity ?a";
+        let offset = 21;
+        let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
+        let triples = query_unit
+            .select_query()
+            .unwrap()
+            .where_clause()
+            .unwrap()
+            .group_graph_pattern()
+            .unwrap()
+            .triple_blocks()
+            .first()
+            .unwrap()
+            .triples();
+        let triple = triples.first().unwrap();
+        let res = reduce_path(
+            &triple.subject().unwrap().text(),
+            &triple
+                .properties_list_path()
+                .unwrap()
+                .properties()
+                .last()
+                .unwrap()
+                .verb,
+            "[]",
+            offset.into(),
+        )
+        .unwrap();
+        assert_eq!(res, reduced);
+    }
+
+    #[test]
+    fn reduce_complex_path4() {
+        //       01234567890123456
+        let s = "Select * { ?a !^  <x>}";
+        let reduced = "[] ?qlue_ls_entity ?a";
+        let offset = 16;
+        let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
+        let triples = query_unit
+            .select_query()
+            .unwrap()
+            .where_clause()
+            .unwrap()
+            .group_graph_pattern()
+            .unwrap()
+            .triple_blocks()
+            .first()
+            .unwrap()
+            .triples();
+        let triple = triples.first().unwrap();
+        let res = reduce_path(
+            &triple.subject().unwrap().text(),
+            &triple
+                .properties_list_path()
+                .unwrap()
+                .properties()
+                .last()
+                .unwrap()
+                .verb,
+            "[]",
+            offset.into(),
+        )
+        .unwrap();
+        assert_eq!(res, reduced);
+    }
 }

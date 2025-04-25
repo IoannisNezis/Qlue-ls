@@ -20,8 +20,11 @@ pub(super) async fn completions(
     if let CompletionLocation::Object(triple) = &context.location {
         match (context.backend.as_ref(), context.search_term.as_ref()) {
             (Some(backend_name), Some(search_term)) => {
-                let prefix_declarations: Vec<_> =
-                    get_prefix_declarations(&*server_rc.lock().await, &context, triple);
+                let prefix_declarations: Vec<_> = get_prefix_declarations(
+                    &*server_rc.lock().await,
+                    &context,
+                    triple.used_prefixes(),
+                );
                 let range = get_replace_range(&context);
                 let query_unit = QueryUnit::cast(context.tree.clone()).ok_or(
                     CompletionError::ResolveError("Could not cast root to QueryUnit".to_string()),

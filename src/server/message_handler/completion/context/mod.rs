@@ -222,7 +222,7 @@ fn get_search_term(
 ) -> Option<String> {
     anchor_token.as_ref().and_then(|anchor| {
         let range = if anchor.text_range().end() > trigger_pos {
-            TextRange::new(anchor.text_range().start(), trigger_pos)
+            TextRange::new(trigger_pos, trigger_pos)
         } else {
             TextRange::new(anchor.text_range().end(), trigger_pos)
         };

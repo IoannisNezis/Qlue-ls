@@ -419,7 +419,21 @@ impl BlankPropertyList {
     }
 
     pub fn property_list(&self) -> Option<PropertyListPath> {
-        todo!()
+        match self.syntax.kind() {
+            SyntaxKind::BlankNodePropertyListPath | SyntaxKind::BlankNodePropertyList => {
+                PropertyListPath::cast(self.syntax.first_child()?)
+            }
+
+            _ => None,
+        }
+    }
+
+    pub fn used_prefixes(&self) -> Vec<String> {
+        self.syntax
+            .descendants()
+            .filter_map(PrefixedName::cast)
+            .map(|prefixed_name| prefixed_name.prefix())
+            .collect()
     }
 }
 

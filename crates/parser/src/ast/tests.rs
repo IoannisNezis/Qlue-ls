@@ -1,7 +1,10 @@
 use rowan::TextRange;
 
 use crate::{
-    ast::{AstNode, GroupGraphPattern, QueryUnit, Triple, TriplesBlock, WhereClause},
+    ast::{
+        self, AstNode, BlankPropertyList, GroupGraphPattern, QueryUnit, Triple, TriplesBlock,
+        WhereClause,
+    },
     parse_query, SyntaxNode,
 };
 
@@ -14,6 +17,21 @@ fn walk(node: SyntaxNode, mut path: Vec<usize>) -> Option<SyntaxNode> {
         return walk(child, path);
     }
     None
+}
+
+#[test]
+fn blank_prop_list() {
+    let input = "SELECT * WHERE { ?s ?p []}";
+    let root = parse_query(input);
+    let node = walk(root, vec![0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0]).unwrap();
+    let ast_node = BlankPropertyList::cast(node).unwrap();
+    assert!(ast_node.property_list().is_none());
+
+    let input = "SELECT * WHERE { ?s ?p [?a ]}";
+    let root = parse_query(input);
+    let node = walk(root, vec![0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0]).unwrap();
+    let ast_node = BlankPropertyList::cast(node).unwrap();
+    assert!(ast_node.property_list().is_some());
 }
 
 #[test]

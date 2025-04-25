@@ -31,10 +31,11 @@ fn tokenize_langtag() {
 
 #[test]
 fn tokenize_brack() {
-    let tokens = tokenize("[ ] [ ?var ] ");
+    let tokens = tokenize("[] [ ] [ ?var ] ");
     assert_eq!(
         tokens,
         vec![
+            SyntaxKind::ANON,
             SyntaxKind::ANON,
             SyntaxKind::LBrack,
             SyntaxKind::VAR1,

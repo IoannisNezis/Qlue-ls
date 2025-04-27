@@ -55,7 +55,7 @@ tera = { version = "1.20.0", default-features = false }
 # misc
 indoc = "2.0.5"
 config = "0.14.0"
-notify = "6.1.1"
+notify = "8.0.0"
 lazy_static = "1.5.0"
 text-size = "1.1.1"
 

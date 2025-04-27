@@ -1,4 +1,4 @@
-use ll_sparql_parser::{parse_query, syntax_kind::SyntaxKind, SyntaxToken};
+use ll_sparql_parser::{parse_query, print_full_tree, syntax_kind::SyntaxKind, SyntaxToken};
 
 use crate::server::message_handler::completion::context::CompletionLocation;
 
@@ -190,6 +190,16 @@ fn localize_predicate_4() {
     let input = "Select * { ?a ?b ?c ; }";
     assert!(matches!(
         location(input, 21),
+        CompletionLocation::Predicate(_),
+    ));
+}
+
+#[test]
+fn localize_predicate_5() {
+    //           012345678901234567890123
+    let input = "Select * { ?a a }";
+    assert!(matches!(
+        location(input, 15),
         CompletionLocation::Predicate(_),
     ));
 }

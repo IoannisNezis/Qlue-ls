@@ -109,8 +109,9 @@ I split auto-completion into 3 stages:
 2. Dynamic offline (local defined variables)
 3. Dynamic online (with data from a knowledge-graph)
 
-The implementation is in Stage 1.5.
-Static completion is done, dynamic offline completion is in development.
+The implementation is in Stage 2.8.  
+Dynamic online completion works!
+At the moment the context is limited to the Tripple the completion is requested from. Next step is to introduce full context sensitivity.
 
 ## 🛠️ Code Actions
 
@@ -132,13 +133,17 @@ Here is the full default configuration
 ```toml
 [format]
 align_predicates = true
-align_prefixes = false
+align_prefixes = true
 separate_prolouge = false
 capitalize_keywords = true
 insert_spaces = true
-tab_size = 2
-where_new_line = false
+tab_size = 10
+where_new_line = true
 filter_same_line = true
+
+[completion]
+timeout_ms = 5000
+result_size_limit = 42
 ```
 
 # 🌐 use in web

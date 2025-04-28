@@ -403,10 +403,7 @@ fn get_trigger_token(root: &SyntaxNode, offset: TextSize) -> Option<SyntaxToken>
     } else {
         match root.token_at_offset(offset) {
             TokenAtOffset::Single(token) => Some(token),
-            TokenAtOffset::Between(token_1, token_2) => match token_1.kind() {
-                SyntaxKind::VAR1 | SyntaxKind::VAR2 => Some(token_1),
-                _ => Some(token_2),
-            },
+            TokenAtOffset::Between(token, _) => Some(token),
             TokenAtOffset::None => None,
         }
     }
@@ -414,7 +411,17 @@ fn get_trigger_token(root: &SyntaxNode, offset: TextSize) -> Option<SyntaxToken>
 
 fn get_anchor_token(mut token: SyntaxToken) -> Option<SyntaxToken> {
     // NOTE: Skip first token in some cases:
-    if matches!(token.kind(), SyntaxKind::VAR1 | SyntaxKind::VAR2) {
+    if !matches!(
+        token.kind(),
+        SyntaxKind::Error
+            | SyntaxKind::WHITESPACE
+            | SyntaxKind::Dot
+            | SyntaxKind::Semicolon
+            | SyntaxKind::RBrack
+            | SyntaxKind::RCurly
+            | SyntaxKind::RParen
+            | SyntaxKind::Slash
+    ) {
         token = token.prev_token()?;
     }
     while token.kind() == SyntaxKind::WHITESPACE

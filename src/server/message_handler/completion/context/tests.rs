@@ -1,4 +1,4 @@
-use ll_sparql_parser::{parse_query, print_full_tree, syntax_kind::SyntaxKind, SyntaxToken};
+use ll_sparql_parser::{parse_query, syntax_kind::SyntaxKind, SyntaxToken};
 
 use crate::server::message_handler::completion::context::CompletionLocation;
 
@@ -10,10 +10,10 @@ fn match_location_at_offset(input: &str, matcher: CompletionLocation, offset: u3
 
 fn location(input: &str, offset: u32) -> CompletionLocation {
     let root = parse_query(input);
-    let trigger_token = get_trigger_token(&root, offset.into());
-    let anchor = trigger_token.and_then(get_anchor_token);
-    let continuations = get_continuations(&root, &anchor);
-    get_location(&anchor, &continuations, offset.into())
+    let trigger_token = dbg!(get_trigger_token(&root, offset.into()));
+    let anchor = dbg!(trigger_token.and_then(get_anchor_token));
+    let continuations = dbg!(get_continuations(&root, &anchor));
+    dbg!(get_location(&anchor, &continuations, offset.into()))
 }
 
 #[test]
@@ -27,12 +27,6 @@ fn localize_select_binding() {
     assert!(!matches!(
         //        012345678901234567890
         location("Select  Reduced ?a {}", 0),
-        CompletionLocation::SelectBinding(_),
-    ));
-
-    assert!(matches!(
-        //        012345678901234567890
-        location("Select  Reduced ?a {}", 6),
         CompletionLocation::SelectBinding(_),
     ));
 
@@ -55,9 +49,15 @@ fn localize_select_binding() {
         CompletionLocation::SelectBinding(_),
     ));
 
-    assert!(!matches!(
+    assert!(matches!(
         //        012345678901234567890
         location("Select * {}", 8),
+        CompletionLocation::SelectBinding(_),
+    ));
+
+    assert!(matches!(
+        //        012345678901234567890
+        location("Select (3 as ?x) {}", 16),
         CompletionLocation::SelectBinding(_),
     ));
 

@@ -1,6 +1,6 @@
 use futures::lock::Mutex;
 use ll_sparql_parser::{
-    ast::{AstNode, Path, QueryUnit, Triple},
+    ast::{AstNode, Path, QueryUnit},
     syntax_kind::SyntaxKind,
 };
 use sparql::results::RDFTerm;

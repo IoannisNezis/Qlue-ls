@@ -113,12 +113,6 @@ fn declare_prefix(
 #[cfg(test)]
 mod test {
 
-    use std::rc::Rc;
-
-    use indoc::indoc;
-    use tree_sitter::Parser;
-    use tree_sitter_sparql::LANGUAGE;
-
     use crate::server::{
         lsp::{
             base_types::LSPAny,
@@ -129,6 +123,9 @@ mod test {
         state::ServerState,
         Server,
     };
+    use indoc::indoc;
+    use tree_sitter::Parser;
+    use tree_sitter_sparql::LANGUAGE;
 
     fn setup_state(text: &str) -> ServerState {
         let mut state = ServerState::new();

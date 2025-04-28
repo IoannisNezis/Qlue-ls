@@ -8,7 +8,7 @@ use crate::server::{
 };
 use futures::lock::Mutex;
 use ll_sparql_parser::{
-    ast::{AstNode, Path, QueryUnit, Triple},
+    ast::{AstNode, QueryUnit, Triple},
     syntax_kind::SyntaxKind,
 };
 use std::{collections::HashSet, rc::Rc};

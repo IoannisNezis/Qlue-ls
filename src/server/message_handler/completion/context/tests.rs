@@ -11,7 +11,9 @@ fn match_location_at_offset(input: &str, matcher: CompletionLocation, offset: u3
 fn location(input: &str, offset: u32) -> CompletionLocation {
     let root = parse_query(input);
     let trigger_token = dbg!(get_trigger_token(&root, offset.into()));
+    println!("{:?}", trigger_token);
     let anchor = dbg!(trigger_token.and_then(get_anchor_token));
+    println!("{:?}", anchor);
     let continuations = dbg!(get_continuations(&root, &anchor));
     dbg!(get_location(&anchor, &continuations, offset.into()))
 }
@@ -223,6 +225,13 @@ fn localize_object_3() {
     //           01234567890123456789012
     let input = "Select * { ?a ?a ?b,  }";
     assert!(matches!(location(input, 21), CompletionLocation::Object(_)));
+}
+
+#[test]
+fn localize_object_4() {
+    //           012345678901234567890123456
+    let input = "Select * { ?a rdfs:label ?  }";
+    assert!(matches!(location(input, 26), CompletionLocation::Object(_)));
 }
 
 fn trigger_token_at(input: &str, offset: u32) -> Option<SyntaxToken> {

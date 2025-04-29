@@ -25,15 +25,26 @@ pub fn continuations_at(root: &SyntaxNode, mut offset: TextSize) -> Option<Vec<S
     loop {
         if let Some(child) = children_stack.last() {
             if let Some(rule) = rule_stack.last() {
-                if child.text_range().end() > offset {
+                if child.text_range().start() >= offset {
                     // NOTE: This child is behind the "cursor"
-                    for rule in rule_stack.iter().rev() {
+                    // -> Add remaining stack to solution
+                    // -> if the stack is nullable, move up in the tree
+                    while let Some(rule) = rule_stack.pop() {
                         result.append(&mut rule.first());
                         if !rule.is_nullable() {
-                            break;
+                            return Some(result);
                         }
                     }
-                    return Some(result);
+                    // NOTE: The stack was nullable, move up the tree
+                    if let Some(grand_parent) = parent.parent() {
+                        parent = grand_parent;
+                        children_stack = parent.children_with_tokens().collect();
+                        children_stack.reverse();
+                        rule_stack.push(Rule::from_node_kind(parent.kind())?);
+                        continue;
+                    } else {
+                        return Some(result);
+                    }
                 }
                 if child.kind() == SyntaxKind::WHITESPACE {
                     children_stack.pop();

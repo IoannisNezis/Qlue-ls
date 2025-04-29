@@ -35,7 +35,7 @@
 		"@tailwindcss/vite": "^4.1.3",
 		"monaco-editor": "npm:@codingame/monaco-vscode-editor-api@^14.0.2",
 		"monaco-editor-wrapper": "~6.3.0",
-		"qlue-ls": "^0.5.8",
+		"qlue-ls": "^0.5.9",
 		"vite-plugin-top-level-await": "^1.4.4",
 		"vite-plugin-wasm": "^3.4.1",
 		"vscode": "npm:@codingame/monaco-vscode-extension-api@~14.0.2",

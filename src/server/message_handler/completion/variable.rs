@@ -4,10 +4,7 @@ use super::{error::CompletionError, CompletionContext};
 use crate::server::lsp::{
     CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
 };
-use ll_sparql_parser::{
-    ast::{AstNode, PrefixedName, QueryUnit},
-    syntax_kind::SyntaxKind,
-};
+use ll_sparql_parser::ast::{AstNode, PrefixedName, QueryUnit};
 
 pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, CompletionError> {
     let query_unit = QueryUnit::cast(context.tree).ok_or(CompletionError::ResolveError(
@@ -37,18 +34,12 @@ pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, 
         )
     })
     .collect();
-    if let Some(prefixed_name) = match context.location {
-        super::CompletionLocation::Object(_) => context.anchor_token.and_then(|token| {
-            (token.kind() == SyntaxKind::QuestionMark)
-                .then_some(token.prev_token().and_then(|token| {
-                    token
-                        .prev_token()
-                        .and_then(|token| token.parent().and_then(|node| PrefixedName::cast(node)))
-                }))
-                .flatten()
-        }),
-        _ => None,
-    } {
+
+    if let Some(prefixed_name) = context
+        .anchor_token
+        .and_then(|token| token.parent())
+        .and_then(PrefixedName::cast)
+    {
         let object_name = prefixed_name
             .name()
             .strip_prefix("has")

@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use super::{error::CompletionError, CompletionContext};
 use crate::server::lsp::{
     CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
@@ -17,21 +19,24 @@ pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, 
             "Could not find SelectQuery".to_string(),
         ))?;
 
-    let mut suggestions: Vec<CompletionItem> = select_query
-        .variables()
-        .iter()
-        .map(|var| {
-            let var_text = var.var_name();
-            CompletionItem::new(
-                &var_text,
-                Some("Variable".to_string()),
-                None,
-                &format!("{} ", var_text),
-                CompletionItemKind::Variable,
-                None,
-            )
-        })
-        .collect();
+    let mut suggestions: Vec<CompletionItem> = HashSet::<String>::from_iter(
+        select_query
+            .variables()
+            .into_iter()
+            .map(|var| var.var_name()),
+    )
+    .iter()
+    .map(|var| {
+        CompletionItem::new(
+            &var,
+            Some("Variable".to_string()),
+            None,
+            &format!("{} ", var),
+            CompletionItemKind::Variable,
+            None,
+        )
+    })
+    .collect();
     if let Some(prefixed_name) = match context.location {
         super::CompletionLocation::Object(_) => context.anchor_token.and_then(|token| {
             (token.kind() == SyntaxKind::QuestionMark)

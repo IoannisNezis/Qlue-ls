@@ -31,24 +31,22 @@ pub(super) async fn handle_completion_request(
     let context = CompletionContext::from_completion_request(server_rc.clone(), &request)
         .await
         .map_err(to_lsp_error)?;
-    if context.location == CompletionLocation::Unknown {
-        server_rc
-            .lock()
-            .await
-            .send_message(CompletionResponse::new(request.get_id(), None))
+
+    let completion_list = if context.trigger_kind == CompletionTriggerKind::TriggerCharacter
+        && context
+            .trigger_character
+            .as_ref()
+            .map_or(false, |tc| tc == "?")
+        || context
+            .search_term
+            .as_ref()
+            .map_or(false, |search_term| search_term.starts_with("?"))
+    {
+        Some(variable::completions(context).map_err(to_lsp_error)?)
+    } else if context.location == CompletionLocation::Unknown {
+        None
     } else {
-        let completion_list = if context.trigger_kind == CompletionTriggerKind::TriggerCharacter
-            && context
-                .trigger_character
-                .as_ref()
-                .map_or(false, |tc| tc == "?")
-            || context
-                .search_term
-                .as_ref()
-                .map_or(false, |search_term| search_term.starts_with("?"))
-        {
-            variable::completions(context)
-        } else {
+        Some(
             match context.location {
                 CompletionLocation::Start => start::completions(context).await,
                 CompletionLocation::SelectBinding(_) => select_binding::completions(context),
@@ -70,16 +68,17 @@ pub(super) async fn handle_completion_request(
                     blank_node_object::completions(server_rc.clone(), context).await
                 }
                 CompletionLocation::ServiceUrl => service_url::completions(server_rc.clone()).await,
+                // CompletionLocation::Unknown => Ok(),
                 location => Err(CompletionError::LocalizationError(format!(
                     "Unknown location \"{:?}\"",
                     location
                 ))),
             }
-        }
-        .map_err(to_lsp_error)?;
-        server_rc.lock().await.send_message(CompletionResponse::new(
-            request.get_id(),
-            Some(completion_list),
-        ))
-    }
+            .map_err(to_lsp_error)?,
+        )
+    };
+    server_rc
+        .lock()
+        .await
+        .send_message(CompletionResponse::new(request.get_id(), completion_list))
 }

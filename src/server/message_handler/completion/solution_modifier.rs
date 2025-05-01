@@ -1,13 +1,13 @@
 use super::{error::CompletionError, CompletionContext};
 use crate::server::lsp::{
-    CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
+    Command, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
 };
 use ll_sparql_parser::syntax_kind::SyntaxKind::*;
 
 pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, CompletionError> {
     let mut items = Vec::new();
     if context.continuations.contains(&SolutionModifier) {
-        items.push(CompletionItem {command: None,
+        items.push(CompletionItem {
             label: "GROUP BY".to_string(),
             label_details: None,
             kind: CompletionItemKind::Snippet,
@@ -17,12 +17,18 @@ pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, 
             text_edit: None,
             insert_text_format: None,
             additional_text_edits: None,
+            command: Some(Command {
+                title: "triggerNewCompletion".to_string(),
+                command: "triggerNewCompletion".to_string(),
+                arguments: None,
+            }),
         });
     }
     if context.continuations.contains(&SolutionModifier)
         || context.continuations.contains(&HavingClause)
     {
-        items.push(CompletionItem {command: None,
+        items.push(CompletionItem {
+            command: None,
             label: "HAVING".to_string(),
             label_details: None,
             kind: CompletionItemKind::Snippet,
@@ -37,7 +43,7 @@ pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, 
     if context.continuations.contains(&SolutionModifier)
         || context.continuations.contains(&OrderClause)
     {
-        items.push(CompletionItem {command: None,
+        items.push(CompletionItem {
             label: "ORDER BY".to_string(),
             label_details: None,
             kind: CompletionItemKind::Snippet,
@@ -47,13 +53,19 @@ pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, 
             text_edit: None,
             insert_text_format: None,
             additional_text_edits: None,
+
+            command: Some(Command {
+                title: "triggerNewCompletion".to_string(),
+                command: "triggerNewCompletion".to_string(),
+                arguments: None,
+            }),
         });
     }
     if context.continuations.contains(&SolutionModifier)
         || context.continuations.contains(&LimitClause)
         || context.continuations.contains(&LimitOffsetClauses)
     {
-        items.push(CompletionItem {command: None,
+        items.push(CompletionItem {
             label: "LIMIT".to_string(),
             label_details: None,
             kind: CompletionItemKind::Snippet,
@@ -63,13 +75,14 @@ pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, 
             text_edit: None,
             insert_text_format: None,
             additional_text_edits: None,
+            command: None,
         });
     }
     if context.continuations.contains(&SolutionModifier)
         || context.continuations.contains(&OffsetClause)
         || context.continuations.contains(&LimitOffsetClauses)
     {
-        items.push(CompletionItem {command: None,
+        items.push(CompletionItem {
             label: "OFFSET".to_string(),
             label_details: None,
             kind: CompletionItemKind::Snippet,
@@ -79,6 +92,7 @@ pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, 
             text_edit: None,
             insert_text_format: None,
             additional_text_edits: None,
+            command: None,
         });
     }
     return Ok(CompletionList {

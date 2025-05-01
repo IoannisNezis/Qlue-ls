@@ -174,6 +174,17 @@ pub(super) enum CompletionLocation {
     /// }
     /// ```
     FilterConstraint,
+    /// Group Condition
+    ///
+    /// ---
+    ///
+    /// **Example**
+    /// ```sparql
+    /// SELECT * WHERE {
+    /// }
+    /// GROUP BY >here<
+    /// ```
+    GroupCondition,
 }
 
 #[derive(Debug)]
@@ -386,8 +397,14 @@ fn get_location(
             } else {
                 CompletionLocation::Unknown
             }
-        } else if continues_with!([SyntaxKind::Constraint]) && child_of!([SyntaxKind::Filter]) {
+        }
+        // NOTE: FilterConstraint
+        else if continues_with!([SyntaxKind::Constraint]) && child_of!([SyntaxKind::Filter]) {
             CompletionLocation::FilterConstraint
+        }
+        // NOTE: GroupCondition
+        else if continues_with!([SyntaxKind::GroupCondition]) {
+            CompletionLocation::GroupCondition
         } else {
             CompletionLocation::Unknown
         }

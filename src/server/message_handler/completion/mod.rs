@@ -68,7 +68,9 @@ pub(super) async fn handle_completion_request(
                     blank_node_object::completions(server_rc.clone(), context).await
                 }
                 CompletionLocation::ServiceUrl => service_url::completions(server_rc.clone()).await,
-                CompletionLocation::FilterConstraint => variable::completions_transformed(context),
+                CompletionLocation::FilterConstraint | CompletionLocation::GroupCondition => {
+                    variable::completions_transformed(context)
+                }
                 // CompletionLocation::Unknown => Ok(),
                 location => Err(CompletionError::LocalizationError(format!(
                     "Unknown location \"{:?}\"",

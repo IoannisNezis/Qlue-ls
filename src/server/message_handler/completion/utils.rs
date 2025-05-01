@@ -13,7 +13,7 @@ use crate::server::{
     fetch::fetch_sparql_result,
     lsp::{
         textdocument::{Position, Range, TextEdit},
-        Command, CompletionItem, CompletionItemKind, CompletionItemLabelDetails,
+        Command, CompletionItem, CompletionItemKind, CompletionItemLabelDetails, CompletionList,
     },
     Server,
 };
@@ -256,7 +256,7 @@ pub(super) fn to_completion_items(
                         detail: value.clone(),
                     }))),
                 detail: None,
-                sort_text: Some(format!("{:0>5}", idx)),
+                sort_text: Some(format!("{:0>5}", idx + 100)),
                 insert_text: None,
                 text_edit: Some(TextEdit {
                     range: range.clone(),

@@ -3,7 +3,7 @@ use std::rc::Rc;
 use super::{
     error::CompletionError,
     utils::{fetch_online_completions, get_replace_range, to_completion_items},
-    CompletionContext,
+    variable, CompletionContext,
 };
 use crate::server::{
     lsp::{CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat},
@@ -37,7 +37,7 @@ pub(super) async fn completions(
                 template_context.insert("search_term", search_term);
                 template_context.insert::<Vec<(&str, &str)>, &str>("prefixes", &vec![]);
                 let range = get_replace_range(&context);
-                let query_unit = QueryUnit::cast(context.tree).unwrap();
+                let query_unit = QueryUnit::cast(context.tree.clone()).unwrap();
 
                 match fetch_online_completions(
                     server_rc.clone(),
@@ -172,6 +172,8 @@ pub(super) async fn completions(
             },
         ]);
     }
+
+    items.extend(variable::completions_transformed(context)?.items);
     Ok(CompletionList {
         is_incomplete,
         item_defaults: None,

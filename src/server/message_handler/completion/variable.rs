@@ -15,7 +15,6 @@ pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, 
         .ok_or(CompletionError::ResolveError(
             "Could not find SelectQuery".to_string(),
         ))?;
-
     let mut suggestions: Vec<CompletionItem> = HashSet::<String>::from_iter(
         select_query
             .variables()
@@ -34,7 +33,6 @@ pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, 
         )
     })
     .collect();
-
     if let Some(prefixed_name) = context
         .anchor_token
         .and_then(|token| token.parent())
@@ -50,14 +48,13 @@ pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, 
             CompletionItem::new(
                 &object_name,
                 None,
-                Some("1".to_string()),
+                Some(format!("{:0>5}", 0)),
                 &format!("{} ", object_name),
                 CompletionItemKind::Variable,
                 None,
             ),
         );
     }
-
     Ok(CompletionList {
         is_incomplete: false,
         item_defaults: Some(ItemDefaults {
@@ -68,4 +65,18 @@ pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, 
         }),
         items: suggestions,
     })
+}
+
+pub(super) fn completions_transformed(
+    context: CompletionContext,
+) -> Result<CompletionList, CompletionError> {
+    let mut variable_completions = completions(context)?;
+    for item in variable_completions.items.iter_mut() {
+        item.insert_text = item.insert_text.as_ref().map(|text| format!("?{}", text));
+        item.label = format!("?{}", item.label);
+        if item.sort_text.is_none() {
+            item.sort_text = Some(format!("{:0>5}", 1));
+        }
+    }
+    Ok(variable_completions)
 }

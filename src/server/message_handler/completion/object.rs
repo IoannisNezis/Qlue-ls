@@ -5,7 +5,7 @@ use super::{
     utils::{
         fetch_online_completions, get_prefix_declarations, get_replace_range, to_completion_items,
     },
-    CompletionContext,
+    variable, CompletionContext,
 };
 use crate::server::{
     lsp::CompletionList, message_handler::completion::context::CompletionLocation, Server,
@@ -35,7 +35,7 @@ pub(super) async fn completions(
                     "{} ?qlue_ls_entity",
                     query_unit.syntax().text().slice(TextRange::new(
                         triple.syntax().text_range().start(),
-                        context.anchor_token.unwrap().text_range().end(),
+                        context.anchor_token.as_ref().unwrap().text_range().end(),
                     ))
                 );
 
@@ -56,11 +56,15 @@ pub(super) async fn completions(
                     range,
                     None,
                 );
+                let variable_completions = variable::completions_transformed(context)?;
                 Ok(CompletionList {
                     is_incomplete: items.len()
                         == server_rc.lock().await.settings.completion.result_size_limit as usize,
                     item_defaults: None,
-                    items,
+                    items: items
+                        .into_iter()
+                        .chain(variable_completions.items.into_iter())
+                        .collect(),
                 })
             }
             _ => {

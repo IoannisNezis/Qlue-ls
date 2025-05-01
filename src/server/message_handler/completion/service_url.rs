@@ -25,7 +25,7 @@ pub(super) async fn completions(
                     .map(|default| backend.name != default.name)
                     .unwrap_or(true)
             })
-            .map(|backend| CompletionItem {
+            .map(|backend| CompletionItem {command: None,
                 label: backend.name.clone(),
                 label_details: None,
                 kind: CompletionItemKind::Value,

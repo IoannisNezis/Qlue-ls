@@ -7,7 +7,7 @@ use ll_sparql_parser::syntax_kind::SyntaxKind::*;
 pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, CompletionError> {
     let mut items = Vec::new();
     if context.continuations.contains(&SolutionModifier) {
-        items.push(CompletionItem {
+        items.push(CompletionItem {command: None,
             label: "GROUP BY".to_string(),
             label_details: None,
             kind: CompletionItemKind::Snippet,
@@ -22,7 +22,7 @@ pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, 
     if context.continuations.contains(&SolutionModifier)
         || context.continuations.contains(&HavingClause)
     {
-        items.push(CompletionItem {
+        items.push(CompletionItem {command: None,
             label: "HAVING".to_string(),
             label_details: None,
             kind: CompletionItemKind::Snippet,
@@ -37,7 +37,7 @@ pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, 
     if context.continuations.contains(&SolutionModifier)
         || context.continuations.contains(&OrderClause)
     {
-        items.push(CompletionItem {
+        items.push(CompletionItem {command: None,
             label: "ORDER BY".to_string(),
             label_details: None,
             kind: CompletionItemKind::Snippet,
@@ -53,7 +53,7 @@ pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, 
         || context.continuations.contains(&LimitClause)
         || context.continuations.contains(&LimitOffsetClauses)
     {
-        items.push(CompletionItem {
+        items.push(CompletionItem {command: None,
             label: "LIMIT".to_string(),
             label_details: None,
             kind: CompletionItemKind::Snippet,
@@ -69,7 +69,7 @@ pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, 
         || context.continuations.contains(&OffsetClause)
         || context.continuations.contains(&LimitOffsetClauses)
     {
-        items.push(CompletionItem {
+        items.push(CompletionItem {command: None,
             label: "OFFSET".to_string(),
             label_details: None,
             kind: CompletionItemKind::Snippet,

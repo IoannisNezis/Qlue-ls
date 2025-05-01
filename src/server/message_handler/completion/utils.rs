@@ -13,7 +13,7 @@ use crate::server::{
     fetch::fetch_sparql_result,
     lsp::{
         textdocument::{Position, Range, TextEdit},
-        CompletionItem, CompletionItemKind, CompletionItemLabelDetails,
+        Command, CompletionItem, CompletionItemKind, CompletionItemLabelDetails,
     },
     Server,
 };
@@ -26,8 +26,7 @@ pub(super) async fn fetch_online_completions(
     backend_name: Option<&String>,
     query_template: &str,
     mut query_template_context: Context,
-    range: Range,
-) -> Result<Vec<CompletionItem>, CompletionError> {
+) -> Result<Vec<(Option<String>, Option<String>, String, Option<TextEdit>)>, CompletionError> {
     let (url, query, timeout_ms) = {
         let server = server_rc.lock().await;
         query_template_context.insert("limit", &server.settings.completion.result_size_limit);
@@ -63,7 +62,6 @@ pub(super) async fn fetch_online_completions(
         .map_err(|err| CompletionError::RequestError(err.message))?;
 
     let end = performance.now();
-
     log::debug!(
         "Query took {:?}ms, returned {} results",
         (end - start) as i32,
@@ -74,35 +72,19 @@ pub(super) async fn fetch_online_completions(
         .results
         .bindings
         .into_iter()
-        .enumerate()
-        .map(|(idx, binding)| {
+        .map(|binding| {
             let rdf_term = binding
                 .get("qlue_ls_entity")
                 .expect("Every completion query should provide a `qlue_ls_entity`");
             let (value, import_edit) =
                 render_rdf_term(&*server, query_unit, rdf_term, backend_name);
-            let label = binding.get("qlue_ls_label");
-            let detail = binding.get("qlue_ls_detail");
-            CompletionItem {
-                label: format!("{} ", label.map_or(value.as_ref(), |label| label.value())),
-                label_details: detail
-                    .map(|value| CompletionItemLabelDetails {
-                        detail: value.to_string(),
-                    })
-                    .or(label.and(Some(CompletionItemLabelDetails {
-                        detail: value.to_string(),
-                    }))),
-                detail: None,
-                sort_text: Some(format!("{:0>5}", idx)),
-                insert_text: None,
-                text_edit: Some(TextEdit {
-                    range: range.clone(),
-                    new_text: format!("{} ", value),
-                }),
-                kind: CompletionItemKind::Value,
-                insert_text_format: None,
-                additional_text_edits: import_edit.map(|edit| vec![edit]),
-            }
+            let label = binding
+                .get("qlue_ls_label")
+                .map(|rdf_term| rdf_term.value().to_string());
+            let detail = binding
+                .get("qlue_ls_detail")
+                .map(|rdf_term: &RDFTerm| rdf_term.value().to_string());
+            (label, detail, value, import_edit)
         })
         .collect())
 }
@@ -255,6 +237,42 @@ pub(super) fn reduce_path(
         }
         _ => panic!("unknown path kind"),
     }
+}
+
+pub(super) fn to_completion_items(
+    items: Vec<(Option<String>, Option<String>, String, Option<TextEdit>)>,
+    range: Range,
+    command: Option<&str>,
+) -> Vec<CompletionItem> {
+    items
+        .into_iter()
+        .enumerate()
+        .map(
+            |(idx, (label, detail, value, import_edit))| CompletionItem {
+                label: format!("{} ", label.as_ref().unwrap_or(&value)),
+                label_details: detail
+                    .map(|detail| CompletionItemLabelDetails { detail })
+                    .or(label.and(Some(CompletionItemLabelDetails {
+                        detail: value.clone(),
+                    }))),
+                detail: None,
+                sort_text: Some(format!("{:0>5}", idx)),
+                insert_text: None,
+                text_edit: Some(TextEdit {
+                    range: range.clone(),
+                    new_text: format!("{} ", value),
+                }),
+                kind: CompletionItemKind::Value,
+                insert_text_format: None,
+                additional_text_edits: import_edit.map(|edit| vec![edit]),
+                command: command.map(|command| Command {
+                    title: command.to_string(),
+                    command: command.to_string(),
+                    arguments: None,
+                }),
+            },
+        )
+        .collect()
 }
 
 #[cfg(test)]

@@ -1,3 +1,4 @@
+mod command;
 pub mod diagnostic;
 mod initialize;
 mod progress;
@@ -18,6 +19,7 @@ mod trace;
 mod utils;
 mod window_showmessage;
 
+pub use command::*;
 pub use initialize::*;
 pub use progress::*;
 pub use qluels_addbackend::*;

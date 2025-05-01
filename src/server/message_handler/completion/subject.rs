@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use super::{
     error::CompletionError,
-    utils::{fetch_online_completions, get_replace_range},
+    utils::{fetch_online_completions, get_replace_range, to_completion_items},
     CompletionContext,
 };
 use crate::server::{
@@ -45,7 +45,6 @@ pub(super) async fn completions(
                     context.backend.as_ref(),
                     &format!("{}-{}", backend_name, "subjectCompletion"),
                     template_context,
-                    range,
                 )
                 .await
                 {
@@ -53,7 +52,11 @@ pub(super) async fn completions(
                         is_incomplete = online_completions.len()
                             == server_rc.lock().await.settings.completion.result_size_limit
                                 as usize;
-                        items.extend(online_completions)
+                        items.extend(to_completion_items(
+                            online_completions,
+                            range,
+                            Some("triggerNewCompletion"),
+                        ));
                     }
                     Err(err) => {
                         log::error!("{:?}", err);
@@ -72,6 +75,7 @@ pub(super) async fn completions(
     {
         items.append(&mut vec![
             CompletionItem {
+                command: None,
                 label: "FILTER".to_string(),
                 label_details: None,
                 kind: CompletionItemKind::Snippet,
@@ -83,6 +87,7 @@ pub(super) async fn completions(
                 additional_text_edits: None,
             },
             CompletionItem {
+                command: None,
                 label: "BIND".to_string(),
                 label_details: None,
                 kind: CompletionItemKind::Snippet,
@@ -94,6 +99,7 @@ pub(super) async fn completions(
                 additional_text_edits: None,
             },
             CompletionItem {
+                command: None,
                 label: "VALUES".to_string(),
                 label_details: None,
                 kind: CompletionItemKind::Snippet,
@@ -105,6 +111,7 @@ pub(super) async fn completions(
                 additional_text_edits: None,
             },
             CompletionItem {
+                command: None,
                 label: "SERVICE".to_string(),
                 label_details: None,
                 kind: CompletionItemKind::Snippet,
@@ -116,6 +123,7 @@ pub(super) async fn completions(
                 additional_text_edits: None,
             },
             CompletionItem {
+                command: None,
                 label: "MINUS".to_string(),
                 label_details: None,
                 kind: CompletionItemKind::Snippet,
@@ -127,6 +135,7 @@ pub(super) async fn completions(
                 additional_text_edits: None,
             },
             CompletionItem {
+                command: None,
                 label: "OPTIONAL".to_string(),
                 label_details: None,
                 kind: CompletionItemKind::Snippet,
@@ -138,6 +147,7 @@ pub(super) async fn completions(
                 additional_text_edits: None,
             },
             CompletionItem {
+                command: None,
                 label: "UNION".to_string(),
                 label_details: None,
                 kind: CompletionItemKind::Snippet,
@@ -149,6 +159,7 @@ pub(super) async fn completions(
                 additional_text_edits: None,
             },
             CompletionItem {
+                command: None,
                 label: "Sub select".to_string(),
                 label_details: None,
                 kind: CompletionItemKind::Snippet,

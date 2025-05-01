@@ -40,6 +40,13 @@
         editor.onDidChangeCursorPosition((e) => {
             cursorOffset = wrapper?.getEditor()!.getModel()!.getOffsetAt(e.position);
         });
+        monaco.editor.addCommand({
+            id: 'triggerNewCompletion',
+            run: () => {
+                editor.trigger('editor', 'editor.action.triggerSuggest');
+            }
+        });
+
         wrapper.getEditor()!.addAction({
             id: 'Execute Query',
             label: 'Execute',

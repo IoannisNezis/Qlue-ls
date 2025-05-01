@@ -35,8 +35,6 @@ init({
                 }
         })();
 
-
-        console.log("hello from worker");
         self.postMessage({ type: "ready" });
 });
 export { }

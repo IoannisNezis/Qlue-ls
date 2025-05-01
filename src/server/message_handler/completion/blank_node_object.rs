@@ -3,7 +3,7 @@ use std::rc::Rc;
 use super::{
     context::{CompletionContext, CompletionLocation},
     error::CompletionError,
-    utils::get_replace_range,
+    utils::{get_replace_range, to_completion_items},
 };
 use crate::server::{
     lsp::CompletionList,
@@ -53,15 +53,18 @@ pub(super) async fn completions(
                 template_context.insert("context", &inject);
                 template_context.insert("prefixes", &prefixes);
                 template_context.insert("search_term", search_term);
-                let items = fetch_online_completions(
-                    server_rc.clone(),
-                    &query_unit,
-                    context.backend.as_ref(),
-                    &format!("{}-{}", backend_name, "objectCompletion"),
-                    template_context,
+                let items = to_completion_items(
+                    fetch_online_completions(
+                        server_rc.clone(),
+                        &query_unit,
+                        context.backend.as_ref(),
+                        &format!("{}-{}", backend_name, "objectCompletion"),
+                        template_context,
+                    )
+                    .await?,
                     range,
-                )
-                .await?;
+                    Some("triggerNewCompletion"),
+                );
                 Ok(CompletionList {
                     is_incomplete: items.len()
                         == server_rc.lock().await.settings.completion.result_size_limit as usize,

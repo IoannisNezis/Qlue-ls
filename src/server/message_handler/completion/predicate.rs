@@ -1,6 +1,9 @@
 use super::{
     error::CompletionError,
-    utils::{fetch_online_completions, get_prefix_declarations, get_replace_range, reduce_path},
+    utils::{
+        fetch_online_completions, get_prefix_declarations, get_replace_range, reduce_path,
+        to_completion_items,
+    },
     CompletionContext,
 };
 use crate::server::{
@@ -43,15 +46,18 @@ pub(super) async fn completions(
                 template_context.insert("context", &inject);
                 template_context.insert("prefixes", &prefixes);
                 template_context.insert("search_term", search_term);
-                let items = fetch_online_completions(
-                    server_rc.clone(),
-                    &query_unit,
-                    context.backend.as_ref(),
-                    &format!("{}-{}", backend_name, "predicateCompletion"),
-                    template_context,
+                let items = to_completion_items(
+                    fetch_online_completions(
+                        server_rc.clone(),
+                        &query_unit,
+                        context.backend.as_ref(),
+                        &format!("{}-{}", backend_name, "predicateCompletion"),
+                        template_context,
+                    )
+                    .await?,
                     range,
-                )
-                .await?;
+                    Some("triggerNewCompletion"),
+                );
 
                 Ok(CompletionList {
                     is_incomplete: items.len()

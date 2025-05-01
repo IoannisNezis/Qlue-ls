@@ -7,7 +7,7 @@ use crate::server::lsp::{
     textdocument::{Range, TextEdit},
 };
 
-use super::utils::TextDocumentPositionParams;
+use super::{command::Command, utils::TextDocumentPositionParams};
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct CompletionRequest {
@@ -116,6 +116,8 @@ pub struct CompletionItem {
     pub insert_text_format: Option<InsertTextFormat>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub additional_text_edits: Option<Vec<TextEdit>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub command: Option<Command>,
 }
 
 impl CompletionItem {
@@ -137,6 +139,7 @@ impl CompletionItem {
             text_edit: None,
             insert_text_format: None,
             additional_text_edits,
+            command: None,
         }
     }
 }
@@ -230,6 +233,7 @@ mod tests {
     #[test]
     fn serialize() {
         let cmp = CompletionItem {
+            command: None,
             label: "SELECT".to_string(),
             label_details: None,
             detail: Some("Select query".to_string()),

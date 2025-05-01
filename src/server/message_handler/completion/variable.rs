@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use super::{error::CompletionError, CompletionContext};
+use super::{error::CompletionError, CompletionContext, CompletionLocation};
 use crate::server::lsp::{
     CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
 };
@@ -15,6 +15,14 @@ pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, 
         .ok_or(CompletionError::ResolveError(
             "Could not find SelectQuery".to_string(),
         ))?;
+    let suffix = match context.location {
+        CompletionLocation::Object(_)
+        | CompletionLocation::Subject
+        | CompletionLocation::Predicate(_)
+        | CompletionLocation::BlankNodeProperty(_)
+        | CompletionLocation::BlankNodeObject(_) => " ",
+        _ => "",
+    };
     let mut suggestions: Vec<CompletionItem> = HashSet::<String>::from_iter(
         select_query
             .variables()
@@ -27,7 +35,7 @@ pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, 
             &var,
             Some("Variable".to_string()),
             None,
-            &format!("{} ", var),
+            &format!("{}{}", var, suffix),
             CompletionItemKind::Variable,
             None,
         )
@@ -49,7 +57,7 @@ pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, 
                 &object_name,
                 None,
                 Some(format!("{:0>5}", 0)),
-                &format!("{} ", object_name),
+                &format!("{}{}", object_name, suffix),
                 CompletionItemKind::Variable,
                 None,
             ),

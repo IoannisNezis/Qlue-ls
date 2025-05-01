@@ -6,7 +6,7 @@ use super::{
     variable, CompletionContext,
 };
 use crate::server::{
-    lsp::{CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat},
+    lsp::{Command, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat},
     Server,
 };
 use futures::lock::Mutex;
@@ -75,7 +75,6 @@ pub(super) async fn completions(
     {
         items.append(&mut vec![
             CompletionItem {
-                command: None,
                 label: "FILTER".to_string(),
                 label_details: None,
                 kind: CompletionItemKind::Snippet,
@@ -85,6 +84,11 @@ pub(super) async fn completions(
                 text_edit: None,
                 insert_text_format: Some(InsertTextFormat::Snippet),
                 additional_text_edits: None,
+                command: Some(Command {
+                    title: "triggerNewCompletion".to_string(),
+                    command: "triggerNewCompletion".to_string(),
+                    arguments: None,
+                }),
             },
             CompletionItem {
                 command: None,

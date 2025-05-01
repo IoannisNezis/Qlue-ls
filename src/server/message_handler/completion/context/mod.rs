@@ -163,6 +163,17 @@ pub(super) enum CompletionLocation {
     ///   SERVICE >here< {}
     /// }
     ServiceUrl,
+    /// Filter Contraint
+    ///
+    /// ---
+    ///
+    /// **Example**
+    /// ```sparql
+    /// SELECT * WHERE {
+    ///   FILTER(>here<)
+    /// }
+    /// ```
+    FilterConstraint,
 }
 
 #[derive(Debug)]
@@ -375,6 +386,8 @@ fn get_location(
             } else {
                 CompletionLocation::Unknown
             }
+        } else if continues_with!([SyntaxKind::Constraint]) && child_of!([SyntaxKind::Filter]) {
+            CompletionLocation::FilterConstraint
         } else {
             CompletionLocation::Unknown
         }

@@ -19,7 +19,7 @@ Qlue-ls is available on [crate.io](https://crates.io/crates/qlue-ls):
 cargo install --bin qlue-ls qlue-ls
 ```
 
-And on [PyPi](https://pypi.org/project/qlue-ls/):
+And on [PyPI](https://pypi.org/project/qlue-ls/):
 
 ```shell
 pipx install qlue-ls

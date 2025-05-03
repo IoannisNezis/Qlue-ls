@@ -5,6 +5,7 @@ mod diagnostic;
 mod formatting;
 mod hover;
 mod identification;
+mod jump;
 mod lifecycle;
 mod misc;
 mod textdocument_syncronization;
@@ -20,6 +21,7 @@ use completion::handle_completion_request;
 use diagnostic::handle_diagnostic_request;
 use futures::lock::Mutex;
 use hover::handle_hover_request;
+use jump::handle_jump_request;
 use lifecycle::{
     handle_exit_notifcation, handle_initialize_request, handle_initialized_notifcation,
     handle_shutdown_request,
@@ -94,6 +96,9 @@ pub(super) async fn dispatch(
                 }
             });
             Ok(())
+        }
+        "qlueLs/jump" => {
+            call!(handle_jump_request)
         }
         // NOTE: Known unsupported message
         "$/cancelRequest" => {

@@ -43,10 +43,97 @@
         monaco.editor.addCommand({
             id: 'triggerNewCompletion',
             run: () => {
-                editor.trigger('editor', 'editor.action.triggerSuggest');
+                editor.trigger('editor', 'editor.action.triggerSuggest', {});
             }
         });
 
+        let actions = editor.getSupportedActions().map((a) => a.id);
+        console.log(actions);
+        monaco.editor.addCommand({
+            id: 'jumpToNextSnippetPlaceholder',
+            run: () => {
+                languageClientWrapper
+                    ?.getLanguageClient()!
+                    .sendRequest('textDocument/formatting', {
+                        textDocument: { uri: editor.getModel()?.uri.toString() },
+                        options: {
+                            tabSize: 2,
+                            insertSpaces: true
+                        }
+                    })
+                    .then((response) => {
+                        const edits = response.map((edit) => {
+                            console.log(edit);
+                            return {
+                                range: {
+                                    startLineNumber: edit.range.start.line + 1,
+                                    startColumn: edit.range.start.character + 1,
+                                    endLineNumber: edit.range.end.line + 1,
+                                    endColumn: edit.range.end.character + 1
+                                },
+                                text: edit.newText
+                            };
+                        });
+                        editor.getModel()!.applyEdits(edits);
+
+                        const cursorPosition = editor.getPosition();
+                        languageClientWrapper
+                            ?.getLanguageClient()!
+                            .sendRequest('qlueLs/jump', {
+                                textDocument: { uri: editor.getModel()?.uri.toString() },
+                                position: {
+                                    line: cursorPosition?.lineNumber - 1,
+                                    character: cursorPosition?.column - 1
+                                }
+                            })
+                            .then((response) => {
+                                if (response) {
+                                    const newCursorPosition = {
+                                        lineNumber: response.position.line + 1,
+                                        column: response.position.character + 1
+                                    };
+                                    if (response.insertAfter) {
+                                        editor.executeEdits('jumpToNextSnippetPlaceholder', [
+                                            {
+                                                range: new monaco.Range(
+                                                    newCursorPosition.lineNumber,
+                                                    newCursorPosition.column,
+                                                    newCursorPosition.lineNumber,
+                                                    newCursorPosition.column
+                                                ),
+                                                text: response.insertAfter
+                                            }
+                                        ]);
+                                    }
+                                    editor.setPosition(
+                                        newCursorPosition,
+                                        'jumpToNextSnippetPlaceholder'
+                                    );
+                                    if (response.insertBefore) {
+                                        editor.getModel()?.applyEdits([
+                                            {
+                                                range: new monaco.Range(
+                                                    newCursorPosition.lineNumber,
+                                                    newCursorPosition.column,
+                                                    newCursorPosition.lineNumber,
+                                                    newCursorPosition.column
+                                                ),
+                                                text: response.insertBefore
+                                            }
+                                        ]);
+                                    }
+                                    editor.trigger('editor', 'editor.action.triggerSuggest', {});
+                                }
+                            });
+                    });
+                editor.trigger('jumpToNextSnippetPlaceholder', 'editor.action.formatDocument', {});
+                console.log('jump to next location');
+            }
+        });
+        monaco.editor.addKeybindingRule({
+            command: 'jumpToNextSnippetPlaceholder',
+            keybinding: monaco.KeyMod.Alt | monaco.KeyCode.KeyN
+        });
         wrapper.getEditor()!.addAction({
             id: 'Execute Query',
             label: 'Execute',

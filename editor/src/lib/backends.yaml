@@ -91,7 +91,7 @@
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
       SELECT ?qlue_ls_entity ?qlue_ls_score WHERE {
-        { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_score)
+        { SELECT ?qlue_ls_entity (COUNT({% if context is containing("?qlue_ls_inner") %}DISTINCT ?qlue_ls_inner{%else%}?qlue_ls_entity{% endif %}) AS ?qlue_ls_score)
           WHERE { {{context}} }
           GROUP BY ?qlue_ls_entity } BIND (0 AS ?qui_reversed)
         BIND (?qlue_ls_entity AS ?qlue_ls_label)
@@ -510,7 +510,7 @@
       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
       PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
       SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?count) as ?qlue_ls_count) WHERE {
-        { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count)
+        { SELECT ?qlue_ls_entity (COUNT({% if context is containing("?qlue_ls_inner") %}DISTINCT ?qlue_ls_inner{%else%}?qlue_ls_entity{% endif %}) as ?count)
           WHERE { {{context}} }
           GROUP BY ?qlue_ls_entity }
         {% if not search_term or search_term == "" %}

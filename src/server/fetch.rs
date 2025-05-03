@@ -1,10 +1,11 @@
 use std::str::FromStr;
 
 use js_sys::JsString;
-use sparql::results::SparqlResult;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{AbortSignal, Request, RequestInit, RequestMode, Response};
+
+use crate::sparql::results::SparqlResult;
 
 use super::lsp::errors::{ErrorCode, LSPError};
 

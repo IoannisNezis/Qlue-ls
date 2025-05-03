@@ -3,19 +3,21 @@ use ll_sparql_parser::{
     ast::{AstNode, Path, QueryUnit},
     syntax_kind::SyntaxKind,
 };
-use sparql::results::RDFTerm;
 use std::rc::Rc;
 use tera::Context;
 use text_size::TextSize;
 use wasm_bindgen::JsCast;
 
-use crate::server::{
-    fetch::fetch_sparql_result,
-    lsp::{
-        textdocument::{Position, Range, TextEdit},
-        Command, CompletionItem, CompletionItemKind, CompletionItemLabelDetails, CompletionList,
+use crate::{
+    server::{
+        fetch::fetch_sparql_result,
+        lsp::{
+            textdocument::{Position, Range, TextEdit},
+            Command, CompletionItem, CompletionItemKind, CompletionItemLabelDetails,
+        },
+        Server,
     },
-    Server,
+    sparql::results::RDFTerm,
 };
 
 use super::{context::CompletionContext, error::CompletionError};

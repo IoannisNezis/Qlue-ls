@@ -1,4 +1,5 @@
 mod server;
+mod sparql;
 mod stdio_reader;
 
 use std::{

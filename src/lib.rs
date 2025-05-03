@@ -1,4 +1,5 @@
 mod server;
+mod sparql;
 
 use std::rc::Rc;
 

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0]
+
 ### Added
 
 - configurable completion query timeout
@@ -15,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - debug log for completion queries
 - samantic variable completions: hasHeight -> ?height
 - async processing of long running requests (completion and ping)
+- custom lsp message "jump", to jump to next relevant location
 
 ### Changed
 

@@ -47,8 +47,6 @@
             }
         });
 
-        let actions = editor.getSupportedActions().map((a) => a.id);
-        console.log(actions);
         monaco.editor.addCommand({
             id: 'jumpToNextSnippetPlaceholder',
             run: () => {

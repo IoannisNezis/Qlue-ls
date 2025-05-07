@@ -13,7 +13,7 @@ use crate::{
         fetch::fetch_sparql_result,
         lsp::{
             textdocument::{Position, Range, TextEdit},
-            Command, CompletionItem, CompletionItemKind, CompletionItemLabelDetails,
+            Backend, Command, CompletionItem, CompletionItemKind, CompletionItemLabelDetails,
         },
         Server,
     },
@@ -25,7 +25,7 @@ use super::{context::CompletionContext, error::CompletionError};
 pub(super) async fn fetch_online_completions(
     server_rc: Rc<Mutex<Server>>,
     query_unit: &QueryUnit,
-    backend_name: Option<&String>,
+    backend: &Backend,
     query_template: &str,
     mut query_template_context: Context,
 ) -> Result<Vec<(Option<String>, Option<String>, String, Option<TextEdit>)>, CompletionError> {
@@ -39,36 +39,17 @@ pub(super) async fn fetch_online_completions(
             .render(query_template, &query_template_context)
             .map_err(|err| CompletionError::TemplateError(query_template.to_string(), err))?;
 
-        let backend = backend_name.ok_or(CompletionError::ResolveError(
-            "Could not resolve online completion, no backend provided.".to_string(),
-        ))?;
-        let url = server
-            .state
-            .get_backend(backend)
-            .ok_or(CompletionError::ResolveError(
-                "No default SPARQL backend defined".to_string(),
-            ))?
-            .url
-            .clone();
+        let url = backend.url.clone();
         let timeout_ms = server.settings.completion.timeout_ms;
         (url, query, timeout_ms)
     };
-    let performance = js_sys::global()
-        .unchecked_into::<web_sys::WorkerGlobalScope>()
-        .performance()
-        .unwrap();
+
     log::debug!("Query:\n{}", query);
-    let start = performance.now();
     let result = fetch_sparql_result(&url, &query, timeout_ms)
         .await
         .map_err(|err| CompletionError::RequestError(err.message))?;
+    log::info!("{}", result.results.bindings.len());
 
-    let end = performance.now();
-    log::debug!(
-        "Query took {:?}ms, returned {} results",
-        (end - start) as i32,
-        result.results.bindings.len()
-    );
     let server = server_rc.lock().await;
     Ok(result
         .results
@@ -79,7 +60,7 @@ pub(super) async fn fetch_online_completions(
                 .get("qlue_ls_entity")
                 .expect("Every completion query should provide a `qlue_ls_entity`");
             let (value, import_edit) =
-                render_rdf_term(&*server, query_unit, rdf_term, backend_name);
+                render_rdf_term(&*server, query_unit, rdf_term, &backend.name);
             let label = binding
                 .get("qlue_ls_label")
                 .map(|rdf_term| rdf_term.value().to_string());
@@ -95,10 +76,10 @@ fn render_rdf_term(
     server: &Server,
     query_unit: &QueryUnit,
     rdf_term: &RDFTerm,
-    backend_name: Option<&String>,
+    backend_name: &str,
 ) -> (String, Option<TextEdit>) {
     match rdf_term {
-        RDFTerm::Uri { value } => match server.shorten_uri(value, backend_name) {
+        RDFTerm::Uri { value } => match server.shorten_uri(value, Some(backend_name)) {
             Some((prefix, uri, curie)) => {
                 let prefix_decl_edit = if query_unit.prologue().as_ref().map_or(true, |prologue| {
                     prologue

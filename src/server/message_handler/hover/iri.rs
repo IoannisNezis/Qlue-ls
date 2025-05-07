@@ -39,7 +39,6 @@ pub(super) async fn hover(server: &Server, token: SyntaxToken) -> Result<Option<
             LSPError::new(ErrorCode::InternalError, &err.to_string())
         })?;
     let backend_url = &server
-        .state
         .get_default_backend()
         .ok_or(LSPError::new(
             ErrorCode::InternalError,

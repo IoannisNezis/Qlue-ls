@@ -1,9 +1,12 @@
 use config::{Config, ConfigError};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
-#[derive(Debug, Serialize, Deserialize)]
+use super::lsp::Backend;
+
+#[derive(Debug, Deserialize)]
 #[serde(default)]
 pub struct CompletionSettings {
+    pub default_backend: Option<Backend>,
     pub timeout_ms: u32,
     pub result_size_limit: u32,
 }
@@ -11,13 +14,14 @@ pub struct CompletionSettings {
 impl Default for CompletionSettings {
     fn default() -> Self {
         Self {
+            default_backend: None,
             timeout_ms: 5000,
             result_size_limit: 42,
         }
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(default)]
 pub struct FormatSettings {
     pub align_predicates: bool,
@@ -45,7 +49,7 @@ impl Default for FormatSettings {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default)]
 pub struct Settings {
     pub format: FormatSettings,
     pub completion: CompletionSettings,

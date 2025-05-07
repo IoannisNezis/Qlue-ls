@@ -23,8 +23,17 @@ pub(super) async fn completions(
     context: CompletionContext,
 ) -> Result<CompletionList, CompletionError> {
     if let CompletionLocation::Predicate(triple) = &context.location {
-        match (context.backend.as_ref(), context.search_term.as_ref()) {
-            (Some(backend_name), Some(search_term)) => {
+        let backend = {
+            let server = server_rc.lock().await;
+            context
+                .backend
+                .as_ref()
+                .and_then(|name| server.state.get_backend(name))
+                .or(server.get_default_backend())
+                .cloned()
+        };
+        match (backend, context.search_term.as_ref()) {
+            (Some(backend), Some(search_term)) => {
                 let range = get_replace_range(&context);
                 let mut template_context = Context::new();
                 let query_unit = QueryUnit::cast(context.tree.clone()).ok_or(
@@ -50,8 +59,8 @@ pub(super) async fn completions(
                     fetch_online_completions(
                         server_rc.clone(),
                         &query_unit,
-                        context.backend.as_ref(),
-                        &format!("{}-{}", backend_name, "predicateCompletion"),
+                        &backend,
+                        &format!("{}-{}", backend.name, "predicateCompletion"),
                         template_context,
                     )
                     .await?,

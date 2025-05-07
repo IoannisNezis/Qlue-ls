@@ -1,14 +1,40 @@
-use std::str::FromStr;
-
+use super::lsp::errors::{ErrorCode, LSPError};
+use crate::sparql::results::SparqlResult;
 use js_sys::JsString;
+use reqwest::Client;
+use std::str::FromStr;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{AbortSignal, Request, RequestInit, RequestMode, Response};
 
-use crate::sparql::results::SparqlResult;
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) async fn fetch_sparql_result(
+    url: &str,
+    query: &str,
+    timeout_ms: u32,
+) -> Result<SparqlResult, LSPError> {
+    use std::collections::HashMap;
+    let mut form_data = HashMap::new();
+    form_data.insert("query", query);
+    let response = Client::new()
+        .post(url)
+        .header(
+            "Content-Type",
+            "application/x-www-form-urlencoded;charset=UTF-8",
+        )
+        .form(&form_data)
+        .send()
+        .await
+        .unwrap();
+    response.json::<SparqlResult>().await.map_err(|err| {
+        LSPError::new(
+            ErrorCode::InternalError,
+            &format!("Failed to parse SPARQL response:\n{}", err),
+        )
+    })
+}
 
-use super::lsp::errors::{ErrorCode, LSPError};
-
+#[cfg(target_arch = "wasm32")]
 pub(crate) async fn fetch_sparql_result(
     url: &str,
     query: &str,
@@ -37,6 +63,13 @@ pub(crate) async fn fetch_sparql_result(
     // Get global worker scope
     let worker_global = js_sys::global().unchecked_into::<web_sys::WorkerGlobalScope>();
 
+    let performance = js_sys::global()
+        .unchecked_into::<web_sys::WorkerGlobalScope>()
+        .performance()
+        .unwrap();
+
+    let start = performance.now();
+
     // Perform the fetch request and await the response
     let resp_value = JsFuture::from(worker_global.fetch_with_request(&request))
         .await
@@ -46,6 +79,9 @@ pub(crate) async fn fetch_sparql_result(
                 &format!("SPARQL request failed:\n{:?}", err),
             )
         })?;
+
+    let end = performance.now();
+    log::debug!("Query took {:?}ms", (end - start) as i32,);
 
     // Cast the response value to a Response object
     let resp: Response = resp_value.dyn_into().map_err(|err| {

@@ -32,6 +32,10 @@ use textdocument_syncronization::{
 };
 
 pub use formatting::format_raw;
+
+#[cfg(not(target_arch = "wasm32"))]
+use tokio::task::spawn_local;
+#[cfg(target_arch = "wasm32")]
 use wasm_bindgen_futures::spawn_local;
 
 use crate::server::{handle_error, lsp::errors::ErrorCode};
@@ -54,6 +58,23 @@ pub(super) async fn dispatch(
             $handler(server_rc, message.parse()?).await
         };
     }
+
+    macro_rules! call_async {
+        ($handler:ident) => {{
+            let message_copy = message_string.clone();
+            let task = spawn_local(async move {
+                if let Err(err) = $handler(server_rc.clone(), message.parse().unwrap()).await {
+                    handle_error(server_rc, &message_copy, err).await;
+                }
+            });
+            #[cfg(not(target_arch = "wasm32"))]
+            task.await.expect("local task should not crash");
+            Ok(())
+        }};
+    }
+
+    log::info!("{}", method);
+
     match method {
         // NOTE: Requests
         "initialize" => call!(handle_initialize_request),
@@ -61,18 +82,8 @@ pub(super) async fn dispatch(
         "textDocument/formatting" => call!(handle_format_request),
         "textDocument/diagnostic" => call!(handle_diagnostic_request),
         "textDocument/codeAction" => call!(handle_codeaction_request),
-        "textDocument/hover" => call!(handle_hover_request),
-        "textDocument/completion" => {
-            let message_copy = message_string.clone();
-            spawn_local(async move {
-                if let Err(err) =
-                    handle_completion_request(server_rc.clone(), message.parse().unwrap()).await
-                {
-                    handle_error(server_rc, &message_copy, err).await;
-                }
-            });
-            Ok(())
-        }
+        "textDocument/hover" => call_async!(handle_hover_request),
+        "textDocument/completion" => call_async!(handle_completion_request),
         // NOTE: Notifications
         "initialized" => call!(handle_initialized_notifcation),
         "exit" => call!(handle_exit_notifcation),
@@ -82,24 +93,11 @@ pub(super) async fn dispatch(
         }
         "textDocument/didSave" => call!(handle_did_save_notification),
         "$/setTrace" => call!(handle_set_trace_notifcation),
-        // NOTE: LSP extensions
-        // Requests
+        // NOTE: LSP extensions Requests
         "qlueLs/addBackend" => call!(handle_add_backend_notification),
         "qlueLs/updateDefaultBackend" => call!(handle_update_backend_default_notification),
-        "qlueLs/pingBackend" => {
-            let message_copy = message_string.clone();
-            spawn_local(async move {
-                if let Err(err) =
-                    handle_ping_backend_request(server_rc.clone(), message.parse().unwrap()).await
-                {
-                    handle_error(server_rc, &message_copy, err).await;
-                }
-            });
-            Ok(())
-        }
-        "qlueLs/jump" => {
-            call!(handle_jump_request)
-        }
+        "qlueLs/pingBackend" => call_async!(handle_ping_backend_request),
+        "qlueLs/jump" => call!(handle_jump_request),
         // NOTE: Known unsupported message
         "$/cancelRequest" => {
             log::warn!("Received cancel request (unsupported)");

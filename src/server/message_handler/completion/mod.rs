@@ -71,7 +71,6 @@ pub(super) async fn handle_completion_request(
                 CompletionLocation::FilterConstraint | CompletionLocation::GroupCondition => {
                     variable::completions_transformed(context)
                 }
-                // CompletionLocation::Unknown => Ok(),
                 location => Err(CompletionError::LocalizationError(format!(
                     "Unknown location \"{:?}\"",
                     location

@@ -25,12 +25,21 @@ pub(super) async fn completions(
     context: CompletionContext,
 ) -> Result<CompletionList, CompletionError> {
     if let CompletionLocation::BlankNodeProperty(blank_node_props) = &context.location {
+        let backend = {
+            let server = server_rc.lock().await;
+            context
+                .backend
+                .as_ref()
+                .and_then(|name| server.state.get_backend(name))
+                .or(server.get_default_backend())
+                .cloned()
+        };
         match (
-            context.backend.as_ref(),
+            backend,
             context.search_term.as_ref(),
             context.anchor_token.as_ref(),
         ) {
-            (Some(backend_name), Some(search_term), Some(anchor_token)) => {
+            (Some(backend), Some(search_term), Some(anchor_token)) => {
                 let query_unit = QueryUnit::cast(context.tree.clone()).ok_or(
                     CompletionError::ResolveError("Could not cast root to QueryUnit".to_string()),
                 )?;
@@ -57,8 +66,8 @@ pub(super) async fn completions(
                     fetch_online_completions(
                         server_rc.clone(),
                         &query_unit,
-                        context.backend.as_ref(),
-                        &format!("{}-{}", backend_name, "predicateCompletion"),
+                        &backend,
+                        &format!("{}-{}", backend.name, "predicateCompletion"),
                         template_context,
                     )
                     .await?,

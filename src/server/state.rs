@@ -47,7 +47,7 @@ impl ServerState {
         self.default_backend = Some(name)
     }
 
-    pub fn get_default_backend(&self) -> Option<&Backend> {
+    pub(super) fn get_default_backend(&self) -> Option<&Backend> {
         self.backends.get(self.default_backend.as_ref()?)
     }
 

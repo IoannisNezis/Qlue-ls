@@ -25,6 +25,7 @@ use server::{format_raw, handle_message, Server};
 
 use clap::{Parser, Subcommand};
 use stdio_reader::StdioMessages;
+use tokio::{runtime, task::LocalSet};
 
 /// qlue-ls: An SPARQL language server and formatter
 #[derive(Debug, Parser)]
@@ -81,8 +82,7 @@ fn send_message(message: String) {
     io::stdout().flush().expect("No IO errors or EOFs");
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
     #[cfg(not(target_arch = "wasm32"))]
     configure_logging();
 
@@ -90,11 +90,18 @@ async fn main() {
     match cli.command {
         Command::Server => {
             // Start server and listen to stdio
-            let server = Server::new(send_message);
-            let server_rc = Rc::new(Mutex::new(server));
-            for message in StdioMessages::new() {
-                handle_message(server_rc.clone(), message).await
-            }
+            let rt = runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .expect("Single threaded runtime should be usable");
+            let local = LocalSet::new();
+            rt.block_on(local.run_until(async {
+                let server = Server::new(send_message);
+                let server_rc = Rc::new(Mutex::new(server));
+                for message in StdioMessages::new() {
+                    handle_message(server_rc.clone(), message).await
+                }
+            }));
         }
         Command::Format {
             path,

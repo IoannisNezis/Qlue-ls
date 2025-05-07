@@ -18,7 +18,7 @@ use log::{error, info};
 use lsp::{
     errors::{ErrorCode, LSPError},
     rpc::{RecoverId, RequestIdOrNull, ResponseMessage},
-    ServerInfo,
+    Backend, ServerInfo,
 };
 use message_handler::dispatch;
 
@@ -122,7 +122,7 @@ impl Server {
     pub(crate) fn shorten_uri(
         &self,
         uri: &str,
-        backend_name: Option<&String>,
+        backend_name: Option<&str>,
     ) -> Option<(String, String, String)> {
         let converter = backend_name
             .and_then(|name| self.state.get_converter(name))
@@ -130,6 +130,12 @@ impl Server {
         let record = converter.find_by_uri(uri).ok()?;
         let curie = converter.compress(uri).ok()?;
         Some((record.prefix.clone(), record.uri_prefix.clone(), curie))
+    }
+
+    pub(crate) fn get_default_backend(&self) -> Option<&Backend> {
+        self.state
+            .get_default_backend()
+            .or(self.settings.completion.default_backend.as_ref())
     }
 }
 

@@ -7,48 +7,20 @@ pub(super) fn init() -> Tera {
         (
             "subject_completion.rq",
             indoc! {
-                "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-                 PREFIX dblp: <https://dblp.org/rdf/schema#>
-                 SELECT ?qlue_ls_value (?alias AS ?qlue_ls_label) ?qlue_ls_detail WHERE {
-                   {
-                     SELECT ?qlue_ls_value ?alias ?count ?qlue_ls_detail WHERE {
-                       {
-                         {
-                           SELECT ?qlue_ls_value (COUNT(?paper) AS ?count) WHERE {
-                             ?paper dblp:publishedIn ?qlue_ls_value . 
-                           }
-                           GROUP BY ?qlue_ls_value
-                         }
-                         BIND (?qlue_ls_value AS ?alias)
-                                 Values ?qlue_ls_detail { \"Journal\" }
-                       }
-                       UNION {
-                         {
-                           SELECT ?qlue_ls_value (COUNT(?paper) AS ?count) WHERE {
-                             ?paper dblp:authoredBy ?qlue_ls_value
-                           }
-                           GROUP BY ?qlue_ls_value
-                         }
-                         ?qlue_ls_value rdfs:label ?alias
-                                 Values ?qlue_ls_detail { \"Author\" }
-                       }
-                       UNION {
-                         {
-                           SELECT ?qlue_ls_value (COUNT(?author) AS ?count) WHERE {
-                             ?qlue_ls_value dblp:authoredBy ?author
-                           }
-                           GROUP BY ?qlue_ls_value
-                         }
-                         ?qlue_ls_value dblp:title ?alias
-                                 Values ?qlue_ls_detail { \"Item\" }
-                       }
-                     }
-                    INTERNAL SORT BY ?alias}
-                   FILTER REGEX(STR(?alias),\"^{{search_term}}\")
-                 }
-                 ORDER BY DESC(?count)
-                 LIMIT 100
-                 OFFSET 0"
+                r#"{% for prefix in prefixes %}
+                PREFIX {{prefix.0}}: <{{prefix.1}}>
+                {% endfor %}
+                PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                PREFIX dblp: <https://dblp.org/rdf/schema#>
+                SELECT ?qlue_ls_entity (?qlue_ls_alias AS ?qlue_ls_label) ?qlue_ls_alias ?qlue_ls_count WHERE {
+                  { SELECT ?qlue_ls_entity ?qlue_ls_alias ?qlue_ls_count WHERE {
+                    { { SELECT ?qlue_ls_entity (COUNT(?paper) AS ?qlue_ls_count) WHERE { ?paper dblp:publishedIn ?qlue_ls_entity } GROUP BY ?qlue_ls_entity } BIND(?qlue_ls_entity AS ?qlue_ls_alias) } UNION
+                    { { SELECT ?qlue_ls_entity (COUNT(?paper) AS ?qlue_ls_count) WHERE { ?paper dblp:authoredBy ?qlue_ls_entity } GROUP BY ?qlue_ls_entity } ?qlue_ls_entity rdfs:label ?qlue_ls_alias } UNION
+                    { { SELECT ?qlue_ls_entity (COUNT(?author) AS ?qlue_ls_count) WHERE { ?qlue_ls_entity dblp:authoredBy ?author } GROUP BY ?qlue_ls_entity } ?qlue_ls_entity dblp:title ?qlue_ls_alias }
+                  } INTERNAL SORT BY ?qlue_ls_alias }
+                  FILTER REGEX(STR(?qlue_ls_alias), "^{{ search_term }}")
+                } ORDER BY DESC(?qlue_ls_count)
+                LIMIT {{ limit }} OFFSET {{ offset }}"#
             },
         ),
         (

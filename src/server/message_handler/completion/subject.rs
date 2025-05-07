@@ -31,8 +31,17 @@ pub(super) async fn completions(
     .iter()
     .any(|kind| context.continuations.contains(kind))
     {
-        match (context.backend.as_ref(), context.search_term.as_ref()) {
-            (Some(backend_name), Some(search_term)) => {
+        let backend = {
+            let server = server_rc.lock().await;
+            context
+                .backend
+                .as_ref()
+                .and_then(|name| server.state.get_backend(name))
+                .or(server.get_default_backend())
+                .cloned()
+        };
+        match (backend, context.search_term.as_ref()) {
+            (Some(backend), Some(search_term)) => {
                 let mut template_context = Context::new();
                 template_context.insert("search_term", search_term);
                 template_context.insert::<Vec<(&str, &str)>, &str>("prefixes", &vec![]);
@@ -42,8 +51,9 @@ pub(super) async fn completions(
                 match fetch_online_completions(
                     server_rc.clone(),
                     &query_unit,
-                    context.backend.as_ref(),
-                    &format!("{}-{}", backend_name, "subjectCompletion"),
+                    &backend,
+                    // &format!("{}-{}", backend_name, "subjectCompletion"),
+                    "subject_completion.rq",
                     template_context,
                 )
                 .await

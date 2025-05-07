@@ -20,8 +20,17 @@ pub(super) async fn completions(
     context: CompletionContext,
 ) -> Result<CompletionList, CompletionError> {
     if let CompletionLocation::Object(triple) = &context.location {
-        match (context.backend.as_ref(), context.search_term.as_ref()) {
-            (Some(backend_name), Some(search_term)) => {
+        let backend = {
+            let server = server_rc.lock().await;
+            context
+                .backend
+                .as_ref()
+                .and_then(|name| server.state.get_backend(name))
+                .or(server.get_default_backend())
+                .cloned()
+        };
+        match (backend, context.search_term.as_ref()) {
+            (Some(backend), Some(search_term)) => {
                 let prefix_declarations: Vec<_> = get_prefix_declarations(
                     &*server_rc.lock().await,
                     &context,
@@ -48,8 +57,8 @@ pub(super) async fn completions(
                     fetch_online_completions(
                         server_rc.clone(),
                         &query_unit,
-                        context.backend.as_ref(),
-                        &format!("{}-{}", backend_name, "objectCompletion"),
+                        &backend,
+                        &format!("{}-{}", backend.name, "objectCompletion"),
                         template_context,
                     )
                     .await?,

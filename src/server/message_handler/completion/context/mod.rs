@@ -223,20 +223,14 @@ impl CompletionContext {
         let trigger_character = request.get_completion_context().trigger_character.clone();
         let tree = parse_query(&document.text);
         let trigger_token = get_trigger_token(&tree, offset);
-        let backend = trigger_token
-            .as_ref()
-            .and_then(|token| {
-                token
-                    .parent_ancestors()
-                    .find_map(ServiceGraphPattern::cast)
-                    .and_then(|service| service.iri())
-                    .and_then(|iri| iri.raw_iri())
-                    .and_then(|iri_string| server.state.get_backend_name_by_url(&iri_string))
-            })
-            .or(server
-                .state
-                .get_default_backend()
-                .map(|backend| backend.name.clone()));
+        let backend = trigger_token.as_ref().and_then(|token| {
+            token
+                .parent_ancestors()
+                .find_map(ServiceGraphPattern::cast)
+                .and_then(|service| service.iri())
+                .and_then(|iri| iri.raw_iri())
+                .and_then(|iri_string| server.state.get_backend_name_by_url(&iri_string))
+        });
         let anchor_token = trigger_token.and_then(get_anchor_token);
         let search_term = get_search_term(&tree, &anchor_token, offset);
         let continuations = get_continuations(&tree, &anchor_token);

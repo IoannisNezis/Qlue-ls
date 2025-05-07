@@ -85,7 +85,7 @@ impl Display for RDFTerm {
 
 #[cfg(test)]
 mod test {
-    use crate::results::RDFTerm;
+    use crate::sparql::results::RDFTerm;
 
     use super::SparqlResult;
 

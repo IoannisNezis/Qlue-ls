@@ -30,10 +30,12 @@ struct ConsolidatedTextEdit {
 
 impl fmt::Display for ConsolidatedTextEdit {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut s = "".to_string();
-        for edit in &self.edits {
-            s += &format!("|{}", edit);
-        }
+        let s = self
+            .edits
+            .iter()
+            .map(|edit| edit.to_string())
+            .collect::<Vec<_>>()
+            .join("|");
         write!(f, "{} = {}", self.fuse(), s)
     }
 }
@@ -694,11 +696,12 @@ fn pre_node_augmentation(
             Some("BlankNodePropertyListPath") if node.child_count() <= 3 => Some(" ".to_string()),
             _ => None,
         },
-        "TriplesTemplate" | "TriplesBlock" => match node.prev_sibling().map(|parent| parent.kind())
-        {
-            Some(x) if x != "." => Some(get_linebreak(&indentation, indent_base)),
-            _ => None,
-        },
+        "TriplesTemplate" | "TriplesBlock" => {
+            match prev_non_comment_sibling(node).map(|parent| parent.kind()) {
+                Some(x) if x != "." => Some(get_linebreak(&indentation, indent_base)),
+                _ => None,
+            }
+        }
         "WhereClause" => {
             match settings.where_new_line
                 || node
@@ -758,6 +761,14 @@ fn post_node_augmentation(
         Range::from_ts_positions(node.end_position(), node.end_position()),
         &insert,
     ))
+}
+
+fn prev_non_comment_sibling<'a>(node: &'a Node) -> Option<Node<'a>> {
+    let mut prev = node.prev_sibling()?;
+    while prev.kind() == "comment" {
+        prev = prev.prev_sibling()?;
+    }
+    Some(prev)
 }
 
 fn get_linebreak(indentation: &usize, indent_base: &str) -> String {

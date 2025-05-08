@@ -3,6 +3,8 @@ use std::{process::exit, rc::Rc};
 use futures::lock::Mutex;
 
 use crate::server::{
+    self,
+    configuration::BackendConfiguration,
     lsp::{
         errors::{ErrorCode, LSPError},
         rpc::{NotificationMessage, RequestMessage},
@@ -38,7 +40,7 @@ pub(super) async fn handle_initialize_request(
     server_rc: Rc<Mutex<Server>>,
     initialize_request: InitializeRequest,
 ) -> Result<(), LSPError> {
-    let server = server_rc.lock().await;
+    let mut server = server_rc.lock().await;
     match server.state.status {
         ServerStatus::Initializing => {
             if let Some(ref client_info) = initialize_request.params.client_info {
@@ -62,6 +64,91 @@ pub(super) async fn handle_initialize_request(
                     Some(0),
                 );
                 server.send_message(init_progress_begin_notification)?;
+
+                let mut backend_configs = Vec::new();
+                if let Some(config) = server.settings.backends.as_ref() {
+                    for backend_config in config.backends.iter().map(|x| x.1).cloned() {
+                        backend_configs.push(backend_config)
+                    }
+                }
+                for config in backend_configs.into_iter() {
+                    match config {
+                        BackendConfiguration {
+                            backend,
+                            prefix_map,
+                            default,
+                            queries,
+                        } => {
+                            server
+                                .state
+                                .add_prefix_map(backend.name.clone(), prefix_map)
+                                .await
+                                .map_err(|err| {
+                                    log::error!("{}", err);
+                                    LSPError::new(
+                                        ErrorCode::InvalidParams,
+                                        &format!("Could not load prefix map:\n\"{}\"", err),
+                                    )
+                                })?;
+                            server
+                                .tools
+                                .tera
+                                .add_raw_template(
+                                    &format!("{}-subjectCompletion", &backend.name),
+                                    &queries.subject_completion,
+                                )
+                                .map_err(|err| {
+                                    log::error!("{}", err);
+                                    LSPError::new(
+                                        ErrorCode::InvalidParams,
+                                        &format!(
+                                            "Could load template: subjectCompletion of backend {}",
+                                            &backend.name
+                                        ),
+                                    )
+                                })?;
+                            server
+                                .tools
+                                .tera
+                                .add_raw_template(
+                                    &format!("{}-predicateCompletion", &backend.name),
+                                    &queries.predicate_completion,
+                                )
+                                .map_err(|err| {
+                                    log::error!("{}", err);
+                                    LSPError::new(
+                                        ErrorCode::InvalidParams,
+                                        &format!(
+                                            "Could load template: predicateCompletion of backend {}",
+                                            &backend.name
+                                        ),
+                                    )
+                                })?;
+                            server
+                                .tools
+                                .tera
+                                .add_raw_template(
+                                    &format!("{}-objectCompletion", &backend.name),
+                                    &queries.object_completion,
+                                )
+                                .map_err(|err| {
+                                    log::error!("{}", err);
+                                    LSPError::new(
+                                        ErrorCode::InvalidParams,
+                                        &format!(
+                                            "Could load template: objectCompletion of backend {}",
+                                            &backend.name
+                                        ),
+                                    )
+                                })?;
+                            if default {
+                                server.state.set_default_backend(backend.name.clone());
+                            }
+
+                            server.state.add_backend(backend);
+                        }
+                    }
+                }
 
                 let progress_report_1 = ProgressNotification::report_notification(
                     work_done_token.clone(),

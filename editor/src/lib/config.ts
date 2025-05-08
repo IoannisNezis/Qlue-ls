@@ -1,6 +1,6 @@
 import languageServerWorkerUrl from "./languageServer.worker?worker&url";
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
-import TextMateWorker from '@codingame/monaco-vscode-textmate-service-override/worker?worker';
+import { configureDefaultWorkerFactory } from 'monaco-editor-wrapper/workers/workerLoaders';
 import sparqlTextmateGrammar from './sparql.tmLanguage.json?raw';
 import sparqlLanguateConfig from './sparql.configuration.json?raw';
 import sparqlTheme from './sparql.theme.json?raw';
@@ -8,25 +8,7 @@ import type { WrapperConfig } from 'monaco-editor-wrapper';
 import { LogLevel, Uri } from 'vscode';
 
 
-type WorkerLoader = () => Worker;
-
 export async function buildWrapperConfig(container: HTMLElement, initial: string): Promise<WrapperConfig> {
-        const workerLoaders: Partial<Record<string, WorkerLoader>> = {
-                TextEditorWorker: () => new editorWorker(),
-                TextMateWorker: () => new TextMateWorker(),
-        };
-
-        window.MonacoEnvironment = {
-                getWorker: function(moduleId, label): Worker {
-                        const workerFactory = workerLoaders[label];
-                        if (workerFactory != null) {
-                                return workerFactory();
-                        }
-                        throw new Error(`Unimplemented worker ${label} (${moduleId})`);
-                }
-        };
-
-
         const workerPromise: Promise<Worker> = new Promise((resolve) => {
                 const instance = new Worker(new URL(languageServerWorkerUrl, window.location.origin),
                         {
@@ -52,33 +34,35 @@ export async function buildWrapperConfig(container: HTMLElement, initial: string
                 htmlContainer: container,
                 logLevel: LogLevel.Debug,
                 languageClientConfigs: {
-                        sparql: {
-                                name: "Qlue-ls",
-                                clientOptions: {
-                                        documentSelector: [{ language: 'sparql' }],
-                                        workspaceFolder: {
-                                                index: 0,
-                                                name: "workspace",
-                                                uri: Uri.file("/"),
+                        configs: {
+                                sparql: {
+                                        name: "Qlue-ls",
+                                        clientOptions: {
+                                                documentSelector: [{ language: 'sparql' }],
+                                                workspaceFolder: {
+                                                        index: 0,
+                                                        name: "workspace",
+                                                        uri: Uri.file("/"),
+                                                },
+                                                progressOnInitialization: true,
+                                                diagnosticPullOptions: {
+                                                        onChange: true,
+                                                        onSave: false
+                                                },
                                         },
-                                        progressOnInitialization: true,
-                                        diagnosticPullOptions: {
-                                                onChange: true,
-                                                onSave: false
-                                        },
-                                },
-                                connection: {
-                                        options: {
-                                                $type: 'WorkerDirect',
-                                                worker: worker
-                                        }
+                                        connection: {
+                                                options: {
+                                                        $type: 'WorkerDirect',
+                                                        worker: worker
+                                                }
 
-                                }
-                                ,
-                                restartOptions: {
-                                        retries: 5,
-                                        timeout: 1000,
-                                        keepWorker: true
+                                        }
+                                        ,
+                                        restartOptions: {
+                                                retries: 5,
+                                                timeout: 1000,
+                                                keepWorker: true
+                                        }
                                 }
                         }
                 },
@@ -89,6 +73,7 @@ export async function buildWrapperConfig(container: HTMLElement, initial: string
                                         text: initial
                                 }
                         },
+                        monacoWorkerFactory: configureDefaultWorkerFactory,
                         editorOptions: {
                                 tabCompletion: "on",
                                 suggestOnTriggerCharacters: true,

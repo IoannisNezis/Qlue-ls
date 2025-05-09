@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.3]
+
+### Added
+
+- online completion support for bin target
+
 ## [0.6.2]
 
 ### Changed

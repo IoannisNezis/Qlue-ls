@@ -88,9 +88,7 @@ pub(super) async fn dispatch(
         "initialized" => call!(handle_initialized_notifcation),
         "exit" => call!(handle_exit_notifcation),
         "textDocument/didOpen" => call!(handle_did_open_notification),
-        "textDocument/didChange" => {
-            call!(handle_did_change_notification)
-        }
+        "textDocument/didChange" => call!(handle_did_change_notification),
         "textDocument/didSave" => call!(handle_did_save_notification),
         "$/setTrace" => call!(handle_set_trace_notifcation),
         // NOTE: LSP extensions Requests

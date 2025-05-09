@@ -52,8 +52,7 @@ pub(super) async fn completions(
                     server_rc.clone(),
                     &query_unit,
                     &backend,
-                    // &format!("{}-{}", backend_name, "subjectCompletion"),
-                    "subject_completion.rq",
+                    &format!("{}-{}", backend.name, "subjectCompletion"),
                     template_context,
                 )
                 .await

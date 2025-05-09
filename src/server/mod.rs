@@ -131,12 +131,6 @@ impl Server {
         let curie = converter.compress(uri).ok()?;
         Some((record.prefix.clone(), record.uri_prefix.clone(), curie))
     }
-
-    pub(crate) fn get_default_backend(&self) -> Option<&Backend> {
-        self.state
-            .get_default_backend()
-            .or(self.settings.completion.default_backend.as_ref())
-    }
 }
 
 async fn handle_error(server_rc: Rc<Mutex<Server>>, message: &String, error: LSPError) {

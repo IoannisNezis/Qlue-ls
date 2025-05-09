@@ -44,7 +44,7 @@ pub(super) async fn handle_ping_backend_request(
             ErrorCode::InvalidParams,
             &format!("got ping request for unknown backend: \"{}\"", name),
         )),
-        None => server.get_default_backend().ok_or(LSPError::new(
+        None => server.state.get_default_backend().ok_or(LSPError::new(
             ErrorCode::InvalidParams,
             "no backend or default backend provided",
         )),

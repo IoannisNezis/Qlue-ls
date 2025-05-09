@@ -37,7 +37,7 @@ pub(super) async fn completions(
                 .backend
                 .as_ref()
                 .and_then(|name| server.state.get_backend(name))
-                .or(server.get_default_backend())
+                .or(server.state.get_default_backend())
                 .cloned()
         };
         match (backend, context.search_term.as_ref()) {

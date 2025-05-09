@@ -37,7 +37,6 @@ pub struct Queries {
 #[derive(Debug, Deserialize)]
 #[serde(default)]
 pub struct CompletionSettings {
-    pub default_backend: Option<Backend>,
     pub timeout_ms: u32,
     pub result_size_limit: u32,
 }
@@ -45,7 +44,6 @@ pub struct CompletionSettings {
 impl Default for CompletionSettings {
     fn default() -> Self {
         Self {
-            default_backend: None,
             timeout_ms: 5000,
             result_size_limit: 42,
         }

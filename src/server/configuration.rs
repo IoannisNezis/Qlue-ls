@@ -1,7 +1,38 @@
+use std::collections::HashMap;
+
 use config::{Config, ConfigError};
 use serde::Deserialize;
 
 use super::lsp::Backend;
+
+#[derive(Debug, Deserialize)]
+#[serde(default)]
+pub struct BackendsSettings {
+    pub backends: HashMap<String, BackendConfiguration>,
+}
+
+impl Default for BackendsSettings {
+    fn default() -> Self {
+        Self {
+            backends: HashMap::new(),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct BackendConfiguration {
+    pub backend: Backend,
+    pub prefix_map: HashMap<String, String>,
+    pub default: bool,
+    pub queries: Queries,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Queries {
+    pub subject_completion: String,
+    pub predicate_completion: String,
+    pub object_completion: String,
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(default)]
@@ -53,6 +84,7 @@ impl Default for FormatSettings {
 pub struct Settings {
     pub format: FormatSettings,
     pub completion: CompletionSettings,
+    pub backends: Option<BackendsSettings>,
 }
 
 fn load_user_configuration() -> Result<Settings, ConfigError> {
@@ -66,7 +98,7 @@ impl Settings {
     pub fn new() -> Self {
         match load_user_configuration() {
             Ok(settings) => {
-                log::info!("Loaded user configuration\n{:?}", settings);
+                log::info!("Loaded user configuration!!");
                 settings
             }
             Err(error) => {

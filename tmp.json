@@ -1,0 +1,19 @@
+{
+  "backends": [
+    {
+      "imdb": {
+        "backend": {
+          "name": "backend 1"
+        },
+        "prefixMap": {
+          "a": "b",
+          "b": "c"
+        },
+        "default": true,
+        "queries": {
+          "subjectCompletion": "dings"
+        }
+      }
+    }
+  ]
+}

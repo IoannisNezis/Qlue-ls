@@ -1,6 +1,6 @@
 [package]
 name = "qlue-ls"
-version = "0.6.0"
+version = "0.6.2"
 edition = "2021"
 authors = ["Ioannis Nezis <ioannis@nezis.de>"]
 description = "A formatter for SPARQL queries"
@@ -77,7 +77,7 @@ web-sys = { version = "0.3.76", features = [
 ] }
 js-sys = "0.3.77"
 console_error_panic_hook = { version = "0.1.7", optional = true }
-getrandom = { version = "0.2", features = ["js"] }
+getrandom = { version = "0.3", features = ["wasm_js"] }
 serde-wasm-bindgen = "0.6.5"
 futures = "0.3.31"
 reqwest = { version = "0.12.15", features = ["json"] }
@@ -95,3 +95,6 @@ wasm-opt = false
 [profile.release]
 # Tell `rustc` to optimize for small code size.
 opt-level = "s"
+
+[target.wasm32-unknown-unknown]
+rustflags = ['--cfg', 'getrandom_backend="wasm_js"']

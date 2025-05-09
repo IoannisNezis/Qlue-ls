@@ -1290,6 +1290,25 @@ fn format_comments_2() {
 }
 
 #[test]
+fn format_comments_3() {
+    let ugly_query = indoc!(
+        r#"SELECT * WHERE {
+             OPTIONAL {} . # comment
+             ?a ?b ?c
+           }
+        "#
+    );
+    let pretty_query = indoc!(
+        r#"SELECT * WHERE {
+             OPTIONAL {} . # comment
+             ?a ?b ?c
+           }
+        "#
+    );
+    format_and_compare(ugly_query, pretty_query, &FormatSettings::default());
+}
+
+#[test]
 fn format_construct_where() {
     let ugly_query = indoc!(
         r#"CONSTRUCT WHERE { ?s ?p ?o }

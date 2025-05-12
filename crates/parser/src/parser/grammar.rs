@@ -1052,7 +1052,7 @@ pub(super) fn parse_BuiltInCall(p: &mut Parser) {
             p.expect(SyntaxKind::LANGMATCHES);
             p.expect(SyntaxKind::LParen);
             parse_Expression(p);
-            p.expect(SyntaxKind::Colon);
+            p.expect(SyntaxKind::Comma);
             parse_Expression(p);
             p.expect(SyntaxKind::RParen);
         }
@@ -1167,7 +1167,7 @@ pub(super) fn parse_BuiltInCall(p: &mut Parser) {
             p.expect(SyntaxKind::CONTAINS);
             p.expect(SyntaxKind::LParen);
             parse_Expression(p);
-            p.expect(SyntaxKind::Colon);
+            p.expect(SyntaxKind::Comma);
             parse_Expression(p);
             p.expect(SyntaxKind::RParen);
         }
@@ -1175,7 +1175,7 @@ pub(super) fn parse_BuiltInCall(p: &mut Parser) {
             p.expect(SyntaxKind::STRSTARTS);
             p.expect(SyntaxKind::LParen);
             parse_Expression(p);
-            p.expect(SyntaxKind::Colon);
+            p.expect(SyntaxKind::Comma);
             parse_Expression(p);
             p.expect(SyntaxKind::RParen);
         }
@@ -1183,7 +1183,7 @@ pub(super) fn parse_BuiltInCall(p: &mut Parser) {
             p.expect(SyntaxKind::STRENDS);
             p.expect(SyntaxKind::LParen);
             parse_Expression(p);
-            p.expect(SyntaxKind::Colon);
+            p.expect(SyntaxKind::Comma);
             parse_Expression(p);
             p.expect(SyntaxKind::RParen);
         }
@@ -1191,7 +1191,7 @@ pub(super) fn parse_BuiltInCall(p: &mut Parser) {
             p.expect(SyntaxKind::STRBEFORE);
             p.expect(SyntaxKind::LParen);
             parse_Expression(p);
-            p.expect(SyntaxKind::Colon);
+            p.expect(SyntaxKind::Comma);
             parse_Expression(p);
             p.expect(SyntaxKind::RParen);
         }
@@ -1199,7 +1199,7 @@ pub(super) fn parse_BuiltInCall(p: &mut Parser) {
             p.expect(SyntaxKind::STRAFTER);
             p.expect(SyntaxKind::LParen);
             parse_Expression(p);
-            p.expect(SyntaxKind::Colon);
+            p.expect(SyntaxKind::Comma);
             parse_Expression(p);
             p.expect(SyntaxKind::RParen);
         }
@@ -1301,9 +1301,9 @@ pub(super) fn parse_BuiltInCall(p: &mut Parser) {
             p.expect(SyntaxKind::IF);
             p.expect(SyntaxKind::LParen);
             parse_Expression(p);
-            p.expect(SyntaxKind::Colon);
+            p.expect(SyntaxKind::Comma);
             parse_Expression(p);
-            p.expect(SyntaxKind::Colon);
+            p.expect(SyntaxKind::Comma);
             parse_Expression(p);
             p.expect(SyntaxKind::RParen);
         }
@@ -1311,7 +1311,7 @@ pub(super) fn parse_BuiltInCall(p: &mut Parser) {
             p.expect(SyntaxKind::STRLANG);
             p.expect(SyntaxKind::LParen);
             parse_Expression(p);
-            p.expect(SyntaxKind::Colon);
+            p.expect(SyntaxKind::Comma);
             parse_Expression(p);
             p.expect(SyntaxKind::RParen);
         }
@@ -1319,7 +1319,7 @@ pub(super) fn parse_BuiltInCall(p: &mut Parser) {
             p.expect(SyntaxKind::STRDT);
             p.expect(SyntaxKind::LParen);
             parse_Expression(p);
-            p.expect(SyntaxKind::Colon);
+            p.expect(SyntaxKind::Comma);
             parse_Expression(p);
             p.expect(SyntaxKind::RParen);
         }
@@ -1327,7 +1327,7 @@ pub(super) fn parse_BuiltInCall(p: &mut Parser) {
             p.expect(SyntaxKind::sameTerm);
             p.expect(SyntaxKind::LParen);
             parse_Expression(p);
-            p.expect(SyntaxKind::Colon);
+            p.expect(SyntaxKind::Comma);
             parse_Expression(p);
             p.expect(SyntaxKind::RParen);
         }
@@ -2717,8 +2717,8 @@ pub(super) fn parse_ArgList(p: &mut Parser) {
                 p.expect(SyntaxKind::DISTINCT);
             }
             parse_Expression(p);
-            while [SyntaxKind::Colon].contains(&p.nth(0)) {
-                p.expect(SyntaxKind::Colon);
+            while [SyntaxKind::Comma].contains(&p.nth(0)) {
+                p.expect(SyntaxKind::Comma);
                 parse_Expression(p);
             }
             p.expect(SyntaxKind::RParen);
@@ -2744,8 +2744,8 @@ pub(super) fn parse_ExpressionList(p: &mut Parser) {
         SyntaxKind::LParen => {
             p.expect(SyntaxKind::LParen);
             parse_Expression(p);
-            while [SyntaxKind::Colon].contains(&p.nth(0)) {
-                p.expect(SyntaxKind::Colon);
+            while [SyntaxKind::Comma].contains(&p.nth(0)) {
+                p.expect(SyntaxKind::Comma);
                 parse_Expression(p);
             }
             p.expect(SyntaxKind::RParen);
@@ -2936,8 +2936,8 @@ pub(super) fn parse_Verb(p: &mut Parser) {
 pub(super) fn parse_ObjectList(p: &mut Parser) {
     let marker = p.open();
     parse_Object(p);
-    while [SyntaxKind::Colon].contains(&p.nth(0)) {
-        p.expect(SyntaxKind::Colon);
+    while [SyntaxKind::Comma].contains(&p.nth(0)) {
+        p.expect(SyntaxKind::Comma);
         parse_Object(p);
     }
     p.close(marker, SyntaxKind::ObjectList);
@@ -3125,8 +3125,8 @@ pub(super) fn parse_VerbSimple(p: &mut Parser) {
 pub(super) fn parse_ObjectListPath(p: &mut Parser) {
     let marker = p.open();
     parse_ObjectPath(p);
-    while [SyntaxKind::Colon].contains(&p.nth(0)) {
-        p.expect(SyntaxKind::Colon);
+    while [SyntaxKind::Comma].contains(&p.nth(0)) {
+        p.expect(SyntaxKind::Comma);
         parse_ObjectPath(p);
     }
     p.close(marker, SyntaxKind::ObjectListPath);
@@ -4214,10 +4214,10 @@ pub(super) fn parse_SubstringExpression(p: &mut Parser) {
     p.expect(SyntaxKind::SUBSTR);
     p.expect(SyntaxKind::LParen);
     parse_Expression(p);
-    p.expect(SyntaxKind::Colon);
+    p.expect(SyntaxKind::Comma);
     parse_Expression(p);
-    if p.at_any(&[SyntaxKind::Colon]) {
-        p.expect(SyntaxKind::Colon);
+    if p.at_any(&[SyntaxKind::Comma]) {
+        p.expect(SyntaxKind::Comma);
         parse_Expression(p);
     }
     p.expect(SyntaxKind::RParen);
@@ -4229,12 +4229,12 @@ pub(super) fn parse_StrReplaceExpression(p: &mut Parser) {
     p.expect(SyntaxKind::REPLACE);
     p.expect(SyntaxKind::LParen);
     parse_Expression(p);
-    p.expect(SyntaxKind::Colon);
+    p.expect(SyntaxKind::Comma);
     parse_Expression(p);
-    p.expect(SyntaxKind::Colon);
+    p.expect(SyntaxKind::Comma);
     parse_Expression(p);
-    if p.at_any(&[SyntaxKind::Colon]) {
-        p.expect(SyntaxKind::Colon);
+    if p.at_any(&[SyntaxKind::Comma]) {
+        p.expect(SyntaxKind::Comma);
         parse_Expression(p);
     }
     p.expect(SyntaxKind::RParen);
@@ -4246,10 +4246,10 @@ pub(super) fn parse_RegexExpression(p: &mut Parser) {
     p.expect(SyntaxKind::REGEX);
     p.expect(SyntaxKind::LParen);
     parse_Expression(p);
-    p.expect(SyntaxKind::Colon);
+    p.expect(SyntaxKind::Comma);
     parse_Expression(p);
-    if p.at_any(&[SyntaxKind::Colon]) {
-        p.expect(SyntaxKind::Colon);
+    if p.at_any(&[SyntaxKind::Comma]) {
+        p.expect(SyntaxKind::Comma);
         parse_Expression(p);
     }
     p.expect(SyntaxKind::RParen);

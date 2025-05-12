@@ -8,6 +8,8 @@ pub enum SyntaxKind {
     Error,
     #[regex(r#"[ \t\n\r\f]+"#)]
     WHITESPACE,
+    #[regex(r#"#\.*\n"#)]
+    Comment,
     #[token("BASE", ignore(case))]
     BASE,
     #[regex(r#"<[^<>\"{}|^`\\\u{00}-\u{20}]*>"#)]
@@ -126,7 +128,7 @@ pub enum SyntaxKind {
     #[token("FILTER", ignore(case))]
     FILTER,
     #[token(",")]
-    Colon,
+    Comma,
     #[token(" a ")]
     a,
     #[token("|")]
@@ -170,9 +172,9 @@ pub enum SyntaxKind {
     LessEquals,
     #[token(">=")]
     MoreEquals,
-    #[token("IN")]
+    #[token("IN", ignore(case))]
     IN,
-    #[token("NOT")]
+    #[token("NOT", ignore(case))]
     NOT,
     #[token("-")]
     Minus,

@@ -9,6 +9,6 @@ impl From<SyntaxKind> for rowan::SyntaxKind {
 
 impl SyntaxKind {
     pub fn is_trivia(&self) -> bool {
-        *self == SyntaxKind::WHITESPACE
+        matches!(self, SyntaxKind::WHITESPACE | SyntaxKind::Comment)
     }
 }

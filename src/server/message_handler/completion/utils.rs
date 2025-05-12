@@ -126,18 +126,16 @@ pub(super) fn get_replace_range(context: &CompletionContext) -> Range {
 
 pub(super) fn get_prefix_declarations<'a>(
     server: &Server,
-    context: &CompletionContext,
+    backend: &Backend,
     prefixes: Vec<String>,
 ) -> Vec<(String, String)> {
     prefixes
         .into_iter()
         .filter_map(|prefix| {
-            context.backend.as_ref().and_then(|backend| {
-                server
-                    .state
-                    .get_converter(backend)
-                    .and_then(|converter| converter.find_by_prefix(&prefix).ok())
-            })
+            server
+                .state
+                .get_converter(&backend.name)
+                .and_then(|converter| converter.find_by_prefix(&prefix).ok())
         })
         .map(|record| (record.prefix.clone(), record.uri_prefix.clone()))
         .collect()

@@ -41,7 +41,7 @@ pub(super) async fn completions(
                 )?;
                 let prefixes = get_prefix_declarations(
                     &*server_rc.lock().await,
-                    &context,
+                    &backend,
                     triple.used_prefixes(),
                 );
                 let inject = compute_inject_context(

@@ -33,7 +33,7 @@ pub(super) async fn completions(
             (Some(backend), Some(search_term)) => {
                 let prefix_declarations: Vec<_> = get_prefix_declarations(
                     &*server_rc.lock().await,
-                    &context,
+                    &backend,
                     triple.used_prefixes(),
                 );
                 let range = get_replace_range(&context);

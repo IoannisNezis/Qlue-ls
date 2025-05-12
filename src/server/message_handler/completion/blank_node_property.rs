@@ -46,7 +46,7 @@ pub(super) async fn completions(
                 let range = get_replace_range(&context);
                 let prefixes = get_prefix_declarations(
                     &*server_rc.lock().await,
-                    &context,
+                    &backend,
                     blank_node_props.used_prefixes(),
                 );
                 let inject = compute_inject_context(

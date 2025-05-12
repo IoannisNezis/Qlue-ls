@@ -1,12 +1,14 @@
 use std::collections::HashSet;
 
-use super::{error::CompletionError, CompletionContext, CompletionLocation};
+use super::{error::CompletionError, CompletionEnvironment, CompletionLocation};
 use crate::server::lsp::{
     CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
 };
 use ll_sparql_parser::ast::{AstNode, PrefixedName, QueryUnit};
 
-pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, CompletionError> {
+pub(super) fn completions(
+    context: CompletionEnvironment,
+) -> Result<CompletionList, CompletionError> {
     let query_unit = QueryUnit::cast(context.tree).ok_or(CompletionError::ResolveError(
         "Could not cast to QueryUnit".to_string(),
     ))?;
@@ -76,7 +78,7 @@ pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, 
 }
 
 pub(super) fn completions_transformed(
-    context: CompletionContext,
+    context: CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
     let mut variable_completions = completions(context)?;
     for item in variable_completions.items.iter_mut() {

@@ -1,12 +1,15 @@
 use crate::server::lsp::{CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat};
 
-use super::{context::CompletionContext, error::CompletionError};
+use super::{environment::CompletionEnvironment, error::CompletionError};
 
-pub(super) fn completions(_context: CompletionContext) -> Result<CompletionList, CompletionError> {
+pub(super) fn completions(
+    _context: CompletionEnvironment,
+) -> Result<CompletionList, CompletionError> {
     Ok(CompletionList {
         is_incomplete: false,
         item_defaults: None,
-        items: vec![CompletionItem {command: None,
+        items: vec![CompletionItem {
+            command: None,
             label: "<graph>".to_string(),
             label_details: None,
             kind: CompletionItemKind::Value,

@@ -188,7 +188,7 @@ pub(super) enum CompletionLocation {
 }
 
 #[derive(Debug)]
-pub(super) struct CompletionContext {
+pub(super) struct CompletionEnvironment {
     pub(super) location: CompletionLocation,
     pub(super) trigger_textdocument_position: Position,
     pub(super) continuations: HashSet<SyntaxKind>,
@@ -200,7 +200,7 @@ pub(super) struct CompletionContext {
     pub(super) backend: Option<String>,
 }
 
-impl CompletionContext {
+impl CompletionEnvironment {
     pub(super) async fn from_completion_request(
         server_rc: Rc<Mutex<Server>>,
         request: &CompletionRequest,

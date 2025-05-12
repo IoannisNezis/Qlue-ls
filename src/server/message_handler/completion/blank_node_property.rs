@@ -1,7 +1,7 @@
 use std::{collections::HashSet, rc::Rc};
 
 use super::{
-    context::{CompletionContext, CompletionLocation},
+    environment::{CompletionEnvironment, CompletionLocation},
     error::CompletionError,
     utils::{get_replace_range, to_completion_items},
 };
@@ -22,7 +22,7 @@ use text_size::TextSize;
 
 pub(super) async fn completions(
     server_rc: Rc<Mutex<Server>>,
-    context: CompletionContext,
+    context: CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
     if let CompletionLocation::BlankNodeProperty(blank_node_props) = &context.location {
         let backend = {

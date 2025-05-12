@@ -1,11 +1,13 @@
-use super::{error::CompletionError, CompletionContext, CompletionLocation};
+use super::{error::CompletionError, CompletionEnvironment, CompletionLocation};
 use crate::server::lsp::{
     CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
 };
 use ll_sparql_parser::{ast::AstNode, syntax_kind::SyntaxKind};
 use std::collections::HashSet;
 
-pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, CompletionError> {
+pub(super) fn completions(
+    context: CompletionEnvironment,
+) -> Result<CompletionList, CompletionError> {
     if let CompletionLocation::SelectBinding(select_clause) = &context.location {
         let mut items = Vec::new();
         if context.continuations.contains(&SyntaxKind::DISTINCT) {

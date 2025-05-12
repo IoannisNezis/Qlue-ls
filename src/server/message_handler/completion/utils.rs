@@ -20,7 +20,7 @@ use crate::{
     sparql::results::RDFTerm,
 };
 
-use super::{context::CompletionContext, error::CompletionError};
+use super::{environment::CompletionEnvironment, error::CompletionError};
 
 pub(super) async fn fetch_online_completions(
     server_rc: Rc<Mutex<Server>>,
@@ -108,7 +108,7 @@ fn render_rdf_term(
 
 /// Get the range the completion is supposed to replace
 /// The context.search_term MUST be not None!
-pub(super) fn get_replace_range(context: &CompletionContext) -> Range {
+pub(super) fn get_replace_range(context: &CompletionEnvironment) -> Range {
     Range {
         start: context.trigger_textdocument_position,
         end: Position::new(

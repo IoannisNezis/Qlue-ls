@@ -5,10 +5,10 @@ use super::{
     utils::{
         fetch_online_completions, get_prefix_declarations, get_replace_range, to_completion_items,
     },
-    variable, CompletionContext,
+    variable, CompletionEnvironment,
 };
 use crate::server::{
-    lsp::CompletionList, message_handler::completion::context::CompletionLocation, Server,
+    lsp::CompletionList, message_handler::completion::environment::CompletionLocation, Server,
 };
 use futures::lock::Mutex;
 use ll_sparql_parser::ast::{AstNode, QueryUnit};
@@ -17,7 +17,7 @@ use text_size::TextRange;
 
 pub(super) async fn completions(
     server_rc: Rc<Mutex<Server>>,
-    context: CompletionContext,
+    context: CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
     if let CompletionLocation::Object(triple) = &context.location {
         let backend = {

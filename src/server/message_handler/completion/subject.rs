@@ -3,7 +3,7 @@ use std::rc::Rc;
 use super::{
     error::CompletionError,
     utils::{fetch_online_completions, get_replace_range, to_completion_items},
-    variable, CompletionContext,
+    variable, CompletionEnvironment,
 };
 use crate::server::{
     lsp::{Command, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat},
@@ -18,7 +18,7 @@ use tera::Context;
 
 pub(super) async fn completions(
     server_rc: Rc<Mutex<Server>>,
-    context: CompletionContext,
+    context: CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
     let mut items = Vec::new();
     let mut is_incomplete = false;

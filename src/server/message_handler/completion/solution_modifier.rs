@@ -1,10 +1,12 @@
-use super::{error::CompletionError, CompletionContext};
+use super::{error::CompletionError, CompletionEnvironment};
 use crate::server::lsp::{
     Command, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
 };
 use ll_sparql_parser::syntax_kind::SyntaxKind::*;
 
-pub(super) fn completions(context: CompletionContext) -> Result<CompletionList, CompletionError> {
+pub(super) fn completions(
+    context: CompletionEnvironment,
+) -> Result<CompletionList, CompletionError> {
     let mut items = Vec::new();
     if context.continuations.contains(&SolutionModifier) {
         items.push(CompletionItem {

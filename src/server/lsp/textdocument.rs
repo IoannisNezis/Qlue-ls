@@ -194,7 +194,7 @@ impl Position {
     ///   is undefined.
     /// * Ensure the provided UTF-16 position aligns with the logical structure of
     ///   the string.
-    pub fn to_byte_index(&self, text: &String) -> Option<usize> {
+    pub fn to_byte_index(&self, text: &str) -> Option<usize> {
         if self.line == 0 && self.character == 0 && text.is_empty() {
             return Some(0);
         }

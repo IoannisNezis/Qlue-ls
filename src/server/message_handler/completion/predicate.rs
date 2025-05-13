@@ -20,41 +20,43 @@ use text_size::TextSize;
 
 pub(super) async fn completions(
     server_rc: Rc<Mutex<Server>>,
-    context: CompletionEnvironment,
+    environment: CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
-    if let CompletionLocation::Predicate(triple) = &context.location {
+    if let CompletionLocation::Predicate(triple) = &environment.location {
         let backend = {
             let server = server_rc.lock().await;
-            context
+            environment
                 .backend
                 .as_ref()
                 .and_then(|name| server.state.get_backend(name))
                 .or(server.state.get_default_backend())
                 .cloned()
         };
-        match (backend, context.search_term.as_ref()) {
+        match (backend, environment.search_term.as_ref()) {
             (Some(backend), Some(search_term)) => {
-                let range = get_replace_range(&context);
+                let range = get_replace_range(&environment);
                 let mut template_context = Context::new();
-                let query_unit = QueryUnit::cast(context.tree.clone()).ok_or(
+                let query_unit = QueryUnit::cast(environment.tree.clone()).ok_or(
                     CompletionError::ResolveError("Could not cast root to QueryUnit".to_string()),
                 )?;
-                let prefixes = get_prefix_declarations(
-                    &*server_rc.lock().await,
-                    &backend,
-                    triple.used_prefixes(),
-                );
+                let mut prefixes = triple.used_prefixes();
+                prefixes.extend(environment.context.as_ref().unwrap().prefixes.clone());
+                let prefix_declaration =
+                    get_prefix_declarations(&*server_rc.lock().await, &backend, prefixes);
                 let inject = compute_inject_context(
                     triple,
-                    context.anchor_token.unwrap().text_range().end(),
-                    context.continuations,
+                    environment.anchor_token.unwrap().text_range().end(),
+                    environment.continuations,
                 )
                 .ok_or(CompletionError::ResolveError(
-                    "Could not build inject-string for the template".to_string(),
+                    "Could not build local_context for the template".to_string(),
                 ))?;
-                template_context.insert("context", &inject);
-                template_context.insert("prefixes", &prefixes);
+                template_context.insert("local_context", &inject);
+                template_context.insert("prefixes", &prefix_declaration);
                 template_context.insert("search_term", search_term);
+                if let Some(context) = environment.context.as_ref() {
+                    template_context.insert("global_context", &context.to_string());
+                }
                 let items = to_completion_items(
                     fetch_online_completions(
                         server_rc.clone(),

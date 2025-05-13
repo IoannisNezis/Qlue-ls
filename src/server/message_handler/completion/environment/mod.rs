@@ -1,5 +1,8 @@
+mod context;
+
 use std::{collections::HashSet, rc::Rc};
 
+use context::{context, Context};
 use futures::lock::Mutex;
 use ll_sparql_parser::{
     ast::{AstNode, BlankPropertyList, SelectClause, ServiceGraphPattern, Triple},
@@ -198,6 +201,7 @@ pub(super) struct CompletionEnvironment {
     pub(super) anchor_token: Option<SyntaxToken>,
     pub(super) search_term: Option<String>,
     pub(super) backend: Option<String>,
+    pub(super) context: Option<Context>,
 }
 
 impl CompletionEnvironment {
@@ -235,6 +239,7 @@ impl CompletionEnvironment {
         let search_term = get_search_term(&tree, &anchor_token, offset);
         let continuations = get_continuations(&tree, &anchor_token);
         let location = get_location(&anchor_token, &continuations, offset);
+        let context = context(&location, anchor_token.as_ref());
         Ok(Self {
             location,
             trigger_textdocument_position: document_position.position,
@@ -245,6 +250,7 @@ impl CompletionEnvironment {
             anchor_token,
             search_term,
             backend,
+            context,
         })
     }
 }

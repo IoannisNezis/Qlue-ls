@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use super::{error::CompletionError, CompletionEnvironment, CompletionLocation};
 use crate::server::lsp::{
-    CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
+    Command, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
 };
 use ll_sparql_parser::ast::{AstNode, PrefixedName, QueryUnit};
 
@@ -31,16 +31,27 @@ pub(super) fn completions(
             .into_iter()
             .map(|var| var.var_name()),
     )
-    .iter()
-    .map(|var| {
-        CompletionItem::new(
-            &var,
-            Some("Variable".to_string()),
-            None,
-            &format!("{}{}", var, suffix),
-            CompletionItemKind::Variable,
-            None,
-        )
+    .into_iter()
+    .map(|var| CompletionItem {
+        insert_text: Some(format!("{}{}", var, suffix)),
+        label: var,
+        label_details: None,
+        detail: Some("Variable".to_string()),
+        kind: CompletionItemKind::Variable,
+        sort_text: None,
+        text_edit: None,
+        insert_text_format: Some(InsertTextFormat::PlainText),
+        additional_text_edits: None,
+        command: match context.location {
+            CompletionLocation::Subject
+            | CompletionLocation::Predicate(_)
+            | CompletionLocation::BlankNodeProperty(_) => Some(Command {
+                title: "triggerNewCompletion".to_string(),
+                command: "triggerNewCompletion".to_string(),
+                arguments: None,
+            }),
+            _ => None,
+        },
     })
     .collect();
     if let Some(prefixed_name) = context

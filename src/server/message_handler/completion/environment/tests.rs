@@ -1,6 +1,6 @@
 use ll_sparql_parser::{parse_query, syntax_kind::SyntaxKind, SyntaxToken};
 
-use crate::server::message_handler::completion::context::CompletionLocation;
+use crate::server::message_handler::completion::environment::CompletionLocation;
 
 use super::{get_anchor_token, get_continuations, get_location, get_trigger_token};
 
@@ -10,12 +10,18 @@ fn match_location_at_offset(input: &str, matcher: CompletionLocation, offset: u3
 
 fn location(input: &str, offset: u32) -> CompletionLocation {
     let root = parse_query(input);
-    let trigger_token = dbg!(get_trigger_token(&root, offset.into()));
-    println!("{:?}", trigger_token);
-    let anchor = dbg!(trigger_token.and_then(get_anchor_token));
-    println!("{:?}", anchor);
-    let continuations = dbg!(get_continuations(&root, &anchor));
-    dbg!(get_location(&anchor, &continuations, offset.into()))
+    let trigger_token = get_trigger_token(&root, offset.into());
+    let anchor = trigger_token.and_then(get_anchor_token);
+    let continuations = get_continuations(&root, &anchor);
+    get_location(&anchor, &continuations, offset.into())
+}
+
+#[test]
+fn find_anchor_path() {
+    let root = parse_query("Select * {?s ^}");
+    let trigger_token = get_trigger_token(&root, 14.into());
+    let anchor = trigger_token.and_then(get_anchor_token).unwrap();
+    assert_eq!(anchor.kind(), SyntaxKind::Zirkumflex)
 }
 
 #[test]

@@ -445,6 +445,7 @@ fn get_anchor_token(mut token: SyntaxToken) -> Option<SyntaxToken> {
             | SyntaxKind::RCurly
             | SyntaxKind::RParen
             | SyntaxKind::Slash
+            | SyntaxKind::Zirkumflex
     ) {
         token = token.prev_token()?;
     }

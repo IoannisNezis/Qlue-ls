@@ -87,11 +87,11 @@ fn relevant_positions(
         {
             res.push((offset, Some("\n  "), Some("\n")));
         }
-        if let Some(offset) = query_unit
-            .select_query()
-            .and_then(|sq| sq.where_clause())
-            .map(|wc| wc.syntax().text_range().end())
-        {
+        if let Some(offset) = query_unit.select_query().and_then(|sq| {
+            sq.soulution_modifier()
+                .map(|sm| sm.syntax().text_range().end())
+                .or(sq.where_clause().map(|wc| wc.syntax().text_range().end()))
+        }) {
             res.push((offset, Some("\n"), None));
         }
     }

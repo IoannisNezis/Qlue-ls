@@ -45,6 +45,11 @@ impl Prologue {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct SolutionModifier {
+    syntax: SyntaxNode,
+}
+
+#[derive(Debug, PartialEq)]
 pub struct PrefixDeclaration {
     syntax: SyntaxNode,
 }
@@ -99,6 +104,10 @@ impl SelectQuery {
             }
         }
         vec![]
+    }
+
+    pub fn soulution_modifier(&self) -> Option<SolutionModifier> {
+        SolutionModifier::cast(self.syntax.last_child()?)
     }
 }
 
@@ -1030,6 +1039,26 @@ impl AstNode for Prologue {
     #[inline]
     fn kind() -> SyntaxKind {
         SyntaxKind::Prologue
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+}
+
+impl AstNode for SolutionModifier {
+    #[inline]
+    fn kind() -> SyntaxKind {
+        SyntaxKind::SolutionModifier
     }
 
     fn cast(syntax: SyntaxNode) -> Option<Self> {

@@ -36,12 +36,31 @@
 
       {% endif %}
       LIMIT {{ limit }} OFFSET {{ offset }}
-    predicateCompletion: "{% for prefix in prefixes %}\nPREFIX {{prefix.0}}: <{{prefix.1}}>\n{% endfor %}\nSELECT ?qlue_ls_entity WHERE {\n  {{local_context}}\n}\nGROUP BY ?qlue_ls_entity \nLIMIT {{ limit }} OFFSET {{ offset }}"
+    predicateCompletion: |-
+      {% for prefix in prefixes %}
+      PREFIX {{prefix.0}}: <{{prefix.1}}>
+      {% endfor %}
+      SELECT ?qlue_ls_entity WHERE {
+        {% if global_context %}
+          {
+            {{global_context}}
+          }
+        {% endif %}
+        {{local_context}}
+      }
+      GROUP BY ?qlue_ls_entity
+      LIMIT {{ limit }}
+      OFFSET {{ offset }}"
     objectCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
       SELECT ?qlue_ls_entity WHERE {
+        {% if global_context %}
+          {
+            {{global_context}}
+          }
+        {% endif %}
         {{local_context}}
         {% if search_term and search_term != "" %}
         FILTER (REGEX(?qlue_ls_entity, "^{{ search_term }}"))
@@ -92,11 +111,11 @@
       {% endfor %}
       SELECT ?qlue_ls_entity ?qlue_ls_score WHERE {
         { SELECT ?qlue_ls_entity (COUNT({% if local_context is containing("?qlue_ls_inner") %}DISTINCT ?qlue_ls_inner{%else%}?qlue_ls_entity{% endif %}) AS ?qlue_ls_score)
-          WHERE { 
+          WHERE {
             {% if global_context %}
-            {
-              {{global_context}}
-            }
+              {
+                {{global_context}}
+              }
             {% endif %}
             {{local_context}}
           }
@@ -115,9 +134,9 @@
       SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_count WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_count) WHERE {
           {% if global_context %}
-          {
-            {{global_context}}
-          }
+            {
+              {{global_context}}
+            }
           {% endif %}
           {{local_context}}
         } GROUP BY ?qlue_ls_entity }
@@ -210,7 +229,14 @@
       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
       SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_score WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_score)
-          WHERE { {{local_context}} }
+          WHERE {
+            {% if global_context %}
+              {
+                {{global_context}}
+              }
+            {% endif %}
+            {{local_context}}
+          }
           GROUP BY ?qlue_ls_entity }
         OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label }
         {% if search_term and search_term != "" %}
@@ -227,6 +253,11 @@
       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
       SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_count) WHERE {
+          {% if global_context %}
+            {
+              {{global_context}}
+            }
+          {% endif %}
           {{local_context}}
         } GROUP BY ?qlue_ls_entity }
         OPTIONAL { ?qlue_ls_entity rdf:type [ obo:IAO_0000412 obo:chebi.owl; rdfs:label ?qlue_ls_label_or_null ] }
@@ -318,7 +349,14 @@
 
       SELECT ?qlue_ls_entity ?qlue_ls_score WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_score) WHERE
-          { {{local_context}} }
+          { 
+            {% if global_context %}
+              {
+                {{global_context}}
+              }
+            {% endif %}
+            {{local_context}}
+          }
           GROUP BY ?qlue_ls_entity }
         {% if search_term and search_term != "" %}
         FILTER REGEX(STR(?qlue_ls_entity), "{{ search_term }}", "i")
@@ -334,6 +372,11 @@
         {
           { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
             { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
+              {% if global_context %}
+                {
+                  {{global_context}}
+                }
+              {% endif %}
               {{local_context}}
             } GROUP BY ?qlue_ls_entity }
             ?qlue_ls_entity rdfs:label ?name BIND(?name AS ?alias)
@@ -344,6 +387,11 @@
         } UNION {
          { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
             { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
+              {% if global_context %}
+                {
+                  {{global_context}}
+                }
+              {% endif %}
               {{local_context}}
             } GROUP BY ?qlue_ls_entity }
             ?qlue_ls_entity up:scientificName ?name BIND(?name AS ?alias)
@@ -354,6 +402,11 @@
         } UNION {
           { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
             { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
+              {% if global_context %}
+                {
+                  {{global_context}}
+                }
+              {% endif %}
               {{local_context}}
             } GROUP BY ?qlue_ls_entity }
             BIND(?qlue_ls_entity AS ?name) BIND(?qlue_ls_entity AS ?alias)
@@ -425,7 +478,14 @@
       {% endfor %}
       SELECT ?qlue_ls_entity (SAMPLE(?score) AS ?qlue_ls_score) WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?score)
-          WHERE { {{local_context}} }
+          WHERE {
+            {% if global_context %}
+              {
+                {{global_context}}
+              }
+            {% endif %}
+            {{local_context}}
+          }
           GROUP BY ?qlue_ls_entity }
         BIND (?qlue_ls_entity AS ?name)
         {% if search_term and search_term != "" %}
@@ -440,6 +500,11 @@
       PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
       SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?alias) as ?qlue_ls_alias) (SAMPLE(?count) as ?qlue_ls_count) WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
+          {% if global_context %}
+            {
+              {{global_context}}
+            }
+          {% endif %}
           {{local_context}}
         } GROUP BY ?qlue_ls_entity }
         {% if not search_term or search_term == "" %}
@@ -523,7 +588,14 @@
       PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
       SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?count) as ?qlue_ls_count) WHERE {
         { SELECT ?qlue_ls_entity (COUNT({% if local_context is containing("?qlue_ls_inner") %}DISTINCT ?qlue_ls_inner{%else%}?qlue_ls_entity{% endif %}) as ?count)
-          WHERE { {{local_context}} }
+          WHERE {
+            {% if global_context %}
+              {
+                {{global_context}}
+              }
+            {% endif %}
+            {{local_context}}
+          }
           GROUP BY ?qlue_ls_entity }
         {% if not search_term or search_term == "" %}
         ?qui_tmp_1 ?qui_tmp_2 ?qlue_ls_entity .
@@ -545,6 +617,11 @@
       PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
       SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?alias) as ?qlue_ls_alias) (SAMPLE(?count) as ?qlue_ls_count) WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
+          {% if global_context %}
+            {
+              {{global_context}}
+            }
+          {% endif %}
           {{local_context}}
         } GROUP BY ?qlue_ls_entity }
         {% if not search_term or search_term == "" %}

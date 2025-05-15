@@ -135,6 +135,7 @@ impl SelectClause {
     }
 }
 
+#[derive(Debug)]
 pub enum GroupPatternNotTriples {
     GroupOrUnionGraphPattern(GroupOrUnionGraphPattern),
     OptionalGraphPattern(OptionalGraphPattern),
@@ -239,21 +240,21 @@ pub struct GroupGraphPattern {
 
 impl GroupGraphPattern {
     pub fn triple_blocks(&self) -> Vec<TriplesBlock> {
-        if let Some(sub) = self
-            .syntax
+        self.syntax()
             .first_child_by_kind(&|kind| kind == SyntaxKind::GroupGraphPatternSub)
-        {
-            sub.children()
-                .filter_map(|child| match child.kind() {
-                    SyntaxKind::TriplesBlock => {
-                        Some(TriplesBlock::cast(child).expect("Kind should be TriplesBLock"))
-                    }
-                    _ => None,
-                })
-                .collect()
-        } else {
-            vec![]
-        }
+            .map(|ggp| ggp.children().filter_map(TriplesBlock::cast).collect())
+            .unwrap_or_default()
+    }
+
+    pub fn group_pattern_not_triples(&self) -> Vec<GroupPatternNotTriples> {
+        self.syntax()
+            .first_child_by_kind(&|kind| kind == SyntaxKind::GroupGraphPatternSub)
+            .map(|ggp| {
+                ggp.children()
+                    .filter_map(GroupPatternNotTriples::cast)
+                    .collect()
+            })
+            .unwrap_or_default()
     }
 
     pub fn r_paren_token(&self) -> Option<SyntaxToken> {
@@ -315,14 +316,6 @@ impl Triple {
 
     pub fn properties_list_path(&self) -> Option<PropertyListPath> {
         PropertyListPath::cast(self.syntax.children().nth(1)?)
-    }
-
-    pub fn used_prefixes(&self) -> Vec<String> {
-        self.syntax
-            .descendants()
-            .filter_map(PrefixedName::cast)
-            .map(|prefixed_name| prefixed_name.prefix())
-            .collect()
     }
 
     /// Get the `TriplesBlock` this Triple is part of.
@@ -1139,6 +1132,70 @@ impl AstNode for SelectQuery {
     }
 }
 
+impl AstNode for GroupPatternNotTriples {
+    #[inline]
+    fn kind() -> SyntaxKind {
+        SyntaxKind::GraphPatternNotTriples
+    }
+
+    fn can_cast(kind: SyntaxKind) -> bool {
+        matches!(
+            kind,
+            SyntaxKind::GroupOrUnionGraphPattern
+                | SyntaxKind::OptionalGraphPattern
+                | SyntaxKind::MinusGraphPattern
+                | SyntaxKind::GraphGraphPattern
+                | SyntaxKind::ServiceGraphPattern
+                | SyntaxKind::Filter
+                | SyntaxKind::Bind
+                | SyntaxKind::InlineData
+        )
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        let child = syntax.first_child()?;
+        match child.kind() {
+            SyntaxKind::GroupOrUnionGraphPattern => {
+                Some(GroupPatternNotTriples::GroupOrUnionGraphPattern(
+                    GroupOrUnionGraphPattern::cast(child)?,
+                ))
+            }
+            SyntaxKind::OptionalGraphPattern => Some(GroupPatternNotTriples::OptionalGraphPattern(
+                OptionalGraphPattern::cast(child)?,
+            )),
+            SyntaxKind::MinusGraphPattern => Some(GroupPatternNotTriples::MinusGraphPattern(
+                MinusGraphPattern::cast(child)?,
+            )),
+            SyntaxKind::GraphGraphPattern => Some(GroupPatternNotTriples::GraphGraphPattern(
+                GraphGraphPattern::cast(child)?,
+            )),
+            SyntaxKind::ServiceGraphPattern => Some(GroupPatternNotTriples::ServiceGraphPattern(
+                ServiceGraphPattern::cast(child)?,
+            )),
+            SyntaxKind::Filter => Some(GroupPatternNotTriples::Filter(Filter::cast(child)?)),
+            SyntaxKind::Bind => Some(GroupPatternNotTriples::Bind(Bind::cast(child)?)),
+            SyntaxKind::InlineData => Some(GroupPatternNotTriples::InlineData(InlineData::cast(
+                syntax,
+            )?)),
+            _ => None,
+        }
+    }
+
+    #[inline]
+    fn syntax(&self) -> &SyntaxNode {
+        match self {
+            GroupPatternNotTriples::GroupOrUnionGraphPattern(x) => x.syntax(),
+            GroupPatternNotTriples::OptionalGraphPattern(x) => x.syntax(),
+            GroupPatternNotTriples::MinusGraphPattern(x) => x.syntax(),
+            GroupPatternNotTriples::GraphGraphPattern(x) => x.syntax(),
+            GroupPatternNotTriples::ServiceGraphPattern(x) => x.syntax(),
+            GroupPatternNotTriples::Filter(x) => x.syntax(),
+            GroupPatternNotTriples::Bind(x) => x.syntax(),
+            GroupPatternNotTriples::InlineData(x) => x.syntax(),
+        }
+    }
+}
+
 pub trait AstNode {
     fn kind() -> SyntaxKind;
 
@@ -1152,6 +1209,16 @@ pub trait AstNode {
         Self: Sized;
 
     fn syntax(&self) -> &SyntaxNode;
+
+    fn has_error(&self) -> bool {
+        self.syntax()
+            .preorder()
+            .find(|walk_event| match walk_event {
+                rowan::WalkEvent::Enter(node) if node.kind() == SyntaxKind::Error => true,
+                _ => false,
+            })
+            .is_some()
+    }
 
     fn collect_decendants(&self, matcher: &impl Fn(SyntaxKind) -> bool) -> Vec<SyntaxNode> {
         self.syntax()
@@ -1170,6 +1237,14 @@ pub trait AstNode {
                 rowan::WalkEvent::Enter(node) if node.kind() == kind => Some(node),
                 _ => None,
             })
+            .collect()
+    }
+
+    fn used_prefixes(&self) -> Vec<String> {
+        self.syntax()
+            .descendants()
+            .filter_map(PrefixedName::cast)
+            .map(|prefixed_name| prefixed_name.prefix())
             .collect()
     }
 

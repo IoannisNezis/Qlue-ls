@@ -1,6 +1,10 @@
 use std::fmt::Display;
 
-use ll_sparql_parser::{ast::AstNode, SyntaxNode, SyntaxToken};
+use ll_sparql_parser::{
+    ast::{AstNode, GroupGraphPattern},
+    syntax_kind::SyntaxKind,
+    SyntaxNode, SyntaxToken,
+};
 
 use super::CompletionLocation;
 
@@ -29,43 +33,44 @@ pub(super) fn context(
     let anchor = maybe_anchor?;
     match location {
         CompletionLocation::Predicate(triple) | CompletionLocation::Object(triple) => {
-            let triples: Vec<_> = triple
+            let group_graph_pattern = triple
                 .triples_block()
-                .and_then(|triples_block| triples_block.group_graph_pattern())
-                .map(|ggp| {
-                    ggp.triple_blocks()
-                        .into_iter()
-                        .flat_map(|triples_block| triples_block.triples())
-                })?
-                .into_iter()
-                .filter(|triple| {
-                    !triple
-                        .syntax()
-                        .text_range()
-                        .contains_range(anchor.text_range())
-                })
-                .collect();
-            let prefixes = triples
-                .iter()
-                .map(|triple| triple.used_prefixes())
-                .flatten()
-                .collect();
-            Some(Context {
-                nodes: triples
-                    .iter()
-                    .map(|triple| triple.syntax())
-                    .cloned()
-                    .collect(),
-                prefixes,
-            })
+                .and_then(|triples_block| triples_block.group_graph_pattern())?;
+            let (nodes, prefixes) = context_down_tree(&group_graph_pattern);
+            Some(Context { nodes, prefixes })
         }
         _ => None,
     }
 }
 
+fn context_down_tree(group_graph_pattern: &GroupGraphPattern) -> (Vec<SyntaxNode>, Vec<String>) {
+    let triples: Vec<_> = group_graph_pattern
+        .triple_blocks()
+        .into_iter()
+        .flat_map(|triples_block| triples_block.triples())
+        .collect();
+    let not_triples: Vec<_> = group_graph_pattern
+        .group_pattern_not_triples()
+        .into_iter()
+        .filter(|not_triples| not_triples.syntax().kind() != SyntaxKind::OptionalGraphPattern)
+        .collect();
+    let prefixes = triples
+        .iter()
+        .flat_map(|triple| triple.used_prefixes())
+        .chain(not_triples.iter().flat_map(|nt| nt.used_prefixes()))
+        .collect();
+    (
+        triples
+            .iter()
+            .filter_map(|triple| (!triple.has_error()).then_some(triple.syntax().clone()))
+            .chain(not_triples.iter().map(|nt| nt.syntax().clone()))
+            .collect(),
+        prefixes,
+    )
+}
+
 #[cfg(test)]
 mod test {
-
     use indoc::indoc;
     use ll_sparql_parser::parse_query;
 
@@ -113,8 +118,8 @@ mod test {
     fn context_inter_block() {
         let input = indoc! {
             "Select * {
-                ?s <p1> <o1> 
-                {}
+                ?s <p1> <o1>
+                FILTER (?s)
                 ?s <p2> <o2> .
                 ?s 
              }
@@ -126,7 +131,29 @@ mod test {
             context.to_string(),
             indoc! {
                 "?s <p1> <o1> .
-                 ?s <p2> <o2>"
+                 ?s <p2> <o2> .
+                 FILTER (?s)"
+            }
+        );
+    }
+
+    #[test]
+    fn context_super_block() {
+        let input = indoc! {
+            "Select * {
+                ?s <p1> <o1>
+                {
+                  ?s 
+                }
+             }
+            "
+        };
+        let position = Position::new(3, 8);
+        let context = location_at(input, position);
+        assert_eq!(
+            context.to_string(),
+            indoc! {
+                "?s <p1> <o1>"
             }
         );
     }

@@ -203,13 +203,13 @@ If you don't have [just](https://github.com/casey/just) or [make](https://wiki.u
 **Install [just](https://github.com/casey/just)**
 
 
-### link against local package
+### link against local packages
 
 ```bash
 cd pkg
 npm link
 cd ../editor
-npm link qlue-ls
+npm link qlue-ls ll-sparql-parser
 ```
 
 ## Run application

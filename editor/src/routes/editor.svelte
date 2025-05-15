@@ -7,6 +7,7 @@
     } from 'monaco-editor-wrapper';
     import type { editor } from 'monaco-editor';
     import { backends } from '$lib/backends';
+    import Tree from './tree.svelte';
 
     let { ready = $bindable() } = $props();
 
@@ -163,11 +164,13 @@
         class="container transition-all {showTree ? 'col-span-2' : 'col-span-3'}"
         bind:this={editorContainer}
     ></div>
-
     <!-- svelte-ignore a11y_consider_explicit_label -->
+    {#if showTree}
+        <Tree input={content} {cursorOffset}></Tree>
+    {/if}
     <button
         onclick={() => (showTree = !showTree)}
-        class="absolute top-2 right-2 rounded-sm bg-gray-700 px-2 py-2 font-bold text-white hover:bg-gray-600"
+        class="absolute right-2 top-2 rounded-sm bg-gray-700 px-2 py-2 font-bold text-white hover:bg-gray-600"
     >
         <svg
             xmlns="http://www.w3.org/2000/svg"

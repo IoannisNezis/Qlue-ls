@@ -1,5 +1,9 @@
 <script lang="ts">
-    import { get_parse_tree } from 'll-sparql-parser';
+    import init, { get_parse_tree } from 'll-sparql-parser';
+    import wasmUrl from 'll-sparql-parser/ll_sparql_parser_bg.wasm?url';
+    import { onMount } from 'svelte';
+    import { derived } from 'svelte/store';
+
     interface TreeElement {
         kind: string;
         active: boolean;
@@ -15,7 +19,16 @@
     type NodeOrToken = Node | Token;
 
     let { input, cursorOffset } = $props();
-    let parseTree = $derived(get_parse_tree(input, cursorOffset));
+    let loaded = $state(false);
+    onMount(async () => {
+        init({
+            module_or_path: wasmUrl
+        }).then(() => {
+            loaded = true;
+        });
+    });
+
+    let parse_tree = $derived(loaded ? get_parse_tree(input, cursorOffset) : {});
 </script>
 
 {#snippet renderLeave(leave: Token)}
@@ -51,5 +64,5 @@
     style="height: 60vh;"
     class="overflow-auto border-l border-gray-700 p-2 text-white"
 >
-    {@render renderTree(parseTree)}
+    {@render renderTree(parse_tree)}
 </div>

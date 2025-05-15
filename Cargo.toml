@@ -1,6 +1,6 @@
 [package]
 name = "qlue-ls"
-version = "0.6.3"
+version = "0.6.4"
 edition = "2021"
 authors = ["Ioannis Nezis <ioannis@nezis.de>"]
 description = "A language server for SPARQL"
@@ -32,8 +32,8 @@ serde_json = "1.0.117"
 serde_repr = "0.1.19"
 
 # custom SPARQL parser
-# ll-sparql-parser = "0.6.0"
-ll-sparql-parser = { path = "crates/parser" }
+ll-sparql-parser = "0.7.0"
+# ll-sparql-parser = { path = "crates/parser" }
 
 # tree-sitter parser
 tree-sitter = { package = "tree-sitter-c2rust", version = "0.25.2" }

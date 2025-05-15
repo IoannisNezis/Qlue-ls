@@ -209,7 +209,7 @@ If you don't have [just](https://github.com/casey/just) or [make](https://wiki.u
 cd pkg
 npm link
 cd ../editor
-npm link qlue-ls ll-sparql-parser
+npm link qlue-ls
 ```
 
 ## Run application

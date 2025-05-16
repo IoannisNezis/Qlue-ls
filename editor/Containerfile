@@ -1,5 +1,5 @@
 FROM debian
-FROM node:22-bookworm-slim@sha256:42cf02458a7ebeef48cb0125efd4c60df1fcfba1b23c39b1148e924d4c285e17 AS build-editor
+FROM node:22-bookworm-slim@sha256:ec318fe0dc46b56bcc1ca42a202738aeb4f3e347a7b4dd9f9f1df12ea7aa385a AS build-editor
 
 RUN apt update -y
 COPY ./editor /src
@@ -7,7 +7,7 @@ WORKDIR /src
 RUN npm install
 RUN npm run build
 
-FROM node:22-bookworm-slim@sha256:42cf02458a7ebeef48cb0125efd4c60df1fcfba1b23c39b1148e924d4c285e17 AS deploy
+FROM node:22-bookworm-slim@sha256:ec318fe0dc46b56bcc1ca42a202738aeb4f3e347a7b4dd9f9f1df12ea7aa385a AS deploy
 WORKDIR /deploy
 COPY --from=build-editor /src/build/ ./build
 COPY --from=build-editor /src/package.json .

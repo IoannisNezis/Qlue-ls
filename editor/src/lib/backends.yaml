@@ -50,7 +50,7 @@
       }
       GROUP BY ?qlue_ls_entity
       LIMIT {{ limit }}
-      OFFSET {{ offset }}"
+      OFFSET {{ offset }}
     objectCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>

@@ -16,6 +16,10 @@ export default defineConfig(({ mode }) => ({
 			'vscode-oniguruma'
 		]
 	},
+	server:
+	{
+		allowedHosts: true
+	},
 	worker: {
 		format: "es",
 		plugins: () => [

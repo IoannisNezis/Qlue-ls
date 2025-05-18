@@ -1,17 +1,16 @@
-use std::fmt::Display;
+use std::{collections::HashSet, fmt::Display};
 
 use ll_sparql_parser::{
-    ast::{AstNode, GroupGraphPattern},
-    syntax_kind::SyntaxKind,
-    SyntaxNode, SyntaxToken,
+    ast::{AstNode, PrefixedName, Triple},
+    SyntaxNode,
 };
 
-use super::CompletionLocation;
+use super::{query_graph::QueryGraph, CompletionLocation};
 
 #[derive(Debug)]
 pub(crate) struct Context {
     pub nodes: Vec<SyntaxNode>,
-    pub prefixes: Vec<String>,
+    pub prefixes: HashSet<String>,
 }
 
 impl Display for Context {
@@ -26,47 +25,78 @@ impl Display for Context {
     }
 }
 
-pub(super) fn context(
-    location: &CompletionLocation,
-    maybe_anchor: Option<&SyntaxToken>,
-) -> Option<Context> {
-    let anchor = maybe_anchor?;
+pub(super) fn context(location: &CompletionLocation) -> Option<Context> {
     match location {
         CompletionLocation::Predicate(triple) | CompletionLocation::Object(triple) => {
-            let group_graph_pattern = triple
-                .triples_block()
-                .and_then(|triples_block| triples_block.group_graph_pattern())?;
-            let (nodes, prefixes) = context_down_tree(&group_graph_pattern);
-            Some(Context { nodes, prefixes })
+            compute_context(triple)
         }
         _ => None,
     }
 }
 
-fn context_down_tree(group_graph_pattern: &GroupGraphPattern) -> (Vec<SyntaxNode>, Vec<String>) {
-    let triples: Vec<_> = group_graph_pattern
+fn compute_context(triple: &Triple) -> Option<Context> {
+    let mut graph = QueryGraph::new();
+    // NOTE: this ensures that the trigger triple is node no. 0
+    graph.add_node(
+        triple.syntax().clone(),
+        triple.variables().iter().map(|var| var.text()).collect(),
+    );
+
+    let ggp = triple.triples_block()?.group_graph_pattern()?;
+
+    // NOTE: add all triples in the **current** group_graph_pattern (including sup patterns)
+    for triple in ggp
         .triple_blocks()
         .into_iter()
         .flat_map(|triples_block| triples_block.triples())
-        .collect();
-    let not_triples: Vec<_> = group_graph_pattern
+        .filter(|other_triple| {
+            other_triple.syntax().text_range().start() < triple.syntax().text_range().start()
+                && !other_triple.has_error()
+        })
+    {
+        graph.add_node(
+            triple.syntax().clone(),
+            triple.variables().iter().map(|var| var.text()).collect(),
+        );
+    }
+
+    // NOTE: add non triples patterns (filters, sub-selects and so on)
+    for triple in ggp
         .group_pattern_not_triples()
         .into_iter()
-        .filter(|not_triples| not_triples.syntax().kind() != SyntaxKind::OptionalGraphPattern)
+        .filter(|pattern| {
+            pattern.syntax().text_range().start() < triple.syntax().text_range().start()
+                && !pattern.has_error()
+        })
+    {
+        graph.add_node(
+            triple.syntax().clone(),
+            triple
+                .visible_variables()
+                .iter()
+                .map(|var| var.text())
+                .collect(),
+        );
+    }
+
+    // NOTE: compute edges based on visible variables of each pattern
+    graph.connect();
+
+    let mut nodes: Vec<SyntaxNode> = graph
+        .component(0)
+        .into_iter()
+        .filter(|node| node.text_range() != triple.syntax().text_range())
         .collect();
-    let prefixes = triples
+    nodes.sort_by_key(|node| node.text_range().start());
+    let prefixes: HashSet<String> = nodes
         .iter()
-        .flat_map(|triple| triple.used_prefixes())
-        .chain(not_triples.iter().flat_map(|nt| nt.used_prefixes()))
+        .flat_map(|node| {
+            node.descendants()
+                .filter_map(PrefixedName::cast)
+                .map(|prefixed_name| prefixed_name.prefix())
+        })
         .collect();
-    (
-        triples
-            .iter()
-            .filter_map(|triple| (!triple.has_error()).then_some(triple.syntax().clone()))
-            .chain(not_triples.iter().map(|nt| nt.syntax().clone()))
-            .collect(),
-        prefixes,
-    )
+    Some(Context { nodes, prefixes })
 }
 
 #[cfg(test)]
@@ -90,11 +120,11 @@ mod test {
         let anchor = get_anchor_token(trigger_token);
         let continuations = get_continuations(&root, &anchor);
         let location = get_location(&anchor, &continuations, offset);
-        context(&location, anchor.as_ref()).unwrap()
+        context(&location).unwrap()
     }
 
     #[test]
-    fn context_inner_block() {
+    fn context_simple() {
         let input = indoc! {
             "Select * {
                 ?s <p1> <o1> .
@@ -115,46 +145,157 @@ mod test {
     }
 
     #[test]
-    fn context_inter_block() {
+    fn context_unconnected() {
         let input = indoc! {
             "Select * {
-                ?s <p1> <o1>
-                FILTER (?s)
+                ?x <p1> <o1> .
                 ?s <p2> <o2> .
                 ?s 
              }
             "
         };
-        let position = Position::new(4, 6);
+        let position = Position::new(3, 6);
         let context = location_at(input, position);
         assert_eq!(
             context.to_string(),
             indoc! {
-                "?s <p1> <o1> .
-                 ?s <p2> <o2> .
-                 FILTER (?s)"
+                "?s <p2> <o2>"
             }
         );
     }
 
     #[test]
-    fn context_super_block() {
+    fn context_filter() {
         let input = indoc! {
             "Select * {
-                ?s <p1> <o1>
-                {
-                  ?s 
-                }
+               ?n1 <p1> ?n2  FILTER (?n2)
+               ?n2 <p2> <o2> FILTER (?n3)
+               ?n1 
              }
             "
         };
-        let position = Position::new(3, 8);
+        let position = Position::new(3, 6);
         let context = location_at(input, position);
         assert_eq!(
             context.to_string(),
             indoc! {
-                "?s <p1> <o1>"
+                "?n1 <p1> ?n2 .
+                 FILTER (?n2) .
+                 ?n2 <p2> <o2>"
             }
         );
     }
+
+    #[test]
+    fn context_sub_select() {
+        let input = indoc! {
+            "Select * {
+             {
+              Select * WHERE {
+                ?n1 <> <>
+              }
+             }
+             {
+              Select * WHERE {
+                ?n2 <> <>
+              }
+             }
+             {
+              Select ?n1 WHERE {
+                ?n2 <> <>
+              }
+             }
+             {
+              Select ?n2 WHERE {
+                ?n1 <> <>
+              }
+             }
+             {
+              Select (?n1 as ?n2) WHERE {
+                ?n1 <> <>
+              }
+             }
+             {
+              Select (?n2 as ?n1) WHERE {
+                ?n1 <> <>
+              }
+             }
+             ?n1 
+             }"
+        };
+        let position = Position::new(31, 4);
+        let context = location_at(input, position);
+        assert_eq!(
+            context.to_string(),
+            indoc! {
+                "{
+                  Select * WHERE {
+                    ?n1 <> <>
+                  }
+                 } .
+                 {
+                  Select ?n1 WHERE {
+                    ?n2 <> <>
+                  }
+                 } .
+                 {
+                  Select (?n2 as ?n1) WHERE {
+                    ?n1 <> <>
+                  }
+                 }"
+            }
+        );
+    }
+
+    #[test]
+    fn context_complex() {
+        let input = indoc! {
+            r#"Select * {
+                 ?n1 <p1> ?n2 .
+                 ?n6 <> ?n4 .
+                 ?n4 <p2> ?n3 .
+                 ?n4 <> ?n9 .
+                 ?n5 ?n6 "dings" .
+                 ?n7 <> ?n8 .
+                 ?n8 <> ?n7 .
+                 ?n4 <> ?n2 .
+                 ?n1 
+               }
+            "#
+        };
+        let position = Position::new(9, 6);
+        let context = location_at(input, position);
+        assert_eq!(
+            context.to_string(),
+            indoc! {
+              r#"?n1 <p1> ?n2 .
+                 ?n6 <> ?n4 .
+                 ?n4 <p2> ?n3 .
+                 ?n4 <> ?n9 .
+                 ?n5 ?n6 "dings" .
+                 ?n4 <> ?n2"#
+            }
+        );
+    }
+
+    // #[test]
+    // fn context_super_block() {
+    //     let input = indoc! {
+    //         "Select * {
+    //             ?s <p1> <o1>
+    //             {
+    //               ?s
+    //             }
+    //          }
+    //         "
+    //     };
+    //     let position = Position::new(3, 8);
+    //     let context = location_at(input, position);
+    //     assert_eq!(
+    //         context.to_string(),
+    //         indoc! {
+    //             "?s <p1> <o1>"
+    //         }
+    //     );
+    // }
 }

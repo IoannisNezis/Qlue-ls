@@ -1,4 +1,5 @@
 mod context;
+mod query_graph;
 
 use std::{collections::HashSet, rc::Rc};
 
@@ -239,7 +240,7 @@ impl CompletionEnvironment {
         let search_term = get_search_term(&tree, &anchor_token, offset);
         let continuations = get_continuations(&tree, &anchor_token);
         let location = get_location(&anchor_token, &continuations, offset);
-        let context = context(&location, anchor_token.as_ref());
+        let context = context(&location);
         Ok(Self {
             location,
             trigger_textdocument_position: document_position.position,

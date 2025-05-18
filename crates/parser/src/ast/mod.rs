@@ -118,16 +118,7 @@ pub struct SelectClause {
 
 impl SelectClause {
     pub fn variables(&self) -> Vec<Var> {
-        self.syntax
-            .children()
-            .filter_map(|child| {
-                if child.kind() == SyntaxKind::Var {
-                    Some(Var::cast(child).expect("Node of kind Var should be castable to Var"))
-                } else {
-                    None
-                }
-            })
-            .collect()
+        self.syntax.children().filter_map(Var::cast).collect()
     }
 
     pub fn select_query(&self) -> Option<SelectQuery> {
@@ -136,7 +127,7 @@ impl SelectClause {
 }
 
 #[derive(Debug)]
-pub enum GroupPatternNotTriples {
+pub enum GraphPatternNotTriples {
     GroupOrUnionGraphPattern(GroupOrUnionGraphPattern),
     OptionalGraphPattern(OptionalGraphPattern),
     MinusGraphPattern(MinusGraphPattern),
@@ -147,19 +138,19 @@ pub enum GroupPatternNotTriples {
     InlineData(InlineData),
 }
 
-impl GroupPatternNotTriples {
+impl GraphPatternNotTriples {
     pub fn group_graph_pattern(&self) -> Option<GraphGraphPattern> {
         match self {
-            GroupPatternNotTriples::GroupOrUnionGraphPattern(_group_or_union_graph_pattern) => {
+            GraphPatternNotTriples::GroupOrUnionGraphPattern(_group_or_union_graph_pattern) => {
                 todo!()
             }
-            GroupPatternNotTriples::OptionalGraphPattern(_optional_graph_pattern) => todo!(),
-            GroupPatternNotTriples::MinusGraphPattern(_minus_graph_pattern) => todo!(),
-            GroupPatternNotTriples::GraphGraphPattern(_graph_graph_pattern) => todo!(),
-            GroupPatternNotTriples::ServiceGraphPattern(_service_graph_pattern) => todo!(),
-            GroupPatternNotTriples::Filter(_filter) => None,
-            GroupPatternNotTriples::Bind(_bind) => None,
-            GroupPatternNotTriples::InlineData(_inline_data) => None,
+            GraphPatternNotTriples::OptionalGraphPattern(_optional_graph_pattern) => todo!(),
+            GraphPatternNotTriples::MinusGraphPattern(_minus_graph_pattern) => todo!(),
+            GraphPatternNotTriples::GraphGraphPattern(_graph_graph_pattern) => todo!(),
+            GraphPatternNotTriples::ServiceGraphPattern(_service_graph_pattern) => todo!(),
+            GraphPatternNotTriples::Filter(_filter) => None,
+            GraphPatternNotTriples::Bind(_bind) => None,
+            GraphPatternNotTriples::InlineData(_inline_data) => None,
         }
     }
 }
@@ -168,20 +159,43 @@ impl GroupPatternNotTriples {
 pub struct GroupOrUnionGraphPattern {
     syntax: SyntaxNode,
 }
+impl GroupOrUnionGraphPattern {
+    fn group_graph_patterns(&self) -> Vec<GroupGraphPattern> {
+        self.syntax
+            .children()
+            .filter_map(GroupGraphPattern::cast)
+            .collect()
+    }
+}
 
 #[derive(Debug)]
 pub struct OptionalGraphPattern {
     syntax: SyntaxNode,
+}
+impl OptionalGraphPattern {
+    fn group_graph_pattern(&self) -> Option<GroupGraphPattern> {
+        self.syntax.last_child().and_then(GroupGraphPattern::cast)
+    }
 }
 
 #[derive(Debug)]
 pub struct MinusGraphPattern {
     syntax: SyntaxNode,
 }
+impl MinusGraphPattern {
+    fn group_graph_pattern(&self) -> Option<GroupGraphPattern> {
+        self.syntax.last_child().and_then(GroupGraphPattern::cast)
+    }
+}
 
 #[derive(Debug)]
 pub struct GraphGraphPattern {
     syntax: SyntaxNode,
+}
+impl GraphGraphPattern {
+    fn group_graph_pattern(&self) -> Option<GroupGraphPattern> {
+        self.syntax.last_child().and_then(GroupGraphPattern::cast)
+    }
 }
 
 #[derive(Debug)]
@@ -216,6 +230,13 @@ impl ServiceGraphPattern {
             .find(|child| child.kind() == SyntaxKind::VarOrIri)
             .and_then(|child| child.first_child().and_then(Iri::cast))
     }
+
+    pub fn group_graph_pattern(&self) -> Option<GroupGraphPattern> {
+        self.syntax
+            .children()
+            .last()
+            .and_then(GroupGraphPattern::cast)
+    }
 }
 
 impl WhereClause {
@@ -246,12 +267,12 @@ impl GroupGraphPattern {
             .unwrap_or_default()
     }
 
-    pub fn group_pattern_not_triples(&self) -> Vec<GroupPatternNotTriples> {
+    pub fn group_pattern_not_triples(&self) -> Vec<GraphPatternNotTriples> {
         self.syntax()
             .first_child_by_kind(&|kind| kind == SyntaxKind::GroupGraphPatternSub)
             .map(|ggp| {
                 ggp.children()
-                    .filter_map(GroupPatternNotTriples::cast)
+                    .filter_map(GraphPatternNotTriples::cast)
                     .collect()
             })
             .unwrap_or_default()
@@ -265,6 +286,7 @@ impl GroupGraphPattern {
             _ => None,
         }
     }
+
     pub fn l_paren_token(&self) -> Option<SyntaxToken> {
         match self.syntax.first_child_or_token() {
             Some(rowan::NodeOrToken::Token(token)) if token.kind() == SyntaxKind::LCurly => {
@@ -273,6 +295,15 @@ impl GroupGraphPattern {
             _ => None,
         }
     }
+
+    pub fn sub_select(&self) -> Option<SelectQuery> {
+        self.syntax().first_child().and_then(SelectQuery::cast)
+    }
+}
+
+#[derive(Debug)]
+pub struct SubSelect {
+    syntax: SyntaxNode,
 }
 
 #[derive(Debug)]
@@ -335,7 +366,7 @@ impl Triple {
         Some(TriplesBlock::cast(parent).expect("parent should be a TriplesBlock"))
     }
 
-    fn variables(&self) -> Vec<Var> {
+    pub fn variables(&self) -> Vec<Var> {
         self.syntax
             .preorder()
             .filter_map(|walk_event| match walk_event {
@@ -428,14 +459,6 @@ impl BlankPropertyList {
 
             _ => None,
         }
-    }
-
-    pub fn used_prefixes(&self) -> Vec<String> {
-        self.syntax
-            .descendants()
-            .filter_map(PrefixedName::cast)
-            .map(|prefixed_name| prefixed_name.prefix())
-            .collect()
     }
 }
 
@@ -576,6 +599,10 @@ impl AstNode for Var {
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        vec![Var::cast(self.syntax().clone()).unwrap()]
+    }
 }
 
 impl AstNode for VarOrTerm {
@@ -594,6 +621,14 @@ impl AstNode for VarOrTerm {
     #[inline]
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
+    }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        self.syntax
+            .first_child()
+            .and_then(Var::cast)
+            .map(|var| vec![var])
+            .unwrap_or_default()
     }
 }
 
@@ -614,6 +649,10 @@ impl AstNode for Iri {
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        vec![]
+    }
 }
 
 impl AstNode for PrefixedName {
@@ -632,6 +671,10 @@ impl AstNode for PrefixedName {
     #[inline]
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
+    }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        vec![]
     }
 }
 
@@ -666,6 +709,10 @@ impl AstNode for Path {
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        vec![]
+    }
 }
 
 impl AstNode for ObjectList {
@@ -686,6 +733,10 @@ impl AstNode for ObjectList {
 
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
+    }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        self.syntax.descendants().filter_map(Var::cast).collect()
     }
 }
 
@@ -717,6 +768,10 @@ impl AstNode for BlankPropertyList {
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        self.syntax.descendants().filter_map(Var::cast).collect()
+    }
 }
 
 impl AstNode for PropertyListPath {
@@ -745,6 +800,10 @@ impl AstNode for PropertyListPath {
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        self.syntax.descendants().filter_map(Var::cast).collect()
+    }
 }
 
 impl AstNode for Subject {
@@ -768,6 +827,14 @@ impl AstNode for Subject {
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        self.syntax
+            .first_child()
+            .and_then(Var::cast)
+            .map(|var| vec![var])
+            .unwrap_or_default()
+    }
 }
 
 impl AstNode for Triple {
@@ -786,6 +853,10 @@ impl AstNode for Triple {
     #[inline]
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
+    }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        self.syntax.descendants().filter_map(Var::cast).collect()
     }
 }
 
@@ -807,6 +878,10 @@ impl AstNode for TriplesBlock {
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        self.syntax.descendants().filter_map(Var::cast).collect()
+    }
 }
 
 impl AstNode for GroupGraphPattern {
@@ -826,6 +901,27 @@ impl AstNode for GroupGraphPattern {
     #[inline]
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
+    }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        self.sub_select()
+            .map(|select| select.visible_variables())
+            .or(self.syntax.first_child().map(|child| {
+                child
+                    .children()
+                    .into_iter()
+                    .filter_map(|child| match child.kind() {
+                        SyntaxKind::TriplesBlock => {
+                            TriplesBlock::cast(child).map(|tp| tp.visible_variables())
+                        }
+                        SyntaxKind::GraphPatternNotTriples => GraphPatternNotTriples::cast(child)
+                            .map(|pattern| pattern.visible_variables()),
+                        _ => None,
+                    })
+                    .flatten()
+                    .collect()
+            }))
+            .unwrap_or_default()
     }
 }
 
@@ -847,6 +943,12 @@ impl AstNode for WhereClause {
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        self.group_graph_pattern()
+            .map(|ggp| ggp.visible_variables())
+            .unwrap_or_default()
+    }
 }
 impl AstNode for OptionalGraphPattern {
     #[inline]
@@ -865,6 +967,12 @@ impl AstNode for OptionalGraphPattern {
     #[inline]
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
+    }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        self.group_graph_pattern()
+            .map(|ggp| ggp.visible_variables())
+            .unwrap_or_default()
     }
 }
 
@@ -886,6 +994,13 @@ impl AstNode for GroupOrUnionGraphPattern {
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        self.group_graph_patterns()
+            .into_iter()
+            .flat_map(|ggp| ggp.visible_variables())
+            .collect()
+    }
 }
 
 impl AstNode for MinusGraphPattern {
@@ -905,6 +1020,12 @@ impl AstNode for MinusGraphPattern {
     #[inline]
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
+    }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        self.group_graph_pattern()
+            .map(|ggp| ggp.visible_variables())
+            .unwrap_or_default()
     }
 }
 
@@ -926,6 +1047,12 @@ impl AstNode for GraphGraphPattern {
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        self.group_graph_pattern()
+            .map(|ggp| ggp.visible_variables())
+            .unwrap_or_default()
+    }
 }
 
 impl AstNode for ServiceGraphPattern {
@@ -945,6 +1072,12 @@ impl AstNode for ServiceGraphPattern {
     #[inline]
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
+    }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        self.group_graph_pattern()
+            .map(|ggp| ggp.visible_variables())
+            .unwrap_or_default()
     }
 }
 
@@ -966,6 +1099,10 @@ impl AstNode for Filter {
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        self.syntax().descendants().filter_map(Var::cast).collect()
+    }
 }
 
 impl AstNode for Bind {
@@ -985,6 +1122,15 @@ impl AstNode for Bind {
     #[inline]
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
+    }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        self.syntax()
+            .children()
+            .last()
+            .and_then(Var::cast)
+            .map(|var| vec![var])
+            .unwrap_or_default()
     }
 }
 
@@ -1006,6 +1152,10 @@ impl AstNode for InlineData {
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        self.syntax().descendants().filter_map(Var::cast).collect()
+    }
 }
 
 impl AstNode for SelectClause {
@@ -1025,6 +1175,10 @@ impl AstNode for SelectClause {
     #[inline]
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
+    }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        self.variables()
     }
 }
 
@@ -1046,6 +1200,10 @@ impl AstNode for Prologue {
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        vec![]
+    }
 }
 
 impl AstNode for SolutionModifier {
@@ -1065,6 +1223,10 @@ impl AstNode for SolutionModifier {
     #[inline]
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
+    }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        vec![]
     }
 }
 
@@ -1086,6 +1248,10 @@ impl AstNode for PrefixDeclaration {
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        vec![]
+    }
 }
 
 impl AstNode for QueryUnit {
@@ -1105,6 +1271,12 @@ impl AstNode for QueryUnit {
     #[inline]
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
+    }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        self.select_query()
+            .map(|select_query| select_query.visible_variables())
+            .unwrap_or_default()
     }
 }
 
@@ -1130,9 +1302,27 @@ impl AstNode for SelectQuery {
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        if let Some(select_clause) = self.select_clause() {
+            if let Some(SyntaxKind::Star) = select_clause
+                .syntax
+                .last_child_or_token()
+                .map(|last| last.kind())
+            {
+                self.where_clause()
+                    .map(|where_clause| where_clause.visible_variables())
+                    .unwrap_or_default()
+            } else {
+                select_clause.variables()
+            }
+        } else {
+            Vec::new()
+        }
+    }
 }
 
-impl AstNode for GroupPatternNotTriples {
+impl AstNode for GraphPatternNotTriples {
     #[inline]
     fn kind() -> SyntaxKind {
         SyntaxKind::GraphPatternNotTriples
@@ -1156,25 +1346,25 @@ impl AstNode for GroupPatternNotTriples {
         let child = syntax.first_child()?;
         match child.kind() {
             SyntaxKind::GroupOrUnionGraphPattern => {
-                Some(GroupPatternNotTriples::GroupOrUnionGraphPattern(
+                Some(GraphPatternNotTriples::GroupOrUnionGraphPattern(
                     GroupOrUnionGraphPattern::cast(child)?,
                 ))
             }
-            SyntaxKind::OptionalGraphPattern => Some(GroupPatternNotTriples::OptionalGraphPattern(
+            SyntaxKind::OptionalGraphPattern => Some(GraphPatternNotTriples::OptionalGraphPattern(
                 OptionalGraphPattern::cast(child)?,
             )),
-            SyntaxKind::MinusGraphPattern => Some(GroupPatternNotTriples::MinusGraphPattern(
+            SyntaxKind::MinusGraphPattern => Some(GraphPatternNotTriples::MinusGraphPattern(
                 MinusGraphPattern::cast(child)?,
             )),
-            SyntaxKind::GraphGraphPattern => Some(GroupPatternNotTriples::GraphGraphPattern(
+            SyntaxKind::GraphGraphPattern => Some(GraphPatternNotTriples::GraphGraphPattern(
                 GraphGraphPattern::cast(child)?,
             )),
-            SyntaxKind::ServiceGraphPattern => Some(GroupPatternNotTriples::ServiceGraphPattern(
+            SyntaxKind::ServiceGraphPattern => Some(GraphPatternNotTriples::ServiceGraphPattern(
                 ServiceGraphPattern::cast(child)?,
             )),
-            SyntaxKind::Filter => Some(GroupPatternNotTriples::Filter(Filter::cast(child)?)),
-            SyntaxKind::Bind => Some(GroupPatternNotTriples::Bind(Bind::cast(child)?)),
-            SyntaxKind::InlineData => Some(GroupPatternNotTriples::InlineData(InlineData::cast(
+            SyntaxKind::Filter => Some(GraphPatternNotTriples::Filter(Filter::cast(child)?)),
+            SyntaxKind::Bind => Some(GraphPatternNotTriples::Bind(Bind::cast(child)?)),
+            SyntaxKind::InlineData => Some(GraphPatternNotTriples::InlineData(InlineData::cast(
                 syntax,
             )?)),
             _ => None,
@@ -1184,14 +1374,27 @@ impl AstNode for GroupPatternNotTriples {
     #[inline]
     fn syntax(&self) -> &SyntaxNode {
         match self {
-            GroupPatternNotTriples::GroupOrUnionGraphPattern(x) => x.syntax(),
-            GroupPatternNotTriples::OptionalGraphPattern(x) => x.syntax(),
-            GroupPatternNotTriples::MinusGraphPattern(x) => x.syntax(),
-            GroupPatternNotTriples::GraphGraphPattern(x) => x.syntax(),
-            GroupPatternNotTriples::ServiceGraphPattern(x) => x.syntax(),
-            GroupPatternNotTriples::Filter(x) => x.syntax(),
-            GroupPatternNotTriples::Bind(x) => x.syntax(),
-            GroupPatternNotTriples::InlineData(x) => x.syntax(),
+            GraphPatternNotTriples::GroupOrUnionGraphPattern(x) => x.syntax(),
+            GraphPatternNotTriples::OptionalGraphPattern(x) => x.syntax(),
+            GraphPatternNotTriples::MinusGraphPattern(x) => x.syntax(),
+            GraphPatternNotTriples::GraphGraphPattern(x) => x.syntax(),
+            GraphPatternNotTriples::ServiceGraphPattern(x) => x.syntax(),
+            GraphPatternNotTriples::Filter(x) => x.syntax(),
+            GraphPatternNotTriples::Bind(x) => x.syntax(),
+            GraphPatternNotTriples::InlineData(x) => x.syntax(),
+        }
+    }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        match self {
+            GraphPatternNotTriples::GroupOrUnionGraphPattern(x) => x.visible_variables(),
+            GraphPatternNotTriples::OptionalGraphPattern(x) => x.visible_variables(),
+            GraphPatternNotTriples::MinusGraphPattern(x) => x.visible_variables(),
+            GraphPatternNotTriples::GraphGraphPattern(x) => x.visible_variables(),
+            GraphPatternNotTriples::ServiceGraphPattern(x) => x.visible_variables(),
+            GraphPatternNotTriples::Filter(x) => x.visible_variables(),
+            GraphPatternNotTriples::Bind(x) => x.visible_variables(),
+            GraphPatternNotTriples::InlineData(x) => x.visible_variables(),
         }
     }
 }
@@ -1209,6 +1412,8 @@ pub trait AstNode {
         Self: Sized;
 
     fn syntax(&self) -> &SyntaxNode;
+
+    fn visible_variables(&self) -> Vec<Var>;
 
     fn has_error(&self) -> bool {
         self.syntax()

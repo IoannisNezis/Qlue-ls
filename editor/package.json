@@ -37,7 +37,7 @@
 		"monaco-editor": "npm:@codingame/monaco-vscode-editor-api@^16.1.1",
 		"monaco-editor-wrapper": "~6.7.0",
 		"qlue-ls": "^0.6.5",
-		"ll-sparql-parser": "^0.7.0",
+		"ll-sparql-parser": "^0.8.0",
 		"vscode": "npm:@codingame/monaco-vscode-extension-api@^16.1.1",
 		"vscode-uri": "~3.1.0",
 		"yaml": "^2.7.1"

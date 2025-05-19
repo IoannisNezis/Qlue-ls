@@ -1,9 +1,14 @@
 use std::{collections::HashSet, fmt::Display};
 
 use ll_sparql_parser::{
-    ast::{AstNode, PrefixedName, Triple},
+    ast::{
+        AstNode, GraphPatternNotTriples, GroupGraphPattern, GroupOrUnionGraphPattern, PrefixedName,
+        Triple,
+    },
     SyntaxNode,
 };
+use log4rs::encode::pattern;
+use text_size::TextSize;
 
 use super::{query_graph::QueryGraph, CompletionLocation};
 
@@ -34,24 +39,14 @@ pub(super) fn context(location: &CompletionLocation) -> Option<Context> {
     }
 }
 
-fn compute_context(triple: &Triple) -> Option<Context> {
-    let mut graph = QueryGraph::new();
-    // NOTE: this ensures that the trigger triple is node no. 0
-    graph.add_node(
-        triple.syntax().clone(),
-        triple.variables().iter().map(|var| var.text()).collect(),
-    );
-
-    let ggp = triple.triples_block()?.group_graph_pattern()?;
-
+fn collect_nodes(graph: &mut QueryGraph, group_graph_pattern: GroupGraphPattern, cutoff: TextSize) {
     // NOTE: add all triples in the **current** group_graph_pattern (including sup patterns)
-    for triple in ggp
+    for triple in group_graph_pattern
         .triple_blocks()
         .into_iter()
         .flat_map(|triples_block| triples_block.triples())
         .filter(|other_triple| {
-            other_triple.syntax().text_range().start() < triple.syntax().text_range().start()
-                && !other_triple.has_error()
+            other_triple.syntax().text_range().start() < cutoff && !other_triple.has_error()
         })
     {
         graph.add_node(
@@ -60,25 +55,58 @@ fn compute_context(triple: &Triple) -> Option<Context> {
         );
     }
 
-    // NOTE: add non triples patterns (filters, sub-selects and so on)
-    for triple in ggp
+    // NOTE: add non triples patterns (filters, sub-pattern and so on)
+    for pattern in group_graph_pattern
         .group_pattern_not_triples()
         .into_iter()
-        .filter(|pattern| {
-            pattern.syntax().text_range().start() < triple.syntax().text_range().start()
-                && !pattern.has_error()
-        })
+        .filter(|pattern| pattern.syntax().text_range().start() < cutoff && !pattern.has_error())
     {
+        match pattern {
+            GraphPatternNotTriples::GroupOrUnionGraphPattern(pattern)
+                if pattern.syntax().children().count() == 1 =>
+            {
+                collect_nodes(
+                    graph,
+                    GroupGraphPattern::cast(pattern.syntax().first_child().unwrap()).unwrap(),
+                    cutoff,
+                );
+            }
+            _ => graph.add_node(
+                pattern.syntax().clone(),
+                pattern
+                    .visible_variables()
+                    .iter()
+                    .map(|var| var.text())
+                    .collect(),
+            ),
+        };
+    }
+    // NOTE: This GroupGraphPattern could be a sub select
+    if let Some(sub_select) = group_graph_pattern.sub_select() {
         graph.add_node(
-            triple.syntax().clone(),
-            triple
+            group_graph_pattern.syntax().clone(),
+            sub_select
                 .visible_variables()
                 .iter()
                 .map(|var| var.text())
                 .collect(),
         );
     }
+}
 
+fn compute_context(triple: &Triple) -> Option<Context> {
+    let mut graph = QueryGraph::new();
+    // NOTE: this ensures that the trigger triple is node no. 0
+    graph.add_node(
+        triple.syntax().clone(),
+        triple.variables().iter().map(|var| var.text()).collect(),
+    );
+
+    collect_nodes(
+        &mut graph,
+        triple.triples_block()?.group_graph_pattern()?,
+        triple.syntax().text_range().start(),
+    );
     // NOTE: compute edges based on visible variables of each pattern
     graph.connect();
 
@@ -182,6 +210,32 @@ mod test {
                 "?n1 <p1> ?n2 .
                  FILTER (?n2) .
                  ?n2 <p2> <o2>"
+            }
+        );
+    }
+
+    #[test]
+    fn context_sub_pattern() {
+        let input = indoc! {
+            "Select * {
+               {
+                 {
+                    ?n1 <> ?n2 .
+                    ?n3 <> <>
+                 }
+                 ?n2 <> <>
+               }
+               ?n1 
+             }
+            "
+        };
+        let position = Position::new(8, 6);
+        let context = location_at(input, position);
+        assert_eq!(
+            context.to_string(),
+            indoc! {
+                "?n1 <> ?n2 .
+                 ?n2 <> <>"
             }
         );
     }

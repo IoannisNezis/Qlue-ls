@@ -2,7 +2,7 @@ mod utils;
 
 use std::usize;
 
-use rowan::{cursor::SyntaxToken, SyntaxNodeChildren};
+use rowan::{cursor::SyntaxToken, SyntaxNodeChildren, TextSize};
 use utils::nth_ancestor;
 
 use crate::{syntax_kind::SyntaxKind, Sparql, SyntaxNode};
@@ -1455,6 +1455,15 @@ pub trait AstNode {
 
     fn text(&self) -> String {
         self.syntax().text().to_string()
+    }
+
+    fn text_until(&self, offset: TextSize) -> String {
+        let syntax = self.syntax();
+        assert!(syntax.text_range().start() <= offset);
+        syntax
+            .text()
+            .slice(TextSize::new(0)..(offset - syntax.text_range().start()))
+            .to_string()
     }
 }
 

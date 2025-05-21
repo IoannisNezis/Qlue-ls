@@ -1,98 +1,47 @@
-use std::rc::Rc;
-
 use super::{
+    environment,
     error::CompletionError,
-    utils::{
-        fetch_online_completions, get_prefix_declarations, get_replace_range, to_completion_items,
-    },
+    utils::{dispatch_completion_query, CompletionTemplate},
     variable, CompletionEnvironment,
 };
 use crate::server::{
     lsp::CompletionList, message_handler::completion::environment::CompletionLocation, Server,
 };
 use futures::lock::Mutex;
-use ll_sparql_parser::ast::{AstNode, QueryUnit};
-use tera::Context;
-use text_size::TextRange;
+use ll_sparql_parser::ast::AstNode;
+use std::rc::Rc;
 
 pub(super) async fn completions(
     server_rc: Rc<Mutex<Server>>,
     environment: CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
+    let mut template_context = environment.template_context(server_rc.clone()).await;
+    template_context.insert("local_context", &local_context(&environment));
+
+    let mut completion_list = dispatch_completion_query(
+        server_rc,
+        &environment,
+        template_context,
+        CompletionTemplate::ObjectCompletion,
+        false,
+    )
+    .await?;
+    completion_list
+        .items
+        .extend(variable::completions_transformed(environment)?.items);
+    Ok(completion_list)
+}
+
+fn local_context(environment: &CompletionEnvironment) -> Option<String> {
     if let CompletionLocation::Object(triple) = &environment.location {
-        let backend = {
-            let server = server_rc.lock().await;
-            environment
-                .backend
-                .as_ref()
-                .and_then(|name| server.state.get_backend(name))
-                .or(server.state.get_default_backend())
-                .cloned()
-        };
-        match (backend, environment.search_term.as_ref()) {
-            (Some(backend), Some(search_term)) => {
-                let range = get_replace_range(&environment);
-                let mut template_context = Context::new();
-                let query_unit = QueryUnit::cast(environment.tree.clone()).ok_or(
-                    CompletionError::ResolveError("Could not cast root to QueryUnit".to_string()),
-                )?;
-                let mut prefixes = triple.used_prefixes();
-                prefixes.extend(environment.context.as_ref().unwrap().prefixes.clone());
-                let prefix_declarations: Vec<_> =
-                    get_prefix_declarations(&*server_rc.lock().await, &backend, prefixes);
-                let inject = format!(
-                    "{} ?qlue_ls_entity",
-                    query_unit.syntax().text().slice(TextRange::new(
-                        triple.syntax().text_range().start(),
-                        environment
-                            .anchor_token
-                            .as_ref()
-                            .unwrap()
-                            .text_range()
-                            .end(),
-                    ))
-                );
-
-                template_context.insert("prefixes", &prefix_declarations);
-                template_context.insert("local_context", &inject);
-                template_context.insert("search_term", &search_term);
-                if let Some(context) = environment.context.as_ref() {
-                    template_context.insert("global_context", &context.to_string());
-                }
-
-                let items = to_completion_items(
-                    fetch_online_completions(
-                        server_rc.clone(),
-                        &query_unit,
-                        &backend,
-                        &format!("{}-{}", backend.name, "objectCompletion"),
-                        template_context,
-                    )
-                    .await?,
-                    range,
-                    None,
-                );
-                let variable_completions = variable::completions_transformed(environment)?;
-                Ok(CompletionList {
-                    is_incomplete: items.len()
-                        == server_rc.lock().await.settings.completion.result_size_limit as usize,
-                    item_defaults: None,
-                    items: items
-                        .into_iter()
-                        .chain(variable_completions.items.into_iter())
-                        .collect(),
-                })
-            }
-            _ => {
-                log::info!("No Backend or search term");
-                Ok(CompletionList {
-                    is_incomplete: false,
-                    item_defaults: None,
-                    items: vec![],
-                })
-            }
-        }
+        Some(format!(
+            "{} {} ?qlue_ls_entity",
+            triple.subject()?.text(),
+            triple
+                .properties_list_path()?
+                .text_until(environment.anchor_token.as_ref()?.text_range().end())
+        ))
     } else {
-        panic!("object completions requested for non object location");
+        None
     }
 }

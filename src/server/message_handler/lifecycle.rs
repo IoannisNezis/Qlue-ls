@@ -3,7 +3,6 @@ use std::{process::exit, rc::Rc};
 use futures::lock::Mutex;
 
 use crate::server::{
-    self,
     configuration::BackendConfiguration,
     lsp::{
         errors::{ErrorCode, LSPError},

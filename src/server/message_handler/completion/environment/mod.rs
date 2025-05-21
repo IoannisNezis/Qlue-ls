@@ -1,7 +1,7 @@
 mod context;
 mod query_graph;
 
-use std::{collections::HashSet, rc::Rc};
+use std::{collections::HashSet, rc::Rc, vec};
 
 use context::{context, Context};
 use futures::lock::Mutex;
@@ -14,11 +14,25 @@ use ll_sparql_parser::{
 use text_size::{TextRange, TextSize};
 
 use crate::server::{
-    lsp::{textdocument::Position, CompletionRequest, CompletionTriggerKind},
+    lsp::{textdocument::Position, Backend, CompletionRequest, CompletionTriggerKind},
     Server,
 };
 
-use super::error::CompletionError;
+use super::{error::CompletionError, utils::get_prefix_declarations};
+
+#[derive(Debug)]
+pub(super) struct CompletionEnvironment {
+    pub(super) location: CompletionLocation,
+    pub(super) trigger_textdocument_position: Position,
+    pub(super) continuations: HashSet<SyntaxKind>,
+    pub(super) tree: SyntaxNode,
+    pub(super) trigger_kind: CompletionTriggerKind,
+    pub(super) trigger_character: Option<String>,
+    pub(super) anchor_token: Option<SyntaxToken>,
+    pub(super) search_term: Option<String>,
+    pub(super) backend: Option<Backend>,
+    pub(super) context: Option<Context>,
+}
 
 #[derive(Debug, PartialEq)]
 pub(super) enum CompletionLocation {
@@ -191,21 +205,33 @@ pub(super) enum CompletionLocation {
     GroupCondition,
 }
 
-#[derive(Debug)]
-pub(super) struct CompletionEnvironment {
-    pub(super) location: CompletionLocation,
-    pub(super) trigger_textdocument_position: Position,
-    pub(super) continuations: HashSet<SyntaxKind>,
-    pub(super) tree: SyntaxNode,
-    pub(super) trigger_kind: CompletionTriggerKind,
-    pub(super) trigger_character: Option<String>,
-    pub(super) anchor_token: Option<SyntaxToken>,
-    pub(super) search_term: Option<String>,
-    pub(super) backend: Option<String>,
-    pub(super) context: Option<Context>,
-}
-
 impl CompletionEnvironment {
+    pub(super) async fn template_context(&self, server_rc: Rc<Mutex<Server>>) -> tera::Context {
+        let mut template_context = tera::Context::new();
+        template_context.insert("search_term", &self.search_term);
+        template_context.insert("context", &self.context);
+        let mut prefixes = match &self.location {
+            CompletionLocation::Predicate(triple) | CompletionLocation::Object(triple) => {
+                triple.used_prefixes()
+            }
+            CompletionLocation::BlankNodeObject(blank_property_list) => {
+                blank_property_list.used_prefixes()
+            }
+            CompletionLocation::SelectBinding(select_clause) => select_clause.used_prefixes(),
+            CompletionLocation::BlankNodeProperty(blank_property_list) => {
+                blank_property_list.used_prefixes()
+            }
+            _ => vec![],
+        };
+        self.context
+            .as_ref()
+            .map(|context| prefixes.extend(context.prefixes.clone()));
+        let prefix_declarations =
+            get_prefix_declarations(server_rc, self.backend.as_ref(), prefixes).await;
+        template_context.insert("prefixes", &prefix_declarations);
+        template_context
+    }
+
     pub(super) async fn from_completion_request(
         server_rc: Rc<Mutex<Server>>,
         request: &CompletionRequest,
@@ -235,6 +261,8 @@ impl CompletionEnvironment {
                 .and_then(|service| service.iri())
                 .and_then(|iri| iri.raw_iri())
                 .and_then(|iri_string| server.state.get_backend_name_by_url(&iri_string))
+                .and_then(|backend_name| server.state.get_backend(&backend_name).cloned())
+                .or(server.state.get_default_backend().cloned())
         });
         let anchor_token = trigger_token.and_then(get_anchor_token);
         let search_term = get_search_term(&tree, &anchor_token, offset);
@@ -267,13 +295,18 @@ fn get_search_term(
         } else {
             TextRange::new(anchor.text_range().end(), trigger_pos)
         };
-        root.text_range().contains_range(range).then(|| {
-            root.text()
-                .slice(range)
-                .to_string()
-                .trim_start()
-                .to_string()
-        })
+        root.text_range()
+            .contains_range(range)
+            .then_some({
+                let s = root
+                    .text()
+                    .slice(range)
+                    .to_string()
+                    .trim_start()
+                    .to_string();
+                s.chars().any(|char| !char.is_whitespace()).then_some(s)
+            })
+            .flatten()
     })
 }
 

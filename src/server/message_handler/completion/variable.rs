@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use super::{error::CompletionError, CompletionEnvironment, CompletionLocation};
+use super::{environment, error::CompletionError, CompletionEnvironment, CompletionLocation};
 use crate::server::lsp::{
     Command, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
 };
@@ -89,9 +89,9 @@ pub(super) fn completions(
 }
 
 pub(super) fn completions_transformed(
-    context: CompletionEnvironment,
+    environment: CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
-    let mut variable_completions = completions(context)?;
+    let mut variable_completions = completions(environment)?;
     for item in variable_completions.items.iter_mut() {
         item.insert_text = item.insert_text.as_ref().map(|text| format!("?{}", text));
         item.label = format!("?{}", item.label);

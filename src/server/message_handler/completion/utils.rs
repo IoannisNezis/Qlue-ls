@@ -3,24 +3,79 @@ use ll_sparql_parser::{
     ast::{AstNode, Path, QueryUnit},
     syntax_kind::SyntaxKind,
 };
-use std::rc::Rc;
+use std::{env, fmt::Display, rc::Rc};
 use tera::Context;
 use text_size::TextSize;
-use wasm_bindgen::JsCast;
 
 use crate::{
     server::{
         fetch::fetch_sparql_result,
         lsp::{
+            errors::LSPError,
             textdocument::{Position, Range, TextEdit},
             Backend, Command, CompletionItem, CompletionItemKind, CompletionItemLabelDetails,
+            CompletionList,
         },
         Server,
     },
-    sparql::results::RDFTerm,
+    sparql::results::{RDFTerm, SparqlResult},
 };
 
-use super::{environment::CompletionEnvironment, error::CompletionError};
+use super::{
+    environment::{self, CompletionEnvironment},
+    error::CompletionError,
+};
+
+pub(super) enum CompletionTemplate {
+    SubjectCompletion,
+    PredicateCompletion,
+    ObjectCompletion,
+}
+
+impl Display for CompletionTemplate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CompletionTemplate::SubjectCompletion => write!(f, "subjectCompletion"),
+            CompletionTemplate::PredicateCompletion => write!(f, "predicateCompletion"),
+            CompletionTemplate::ObjectCompletion => write!(f, "objectCompletion"),
+        }
+    }
+}
+
+pub(super) async fn dispatch_completion_query(
+    server_rc: Rc<Mutex<Server>>,
+    environment: &CompletionEnvironment,
+    template_context: Context,
+    completion_template: CompletionTemplate,
+    trigger_on_accept: bool,
+) -> Result<CompletionList, CompletionError> {
+    match environment.backend.as_ref() {
+        Some(backend) => {
+            let query_unit = QueryUnit::cast(environment.tree.clone()).ok_or(
+                CompletionError::ResolveError("Could not cast root to QueryUnit".to_string()),
+            )?;
+            Ok(to_completion_items(
+                fetch_online_completions(
+                    server_rc.clone(),
+                    &query_unit,
+                    &backend,
+                    &format!("{}-{}", backend.name, completion_template),
+                    template_context,
+                )
+                .await?,
+                get_replace_range(&environment),
+                trigger_on_accept.then_some("triggerNewCompletion"),
+                server_rc.lock().await.settings.completion.result_size_limit,
+            ))
+        }
+        _ => {
+            log::info!("No Backend for completion query found");
+            Err(CompletionError::ResolveError(
+                "No Backend defined".to_string(),
+            ))
+        }
+    }
+}
 
 pub(super) async fn fetch_online_completions(
     server_rc: Rc<Mutex<Server>>,
@@ -117,28 +172,37 @@ pub(super) fn get_replace_range(context: &CompletionEnvironment) -> Range {
                 - context
                     .search_term
                     .as_ref()
-                    .expect("search_term should be Some")
-                    .chars()
-                    .fold(0, |accu, char| accu + char.len_utf16()) as u32,
+                    .map(|search_term| {
+                        search_term
+                            .chars()
+                            .fold(0, |accu, char| accu + char.len_utf16())
+                            as u32
+                    })
+                    .unwrap_or(0),
         ),
     }
 }
 
-pub(super) fn get_prefix_declarations<'a>(
-    server: &Server,
-    backend: &Backend,
+pub(super) async fn get_prefix_declarations<'a>(
+    server_rc: Rc<Mutex<Server>>,
+    backend: Option<&Backend>,
     prefixes: Vec<String>,
 ) -> Vec<(String, String)> {
-    prefixes
-        .into_iter()
-        .filter_map(|prefix| {
-            server
-                .state
-                .get_converter(&backend.name)
-                .and_then(|converter| converter.find_by_prefix(&prefix).ok())
+    let server = server_rc.lock().await;
+    backend
+        .map(|backend| {
+            prefixes
+                .into_iter()
+                .filter_map(|prefix| {
+                    server
+                        .state
+                        .get_converter(&backend.name)
+                        .and_then(|converter| converter.find_by_prefix(&prefix).ok())
+                })
+                .map(|record| (record.prefix.clone(), record.uri_prefix.clone()))
+                .collect()
         })
-        .map(|record| (record.prefix.clone(), record.uri_prefix.clone()))
-        .collect()
+        .unwrap_or_default()
 }
 
 pub(super) fn reduce_path(
@@ -224,8 +288,9 @@ pub(super) fn to_completion_items(
     items: Vec<(Option<String>, Option<String>, String, Option<TextEdit>)>,
     range: Range,
     command: Option<&str>,
-) -> Vec<CompletionItem> {
-    items
+    limit: u32,
+) -> CompletionList {
+    let items: Vec<_> = items
         .into_iter()
         .enumerate()
         .map(
@@ -253,7 +318,12 @@ pub(super) fn to_completion_items(
                 }),
             },
         )
-        .collect()
+        .collect();
+    CompletionList {
+        is_incomplete: items.len() == limit as usize,
+        items,
+        item_defaults: None,
+    }
 }
 
 #[cfg(test)]

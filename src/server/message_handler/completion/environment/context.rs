@@ -1,13 +1,10 @@
-use std::{collections::HashSet, fmt::Display};
+use std::collections::HashSet;
 
 use ll_sparql_parser::{
-    ast::{
-        AstNode, GraphPatternNotTriples, GroupGraphPattern, GroupOrUnionGraphPattern, PrefixedName,
-        Triple,
-    },
+    ast::{AstNode, GraphPatternNotTriples, GroupGraphPattern, PrefixedName, Triple},
     SyntaxNode,
 };
-use log4rs::encode::pattern;
+use serde::Serialize;
 use text_size::TextSize;
 
 use super::{query_graph::QueryGraph, CompletionLocation};
@@ -18,15 +15,18 @@ pub(crate) struct Context {
     pub prefixes: HashSet<String>,
 }
 
-impl Display for Context {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Serialize for Context {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
         let s = self
             .nodes
             .iter()
             .map(|node| node.to_string())
             .collect::<Vec<_>>()
             .join(" .\n");
-        write!(f, "{}", s)
+        serializer.serialize_str(&s)
     }
 }
 

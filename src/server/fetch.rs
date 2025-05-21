@@ -1,6 +1,7 @@
 use super::lsp::errors::{ErrorCode, LSPError};
 use crate::sparql::results::SparqlResult;
 use js_sys::JsString;
+#[cfg(not(target_arch = "wasm32"))]
 use reqwest::Client;
 use std::str::FromStr;
 use wasm_bindgen::JsCast;

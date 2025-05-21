@@ -1,127 +1,82 @@
-use std::{collections::HashSet, rc::Rc};
+use std::rc::Rc;
 
 use super::{
     environment::{CompletionEnvironment, CompletionLocation},
     error::CompletionError,
-    utils::{get_replace_range, to_completion_items},
+    utils::{dispatch_completion_query, CompletionTemplate},
 };
-use crate::server::{
-    lsp::CompletionList,
-    message_handler::completion::utils::{
-        fetch_online_completions, get_prefix_declarations, reduce_path,
-    },
-    Server,
-};
+use crate::server::{lsp::CompletionList, message_handler::completion::utils::reduce_path, Server};
 use futures::lock::Mutex;
-use ll_sparql_parser::{
-    ast::{AstNode, PropertyListPath, QueryUnit},
-    syntax_kind::SyntaxKind,
-};
-use tera::Context;
-use text_size::TextSize;
+use ll_sparql_parser::syntax_kind::SyntaxKind;
 
 pub(super) async fn completions(
     server_rc: Rc<Mutex<Server>>,
-    context: CompletionEnvironment,
+    environment: CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
-    if let CompletionLocation::BlankNodeProperty(blank_node_props) = &context.location {
-        let backend = {
-            let server = server_rc.lock().await;
-            context
-                .backend
-                .as_ref()
-                .and_then(|name| server.state.get_backend(name))
-                .or(server.state.get_default_backend())
-                .cloned()
-        };
-        match (
-            backend,
-            context.search_term.as_ref(),
-            context.anchor_token.as_ref(),
-        ) {
-            (Some(backend), Some(search_term), Some(anchor_token)) => {
-                let query_unit = QueryUnit::cast(context.tree.clone()).ok_or(
-                    CompletionError::ResolveError("Could not cast root to QueryUnit".to_string()),
-                )?;
-                let range = get_replace_range(&context);
-                let prefixes = get_prefix_declarations(
-                    &*server_rc.lock().await,
-                    &backend,
-                    blank_node_props.used_prefixes(),
-                );
-                let inject = compute_inject_context(
-                    blank_node_props.property_list(),
-                    anchor_token.text_range().end(),
-                    context.continuations,
-                )
-                .ok_or(CompletionError::ResolveError(
-                    "Could not build inject-string for the template".to_string(),
-                ))?;
+    let mut template_context = environment.template_context(server_rc.clone()).await;
+    template_context.insert("local_context", &local_context(&environment));
 
-                let mut template_context = Context::new();
-                template_context.insert("context", &inject);
-                template_context.insert("prefixes", &prefixes);
-                template_context.insert("search_term", search_term);
-                let items = to_completion_items(
-                    fetch_online_completions(
-                        server_rc.clone(),
-                        &query_unit,
-                        &backend,
-                        &format!("{}-{}", backend.name, "predicateCompletion"),
-                        template_context,
-                    )
-                    .await?,
-                    range,
-                    Some("triggerNewCompletion"),
-                );
-                Ok(CompletionList {
-                    is_incomplete: items.len()
-                        == server_rc.lock().await.settings.completion.result_size_limit as usize,
-                    item_defaults: None,
-                    items,
-                })
-            }
-            _ => {
-                log::info!("No Backend or search term");
-                Ok(CompletionList {
-                    is_incomplete: false,
-                    item_defaults: None,
-                    items: vec![],
-                })
-            }
-        }
-    } else {
-        panic!("object completions requested for non object location");
-    }
+    dispatch_completion_query(
+        server_rc,
+        &environment,
+        template_context,
+        CompletionTemplate::PredicateCompletion,
+        true,
+    )
+    .await
 }
 
-fn compute_inject_context(
-    props: Option<PropertyListPath>,
-    offset: TextSize,
-    continuations: HashSet<SyntaxKind>,
-) -> Option<String> {
-    if continuations.contains(&SyntaxKind::PropertyListPath)
-        || continuations.contains(&SyntaxKind::PropertyListPathNotEmpty)
-        || props.is_none()
-    {
-        Some(format!("[] ?qlue_ls_entity []"))
-    } else {
-        let properties = props.unwrap().properties();
-        if continuations.contains(&SyntaxKind::VerbPath) {
+fn local_context(environment: &CompletionEnvironment) -> Option<String> {
+    if let CompletionLocation::BlankNodeProperty(ref prop_list) = environment.location {
+        if environment
+            .continuations
+            .contains(&SyntaxKind::PropertyListPath)
+            || environment
+                .continuations
+                .contains(&SyntaxKind::PropertyListPathNotEmpty)
+            || prop_list.property_list().is_none()
+        {
             Some(format!("[] ?qlue_ls_entity []"))
-        } else if properties.len() == 1 {
-            reduce_path("[]", &properties[0].verb, "[]", offset)
         } else {
-            let (last_prop, prev_prop) = properties.split_last()?;
-            Some(format!(
-                "[] {} . {}",
-                prev_prop
-                    .iter()
-                    .map(|prop| prop.text())
-                    .collect::<Vec<_>>()
-                    .join(" ; "),
-                reduce_path("[]", &last_prop.verb, "[]", offset)?
-            ))
+            let properties = prop_list.property_list().unwrap().properties();
+            if environment.continuations.contains(&SyntaxKind::VerbPath) {
+                Some(format!("[] ?qlue_ls_entity []"))
+            } else if properties.len() == 1 {
+                reduce_path(
+                    "[]",
+                    &properties[0].verb,
+                    "[]",
+                    environment
+                        .anchor_token
+                        .as_ref()
+                        .unwrap()
+                        .text_range()
+                        .end(),
+                )
+            } else {
+                let (last_prop, prev_prop) = properties.split_last()?;
+                Some(format!(
+                    "[] {} . {}",
+                    prev_prop
+                        .iter()
+                        .map(|prop| prop.text())
+                        .collect::<Vec<_>>()
+                        .join(" ; "),
+                    reduce_path(
+                        "[]",
+                        &last_prop.verb,
+                        "[]",
+                        environment
+                            .anchor_token
+                            .as_ref()
+                            .unwrap()
+                            .text_range()
+                            .end()
+                    )?
+                ))
+            }
         }
+    } else {
+        None
     }
 }

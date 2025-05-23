@@ -1,6 +1,5 @@
 <script lang="ts">
-    import init, { get_parse_tree } from 'll-sparql-parser';
-    import wasmUrl from 'll-sparql-parser/ll_sparql_parser_bg.wasm?url';
+    import init, { get_parse_tree } from 'll-sparql-parser?init';
     import { onMount } from 'svelte';
     import { derived } from 'svelte/store';
 
@@ -21,9 +20,7 @@
     let { input, cursorOffset } = $props();
     let loaded = $state(false);
     onMount(async () => {
-        init({
-            module_or_path: wasmUrl
-        }).then(() => {
+        init().then(() => {
             loaded = true;
         });
     });

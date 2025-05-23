@@ -18,7 +18,10 @@ export default defineConfig(({ mode }) => ({
 	},
 	server:
 	{
-		allowedHosts: true
+		allowedHosts: true,
+		fs: {
+			strict: false
+		}
 	},
 	worker: {
 		format: "es",

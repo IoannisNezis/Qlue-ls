@@ -1,9 +1,6 @@
-import init, { init_language_server, listen } from 'qlue-ls';
-import wasmUrl from 'qlue-ls/qlue_ls_bg.wasm?url'
+import init, { init_language_server, listen } from 'qlue-ls?init';
 
-init({
-        module_or_path: wasmUrl
-}).then(() => {
+init().then(() => {
         // Connection Worker <-> Language Server(WASM)
         const wasmInputStream = new TransformStream();
         const wasmOutputStream = new TransformStream();

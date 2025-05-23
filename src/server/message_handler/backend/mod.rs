@@ -38,20 +38,29 @@ pub(super) async fn handle_ping_backend_request(
     server_rc: Rc<Mutex<Server>>,
     request: PingBackendRequest,
 ) -> Result<(), LSPError> {
-    let server = server_rc.lock().await;
-    let backend = match request.params.backend_name {
-        Some(ref name) => server.state.get_backend(name).ok_or(LSPError::new(
-            ErrorCode::InvalidParams,
-            &format!("got ping request for unknown backend: \"{}\"", name),
-        )),
-        None => server.state.get_default_backend().ok_or(LSPError::new(
-            ErrorCode::InvalidParams,
-            "no backend or default backend provided",
-        )),
-    }?;
+    let backend = {
+        let server = server_rc.lock().await;
+        match request.params.backend_name {
+            Some(ref name) => server.state.get_backend(name).cloned().ok_or(LSPError::new(
+                ErrorCode::InvalidParams,
+                &format!("got ping request for unknown backend: \"{}\"", name),
+            )),
+            None => server
+                .state
+                .get_default_backend()
+                .cloned()
+                .ok_or(LSPError::new(
+                    ErrorCode::InvalidParams,
+                    "no backend or default backend provided",
+                )),
+        }?
+    };
     let health_check_url = &backend.health_check_url.as_ref().unwrap_or(&backend.url);
     let availible = check_server_availability(health_check_url).await;
-    server.send_message(PingBackendResponse::new(request.get_id(), availible))
+    server_rc
+        .lock()
+        .await
+        .send_message(PingBackendResponse::new(request.get_id(), availible))
 }
 
 pub(super) async fn handle_add_backend_notification(

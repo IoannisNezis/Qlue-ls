@@ -91,7 +91,7 @@ pub(super) async fn handle_add_backend_notification(
                     log::error!("{}", err);
                     LSPError::new(
                         ErrorCode::InvalidParams,
-                        &format!("Could load template:\n\"{query_name}\"\n{}", err),
+                        &format!("Could not load template:\n\"{query_name}\"\n{}", err),
                     )
                 })?;
         }

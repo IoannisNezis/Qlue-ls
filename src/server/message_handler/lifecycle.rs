@@ -101,7 +101,7 @@ pub(super) async fn handle_initialize_request(
                                     LSPError::new(
                                         ErrorCode::InvalidParams,
                                         &format!(
-                                            "Could load template: subjectCompletion of backend {}",
+                                            "Could not load template: subjectCompletion of backend {}",
                                             &backend.name
                                         ),
                                     )
@@ -118,7 +118,7 @@ pub(super) async fn handle_initialize_request(
                                     LSPError::new(
                                         ErrorCode::InvalidParams,
                                         &format!(
-                                            "Could load template: predicateCompletion of backend {}",
+                                            "Could not load template: predicateCompletion of backend {}",
                                             &backend.name
                                         ),
                                     )
@@ -135,7 +135,7 @@ pub(super) async fn handle_initialize_request(
                                     LSPError::new(
                                         ErrorCode::InvalidParams,
                                         &format!(
-                                            "Could load template: objectCompletion of backend {}",
+                                            "Could not load template: objectCompletion of backend {}",
                                             &backend.name
                                         ),
                                     )

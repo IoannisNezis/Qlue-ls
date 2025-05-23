@@ -20,6 +20,7 @@ PREFIX psn: <http://www.wikidata.org/prop/statement/value-normalized/>
 PREFIX psv: <http://www.wikidata.org/prop/statement/value/>
 PREFIX qfn: <http://qlever.cs.uni-freiburg.de/function#>
 PREFIX ql: <http://qlever.cs.uni-freiburg.de/builtin-functions/>
+PREFIX qlss: <https://qlever.cs.uni-freiburg.de/spatialSearch/>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX ref: <http://www.wikidata.org/reference/>

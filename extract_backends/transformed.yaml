@@ -5,15 +5,15 @@
     healthCheckUrl: https://qlever.cs.uni-freiburg.de/api/imdb/ping
   prefixMap:
     imdb: https://www.imdb.com/
+    xsd: http://www.w3.org/2001/XMLSchema#
   default: false
   queries:
     subjectCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      {% if not search_term %}
+      {% if not search_term or search_term == "" %}
 
-      PREFIX imdb: <https://www.imdb.com/>
       SELECT ?qlue_ls_entity (SAMPLE(?name) AS ?qlue_ls_label) (SAMPLE(?alias) AS ?qlue_ls_alias) (SAMPLE(?count) AS ?qlue_ls_count) WHERE {
         { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
           ?qlue_ls_entity imdb:numVotes ?count .
@@ -23,7 +23,6 @@
 
       {% else %}
 
-      PREFIX imdb: <https://www.imdb.com/>
       SELECT ?qlue_ls_entity (SAMPLE(?name) AS ?qlue_ls_label) (SAMPLE(?alias) AS ?qlue_ls_alias) (SAMPLE(?count) AS ?qlue_ls_count) WHERE {
         { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
         ?qlue_ls_entity imdb:numVotes ?count .
@@ -35,19 +34,164 @@
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
 
       {% endif %}
-      LIMIT {{ limit }} OFFSET {{ offset }}
-    predicateCompletion: "{% for prefix in prefixes %}\nPREFIX {{prefix.0}}: <{{prefix.1}}>\n{% endfor %}\nSELECT ?qlue_ls_entity WHERE {\n  {{context}}\n}\nGROUP BY ?qlue_ls_entity \nLIMIT {{ limit }} OFFSET {{ offset }}"
+    predicateCompletion: |-
+      {% for prefix in prefixes %}
+      PREFIX {{prefix.0}}: <{{prefix.1}}>
+      {% endfor %}
+
+      SELECT ?qlue_ls_entity
+                    (MIN(?name) as ?qlue_ls_label)
+                    (MIN(?alias) as ?qlue_ls_alias)
+                    (SAMPLE(?count_1) as ?qlue_ls_count) WHERE {
+        { %WARMUP_QUERY_4% }
+        {% if search_term %}
+        FILTER REGEX(?alias, "{{ search_term }}", "i")
+        {% endif %}
+      } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
     objectCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
+      {% if not search_term or search_term == "" %}
+
       SELECT ?qlue_ls_entity (SAMPLE(?name) AS ?qlue_ls_label) (SAMPLE(?alias) AS ?qlue_ls_alias) (SAMPLE(?count) AS ?qlue_ls_count) WHERE {
-        {{context}}
+        { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
+          ?qlue_ls_entity imdb:numVotes ?count .
+          ?qlue_ls_entity imdb:title ?name . BIND(?name AS ?alias) }
+        ORDER BY ?qlue_ls_entity }
+      } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
+
+      {% else %}
+
+      SELECT ?qlue_ls_entity (SAMPLE(?name) AS ?qlue_ls_label) (SAMPLE(?alias) AS ?qlue_ls_alias) (SAMPLE(?count) AS ?qlue_ls_count) WHERE {
+        { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
+        ?qlue_ls_entity imdb:numVotes ?count .
+        ?qlue_ls_entity imdb:title ?name . BIND(?name AS ?alias)
+      } ORDER BY ?alias }
         {% if search_term %}
         FILTER (REGEX(?alias, "^\"{{ search_term }}") || REGEX(?alias, "^<{{ search_term }}"))
         {% endif %}
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
-      LIMIT {{ limit }} OFFSET {{ offset }}
+
+      {% endif %}
+    subjectCompletionContextSensitive: |-
+      {% for prefix in prefixes %}
+      PREFIX {{prefix.0}}: <{{prefix.1}}>
+      {% endfor %}
+      {% if not search_term or search_term == "" %}
+
+      SELECT ?qlue_ls_entity (SAMPLE(?name) AS ?qlue_ls_label) (SAMPLE(?alias) AS ?qlue_ls_alias) (SAMPLE(?count) AS ?qlue_ls_count) WHERE {
+        { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
+          ?qlue_ls_entity imdb:numVotes ?count .
+          ?qlue_ls_entity imdb:title ?name . BIND(?name AS ?alias) }
+        ORDER BY ?qlue_ls_entity }
+      } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
+
+      {% else %}
+
+      SELECT ?qlue_ls_entity (SAMPLE(?name) AS ?qlue_ls_label) (SAMPLE(?alias) AS ?qlue_ls_alias) (SAMPLE(?count) AS ?qlue_ls_count) WHERE {
+        { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
+        ?qlue_ls_entity imdb:numVotes ?count .
+        ?qlue_ls_entity imdb:title ?name . BIND(?name AS ?alias)
+      } ORDER BY ?alias }
+        {% if search_term %}
+        FILTER (REGEX(?alias, "^\"{{ search_term }}") || REGEX(?alias, "^<{{ search_term }}"))
+        {% endif %}
+      } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
+
+      {% endif %}
+    predicatCompletionContextSensitive: |-
+      {% for prefix in prefixes %}
+      PREFIX {{prefix.0}}: <{{prefix.1}}>
+      {% endfor %}
+      # IF !CURRENT_SUBJECT_VARIABLE #
+
+      SELECT ?qlue_ls_entity
+                    (MIN(?name) as ?qlue_ls_label)
+                    (MIN(?alias) as ?qlue_ls_alias)
+                    (SAMPLE(?count_2) as ?qlue_ls_count)
+                    ?qleverui_reversed WHERE {
+
+        { { SELECT ?qlue_ls_entity (COUNT(?qleverui_tmp) AS ?count_2)
+          WHERE { %CURRENT_SUBJECT% ?qlue_ls_entity ?qleverui_tmp  }
+          GROUP BY ?qlue_ls_entity }
+        BIND (0 AS ?qleverui_reversed) }
+        UNION
+        { { SELECT ?qlue_ls_entity (COUNT(?qleverui_tmp) AS ?count_2)
+          WHERE { ?qleverui_tmp ?qlue_ls_entity %CURRENT_SUBJECT%  }
+          GROUP BY ?qlue_ls_entity }
+          BIND (1 AS ?qleverui_reversed) }
+        { %WARMUP_QUERY_5% }
+        {% if search_term %}
+        FILTER REGEX(?alias, "{{ search_term }}", "i")
+        {% endif %}
+      } GROUP BY ?qlue_ls_entity ?qleverui_reversed ORDER BY DESC(?qlue_ls_count)
+
+      {% endif %}
+      # IF CONNECTED_TRIPLES_EMPTY AND CURRENT_SUBJECT_VARIABLE #
+
+      SELECT ?qlue_ls_entity
+                    (MIN(?name) as ?qlue_ls_label)
+                    (MIN(?alias) as ?qlue_ls_alias)
+                    (SAMPLE(?count_1) as ?qlue_ls_count) WHERE {
+        { %WARMUP_QUERY_4% }
+        {% if search_term %}
+        FILTER REGEX(?alias, "{{ search_term }}", "i")
+        {% endif %}
+      } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
+
+      {% endif %}
+
+      # IF !CONNECTED_TRIPLES_EMPTY AND CURRENT_SUBJECT_VARIABLE #
+
+      SELECT ?qlue_ls_entity
+                    (MIN(?name) as ?qlue_ls_label)
+                    (MIN(?alias) as ?qlue_ls_alias)
+                    (SAMPLE(?count_2) as ?qlue_ls_count) WHERE {
+        { SELECT ?qlue_ls_entity (COUNT(DISTINCT %CURRENT_SUBJECT%) AS ?count_2)
+          WHERE { %CONNECTED_TRIPLES% %CURRENT_SUBJECT% ?qlue_ls_entity ?object }
+          GROUP BY ?qlue_ls_entity }
+        { %WARMUP_QUERY_5% }
+        {% if search_term %}
+        FILTER REGEX(?alias, "{{ search_term }}", "i")
+        {% endif %}
+      } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
+
+      {% endif %}
+    objectCompletionContextSensitive: |-
+      {% for prefix in prefixes %}
+      PREFIX {{prefix.0}}: <{{prefix.1}}>
+      {% endfor %}
+      SELECT ?qlue_ls_entity
+                    (MIN(?name) AS ?qlue_ls_label)
+                    (MIN(?alias) AS ?qlue_ls_alias)
+                    (MAX(?count_1) AS ?qlue_ls_count) WHERE {
+        {
+
+          { SELECT ?qlue_ls_entity ?name ?alias ?count_1 WHERE {
+            { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count_1) WHERE {
+              %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
+            } GROUP BY ?qlue_ls_entity }
+            { %WARMUP_QUERY_3% }
+            {% if search_term %}
+            FILTER (REGEX(?alias, "^\"{{ search_term }}") || REGEX(?alias, "^<{{ search_term }}"))
+            {% endif %}
+          } }
+
+        } UNION {
+
+          { SELECT ?qlue_ls_entity ?name ?alias ?count_1 WHERE {
+            { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count_1) WHERE {
+              %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity
+            } GROUP BY ?qlue_ls_entity }
+            %ENTITY_NAME_AND_ALIAS_PATTERN_DEFAULT%
+            {% if search_term %}
+            FILTER REGEX(?alias, "^{{ search_term }}")
+            {% endif %}
+          } }
+
+        }
+      } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
 - backend:
     name: DBLP
     slug: dblp
@@ -75,8 +219,6 @@
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-      PREFIX dblp: <https://dblp.org/rdf/schema#>
       SELECT ?qlue_ls_entity (?qlue_ls_alias AS ?qlue_ls_label) ?qlue_ls_alias ?qlue_ls_count WHERE {
         { SELECT ?qlue_ls_entity ?qlue_ls_alias ?qlue_ls_count WHERE {
           { { SELECT ?qlue_ls_entity (COUNT(?paper) AS ?qlue_ls_count) WHERE { ?paper dblp:publishedIn ?qlue_ls_entity } GROUP BY ?qlue_ls_entity } BIND(?qlue_ls_entity AS ?qlue_ls_alias) } UNION
@@ -85,37 +227,104 @@
         } INTERNAL SORT BY ?qlue_ls_alias }
         FILTER REGEX(STR(?qlue_ls_alias), "^{{ search_term }}")
       } ORDER BY DESC(?qlue_ls_count)
-      LIMIT {{ limit }} OFFSET {{ offset }}
     predicateCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      SELECT ?qlue_ls_entity WHERE {
+      SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_count)
-          WHERE { {{context}} }
+          WHERE { ?qui_subject ?qlue_ls_entity ?qui_object }
           GROUP BY ?qlue_ls_entity } BIND (0 AS ?qui_reversed)
         BIND (?qlue_ls_entity AS ?qlue_ls_label)
         {% if search_term %}
         FILTER REGEX(STR(?qlue_ls_label), "{{ search_term }}", "i")
         {% endif %}
       } ORDER BY DESC(?qlue_ls_count)
-      LIMIT {{ limit }} OFFSET {{ offset }}
     objectCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      {% if not search_term or search_term == "" %}
       SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_count) WHERE {
-          {{context}} .
+          %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
+        } GROUP BY ?qlue_ls_entity }
+        OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_alias }
+        BIND (COALESCE(?qlue_ls_alias, ?qlue_ls_entity) AS ?qlue_ls_label)
+      } ORDER BY DESC(?qlue_ls_count)
+      {% else %}
+      SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
+        { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_count) WHERE {
+          %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
         } GROUP BY ?qlue_ls_entity }
         OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_alias }
         BIND (?qlue_ls_entity AS ?qlue_ls_label)
-      {% if not search_term %}
         FILTER (REGEX(STR(?qlue_ls_label), "^{{ search_term }}") || REGEX(STR(?qlue_ls_alias), "^{{ search_term }}"))
-      {% endif %}
       } ORDER BY DESC(?qlue_ls_count)
-      LIMIT {{ limit }} OFFSET {{ offset }}
+      {% endif %}
+    subjectCompletionContextSensitive: |-
+      {% for prefix in prefixes %}
+      PREFIX {{prefix.0}}: <{{prefix.1}}>
+      {% endfor %}
+      SELECT ?qlue_ls_entity (?qlue_ls_alias AS ?qlue_ls_label) ?qlue_ls_alias ?qlue_ls_count WHERE {
+        { SELECT ?qlue_ls_entity ?qlue_ls_alias ?qlue_ls_count WHERE {
+          { { SELECT ?qlue_ls_entity (COUNT(?paper) AS ?qlue_ls_count) WHERE { ?paper dblp:publishedIn ?qlue_ls_entity } GROUP BY ?qlue_ls_entity } BIND(?qlue_ls_entity AS ?qlue_ls_alias) } UNION
+          { { SELECT ?qlue_ls_entity (COUNT(?paper) AS ?qlue_ls_count) WHERE { ?paper dblp:authoredBy ?qlue_ls_entity } GROUP BY ?qlue_ls_entity } ?qlue_ls_entity rdfs:label ?qlue_ls_alias } UNION
+          { { SELECT ?qlue_ls_entity (COUNT(?author) AS ?qlue_ls_count) WHERE { ?qlue_ls_entity dblp:authoredBy ?author } GROUP BY ?qlue_ls_entity } ?qlue_ls_entity dblp:title ?qlue_ls_alias }
+        } INTERNAL SORT BY ?qlue_ls_alias }
+        FILTER REGEX(STR(?qlue_ls_alias), "^{{ search_term }}")
+      } ORDER BY DESC(?qlue_ls_count)
+    predicatCompletionContextSensitive: |-
+      {% for prefix in prefixes %}
+      PREFIX {{prefix.0}}: <{{prefix.1}}>
+      {% endfor %}
+      SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count ?qui_reversed WHERE {
+        # IF !CURRENT_SUBJECT_VARIABLE #
+        { { SELECT ?qlue_ls_entity (COUNT(?qui_object) AS ?qlue_ls_count)
+          WHERE { %CURRENT_SUBJECT% ?qlue_ls_entity ?qui_object  }
+          GROUP BY ?qlue_ls_entity } BIND (0 AS ?qui_reversed) }
+        UNION
+        { { SELECT ?qlue_ls_entity (COUNT(?qui_subject) AS ?qlue_ls_count)
+          WHERE { ?qui_subject ?qlue_ls_entity %CURRENT_SUBJECT%  }
+          GROUP BY ?qlue_ls_entity } BIND (1 AS ?qui_reversed) }
+        {% endif %}
+        # IF CURRENT_SUBJECT_VARIABLE AND CONNECTED_TRIPLES_EMPTY #
+        { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_count)
+          WHERE { ?qui_subject ?qlue_ls_entity ?qui_object }
+          GROUP BY ?qlue_ls_entity } BIND (0 AS ?qui_reversed)
+        {% endif %}
+        # IF CURRENT_SUBJECT_VARIABLE AND !CONNECTED_TRIPLES_EMPTY #
+        { SELECT ?qlue_ls_entity (COUNT(DISTINCT %CURRENT_SUBJECT%) AS ?qlue_ls_count)
+          WHERE { %CONNECTED_TRIPLES% %CURRENT_SUBJECT% ?qlue_ls_entity ?qui_object }
+          GROUP BY ?qlue_ls_entity } BIND (0 AS ?qui_reversed)
+        {% endif %}
+        BIND (?qlue_ls_entity AS ?qlue_ls_label)
+        {% if search_term %}
+        FILTER REGEX(STR(?qlue_ls_label), "{{ search_term }}", "i")
+        {% endif %}
+      } ORDER BY DESC(?qlue_ls_count)
+    objectCompletionContextSensitive: |-
+      {% for prefix in prefixes %}
+      PREFIX {{prefix.0}}: <{{prefix.1}}>
+      {% endfor %}
+      {% if not search_term or search_term == "" %}
+      SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
+        { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_count) WHERE {
+          %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
+        } GROUP BY ?qlue_ls_entity }
+        OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_alias }
+        BIND (COALESCE(?qlue_ls_alias, ?qlue_ls_entity) AS ?qlue_ls_label)
+      } ORDER BY DESC(?qlue_ls_count)
+      {% else %}
+      SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
+        { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_count) WHERE {
+          %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
+        } GROUP BY ?qlue_ls_entity }
+        OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_alias }
+        BIND (?qlue_ls_entity AS ?qlue_ls_label)
+        FILTER (REGEX(STR(?qlue_ls_label), "^{{ search_term }}") || REGEX(STR(?qlue_ls_alias), "^{{ search_term }}"))
+      } ORDER BY DESC(?qlue_ls_count)
+      {% endif %}
 - backend:
     name: PubChem
     slug: pubchem
@@ -180,54 +389,119 @@
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
+      {% if search_term %}
 
-      PREFIX obo: <http://purl.obolibrary.org/obo/>
-      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-      SELECT ?qlue_ls_entity ?qlue_ls_label (?qlue_ls_entity as ?qlue_ls_detail) WHERE {
+      SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias WHERE {
         ?qlue_ls_entity rdf:type [ obo:IAO_0000412 obo:chebi.owl; rdfs:label ?qlue_ls_label ]
         BIND (?qlue_ls_label AS ?qlue_ls_alias)
-      {% if search_term %}
         FILTER REGEX(STR(?qlue_ls_label), "^{{ search_term }}")
-      {% endif %}
       } ORDER BY ASC(?qlue_ls_label)
-      LIMIT {{ limit }} OFFSET {{ offset }}
+
+      {% endif %}
     predicateCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-      SELECT ?qlue_ls_entity ?qlue_ls_label WHERE {
+      SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_count)
-          WHERE { {{context}} }
+          WHERE { ?qui_subject ?qlue_ls_entity ?qui_object }
           GROUP BY ?qlue_ls_entity }
         OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label_or_null }
         BIND (IF(?qlue_ls_label_or_null, ?qlue_ls_label_or_null, ?qlue_ls_entity) AS ?qlue_ls_label)
+        BIND (?qlue_ls_label AS ?qlue_ls_alias)
         {% if search_term %}
         FILTER REGEX(STR(?qlue_ls_alias), "{{ search_term }}", "i")
         {% endif %}
       } ORDER BY DESC(?qlue_ls_count)
-      LIMIT {{ limit }} OFFSET {{ offset }}
     objectCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      PREFIX obo: <http://purl.obolibrary.org/obo/>
-      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
       SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_count) WHERE {
-          {{context}}
+          %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
         } GROUP BY ?qlue_ls_entity }
         OPTIONAL { ?qlue_ls_entity rdf:type [ obo:IAO_0000412 obo:chebi.owl; rdfs:label ?qlue_ls_label_or_null ] }
         OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label_or_null }
-        BIND (COALESCE(?qlue_ls_label_or_null, ?qlue_ls_entity) AS ?qlue_ls_label)
+        BIND (IF(?qlue_ls_label_or_null, ?qlue_ls_label_or_null, ?qlue_ls_entity) AS ?qlue_ls_label)
         BIND (?qlue_ls_label AS ?qlue_ls_alias)
         {% if search_term %}
         FILTER REGEX(STR(?qlue_ls_label), "^{{ search_term }}")
         {% endif %}
       } ORDER BY DESC(?qlue_ls_count)
-      LIMIT {{ limit }} OFFSET {{ offset }}
+    subjectCompletionContextSensitive: |-
+      {% for prefix in prefixes %}
+      PREFIX {{prefix.0}}: <{{prefix.1}}>
+      {% endfor %}
+      {% if search_term %}
+
+      SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias WHERE {
+        ?qlue_ls_entity rdf:type [ obo:IAO_0000412 obo:chebi.owl; rdfs:label ?qlue_ls_label ]
+        BIND (?qlue_ls_label AS ?qlue_ls_alias)
+        FILTER REGEX(STR(?qlue_ls_label), "^{{ search_term }}")
+      } ORDER BY ASC(?qlue_ls_label)
+
+      {% endif %}
+    predicatCompletionContextSensitive: |-
+      {% for prefix in prefixes %}
+      PREFIX {{prefix.0}}: <{{prefix.1}}>
+      {% endfor %}
+      # IF !CURRENT_SUBJECT_VARIABLE #
+
+      SELECT ?qlue_ls_entity (SAMPLE(?qlue_ls_label_) AS ?qlue_ls_label) (SAMPLE(?qlue_ls_alias_) AS ?qlue_ls_alias) ?qlue_ls_count ?qui_reversed WHERE {
+        { { SELECT ?qlue_ls_entity (COUNT(?qui_object) AS ?qlue_ls_count)
+          WHERE { %CURRENT_SUBJECT% ?qlue_ls_entity ?qui_object  }
+          GROUP BY ?qlue_ls_entity } BIND (0 AS ?qui_reversed) }
+        UNION
+        { { SELECT ?qlue_ls_entity (COUNT(?qui_subject) AS ?qlue_ls_count)
+          WHERE { ?qui_subject ?qlue_ls_entity %CURRENT_SUBJECT%  }
+          GROUP BY ?qlue_ls_entity } BIND (1 AS ?qui_reversed) }
+        OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label_or_null }
+        BIND (IF(?qlue_ls_label_or_null, ?qlue_ls_label_or_null, ?qlue_ls_entity) AS ?qlue_ls_label_)
+        BIND (?qlue_ls_label_ AS ?qlue_ls_alias_)
+        {% if search_term %}
+        FILTER REGEX(STR(?qlue_ls_alias_), "{{ search_term }}", "i")
+        {% endif %}
+      } GROUP BY ?qlue_ls_entity ?qlue_ls_count ?qui_reversed ORDER BY DESC(?qlue_ls_count)
+
+      {% endif %}
+      # IF CURRENT_SUBJECT_VARIABLE #
+
+      SELECT ?qlue_ls_entity (SAMPLE(?qlue_ls_label_) AS ?qlue_ls_label) (SAMPLE(?qlue_ls_alias_) AS ?qlue_ls_alias) ?qlue_ls_count WHERE {
+        # IF CONNECTED_TRIPLES_EMPTY #
+        { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_count)
+          WHERE { ?qui_subject ?qlue_ls_entity ?qui_object }
+          GROUP BY ?qlue_ls_entity }
+        {% else %}
+        { SELECT ?qlue_ls_entity (COUNT(DISTINCT %CURRENT_SUBJECT%) AS ?qlue_ls_count)
+          WHERE { %CONNECTED_TRIPLES% %CURRENT_SUBJECT% ?qlue_ls_entity ?qui_object }
+          GROUP BY ?qlue_ls_entity }
+        {% endif %}
+        OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label_or_null }
+        BIND (IF(?qlue_ls_label_or_null, ?qlue_ls_label_or_null, ?qlue_ls_entity) AS ?qlue_ls_label_)
+        BIND (?qlue_ls_label_ AS ?qlue_ls_alias_)
+        {% if search_term %}
+        FILTER REGEX(STR(?qlue_ls_alias_), "{{ search_term }}", "i")
+        {% endif %}
+      } GROUP BY ?qlue_ls_entity ?qlue_ls_count ORDER BY DESC(?qlue_ls_count)
+
+      {% endif %}
+    objectCompletionContextSensitive: |-
+      {% for prefix in prefixes %}
+      PREFIX {{prefix.0}}: <{{prefix.1}}>
+      {% endfor %}
+      SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
+        { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_count) WHERE {
+          %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
+        } GROUP BY ?qlue_ls_entity }
+        OPTIONAL { ?qlue_ls_entity rdf:type [ obo:IAO_0000412 obo:chebi.owl; rdfs:label ?qlue_ls_label_or_null ] }
+        OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label_or_null }
+        BIND (IF(?qlue_ls_label_or_null, ?qlue_ls_label_or_null, ?qlue_ls_entity) AS ?qlue_ls_label)
+        BIND (?qlue_ls_label AS ?qlue_ls_alias)
+        {% if search_term %}
+        FILTER REGEX(STR(?qlue_ls_label), "^{{ search_term }}")
+        {% endif %}
+      } ORDER BY DESC(?qlue_ls_count)
 - backend:
     name: UniProt
     slug: uniprot
@@ -288,43 +562,41 @@
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
+      {% if not search_term or search_term == "" %}
 
-      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-      PREFIX up: <http://purl.uniprot.org/core/>
-      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-      SELECT ?qlue_ls_entity (SAMPLE(?label) as ?qlue_ls_label) WHERE {
-        ?qlue_ls_entity rdf:type up:Protein ; rdfs:label ?label .
+      {% else %}
+
+      SELECT ?qlue_ls_entity (SAMPLE(?name) AS ?qlue_ls_label) (SAMPLE(?alias) AS ?qlue_ls_alias) (SAMPLE(?count) AS ?qlue_ls_count) WHERE {
+        { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
+        { SELECT ?qlue_ls_entity (COUNT(?predicate) AS ?count) WHERE { ?qlue_ls_entity ?predicate ?object } GROUP BY ?qlue_ls_entity }
+        BIND(?qlue_ls_entity AS ?name) BIND(?qlue_ls_entity AS ?alias)
+      } INTERNAL SORT BY ?alias }
         {% if search_term %}
-        FILTER REGEX(?label, "^{{ search_term }}")
+        FILTER REGEX(STR(?alias), "^{{ search_term }}")
         {% endif %}
-      }
-      GROUP BY ?qlue_ls_entity
-      ORDER BY DESC(COUNT(?qlue_ls_entity))
-      LIMIT {{ limit }} OFFSET {{ offset }}
+      } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
+
+      {% endif %}
     predicateCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
 
-      SELECT ?qlue_ls_entity  WHERE {
-        { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE
-          { {{context}} }
-          GROUP BY ?qlue_ls_entity }
+      SELECT ?qlue_ls_entity (?qlue_ls_entity AS ?qlue_ls_label) (?qlue_ls_entity AS ?qlue_ls_alias) (?count AS ?qlue_ls_count) WHERE {
+        { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE { ?qui_subject ?qlue_ls_entity ?qui_object } GROUP BY ?qlue_ls_entity }
         {% if search_term %}
         FILTER REGEX(STR(?qlue_ls_entity), "{{ search_term }}", "i")
         {% endif %}
       } ORDER BY DESC(?qlue_ls_count)
-      LIMIT {{ limit }} OFFSET {{ offset }}
     objectCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
       SELECT ?qlue_ls_entity (MIN(?name) AS ?qlue_ls_label) (MIN(?alias) AS ?qlue_ls_alias) (MAX(?count) AS ?qlue_ls_count) WHERE {
         {
           { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
             { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
-              {{context}}
+              %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity
             } GROUP BY ?qlue_ls_entity }
             ?qlue_ls_entity rdfs:label ?name BIND(?name AS ?alias)
             {% if search_term %}
@@ -334,7 +606,7 @@
         } UNION {
          { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
             { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
-              {{context}}
+              %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity
             } GROUP BY ?qlue_ls_entity }
             ?qlue_ls_entity up:scientificName ?name BIND(?name AS ?alias)
             {% if search_term %}
@@ -344,7 +616,7 @@
         } UNION {
           { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
             { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
-              {{context}}
+              %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity
             } GROUP BY ?qlue_ls_entity }
             BIND(?qlue_ls_entity AS ?name) BIND(?qlue_ls_entity AS ?alias)
             {% if search_term %}
@@ -353,7 +625,111 @@
           } }
         }
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
-      LIMIT {{ limit }} OFFSET {{ offset }}
+    subjectCompletionContextSensitive: |-
+      {% for prefix in prefixes %}
+      PREFIX {{prefix.0}}: <{{prefix.1}}>
+      {% endfor %}
+      {% if not search_term or search_term == "" %}
+
+      {% else %}
+
+      SELECT ?qlue_ls_entity (SAMPLE(?name) AS ?qlue_ls_label) (SAMPLE(?alias) AS ?qlue_ls_alias) (SAMPLE(?count) AS ?qlue_ls_count) WHERE {
+        { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
+        { SELECT ?qlue_ls_entity (COUNT(?predicate) AS ?count) WHERE { ?qlue_ls_entity ?predicate ?object } GROUP BY ?qlue_ls_entity }
+        BIND(?qlue_ls_entity AS ?name) BIND(?qlue_ls_entity AS ?alias)
+      } INTERNAL SORT BY ?alias }
+        {% if search_term %}
+        FILTER REGEX(STR(?alias), "^{{ search_term }}")
+        {% endif %}
+      } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
+
+      {% endif %}
+    predicatCompletionContextSensitive: |-
+      {% for prefix in prefixes %}
+      PREFIX {{prefix.0}}: <{{prefix.1}}>
+      {% endfor %}
+      # IF !CURRENT_SUBJECT_VARIABLE #
+
+      SELECT ?qlue_ls_entity (MIN(?name) as ?qlue_ls_label) (MIN(?alias) as ?qlue_ls_alias) (SAMPLE(?count_2) as ?qlue_ls_count) ?qui_reversed WHERE {
+        { { SELECT ?qlue_ls_entity (COUNT(?qui_tmp) AS ?count_2)
+          WHERE { %CURRENT_SUBJECT% ?qlue_ls_entity ?qui_tmp  }
+          GROUP BY ?qlue_ls_entity }
+        BIND (0 AS ?qui_reversed) }
+        UNION
+        { { SELECT ?qlue_ls_entity (COUNT(?qui_tmp) AS ?count_2)
+          WHERE { ?qui_tmp ?qlue_ls_entity %CURRENT_SUBJECT%  }
+          GROUP BY ?qlue_ls_entity }
+          BIND (1 AS ?qui_reversed) }
+        { %WARMUP_QUERY_5% }
+        {% if search_term %}
+        FILTER REGEX(STR(?qlue_ls_entity), "{{ search_term }}", "i")
+        {% endif %}
+      } GROUP BY ?qlue_ls_entity ?qui_reversed ORDER BY DESC(?qlue_ls_count)
+
+      {% endif %}
+      # IF CONNECTED_TRIPLES_EMPTY AND CURRENT_SUBJECT_VARIABLE #
+
+      SELECT ?qlue_ls_entity (?qlue_ls_entity AS ?qlue_ls_label) (?qlue_ls_entity AS ?qlue_ls_alias) (?count AS ?qlue_ls_count) WHERE {
+        { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE { ?qui_subject ?qlue_ls_entity ?qui_object } GROUP BY ?qlue_ls_entity }
+        {% if search_term %}
+        FILTER REGEX(STR(?qlue_ls_entity), "{{ search_term }}", "i")
+        {% endif %}
+      } ORDER BY DESC(?qlue_ls_count)
+
+      {% endif %}
+
+      # IF !CONNECTED_TRIPLES_EMPTY AND CURRENT_SUBJECT_VARIABLE #
+
+      SELECT ?qlue_ls_entity (?qlue_ls_entity AS ?qlue_ls_label) (?qlue_ls_entity AS ?qlue_ls_alias) (?count AS ?qlue_ls_count) WHERE {
+        { SELECT ?qlue_ls_entity (COUNT(DISTINCT %CURRENT_SUBJECT%) AS ?count)
+          WHERE { %CONNECTED_TRIPLES% %CURRENT_SUBJECT% ?qlue_ls_entity ?qui_object }
+          GROUP BY ?qlue_ls_entity }
+        {% if search_term %}
+        FILTER REGEX(STR(?qlue_ls_entity), "{{ search_term }}", "i")
+        {% endif %}
+      } ORDER BY DESC(?qlue_ls_count)
+
+      {% endif %}
+    objectCompletionContextSensitive: |-
+      {% for prefix in prefixes %}
+      PREFIX {{prefix.0}}: <{{prefix.1}}>
+      {% endfor %}
+      SELECT ?qlue_ls_entity (MIN(?name) AS ?qlue_ls_label) (MIN(?alias) AS ?qlue_ls_alias) (MAX(?count) AS ?qlue_ls_count) WHERE {
+        {
+          { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
+            { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
+              # %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
+              %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity
+            } GROUP BY ?qlue_ls_entity }
+            ?qlue_ls_entity rdfs:label ?name BIND(?name AS ?alias)
+            {% if search_term %}
+            FILTER REGEX(STR(?alias), "^{{ search_term }}")
+            {% endif %}
+          } }
+        } UNION {
+         { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
+            { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
+              # %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
+              %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity
+            } GROUP BY ?qlue_ls_entity }
+            ?qlue_ls_entity up:scientificName ?name BIND(?name AS ?alias)
+            {% if search_term %}
+            FILTER REGEX(STR(?alias), "^{{ search_term }}")
+            {% endif %}
+          } }
+        } UNION {
+          { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
+            { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
+              # %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
+              %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity
+            } GROUP BY ?qlue_ls_entity }
+            BIND(?qlue_ls_entity AS ?name) BIND(?qlue_ls_entity AS ?alias)
+            {% if search_term %}
+            FILTER REGEX(STR(?alias), "^{{ search_term }}")
+            {% endif %}
+          } }
+        }
+      } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
 - backend:
     name: OSM Planet
     slug: osm-planet
@@ -389,11 +765,6 @@
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
       {% if search_term %}
-      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
-      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
-      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-      PREFIX osm: <https://www.openstreetmap.org/>
-      PREFIX osm2rdf: <https://osm2rdf.cs.uni-freiburg.de/rdf#>
       SELECT ?qlue_ls_entity (SAMPLE(?name) AS ?qlue_ls_label) (SAMPLE(?alias) AS ?qlue_ls_alias) (SAMPLE(?count) AS ?qlue_ls_count) WHERE {
         { { SELECT ?qlue_ls_entity ?name ?alias WHERE {
             { ?qlue_ls_entity osmkey:name ?name BIND(?name AS ?alias) FILTER REGEX(STR(?name), "^{{ search_term }}") } UNION
@@ -408,31 +779,28 @@
             WHERE { ?qlue_ls_entity osmrel:member/osm:id/osm2rdf:length ?length } GROUP BY ?qlue_ls_entity } }
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
       {% endif %}
-      LIMIT {{ limit }} OFFSET {{ offset }}
     predicateCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      SELECT ?qlue_ls_entity WHERE {
+      SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?name) as ?qlue_ls_alias) (SAMPLE(?count) as ?qlue_ls_count) WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count)
-          WHERE { {{context}} }
+          WHERE { ?qui_subject ?qlue_ls_entity ?qui_object }
           GROUP BY ?qlue_ls_entity }
         BIND (?qlue_ls_entity AS ?name)
         {% if search_term %}
         FILTER REGEX(STR(?name), "{{ search_term }}", "i")
         {% endif %}
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
-      LIMIT {{ limit }} OFFSET {{ offset }}
     objectCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
       SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?alias) as ?qlue_ls_alias) (SAMPLE(?count) as ?qlue_ls_count) WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
-          {{context}}
+          %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
         } GROUP BY ?qlue_ls_entity }
-        {% if not search_term %}
+        {% if not search_term or search_term == "" %}
         OPTIONAL { ?qlue_ls_entity osmkey:name ?name }
         BIND (?qlue_ls_entity AS ?alias)
         {% else %}
@@ -442,7 +810,79 @@
         FILTER (REGEX(STR(?name), "^{{ search_term }}") || REGEX(STR(?alias), "^{{ search_term }}"))
         {% endif %}
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
-      LIMIT {{ limit }} OFFSET {{ offset }}
+    subjectCompletionContextSensitive: |-
+      {% for prefix in prefixes %}
+      PREFIX {{prefix.0}}: <{{prefix.1}}>
+      {% endfor %}
+      {% if search_term %}
+      SELECT ?qlue_ls_entity (SAMPLE(?name) AS ?qlue_ls_label) (SAMPLE(?alias) AS ?qlue_ls_alias) (SAMPLE(?count) AS ?qlue_ls_count) WHERE {
+        { { SELECT ?qlue_ls_entity ?name ?alias WHERE {
+            { ?qlue_ls_entity osmkey:name ?name BIND(?name AS ?alias) FILTER REGEX(STR(?name), "^{{ search_term }}") } UNION
+            { ?qlue_ls_entity osmkey:name ?name . ?qlue_ls_entity osmkey:name:en ?alias FILTER REGEX(STR(?alias), "^{{ search_term }}") } } }
+          ?qlue_ls_entity rdf:type osm:relation . ?qlue_ls_entity osm2rdf:area ?count }
+          UNION
+          { { SELECT ?qlue_ls_entity ?name ?alias WHERE {
+            { ?qlue_ls_entity osmkey:name ?name BIND(?name AS ?alias) FILTER REGEX(STR(?name), "^{{ search_term }}") } UNION
+            { ?qlue_ls_entity osmkey:name ?name . ?qlue_ls_entity osmkey:name:en ?alias FILTER REGEX(STR(?alias), "^{{ search_term }}") } } }
+          { SELECT ?qlue_ls_entity (10 * SUM(?length) AS ?count)
+            WHERE { ?qlue_ls_entity osmkey:waterway "river" .
+                           ?qlue_ls_entity osmrel:member/osm2rdfmember:id/osm2rdf:length ?length } GROUP BY ?qlue_ls_entity } }
+      } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
+      {% endif %}
+    predicatCompletionContextSensitive: |-
+      {% for prefix in prefixes %}
+      PREFIX {{prefix.0}}: <{{prefix.1}}>
+      {% endfor %}
+      # IF !CURRENT_SUBJECT_VARIABLE #
+      SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?name) as ?qlue_ls_alias) (SAMPLE(?count) as ?qlue_ls_count) ?qui_reversed WHERE {
+        { { SELECT ?qlue_ls_entity (COUNT(?qui_object) AS ?count)
+          WHERE { %CURRENT_SUBJECT% ?qlue_ls_entity ?qui_object  }
+          GROUP BY ?qlue_ls_entity } BIND (0 AS ?qui_reversed) }
+        UNION
+        { { SELECT ?qlue_ls_entity (COUNT(?qui_subject) AS ?count)
+          WHERE { ?qui_subject ?qlue_ls_entity %CURRENT_SUBJECT%  }
+          GROUP BY ?qlue_ls_entity } BIND (1 AS ?qui_reversed) }
+        BIND (?qlue_ls_entity AS ?name)
+        {% if search_term %}
+        FILTER REGEX(STR(?name), "{{ search_term }}", "i")
+        {% endif %}
+      } GROUP BY ?qlue_ls_entity ?qui_reversed ORDER BY DESC(?qlue_ls_count)
+      {% endif %}
+      # IF CURRENT_SUBJECT_VARIABLE #
+      SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?name) as ?qlue_ls_alias) (SAMPLE(?count) as ?qlue_ls_count) WHERE {
+        # IF CONNECTED_TRIPLES_EMPTY #
+        { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count)
+          WHERE { ?qui_subject ?qlue_ls_entity ?qui_object }
+          GROUP BY ?qlue_ls_entity }
+        {% else %}
+        { SELECT ?qlue_ls_entity (COUNT(DISTINCT %CURRENT_SUBJECT%) AS ?count)
+          WHERE { %CONNECTED_TRIPLES% %CURRENT_SUBJECT% ?qlue_ls_entity ?qui_object }
+          GROUP BY ?qlue_ls_entity }
+        {% endif %}
+        BIND (?qlue_ls_entity AS ?name)
+        {% if search_term %}
+        FILTER REGEX(STR(?name), "{{ search_term }}", "i")
+        {% endif %}
+      } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
+      {% endif %}
+    objectCompletionContextSensitive: |-
+      {% for prefix in prefixes %}
+      PREFIX {{prefix.0}}: <{{prefix.1}}>
+      {% endfor %}
+      SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?alias) as ?qlue_ls_alias) (SAMPLE(?count) as ?qlue_ls_count) WHERE {
+        { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
+          %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
+        } GROUP BY ?qlue_ls_entity }
+        {% if not search_term or search_term == "" %}
+        OPTIONAL { ?qlue_ls_entity osmkey:name ?name }
+        BIND (?qlue_ls_entity AS ?alias)
+        {% else %}
+        OPTIONAL { ?qlue_ls_entity osmkey:name ?name }
+        OPTIONAL { ?qlue_ls_entity osmkey:name:en ?optional_alias }
+        BIND (COALESCE(?optional_alias, ?qlue_ls_entity) AS ?alias)
+        FILTER (REGEX(STR(?name), "^{{ search_term }}") || REGEX(STR(?alias), "^{{ search_term }}"))
+        {% endif %}
+      } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
 - backend:
     name: Wikidata
     slug: wikidata
@@ -483,6 +923,7 @@
     imdb: https://www.imdb.com/
     qfn: http://qlever.cs.uni-freiburg.de/function#
     ql: http://qlever.cs.uni-freiburg.de/builtin-functions/
+    qlss: https://qlever.cs.uni-freiburg.de/spatialSearch/
     math: http://www.w3.org/2005/xpath-functions/math#
   default: false
   queries:
@@ -492,10 +933,6 @@
       {% endfor %}
       {% if search_term %}
 
-      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-      PREFIX wikibase: <http://wikiba.se/ontology#>
-      PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-      PREFIX schema: <http://schema.org/>
       SELECT ?qlue_ls_entity (SAMPLE(?name) AS ?qlue_ls_label) (SAMPLE(?alias) AS ?qlue_ls_alias) (SAMPLE(?sitelinks) AS ?qlue_ls_count) WHERE {
         { SELECT ?qlue_ls_entity ?name ?alias WHERE {
             ?qlue_ls_entity @en@rdfs:label ?name .
@@ -503,18 +940,17 @@
             FILTER (REGEX(STR(?name), "^{{ search_term }}") || REGEX(STR(?alias), "^{{ search_term }}")) } }
         ?qlue_ls_entity ^schema:about ?m . ?m wikibase:sitelinks ?sitelinks
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
+
       {% endif %}
-      LIMIT {{ limit }} OFFSET {{ offset }}
     predicateCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
       SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?alias) as ?qlue_ls_alias) (SAMPLE(?count) as ?qlue_ls_count) WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count)
-          WHERE { {{context}} }
+          WHERE { ?qui_subject ?qlue_ls_entity ?qui_object }
           GROUP BY ?qlue_ls_entity }
-        {% if not search_term %}
+        {% if not search_term or search_term == "" %}
         ?qui_tmp_1 ?qui_tmp_2 ?qlue_ls_entity .
         ?qui_tmp_1 @en@rdfs:label ?name .
         BIND (?name AS ?alias)
@@ -525,18 +961,15 @@
         FILTER (REGEX(STR(?name), "{{ search_term }}", "i") || REGEX(STR(?alias), "{{ search_term }}", "i"))
         {% endif %}
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
-      LIMIT {{ limit }} OFFSET {{ offset }}
     objectCompletion: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-      PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
       SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?alias) as ?qlue_ls_alias) (SAMPLE(?count) as ?qlue_ls_count) WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
-          {{context}}
+          %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
         } GROUP BY ?qlue_ls_entity }
-        {% if not search_term %}
+        {% if not search_term or search_term == "" %}
         OPTIONAL { ?qlue_ls_entity @en@rdfs:label ?name }
         BIND (?qlue_ls_entity AS ?alias)
         {% else %}
@@ -546,4 +979,88 @@
         FILTER (REGEX(STR(?name), "^{{ search_term }}") || REGEX(STR(?alias), "^{{ search_term }}"))
         {% endif %}
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
-      LIMIT {{ limit }} OFFSET {{ offset }}
+    subjectCompletionContextSensitive: |-
+      {% for prefix in prefixes %}
+      PREFIX {{prefix.0}}: <{{prefix.1}}>
+      {% endfor %}
+      {% if search_term %}
+
+      SELECT ?qlue_ls_entity (SAMPLE(?name) AS ?qlue_ls_label) (SAMPLE(?alias) AS ?qlue_ls_alias) (SAMPLE(?sitelinks) AS ?qlue_ls_count) WHERE {
+        { SELECT ?qlue_ls_entity ?name ?alias WHERE {
+            ?qlue_ls_entity @en@rdfs:label ?name .
+            ?qlue_ls_entity @en@skos:altLabel ?alias .
+            FILTER (REGEX(STR(?name), "^{{ search_term }}") || REGEX(STR(?alias), "^{{ search_term }}")) } }
+        ?qlue_ls_entity ^schema:about ?m . ?m wikibase:sitelinks ?sitelinks
+      } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
+
+      {% endif %}
+    predicatCompletionContextSensitive: |-
+      {% for prefix in prefixes %}
+      PREFIX {{prefix.0}}: <{{prefix.1}}>
+      {% endfor %}
+      # IF !CURRENT_SUBJECT_VARIABLE #
+
+      SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?alias) as ?qlue_ls_alias) (SAMPLE(?count) as ?qlue_ls_count) ?qui_reversed WHERE {
+        { { SELECT ?qlue_ls_entity (COUNT(?qui_object) AS ?count)
+          WHERE { %CURRENT_SUBJECT% ?qlue_ls_entity ?qui_object  }
+          GROUP BY ?qlue_ls_entity } BIND (0 AS ?qui_reversed) }
+        UNION
+        { { SELECT ?qlue_ls_entity (COUNT(?qui_subject) AS ?count)
+          WHERE { ?qui_subject ?qlue_ls_entity %CURRENT_SUBJECT%  }
+          GROUP BY ?qlue_ls_entity } BIND (1 AS ?qui_reversed) }
+        {% if not search_term or search_term == "" %}
+        ?qui_tmp_1 ?qui_tmp_2 ?qlue_ls_entity .
+        ?qui_tmp_1 @en@rdfs:label ?name .
+        BIND (?name AS ?alias)
+        {% else %}
+        ?qui_tmp_1 ?qui_tmp_2 ?qlue_ls_entity .
+        ?qui_tmp_1 @en@rdfs:label ?name .
+        OPTIONAL { ?qui_tmp_1 @en@skos:altLabel ?alias }
+        FILTER (REGEX(STR(?name), "{{ search_term }}", "i") || REGEX(STR(?alias), "{{ search_term }}", "i"))
+        {% endif %}
+      } GROUP BY ?qlue_ls_entity ?qui_reversed ORDER BY DESC(?qlue_ls_count)
+
+      {% endif %}
+      # IF CURRENT_SUBJECT_VARIABLE #
+
+      SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?alias) as ?qlue_ls_alias) (SAMPLE(?count) as ?qlue_ls_count) WHERE {
+        # IF CONNECTED_TRIPLES_EMPTY #
+        { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count)
+          WHERE { ?qui_subject ?qlue_ls_entity ?qui_object }
+          GROUP BY ?qlue_ls_entity }
+        {% else %}
+        { SELECT ?qlue_ls_entity (COUNT(DISTINCT %CURRENT_SUBJECT%) AS ?count)
+          WHERE { %CONNECTED_TRIPLES% %CURRENT_SUBJECT% ?qlue_ls_entity ?qui_object }
+          GROUP BY ?qlue_ls_entity }
+        {% endif %}
+        {% if not search_term or search_term == "" %}
+        ?qui_tmp_1 ?qui_tmp_2 ?qlue_ls_entity .
+        ?qui_tmp_1 @en@rdfs:label ?name .
+        BIND (?name AS ?alias)
+        {% else %}
+        ?qui_tmp_1 ?qui_tmp_2 ?qlue_ls_entity .
+        ?qui_tmp_1 @en@rdfs:label ?name .
+        OPTIONAL { ?qui_tmp_1 @en@skos:altLabel ?alias }
+        FILTER (REGEX(STR(?name), "{{ search_term }}", "i") || REGEX(STR(?alias), "{{ search_term }}", "i"))
+        {% endif %}
+      } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
+
+      {% endif %}
+    objectCompletionContextSensitive: |-
+      {% for prefix in prefixes %}
+      PREFIX {{prefix.0}}: <{{prefix.1}}>
+      {% endfor %}
+      SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?alias) as ?qlue_ls_alias) (SAMPLE(?count) as ?qlue_ls_count) WHERE {
+        { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
+          %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
+        } GROUP BY ?qlue_ls_entity }
+        {% if not search_term or search_term == "" %}
+        OPTIONAL { ?qlue_ls_entity @en@rdfs:label ?name }
+        BIND (?qlue_ls_entity AS ?alias)
+        {% else %}
+        OPTIONAL { ?qlue_ls_entity @en@rdfs:label ?name }
+        OPTIONAL { ?qlue_ls_entity @en@skos:altLabel ?optional_alias }
+        BIND (COALESCE(?optional_alias, ?qlue_ls_entity) AS ?alias)
+        FILTER (REGEX(STR(?name), "^{{ search_term }}") || REGEX(STR(?alias), "^{{ search_term }}"))
+        {% endif %}
+      } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)

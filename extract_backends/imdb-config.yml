@@ -1,6 +1,5 @@
 config:
   backend:
-    id: '55'
     name: IMDb
     slug: imdb
     sortKey: C.4
@@ -124,13 +123,15 @@ config:
     objectName: ''
     alternativeObjectName: ''
     replacePredicates: ''
-    supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
+    supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,datatype,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
     supportedFunctions: asc, desc, avg, values, score, text, count, sample, min, max, average, concat, group_concat, langMatches, lang, regex, sum, dist, contains, str, strlen, substr, strstarts, strends, strbefore, strafter, contains, year, month, day, rand, abs, ceil, floor, round, log, exp, sqrt, sin, cos, tan, if, coalesce, bound, concat, replace, encode_for_uri, isiri, isblank, isliteral, isNumeric, bound
     supportedPredicateSuggestions: ''
     suggestPrefixnamesForPredicates: 'True'
     fillPrefixes: 'True'
     filterEntities: 'False'
-    suggestedPrefixes: 'PREFIX imdb: <https://www.imdb.com/>'
+    suggestedPrefixes: |-
+      PREFIX imdb: <https://www.imdb.com/>
+      PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     suggestionEntityVariable: ?qleverui_entity
     suggestionNameVariable: ?qleverui_name
     suggestionAltNameVariable: ?qleverui_alias
@@ -267,7 +268,25 @@ config:
         ?movie imdb:numVotes ?votes .
         ?movie imdb:averageRating ?rating .
         SERVICE <https://qlever.cs.uni-freiburg.de/api/wikidata> {
-        SELECT ?imdb_id WHERE { ?film wdt:P31 wd:Q11424 . ?film wdt:P57 wd:Q3772 . ?film wdt:P345 ?imdb_id }
+          SELECT ?imdb_id WHERE { ?film wdt:P31 wd:Q11424 . ?film wdt:P57 wd:Q3772 . ?film wdt:P345 ?imdb_id }
         }
       }
       ORDER BY DESC(?votes)
+  - name: All predicates and their absolute and relative size
+    sort_key: A.1
+    query: |-
+      SELECT ?p ?count ?percent WHERE {
+        { SELECT ?p (COUNT(?p) AS ?count) WHERE { ?s ?p ?o } GROUP BY ?p }
+        BIND(100 * ?count / SUM(?count) AS ?percent)
+      }
+      ORDER BY DESC(?count)
+  - name: All graphs and their size
+    sort_key: '~'
+    query: |-
+      SELECT ?g (COUNT(?g) AS ?count) WHERE {
+        GRAPH ?g {
+          ?s ?p ?o
+        }
+      }
+      GROUP BY ?g
+      ORDER BY DESC(?count)

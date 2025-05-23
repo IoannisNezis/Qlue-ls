@@ -1,6 +1,5 @@
 config:
   backend:
-    id: '15'
     name: DBLP
     slug: dblp
     sortKey: C.1
@@ -77,7 +76,7 @@ config:
     objectName: ''
     alternativeObjectName: ''
     replacePredicates: ''
-    supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
+    supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,datatype,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
     supportedFunctions: asc, desc, avg, values, score, text, count, sample, min, max, average, concat, group_concat, langMatches, lang, regex, sum, dist, contains, str, strlen, substr, strstarts, strends, strbefore, strafter, contains, year, month, day, rand, abs, ceil, floor, round, log, exp, sqrt, sin, cos, tan, if, coalesce, bound, concat, replace, encode_for_uri, isiri, isblank, isliteral, isNumeric, bound
     supportedPredicateSuggestions: ''
     suggestPrefixnamesForPredicates: 'True'
@@ -391,3 +390,13 @@ config:
       SELECT ?paper ?title WHERE {
         ?paper dblp:title ?title .
       }
+  - name: All graphs and their size
+    sort_key: '~'
+    query: |-
+      SELECT ?g (COUNT(?g) AS ?count) WHERE {
+        GRAPH ?g {
+          ?s ?p ?o
+        }
+      }
+      GROUP BY ?g
+      ORDER BY DESC(?count)

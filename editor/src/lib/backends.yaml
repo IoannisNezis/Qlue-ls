@@ -5,7 +5,8 @@
     healthCheckUrl: https://qlever.cs.uni-freiburg.de/api/imdb/ping
   prefixMap:
     imdb: https://www.imdb.com/
-  default: false
+    xsd: http://www.w3.org/2001/XMLSchema#
+  default: true
   queries:
     subjectCompletion: |-
       {% for prefix in prefixes %}
@@ -565,4 +566,3 @@
         FILTER (REGEX(STR(?name), "^{{ search_term }}") || REGEX(STR(?alias), "^{{ search_term }}"))
         {% endif %}
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
-      LIMIT {{ limit }} OFFSET {{ offset }}

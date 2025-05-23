@@ -1,6 +1,5 @@
 config:
   backend:
-    id: '17'
     name: OSM Planet
     slug: osm-planet
     sortKey: B.2
@@ -87,7 +86,7 @@ config:
     objectName: ?qleverui_entity <https://www.openstreetmap.org/wiki/Key:name> ?qleverui_name .
     alternativeObjectName: ''
     replacePredicates: ''
-    supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
+    supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,datatype,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
     supportedFunctions: asc, desc, avg, values, score, text, count, sample, min, max, average, concat, group_concat, langMatches, lang, regex, sum, dist, contains, str, strlen, substr, strstarts, strends, strbefore, strafter, contains, year, month, day, rand, abs, ceil, floor, round, log, exp, sqrt, sin, cos, tan, if, coalesce, bound, concat, replace, encode_for_uri, isiri, isblank, isliteral, isNumeric, bound
     supportedPredicateSuggestions: ''
     suggestPrefixnamesForPredicates: 'False'
@@ -453,17 +452,19 @@ config:
   - name: All streets in X
     sort_key: BB.1
     query: |-
-      PREFIX ogc: <http://www.opengis.net/rdf#>
-      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
-      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
-      PREFIX osm: <https://www.openstreetmap.org/>
-      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
       PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
       SELECT ?osm_id ?shape WHERE {
         osmrel:62768 ogc:sfContains ?osm_id .
-        ?osm_id osmkey:highway ?highway .
-        ?osm_id rdf:type osm:way .
-        ?osm_id geo:hasGeometry/geo:asWKT ?shape
+        {
+          ?osm_id osmkey:highway ?highway .
+          ?osm_id rdf:type osm:way .
+          ?osm_id geo:hasGeometry/geo:asWKT ?shape .
+        }
       }
   - name: All countries with official language Spanish (using SERVICE)
     sort_key: '~'
@@ -840,27 +841,6 @@ config:
         BIND (STRBEFORE(STR(?geometry), "(") AS ?geometry_prefix)
       }
       GROUP BY ?geometry_prefix
-  - name: All streets in Africa
-    sort_key: '~'
-    query: |-
-      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
-      PREFIX osm2rdfkey: <https://osm2rdf.cs.uni-freiburg.de/rdf/key#>
-      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-      PREFIX ogc: <http://www.opengis.net/rdf#>
-      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
-      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
-      PREFIX osm: <https://www.openstreetmap.org/>
-      SELECT ?osm_id ?shape WHERE {
-        ?country osm2rdfkey:wikidata ?country_wikidata .
-        ?country ogc:sfContains ?osm_id .
-        ?osm_id osmkey:highway ?highway .
-        ?osm_id rdf:type osm:way .
-        ?osm_id geo:hasGeometry/geo:asWKT ?shape
-        SERVICE <https://qlever.cs.uni-freiburg.de/api/wikidata> {
-          ?country_wikidata wdt:P30/@en@rdfs:label "Africa"@en
-        }
-      }
   - name: Countries with most neighbors
     sort_key: '~'
     query: |-
@@ -966,24 +946,24 @@ config:
     sort_key: '~'
     query: |-
       PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
       PREFIX osm: <https://www.openstreetmap.org/>
       PREFIX ogc: <http://www.opengis.net/rdf#>
-      PREFIX wd: <http://www.wikidata.org/entity/>
       PREFIX wdt: <http://www.wikidata.org/prop/direct/>
-      PREFIX p: <http://www.wikidata.org/prop/>
-      PREFIX ps: <http://www.wikidata.org/prop/statement/>
-      PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
       PREFIX geo: <http://www.opengis.net/ont/geosparql#>
-      PREFIX osm2rdf: <https://osm2rdf.cs.uni-freiburg.de/rdf#>
       PREFIX osm2rdfkey: <https://osm2rdf.cs.uni-freiburg.de/rdf/key#>
-      SELECT ?street ?geometry WHERE {
-        ?country_osm osm2rdfkey:wikidata ?country_wd .
-        ?country_osm ogc:sfContains ?street .
-        ?street osmkey:highway ?any .
-        ?street geo:hasGeometry/geo:asWKT ?geometry .
+      SELECT ?osm_id ?shape WHERE {
+        ?country osm2rdfkey:wikidata ?country_wikidata .
+        ?country osmkey:admin_level 2 .
+        ?country ogc:sfContains ?osm_id .
+        {
+          ?osm_id osmkey:highway ?highway .
+          ?osm_id rdf:type osm:way .
+          ?osm_id geo:hasGeometry/geo:asWKT ?shape
+        }
         SERVICE <https://qlever.cs.uni-freiburg.de/api/wikidata> {
-          ?country_wd wdt:P31 wd:Q6256 .
-        ?country_wd wdt:P30 wd:Q15 .
+          ?country_wikidata wdt:P30/rdfs:label "Africa"@en
         }
       }
   - name: 'Predicates with their absolute and relative size [ogc: only]'
@@ -1107,6 +1087,196 @@ config:
           {
             ?subject osmkey:amenity "post_box" .
             ?subject geo:hasGeometry/geo:asWKT ?qlss_right .
+          }
+        }
+      }
+  - name: Buildings near a railway line in region X
+    sort_key: '~'
+    query: |-
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX osmnode: <https://www.openstreetmap.org/node/>
+      PREFIX osmway: <https://www.openstreetmap.org/way/>
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX qlss: <https://qlever.cs.uni-freiburg.de/spatialSearch/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX osm: <https://www.openstreetmap.org/>
+      SELECT DISTINCT ?building ?building_geometry WHERE {
+        {
+          osmrel:62611 ogc:sfContains ?rail .
+          ?rail osmkey:railway "rail" .
+          ?rail geo:hasGeometry/geo:asWKT ?rail_geometry
+        }
+        SERVICE qlss: {
+          _:config qlss:algorithm <libspatialjoin> ;
+                   qlss:left ?rail_geometry ;
+                   qlss:right ?building_geometry ;
+                   qlss:payload ?building ;
+                   qlss:maxDistance 250 ;
+                   qlss:bindDistance ?distance ;
+                   qlss:joinType <within-dist> .
+          {
+            {
+              osmrel:62611 ogc:sfContains ?building .
+              ?building osmkey:building ?building_type .
+              ?building geo:hasGeometry/geo:asWKT ?building_geometry .
+            }
+          }
+        }
+      }
+  - name: All buildings near a lake in region X
+    sort_key: '~'
+    query: |-
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX qlss: <https://qlever.cs.uni-freiburg.de/spatialSearch/>
+      SELECT DISTINCT ?building ?building_geometry WHERE {
+        {
+          ?lake osmkey:water "lake" .
+          ?lake geo:hasCentroid/geo:asWKT ?lake_centroid .
+          ?lake geo:hasGeometry/geo:asWKT ?lake_geometry .
+        }
+        SERVICE qlss: {
+          _:config qlss:algorithm <libspatialjoin> ;
+                   qlss:left ?lake_centroid ;
+                   qlss:right ?building_centroid ;
+                   qlss:payload ?building, ?building_geometry ;
+                   qlss:maxDistance 100 ;
+                   qlss:bindDistance ?distance ;
+                   qlss:joinType <within-dist> .
+          {
+            {
+              osmrel:1686344 ogc:sfContains ?building .
+              ?building osmkey:building ?building_type .
+              ?building geo:hasGeometry/geo:asWKT ?building_centroid .
+              ?building geo:hasGeometry/geo:asWKT ?building_geometry .
+            }
+          }
+        }
+      }
+  - name: All buildings near a lake in Germany
+    sort_key: '~'
+    query: |-
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX qlss: <https://qlever.cs.uni-freiburg.de/spatialSearch/>
+      SELECT DISTINCT ?building ?building_geometry WHERE {
+        {
+          osmrel:51477 ogc:sfIntersects ?lake .
+        ?lake osmkey:water "lake" .
+          ?lake geo:hasGeometry/geo:asWKT ?lake_geometry
+        }
+        SERVICE qlss: {
+          _:config qlss:algorithm <libspatialjoin> ;
+                   qlss:left ?lake_geometry ;
+                   qlss:right ?building_centroid ;
+                   qlss:payload ?building, ?building_geometry ;
+                   qlss:maxDistance 500 ;
+                   qlss:bindDistance ?distance ;
+                   qlss:joinType <within-dist> .
+          {
+            {
+              osmrel:51477 ogc:sfContains ?building .
+              ?building osmkey:building ?building_type .
+              ?building geo:hasCentroid/geo:asWKT ?building_centroid .
+              ?building geo:hasGeometry/geo:asWKT ?building_geometry .
+            }
+          }
+        }
+      }
+  - name: Fast-food restaurants along the E 35
+    sort_key: '~'
+    query: |-
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX qlss: <https://qlever.cs.uni-freiburg.de/spatialSearch/>
+      SELECT DISTINCT ?amenity ?amenity_name ?amenity_location WHERE {
+        {
+          ?highway osmkey:highway "motorway" .
+          ?highway osmkey:int_ref "E 35" .
+          ?highway geo:hasGeometry/geo:asWKT ?highway_geometry .
+        }
+        SERVICE qlss: {
+          _:config qlss:algorithm <libspatialjoin> ;
+                   qlss:left ?highway_geometry ;
+                   qlss:right ?amenity_location ;
+                   qlss:payload ?amenity, ?amenity_name, ?amenity_location ;
+                   qlss:maxDistance 1000 ;
+                   qlss:joinType <within-dist> .
+          {
+            {
+              ?amenity osmkey:amenity "fast_food" .
+              ?amenity geo:hasCentroid/geo:asWKT ?amenity_location .
+              ?amenity osmkey:name ?amenity_name .
+            }
+          }
+        }
+      }
+  - name: All buildings in a star around Freiburg
+    sort_key: '~'
+    query: |-
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX qlss: <https://qlever.cs.uni-freiburg.de/spatialSearch/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      SELECT ?building ?geometry WHERE {
+        {
+          SELECT ?building ?geometry WHERE {
+            {
+              VALUES ?star { "POLYGON ((9.184578963305599 47.999, 8.385144147952545 48.264788183611195, 8.256948814252292 48.85910862978201, 7.6346755928738546 48.429054314891005, 6.7560117040949095 48.53057636722238, 7.170860518347201 47.999, 6.7560117040949095 47.467423632777624, 7.6346755928738546 47.568945685109, 8.256948814252292 47.138891370218, 8.385144147952545 47.73321181638881, 9.184578963305599 47.999))"^^geo:wktLiteral }
+            }
+            SERVICE qlss: {
+              _:config qlss:algorithm <libspatialjoin> ;
+                       qlss:left ?star ;
+                       qlss:right ?centroid ;
+                       qlss:payload ?building ;
+                       qlss:joinType <contains> .
+              {
+                {
+                  VALUES ?region { osmrel:51477 osmrel:51701 osmrel:2202162 }
+                  ?region ogc:sfContains ?building .
+                  ?building osmkey:building [] .
+                  ?building geo:hasCentroid/geo:asWKT ?centroid .
+                }
+              }
+            }
+          }
+        }
+        ?building geo:hasGeometry/geo:asWKT ?geometry .
+      }
+  - name: All streets in X [using libspatialjoin]
+    sort_key: '~'
+    query: |-
+      PREFIX ogc: <http://www.opengis.net/rdf#>
+      PREFIX osm2rdfgeom: <https://osm2rdf.cs.uni-freiburg.de/rdf/geom#>
+      PREFIX osmrel: <https://www.openstreetmap.org/relation/>
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      PREFIX qlss: <https://qlever.cs.uni-freiburg.de/spatialSearch/>
+      SELECT ?highway ?highway_geometry WHERE {
+        {
+          osmrel:62768 geo:hasGeometry/geo:asWKT ?region_geometry .
+        }
+        SERVICE qlss: {
+          _:config qlss:algorithm <libspatialjoin> ;
+                   qlss:left ?region_geometry ;
+                   qlss:right ?highway_geometry ;
+                   qlss:payload ?highway ;
+                   qlss:joinType <contains> .
+          {
+            {
+              osmrel:62768 ogc:sfIntersects ?highway .
+              ?highway osmkey:highway [] .
+              ?highway geo:hasGeometry/geo:asWKT ?highway_geometry .
+            }
           }
         }
       }

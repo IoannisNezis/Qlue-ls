@@ -1,5 +1,4 @@
-- id: '55'
-  name: IMDb
+- name: IMDb
   slug: imdb
   sortKey: C.4
   baseUrl: https://qlever.cs.uni-freiburg.de/api/imdb
@@ -14,14 +13,18 @@
   suggestSubjects: |-
     %PREFIXES%
     # IF CURRENT_WORD_EMPTY #
+
     %WARMUP_QUERY_1%
+
     # ELSE #
+
     SELECT ?qleverui_entity (SAMPLE(?name) AS ?qleverui_name) (SAMPLE(?alias) AS ?qleverui_alias) (SAMPLE(?count) AS ?qleverui_count) WHERE {
       { %WARMUP_QUERY_2% }
       # IF !CURRENT_WORD_EMPTY #
       FILTER (REGEX(?alias, "^\"%CURRENT_WORD%") || REGEX(?alias, "^<%CURRENT_WORD%"))
       # ENDIF #
     } GROUP BY ?qleverui_entity ORDER BY DESC(?qleverui_count)
+
     # ENDIF #
   suggestPredicates: |-
     %PREFIXES%
@@ -118,13 +121,15 @@
   objectName: ''
   alternativeObjectName: ''
   replacePredicates: ''
-  supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
+  supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,datatype,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
   supportedFunctions: asc, desc, avg, values, score, text, count, sample, min, max, average, concat, group_concat, langMatches, lang, regex, sum, dist, contains, str, strlen, substr, strstarts, strends, strbefore, strafter, contains, year, month, day, rand, abs, ceil, floor, round, log, exp, sqrt, sin, cos, tan, if, coalesce, bound, concat, replace, encode_for_uri, isiri, isblank, isliteral, isNumeric, bound
   supportedPredicateSuggestions: ''
   suggestPrefixnamesForPredicates: 'True'
   fillPrefixes: 'True'
   filterEntities: 'False'
-  suggestedPrefixes: 'PREFIX imdb: <https://www.imdb.com/>'
+  suggestedPrefixes: |-
+    PREFIX imdb: <https://www.imdb.com/>
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
   suggestionEntityVariable: ?qleverui_entity
   suggestionNameVariable: ?qleverui_name
   suggestionAltNameVariable: ?qleverui_alias
@@ -179,12 +184,10 @@
     %PREFIXES%
     # IF CURRENT_WORD_EMPTY #
 
-    PREFIX imdb: <https://www.imdb.com/>
     %WARMUP_QUERY_1%
 
     # ELSE #
 
-    PREFIX imdb: <https://www.imdb.com/>
     SELECT ?qleverui_entity (SAMPLE(?name) AS ?qleverui_name) (SAMPLE(?alias) AS ?qleverui_alias) (SAMPLE(?count) AS ?qleverui_count) WHERE {
       { %WARMUP_QUERY_2% }
       # IF !CURRENT_WORD_EMPTY #
@@ -195,22 +198,34 @@
     # ENDIF #
   suggestPredicatesContextInsensitive: |-
     %PREFIXES%
-    SELECT ?qlue_ls_entity WHERE {
-      {{context}}
-    }
-    GROUP BY ?qlue_ls_entity 
 
+    SELECT ?qleverui_entity
+                  (MIN(?name) as ?qleverui_name)
+                  (MIN(?alias) as ?qleverui_alias)
+                  (SAMPLE(?count_1) as ?qleverui_count) WHERE {
+      { %WARMUP_QUERY_4% }
+      # IF !CURRENT_WORD_EMPTY #
+      FILTER REGEX(?alias, "%CURRENT_WORD%", "i")
+      # ENDIF #
+    } GROUP BY ?qleverui_entity ORDER BY DESC(?qleverui_count)
   suggestObjectsContextInsensitive: |-
     %PREFIXES%
+    # IF CURRENT_WORD_EMPTY #
+
+    %WARMUP_QUERY_1%
+
+    # ELSE #
+
     SELECT ?qleverui_entity (SAMPLE(?name) AS ?qleverui_name) (SAMPLE(?alias) AS ?qleverui_alias) (SAMPLE(?count) AS ?qleverui_count) WHERE {
-      {{context}}
+      { %WARMUP_QUERY_2% }
       # IF !CURRENT_WORD_EMPTY #
       FILTER (REGEX(?alias, "^\"%CURRENT_WORD%") || REGEX(?alias, "^<%CURRENT_WORD%"))
       # ENDIF #
     } GROUP BY ?qleverui_entity ORDER BY DESC(?qleverui_count)
+
+    # ENDIF #
   mapViewBaseURL: ''
-- id: '15'
-  name: DBLP
+- name: DBLP
   slug: dblp
   sortKey: C.1
   baseUrl: https://qlever.cs.uni-freiburg.de/api/dblp
@@ -286,7 +301,7 @@
   objectName: ''
   alternativeObjectName: ''
   replacePredicates: ''
-  supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
+  supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,datatype,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
   supportedFunctions: asc, desc, avg, values, score, text, count, sample, min, max, average, concat, group_concat, langMatches, lang, regex, sum, dist, contains, str, strlen, substr, strstarts, strends, strbefore, strafter, contains, year, month, day, rand, abs, ceil, floor, round, log, exp, sqrt, sin, cos, tan, if, coalesce, bound, concat, replace, encode_for_uri, isiri, isblank, isliteral, isNumeric, bound
   supportedPredicateSuggestions: ''
   suggestPrefixnamesForPredicates: 'True'
@@ -357,8 +372,6 @@
       } } }
   suggestSubjectsContextInsensitive: |-
     %PREFIXES%
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-    PREFIX dblp: <https://dblp.org/rdf/schema#>
     SELECT ?qui_entity (?qui_alias AS ?qui_name) ?qui_alias ?qui_count WHERE {
       { SELECT ?qui_entity ?qui_alias ?qui_count WHERE {
         { { SELECT ?qui_entity (COUNT(?paper) AS ?qui_count) WHERE { ?paper dblp:publishedIn ?qui_entity } GROUP BY ?qui_entity } BIND(?qui_entity AS ?qui_alias) } UNION
@@ -369,9 +382,9 @@
     } ORDER BY DESC(?qui_count)
   suggestPredicatesContextInsensitive: |-
     %PREFIXES%
-    SELECT ?qui_entity WHERE {
+    SELECT ?qui_entity ?qui_name ?qui_alias ?qui_count WHERE {
       { SELECT ?qui_entity (COUNT(?qui_entity) AS ?qui_count)
-        WHERE { {{context}} }
+        WHERE { ?qui_subject ?qui_entity ?qui_object }
         GROUP BY ?qui_entity } BIND (0 AS ?qui_reversed)
       BIND (?qui_entity AS ?qui_name)
       # IF !CURRENT_WORD_EMPTY #
@@ -380,20 +393,26 @@
     } ORDER BY DESC(?qui_count)
   suggestObjectsContextInsensitive: |-
     %PREFIXES%
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    # IF CURRENT_WORD_EMPTY #
     SELECT ?qui_entity ?qui_name ?qui_alias ?qui_count WHERE {
       { SELECT ?qui_entity (COUNT(?qui_entity) AS ?qui_count) WHERE {
-        {{context}} .
+        %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity .
+      } GROUP BY ?qui_entity }
+      OPTIONAL { ?qui_entity rdfs:label ?qui_alias }
+      BIND (COALESCE(?qui_alias, ?qui_entity) AS ?qui_name)
+    } ORDER BY DESC(?qui_count)
+    # ELSE #
+    SELECT ?qui_entity ?qui_name ?qui_alias ?qui_count WHERE {
+      { SELECT ?qui_entity (COUNT(?qui_entity) AS ?qui_count) WHERE {
+        %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity .
       } GROUP BY ?qui_entity }
       OPTIONAL { ?qui_entity rdfs:label ?qui_alias }
       BIND (?qui_entity AS ?qui_name)
-    # IF CURRENT_WORD_EMPTY #
       FILTER (REGEX(STR(?qui_name), "^%CURRENT_WORD%") || REGEX(STR(?qui_alias), "^%CURRENT_WORD%"))
-    # ENDIF #
     } ORDER BY DESC(?qui_count)
+    # ENDIF #
   mapViewBaseURL: ''
-- id: '31'
-  name: PubChem
+- name: PubChem
   slug: pubchem
   sortKey: B.5
   baseUrl: https://qlever.cs.uni-freiburg.de/api/pubchem
@@ -479,7 +498,7 @@
   objectName: ?qleverui_entity <http://www.w3.org/2000/01/rdf-schema#label> ?qleverui_name .
   alternativeObjectName: ''
   replacePredicates: ''
-  supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
+  supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,datatype,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
   supportedFunctions: asc, desc, avg, values, score, text, count, sample, min, max, average, concat, group_concat, langMatches, lang, regex, sum, dist, contains, str, strlen, substr, strstarts, strends, strbefore, strafter, contains, year, month, day, rand, abs, ceil, floor, round, log, exp, sqrt, sin, cos, tan, if, coalesce, bound, concat, replace, encode_for_uri, isiri, isblank, isliteral, isNumeric, bound, from, named, graph
   supportedPredicateSuggestions: ''
   suggestPrefixnamesForPredicates: 'True'
@@ -595,51 +614,44 @@
     }
   suggestSubjectsContextInsensitive: |-
     %PREFIXES%
+    # IF !CURRENT_WORD_EMPTY #
 
-    PREFIX obo: <http://purl.obolibrary.org/obo/>
-    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-    SELECT ?qui_entity ?qui_name (?qlue_ls_entity as ?qlue_ls_detail) WHERE {
+    SELECT ?qui_entity ?qui_name ?qui_alias WHERE {
       ?qui_entity rdf:type [ obo:IAO_0000412 obo:chebi.owl; rdfs:label ?qui_name ]
       BIND (?qui_name AS ?qui_alias)
-    # IF !CURRENT_WORD_EMPTY #
       FILTER REGEX(STR(?qui_name), "^%CURRENT_WORD%")
-    # ENDIF #
     } ORDER BY ASC(?qui_name)
 
+    # ENDIF #
   suggestPredicatesContextInsensitive: |-
     %PREFIXES%
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-    SELECT ?qui_entity ?qui_name WHERE {
+    SELECT ?qui_entity ?qui_name ?qui_alias ?qui_count WHERE {
       { SELECT ?qui_entity (COUNT(?qui_entity) AS ?qui_count)
-        WHERE { {{context}} }
+        WHERE { ?qui_subject ?qui_entity ?qui_object }
         GROUP BY ?qui_entity }
       OPTIONAL { ?qui_entity rdfs:label ?qui_name_or_null }
       BIND (IF(?qui_name_or_null, ?qui_name_or_null, ?qui_entity) AS ?qui_name)
+      BIND (?qui_name AS ?qui_alias)
       # IF !CURRENT_WORD_EMPTY #
       FILTER REGEX(STR(?qui_alias), "%CURRENT_WORD%", "i")
       # ENDIF #
     } ORDER BY DESC(?qui_count)
   suggestObjectsContextInsensitive: |-
     %PREFIXES%
-    PREFIX obo: <http://purl.obolibrary.org/obo/>
-    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
     SELECT ?qui_entity ?qui_name ?qui_alias ?qui_count WHERE {
       { SELECT ?qui_entity (COUNT(?qui_entity) AS ?qui_count) WHERE {
-        {{context}}
+        %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity .
       } GROUP BY ?qui_entity }
       OPTIONAL { ?qui_entity rdf:type [ obo:IAO_0000412 obo:chebi.owl; rdfs:label ?qui_name_or_null ] }
       OPTIONAL { ?qui_entity rdfs:label ?qui_name_or_null }
-      BIND (COALESCE(?qui_name_or_null, ?qui_entity) AS ?qui_name)
+      BIND (IF(?qui_name_or_null, ?qui_name_or_null, ?qui_entity) AS ?qui_name)
       BIND (?qui_name AS ?qui_alias)
       # IF !CURRENT_WORD_EMPTY #
       FILTER REGEX(STR(?qui_name), "^%CURRENT_WORD%")
       # ENDIF #
     } ORDER BY DESC(?qui_count)
   mapViewBaseURL: ''
-- id: '32'
-  name: UniProt
+- name: UniProt
   slug: uniprot
   sortKey: B.4
   baseUrl: https://qlever.cs.uni-freiburg.de/api/uniprot
@@ -754,7 +766,7 @@
   objectName: ?qleverui_entity up:scientificName ?qleverui_name
   alternativeObjectName: ''
   replacePredicates: ''
-  supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
+  supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,datatype,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
   supportedFunctions: asc, desc, avg, values, score, text, count, sample, min, max, average, concat, group_concat, langMatches, lang, regex, sum, dist, contains, str, strlen, substr, strstarts, strends, strbefore, strafter, contains, year, month, day, rand, abs, ceil, floor, round, log, exp, sqrt, sin, cos, tan, if, coalesce, bound, concat, replace, encode_for_uri, isiri, isblank, isliteral, isNumeric, bound
   supportedPredicateSuggestions: ''
   suggestPrefixnamesForPredicates: 'True'
@@ -851,37 +863,34 @@
     }
   suggestSubjectsContextInsensitive: |-
     %PREFIXES%
+    # IF CURRENT_WORD_EMPTY #
 
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-    PREFIX up: <http://purl.uniprot.org/core/>
-    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    SELECT ?qlue_ls_entity (SAMPLE(?label) as ?qlue_ls_label) WHERE {
-      ?qlue_ls_entity rdf:type up:Protein ; rdfs:label ?label .
+    # ELSE #
+
+    SELECT ?qleverui_entity (SAMPLE(?name) AS ?qleverui_name) (SAMPLE(?alias) AS ?qleverui_alias) (SAMPLE(?count) AS ?qleverui_count) WHERE {
+      { %WARMUP_QUERY_2% }
       # IF !CURRENT_WORD_EMPTY #
-      FILTER REGEX(?label, "^%CURRENT_WORD%")
+      FILTER REGEX(STR(?alias), "^%CURRENT_WORD%")
       # ENDIF #
-    }
-    GROUP BY ?qlue_ls_entity
-    ORDER BY DESC(COUNT(?qlue_ls_entity))
+    } GROUP BY ?qleverui_entity ORDER BY DESC(?qleverui_count)
+
+    # ENDIF #
   suggestPredicatesContextInsensitive: |-
     %PREFIXES%
 
-    SELECT ?qui_entity  WHERE {
-      { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count) WHERE
-        { {{context}} }
-        GROUP BY ?qui_entity }
+    SELECT ?qui_entity (?qui_entity AS ?qui_name) (?qui_entity AS ?qui_alias) (?count AS ?qui_count) WHERE {
+      { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count) WHERE { ?qui_subject ?qui_entity ?qui_object } GROUP BY ?qui_entity }
       # IF !CURRENT_WORD_EMPTY #
       FILTER REGEX(STR(?qui_entity), "%CURRENT_WORD%", "i")
       # ENDIF #
     } ORDER BY DESC(?qleverui_count)
   suggestObjectsContextInsensitive: |-
     %PREFIXES%
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
     SELECT ?qui_entity (MIN(?name) AS ?qui_name) (MIN(?alias) AS ?qui_alias) (MAX(?count) AS ?qui_count) WHERE {
       {
         { SELECT ?qui_entity ?name ?alias ?count WHERE {
           { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count) WHERE {
-            {{context}}
+            %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity
           } GROUP BY ?qui_entity }
           ?qui_entity rdfs:label ?name BIND(?name AS ?alias)
           # IF !CURRENT_WORD_EMPTY #
@@ -891,7 +900,7 @@
       } UNION {
        { SELECT ?qui_entity ?name ?alias ?count WHERE {
           { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count) WHERE {
-            {{context}}
+            %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity
           } GROUP BY ?qui_entity }
           ?qui_entity up:scientificName ?name BIND(?name AS ?alias)
           # IF !CURRENT_WORD_EMPTY #
@@ -901,7 +910,7 @@
       } UNION {
         { SELECT ?qui_entity ?name ?alias ?count WHERE {
           { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count) WHERE {
-            {{context}}
+            %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity
           } GROUP BY ?qui_entity }
           BIND(?qui_entity AS ?name) BIND(?qui_entity AS ?alias)
           # IF !CURRENT_WORD_EMPTY #
@@ -911,8 +920,7 @@
       }
     } GROUP BY ?qui_entity ORDER BY DESC(?qui_count)
   mapViewBaseURL: ''
-- id: '17'
-  name: OSM Planet
+- name: OSM Planet
   slug: osm-planet
   sortKey: B.2
   baseUrl: https://qlever.cs.uni-freiburg.de/api/osm-planet
@@ -998,7 +1006,7 @@
   objectName: ?qleverui_entity <https://www.openstreetmap.org/wiki/Key:name> ?qleverui_name .
   alternativeObjectName: ''
   replacePredicates: ''
-  supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
+  supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,datatype,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
   supportedFunctions: asc, desc, avg, values, score, text, count, sample, min, max, average, concat, group_concat, langMatches, lang, regex, sum, dist, contains, str, strlen, substr, strstarts, strends, strbefore, strafter, contains, year, month, day, rand, abs, ceil, floor, round, log, exp, sqrt, sin, cos, tan, if, coalesce, bound, concat, replace, encode_for_uri, isiri, isblank, isliteral, isNumeric, bound
   supportedPredicateSuggestions: ''
   suggestPrefixnamesForPredicates: 'False'
@@ -1076,11 +1084,6 @@
   suggestSubjectsContextInsensitive: |-
     %PREFIXES%
     # IF !CURRENT_WORD_EMPTY #
-    PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
-    PREFIX osmrel: <https://www.openstreetmap.org/relation/>
-    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    PREFIX osm: <https://www.openstreetmap.org/>
-    PREFIX osm2rdf: <https://osm2rdf.cs.uni-freiburg.de/rdf#>
     SELECT ?qui_entity (SAMPLE(?name) AS ?qui_name) (SAMPLE(?alias) AS ?qui_alias) (SAMPLE(?count) AS ?qui_count) WHERE {
       { { SELECT ?qui_entity ?name ?alias WHERE {
           { ?qui_entity osmkey:name ?name BIND(?name AS ?alias) FILTER REGEX(STR(?name), "^%CURRENT_WORD%") } UNION
@@ -1097,9 +1100,9 @@
     # ENDIF #
   suggestPredicatesContextInsensitive: |-
     %PREFIXES%
-    SELECT ?qui_entity WHERE {
+    SELECT ?qui_entity (SAMPLE(?name) as ?qui_name) (SAMPLE(?name) as ?qui_alias) (SAMPLE(?count) as ?qui_count) WHERE {
       { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count)
-        WHERE { {{context}} }
+        WHERE { ?qui_subject ?qui_entity ?qui_object }
         GROUP BY ?qui_entity }
       BIND (?qui_entity AS ?name)
       # IF !CURRENT_WORD_EMPTY #
@@ -1108,10 +1111,9 @@
     } GROUP BY ?qui_entity ORDER BY DESC(?qui_count)
   suggestObjectsContextInsensitive: |-
     %PREFIXES%
-    PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
     SELECT ?qui_entity (SAMPLE(?name) as ?qui_name) (SAMPLE(?alias) as ?qui_alias) (SAMPLE(?count) as ?qui_count) WHERE {
       { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count) WHERE {
-        {{context}}
+        %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity .
       } GROUP BY ?qui_entity }
       # IF CURRENT_WORD_EMPTY #
       OPTIONAL { ?qui_entity osmkey:name ?name }
@@ -1124,8 +1126,7 @@
       # ENDIF #
     } GROUP BY ?qui_entity ORDER BY DESC(?qui_count)
   mapViewBaseURL: https://qlever.cs.uni-freiburg.de/petrimaps
-- id: '8'
-  name: Wikidata
+- name: Wikidata
   slug: wikidata
   sortKey: A.1
   baseUrl: https://qlever.cs.uni-freiburg.de/api/wikidata
@@ -1242,7 +1243,7 @@
     <http://www.w3.org/2000/01/rdf-schema#label> @en@<http://www.w3.org/2000/01/rdf-schema#label>
     <http://schema.org/name> @en@<http://schema.org/name>
     <http://wikiba.se/ontology#label> @en@<http://wikiba.se/ontology#label>
-  supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
+  supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,datatype,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
   supportedFunctions: asc, desc, avg, values, score, text, count, sample, min, max, average, concat, group_concat, langMatches, lang, regex, sum, dist, contains, str, strlen, substr, strstarts, strends, strbefore, strafter, contains, year, month, day, rand, abs, ceil, floor, round, log, exp, sqrt, sin, cos, tan, if, coalesce, bound, concat, replace, encode_for_uri, isiri, isblank, isliteral, isNumeric, bound, uri, iri, lcase, ucase, exists
   supportedPredicateSuggestions: ''
   suggestPrefixnamesForPredicates: 'False'
@@ -1283,6 +1284,7 @@
     @prefix imdb: <https://www.imdb.com/> .
     @prefix qfn: <http://qlever.cs.uni-freiburg.de/function#> .
     @prefix ql: <http://qlever.cs.uni-freiburg.de/builtin-functions/> .
+    @prefix qlss: <https://qlever.cs.uni-freiburg.de/spatialSearch/> .
     @prefix math: <http://www.w3.org/2005/xpath-functions/math#> .
   suggestionEntityVariable: ?qui_entity
   suggestionNameVariable: ?qui_name
@@ -1336,10 +1338,6 @@
     %PREFIXES%
     # IF !CURRENT_WORD_EMPTY #
 
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-    PREFIX wikibase: <http://wikiba.se/ontology#>
-    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-    PREFIX schema: <http://schema.org/>
     SELECT ?qui_entity (SAMPLE(?name) AS ?qui_name) (SAMPLE(?alias) AS ?qui_alias) (SAMPLE(?sitelinks) AS ?qui_count) WHERE {
       { SELECT ?qui_entity ?name ?alias WHERE {
           ?qui_entity @en@rdfs:label ?name .
@@ -1347,13 +1345,13 @@
           FILTER (REGEX(STR(?name), "^%CURRENT_WORD%") || REGEX(STR(?alias), "^%CURRENT_WORD%")) } }
       ?qui_entity ^schema:about ?m . ?m wikibase:sitelinks ?sitelinks
     } GROUP BY ?qui_entity ORDER BY DESC(?qui_count)
+
     # ENDIF #
   suggestPredicatesContextInsensitive: |-
     %PREFIXES%
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
     SELECT ?qui_entity (SAMPLE(?name) as ?qui_name) (SAMPLE(?alias) as ?qui_alias) (SAMPLE(?count) as ?qui_count) WHERE {
       { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count)
-        WHERE { {{context}} }
+        WHERE { ?qui_subject ?qui_entity ?qui_object }
         GROUP BY ?qui_entity }
       # IF CURRENT_WORD_EMPTY #
       ?qui_tmp_1 ?qui_tmp_2 ?qui_entity .
@@ -1368,11 +1366,9 @@
     } GROUP BY ?qui_entity ORDER BY DESC(?qui_count)
   suggestObjectsContextInsensitive: |-
     %PREFIXES%
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
     SELECT ?qui_entity (SAMPLE(?name) as ?qui_name) (SAMPLE(?alias) as ?qui_alias) (SAMPLE(?count) as ?qui_count) WHERE {
       { SELECT ?qui_entity (COUNT(?qui_entity) AS ?count) WHERE {
-        {{context}}
+        %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qui_entity .
       } GROUP BY ?qui_entity }
       # IF CURRENT_WORD_EMPTY #
       OPTIONAL { ?qui_entity @en@rdfs:label ?name }

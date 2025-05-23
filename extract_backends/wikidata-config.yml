@@ -1,6 +1,5 @@
 config:
   backend:
-    id: '8'
     name: Wikidata
     slug: wikidata
     sortKey: A.1
@@ -118,7 +117,7 @@ config:
       <http://www.w3.org/2000/01/rdf-schema#label> @en@<http://www.w3.org/2000/01/rdf-schema#label>
       <http://schema.org/name> @en@<http://schema.org/name>
       <http://wikiba.se/ontology#label> @en@<http://wikiba.se/ontology#label>
-    supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
+    supportedKeywords: as,ask,base,bind,by,construct,contains-entity,contains-word,data,datatype,delete,describe,distinct,filter,from,graph,group,has-predicate,having,insert,internal,keywords,limit,minus,named,not,offset,optional,optional,order,prefix,select,service,sort,textlimit,union,using,values,where,with
     supportedFunctions: asc, desc, avg, values, score, text, count, sample, min, max, average, concat, group_concat, langMatches, lang, regex, sum, dist, contains, str, strlen, substr, strstarts, strends, strbefore, strafter, contains, year, month, day, rand, abs, ceil, floor, round, log, exp, sqrt, sin, cos, tan, if, coalesce, bound, concat, replace, encode_for_uri, isiri, isblank, isliteral, isNumeric, bound, uri, iri, lcase, ucase, exists
     supportedPredicateSuggestions: ''
     suggestPrefixnamesForPredicates: 'False'
@@ -159,6 +158,7 @@ config:
       @prefix imdb: <https://www.imdb.com/> .
       @prefix qfn: <http://qlever.cs.uni-freiburg.de/function#> .
       @prefix ql: <http://qlever.cs.uni-freiburg.de/builtin-functions/> .
+      @prefix qlss: <https://qlever.cs.uni-freiburg.de/spatialSearch/> .
       @prefix math: <http://www.w3.org/2005/xpath-functions/math#> .
     suggestionEntityVariable: ?qui_entity
     suggestionNameVariable: ?qui_name
@@ -1319,7 +1319,7 @@ config:
       }
       ORDER BY DESC(?date)
       LIMIT 1
-  - name: English monarchs
+  - name: British monarchs
     sort_key: '~'
     query: |-
       PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
@@ -1378,7 +1378,7 @@ config:
       SELECT ?person ?label ?sitelinks WHERE {
         ?person wdt:P31 wd:Q5 .
         ?person ^schema:about/wikibase:sitelinks ?sitelinks .
-        ?person @en@rdfs:label ?label .
+        ?person rdfs:label ?label FILTER (LANG(?label) = "en")
         FILTER NOT EXISTS {
           ?person wdt:P569 []
         }
@@ -1443,3 +1443,39 @@ config:
         } AS ?young_person_born_here)
       }
       ORDER BY DESC(?population)
+  - name: All graphs and their size
+    sort_key: '~'
+    query: |-
+      SELECT ?g (COUNT(?g) AS ?count) WHERE {
+        GRAPH ?g {
+          ?s ?p ?o
+        }
+      }
+      GROUP BY ?g
+      ORDER BY DESC(?count)
+  - name: All locations in a star around Freiburg
+    sort_key: '~'
+    query: |-
+      PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX qlss: <https://qlever.cs.uni-freiburg.de/spatialSearch/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?subject ?label ?location WHERE {
+        {
+          VALUES ?star { "POLYGON ((8.5133394816528 47.999, 8.113622073976273 48.1318940918056, 8.049524407126146 48.429054314891005, 7.738387796436927 48.2140271574455, 7.299055852047455 48.264788183611195, 7.506480259173601 47.999, 7.299055852047455 47.73321181638881, 7.738387796436927 47.783972842554505, 8.049524407126146 47.568945685108995, 8.113622073976273 47.8661059081944, 8.5133394816528 47.999))"^^geo:wktLiteral }
+        }
+        SERVICE qlss: {
+          _:config qlss:algorithm <libspatialjoin> ;
+                   qlss:left ?star ;
+                   qlss:right ?location ;
+                   qlss:payload ?subject, ?label ;
+                   qlss:joinType <contains> .
+          {
+            {
+              ?subject wdt:P625 ?location .
+              ?subject rdfs:label ?label .
+              FILTER (LANG(?label) = "en")
+            }
+          }
+        }
+      }

@@ -49,7 +49,7 @@
         });
 
         monaco.editor.addCommand({
-            id: 'jumpToNextSnippetPlaceholder',
+            id: 'jumpToNextPosition',
             run: () => {
                 languageClientWrapper
                     ?.getLanguageClient()!
@@ -92,7 +92,7 @@
                                         column: response.position.character + 1
                                     };
                                     if (response.insertAfter) {
-                                        editor.executeEdits('jumpToNextSnippetPlaceholder', [
+                                        editor.executeEdits('jumpToNextPosition', [
                                             {
                                                 range: new monaco.Range(
                                                     newCursorPosition.lineNumber,
@@ -104,10 +104,7 @@
                                             }
                                         ]);
                                     }
-                                    editor.setPosition(
-                                        newCursorPosition,
-                                        'jumpToNextSnippetPlaceholder'
-                                    );
+                                    editor.setPosition(newCursorPosition, 'jumpToNextPosition');
                                     if (response.insertBefore) {
                                         editor.getModel()?.applyEdits([
                                             {
@@ -125,12 +122,12 @@
                                 }
                             });
                     });
-                editor.trigger('jumpToNextSnippetPlaceholder', 'editor.action.formatDocument', {});
+                editor.trigger('jumpToNextPosition', 'editor.action.formatDocument', {});
                 console.log('jump to next location');
             }
         });
         monaco.editor.addKeybindingRule({
-            command: 'jumpToNextSnippetPlaceholder',
+            command: 'jumpToNextPosition',
             keybinding: monaco.KeyMod.Alt | monaco.KeyCode.KeyN
         });
         wrapper.getEditor()!.addAction({

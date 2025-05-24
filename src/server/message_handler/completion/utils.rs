@@ -3,7 +3,7 @@ use ll_sparql_parser::{
     ast::{AstNode, Path, QueryUnit},
     syntax_kind::SyntaxKind,
 };
-use std::{env, fmt::Display, rc::Rc};
+use std::{fmt::Display, rc::Rc};
 use tera::Context;
 use text_size::TextSize;
 
@@ -11,25 +11,23 @@ use crate::{
     server::{
         fetch::fetch_sparql_result,
         lsp::{
-            errors::LSPError,
             textdocument::{Position, Range, TextEdit},
             Backend, Command, CompletionItem, CompletionItemKind, CompletionItemLabelDetails,
             CompletionList,
         },
         Server,
     },
-    sparql::results::{RDFTerm, SparqlResult},
+    sparql::results::RDFTerm,
 };
 
-use super::{
-    environment::{self, CompletionEnvironment},
-    error::CompletionError,
-};
+use super::{environment::CompletionEnvironment, error::CompletionError};
 
 pub(super) enum CompletionTemplate {
     SubjectCompletion,
     PredicateCompletion,
     ObjectCompletion,
+    PredicateCompletionContextSensitive,
+    ObjectCompletionContextSensitive,
 }
 
 impl Display for CompletionTemplate {
@@ -38,6 +36,12 @@ impl Display for CompletionTemplate {
             CompletionTemplate::SubjectCompletion => write!(f, "subjectCompletion"),
             CompletionTemplate::PredicateCompletion => write!(f, "predicateCompletion"),
             CompletionTemplate::ObjectCompletion => write!(f, "objectCompletion"),
+            CompletionTemplate::PredicateCompletionContextSensitive => {
+                write!(f, "predicateCompletionContextSensitive")
+            }
+            CompletionTemplate::ObjectCompletionContextSensitive => {
+                write!(f, "objectCompletionContextSensitive")
+            }
         }
     }
 }
@@ -52,7 +56,7 @@ pub(super) async fn dispatch_completion_query(
     match environment.backend.as_ref() {
         Some(backend) => {
             let query_unit = QueryUnit::cast(environment.tree.clone()).ok_or(
-                CompletionError::ResolveError("Could not cast root to QueryUnit".to_string()),
+                CompletionError::Resolve("Could not cast root to QueryUnit".to_string()),
             )?;
             Ok(to_completion_items(
                 fetch_online_completions(
@@ -70,9 +74,7 @@ pub(super) async fn dispatch_completion_query(
         }
         _ => {
             log::info!("No Backend for completion query found");
-            Err(CompletionError::ResolveError(
-                "No Backend defined".to_string(),
-            ))
+            Err(CompletionError::Resolve("No Backend defined".to_string()))
         }
     }
 }
@@ -92,7 +94,7 @@ pub(super) async fn fetch_online_completions(
             .tools
             .tera
             .render(query_template, &query_template_context)
-            .map_err(|err| CompletionError::TemplateError(query_template.to_string(), err))?;
+            .map_err(|err| CompletionError::Template(query_template.to_string(), err))?;
 
         let url = backend.url.clone();
         let timeout_ms = server.settings.completion.timeout_ms;
@@ -102,8 +104,8 @@ pub(super) async fn fetch_online_completions(
     log::debug!("Query:\n{}", query);
     let result = fetch_sparql_result(&url, &query, timeout_ms)
         .await
-        .map_err(|err| CompletionError::RequestError(err.message))?;
-    log::info!("{}", result.results.bindings.len());
+        .map_err(|err| CompletionError::Request(err.message))?;
+    log::info!("Result size: {}", result.results.bindings.len());
 
     let server = server_rc.lock().await;
     Ok(result

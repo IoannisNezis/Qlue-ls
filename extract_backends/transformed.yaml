@@ -12,7 +12,7 @@
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      {% if not search_term or search_term == "" %}
+      {% if not search_term %}
 
       SELECT ?qlue_ls_entity (SAMPLE(?name) AS ?qlue_ls_label) (SAMPLE(?alias) AS ?qlue_ls_alias) (SAMPLE(?count) AS ?qlue_ls_count) WHERE {
         { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
@@ -43,7 +43,15 @@
                     (MIN(?name) as ?qlue_ls_label)
                     (MIN(?alias) as ?qlue_ls_alias)
                     (SAMPLE(?count_1) as ?qlue_ls_count) WHERE {
-        { %WARMUP_QUERY_4% }
+        { SELECT ?qlue_ls_entity ?name ?alias ?count_1 WHERE {
+        { { SELECT ?qlue_ls_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qlue_ls_entity ?object } GROUP BY ?qlue_ls_entity }
+          BIND(?qlue_ls_entity AS ?name) BIND(?qlue_ls_entity AS ?alias) .
+          FILTER (?qlue_ls_entity != <QLever-internal-function/langtag>)
+        } UNION {
+          { SELECT ?qlue_ls_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qlue_ls_entity ?object } GROUP BY ?qlue_ls_entity }
+          BIND(?qlue_ls_entity AS ?name) BIND(?qlue_ls_entity AS ?alias) .
+          FILTER (?qlue_ls_entity != <QLever-internal-function/langtag>)
+        } } }
         {% if search_term %}
         FILTER REGEX(?alias, "{{ search_term }}", "i")
         {% endif %}
@@ -52,7 +60,7 @@
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      {% if not search_term or search_term == "" %}
+      {% if not search_term %}
 
       SELECT ?qlue_ls_entity (SAMPLE(?name) AS ?qlue_ls_label) (SAMPLE(?alias) AS ?qlue_ls_alias) (SAMPLE(?count) AS ?qlue_ls_count) WHERE {
         { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
@@ -78,7 +86,7 @@
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      {% if not search_term or search_term == "" %}
+      {% if not search_term %}
 
       SELECT ?qlue_ls_entity (SAMPLE(?name) AS ?qlue_ls_label) (SAMPLE(?alias) AS ?qlue_ls_alias) (SAMPLE(?count) AS ?qlue_ls_count) WHERE {
         { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
@@ -100,11 +108,11 @@
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
 
       {% endif %}
-    predicatCompletionContextSensitive: |-
+    predicateCompletionContextSensitive: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      # IF !CURRENT_SUBJECT_VARIABLE #
+      {% if subject is not variable %}
 
       SELECT ?qlue_ls_entity
                     (MIN(?name) as ?qlue_ls_label)
@@ -113,28 +121,44 @@
                     ?qleverui_reversed WHERE {
 
         { { SELECT ?qlue_ls_entity (COUNT(?qleverui_tmp) AS ?count_2)
-          WHERE { %CURRENT_SUBJECT% ?qlue_ls_entity ?qleverui_tmp  }
+          WHERE { {{ subject }} ?qlue_ls_entity ?qleverui_tmp  }
           GROUP BY ?qlue_ls_entity }
         BIND (0 AS ?qleverui_reversed) }
         UNION
         { { SELECT ?qlue_ls_entity (COUNT(?qleverui_tmp) AS ?count_2)
-          WHERE { ?qleverui_tmp ?qlue_ls_entity %CURRENT_SUBJECT%  }
+          WHERE { ?qleverui_tmp ?qlue_ls_entity {{ subject }}  }
           GROUP BY ?qlue_ls_entity }
           BIND (1 AS ?qleverui_reversed) }
-        { %WARMUP_QUERY_5% }
+        { SELECT ?qlue_ls_entity ?name ?alias ?count_1 WHERE {
+        { { SELECT ?qlue_ls_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qlue_ls_entity ?object } GROUP BY ?qlue_ls_entity }
+          BIND(?qlue_ls_entity AS ?name) BIND(?qlue_ls_entity AS ?alias) .
+          FILTER (?qlue_ls_entity != <QLever-internal-function/langtag>)
+        } UNION {
+          { SELECT ?qlue_ls_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qlue_ls_entity ?object } GROUP BY ?qlue_ls_entity }
+          BIND(?qlue_ls_entity AS ?name) BIND(?qlue_ls_entity AS ?alias) .
+          FILTER (?qlue_ls_entity != <QLever-internal-function/langtag>)
+        } } }
         {% if search_term %}
         FILTER REGEX(?alias, "{{ search_term }}", "i")
         {% endif %}
       } GROUP BY ?qlue_ls_entity ?qleverui_reversed ORDER BY DESC(?qlue_ls_count)
 
       {% endif %}
-      # IF CONNECTED_TRIPLES_EMPTY AND CURRENT_SUBJECT_VARIABLE #
+      {% if not context and subject is variable %}
 
       SELECT ?qlue_ls_entity
                     (MIN(?name) as ?qlue_ls_label)
                     (MIN(?alias) as ?qlue_ls_alias)
                     (SAMPLE(?count_1) as ?qlue_ls_count) WHERE {
-        { %WARMUP_QUERY_4% }
+        { SELECT ?qlue_ls_entity ?name ?alias ?count_1 WHERE {
+        { { SELECT ?qlue_ls_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qlue_ls_entity ?object } GROUP BY ?qlue_ls_entity }
+          BIND(?qlue_ls_entity AS ?name) BIND(?qlue_ls_entity AS ?alias) .
+          FILTER (?qlue_ls_entity != <QLever-internal-function/langtag>)
+        } UNION {
+          { SELECT ?qlue_ls_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qlue_ls_entity ?object } GROUP BY ?qlue_ls_entity }
+          BIND(?qlue_ls_entity AS ?name) BIND(?qlue_ls_entity AS ?alias) .
+          FILTER (?qlue_ls_entity != <QLever-internal-function/langtag>)
+        } } }
         {% if search_term %}
         FILTER REGEX(?alias, "{{ search_term }}", "i")
         {% endif %}
@@ -142,16 +166,24 @@
 
       {% endif %}
 
-      # IF !CONNECTED_TRIPLES_EMPTY AND CURRENT_SUBJECT_VARIABLE #
+      {% if context and subject is variable %}
 
       SELECT ?qlue_ls_entity
                     (MIN(?name) as ?qlue_ls_label)
                     (MIN(?alias) as ?qlue_ls_alias)
                     (SAMPLE(?count_2) as ?qlue_ls_count) WHERE {
-        { SELECT ?qlue_ls_entity (COUNT(DISTINCT %CURRENT_SUBJECT%) AS ?count_2)
-          WHERE { %CONNECTED_TRIPLES% %CURRENT_SUBJECT% ?qlue_ls_entity ?object }
+        { SELECT ?qlue_ls_entity (COUNT(DISTINCT {{ subject }}) AS ?count_2)
+          WHERE { {{ context }} {{ subject }} ?qlue_ls_entity ?object }
           GROUP BY ?qlue_ls_entity }
-        { %WARMUP_QUERY_5% }
+        { SELECT ?qlue_ls_entity ?name ?alias ?count_1 WHERE {
+        { { SELECT ?qlue_ls_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qlue_ls_entity ?object } GROUP BY ?qlue_ls_entity }
+          BIND(?qlue_ls_entity AS ?name) BIND(?qlue_ls_entity AS ?alias) .
+          FILTER (?qlue_ls_entity != <QLever-internal-function/langtag>)
+        } UNION {
+          { SELECT ?qlue_ls_entity (COUNT(DISTINCT ?subject) AS ?count_1) WHERE { ?subject ?qlue_ls_entity ?object } GROUP BY ?qlue_ls_entity }
+          BIND(?qlue_ls_entity AS ?name) BIND(?qlue_ls_entity AS ?alias) .
+          FILTER (?qlue_ls_entity != <QLever-internal-function/langtag>)
+        } } }
         {% if search_term %}
         FILTER REGEX(?alias, "{{ search_term }}", "i")
         {% endif %}
@@ -170,9 +202,12 @@
 
           { SELECT ?qlue_ls_entity ?name ?alias ?count_1 WHERE {
             { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count_1) WHERE {
-              %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
+              {{ context }} {{ subject }} %CURRENT_PREDICATE% ?qlue_ls_entity .
             } GROUP BY ?qlue_ls_entity }
-            { %WARMUP_QUERY_3% }
+            { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
+        ?qlue_ls_entity imdb:numVotes ?count .
+        ?qlue_ls_entity imdb:title ?name . BIND(?name AS ?alias)
+      } ORDER BY ?qlue_ls_entity }
             {% if search_term %}
             FILTER (REGEX(?alias, "^\"{{ search_term }}") || REGEX(?alias, "^<{{ search_term }}"))
             {% endif %}
@@ -182,9 +217,9 @@
 
           { SELECT ?qlue_ls_entity ?name ?alias ?count_1 WHERE {
             { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count_1) WHERE {
-              %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity
+              {{ context }} {{ subject }} %CURRENT_PREDICATE% ?qlue_ls_entity
             } GROUP BY ?qlue_ls_entity }
-            %ENTITY_NAME_AND_ALIAS_PATTERN_DEFAULT%
+            BIND(?qlue_ls_entity AS ?name) BIND(?qlue_ls_entity AS ?alias)
             {% if search_term %}
             FILTER REGEX(?alias, "^{{ search_term }}")
             {% endif %}
@@ -244,10 +279,10 @@
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      {% if not search_term or search_term == "" %}
+      {% if not search_term %}
       SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_count) WHERE {
-          %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
+          {{ subject }} %CURRENT_PREDICATE% ?qlue_ls_entity .
         } GROUP BY ?qlue_ls_entity }
         OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_alias }
         BIND (COALESCE(?qlue_ls_alias, ?qlue_ls_entity) AS ?qlue_ls_label)
@@ -255,7 +290,7 @@
       {% else %}
       SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_count) WHERE {
-          %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
+          {{ subject }} %CURRENT_PREDICATE% ?qlue_ls_entity .
         } GROUP BY ?qlue_ls_entity }
         OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_alias }
         BIND (?qlue_ls_entity AS ?qlue_ls_label)
@@ -274,28 +309,28 @@
         } INTERNAL SORT BY ?qlue_ls_alias }
         FILTER REGEX(STR(?qlue_ls_alias), "^{{ search_term }}")
       } ORDER BY DESC(?qlue_ls_count)
-    predicatCompletionContextSensitive: |-
+    predicateCompletionContextSensitive: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
       SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count ?qui_reversed WHERE {
-        # IF !CURRENT_SUBJECT_VARIABLE #
+        {% if subject is not variable %}
         { { SELECT ?qlue_ls_entity (COUNT(?qui_object) AS ?qlue_ls_count)
-          WHERE { %CURRENT_SUBJECT% ?qlue_ls_entity ?qui_object  }
+          WHERE { {{ subject }} ?qlue_ls_entity ?qui_object  }
           GROUP BY ?qlue_ls_entity } BIND (0 AS ?qui_reversed) }
         UNION
         { { SELECT ?qlue_ls_entity (COUNT(?qui_subject) AS ?qlue_ls_count)
-          WHERE { ?qui_subject ?qlue_ls_entity %CURRENT_SUBJECT%  }
+          WHERE { ?qui_subject ?qlue_ls_entity {{ subject }}  }
           GROUP BY ?qlue_ls_entity } BIND (1 AS ?qui_reversed) }
         {% endif %}
-        # IF CURRENT_SUBJECT_VARIABLE AND CONNECTED_TRIPLES_EMPTY #
+        {% if subject is variable and context %}
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_count)
           WHERE { ?qui_subject ?qlue_ls_entity ?qui_object }
           GROUP BY ?qlue_ls_entity } BIND (0 AS ?qui_reversed)
         {% endif %}
-        # IF CURRENT_SUBJECT_VARIABLE AND !CONNECTED_TRIPLES_EMPTY #
-        { SELECT ?qlue_ls_entity (COUNT(DISTINCT %CURRENT_SUBJECT%) AS ?qlue_ls_count)
-          WHERE { %CONNECTED_TRIPLES% %CURRENT_SUBJECT% ?qlue_ls_entity ?qui_object }
+        {% if subject is variable and context %}
+        { SELECT ?qlue_ls_entity (COUNT(DISTINCT {{ subject }}) AS ?qlue_ls_count)
+          WHERE { {{ context }} {{ subject }} ?qlue_ls_entity ?qui_object }
           GROUP BY ?qlue_ls_entity } BIND (0 AS ?qui_reversed)
         {% endif %}
         BIND (?qlue_ls_entity AS ?qlue_ls_label)
@@ -307,10 +342,10 @@
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      {% if not search_term or search_term == "" %}
+      {% if not search_term %}
       SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_count) WHERE {
-          %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
+          {{ context }} {{ subject }} %CURRENT_PREDICATE% ?qlue_ls_entity .
         } GROUP BY ?qlue_ls_entity }
         OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_alias }
         BIND (COALESCE(?qlue_ls_alias, ?qlue_ls_entity) AS ?qlue_ls_label)
@@ -318,7 +353,7 @@
       {% else %}
       SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_count) WHERE {
-          %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
+          {{ context }} {{ subject }} %CURRENT_PREDICATE% ?qlue_ls_entity .
         } GROUP BY ?qlue_ls_entity }
         OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_alias }
         BIND (?qlue_ls_entity AS ?qlue_ls_label)
@@ -419,7 +454,7 @@
       {% endfor %}
       SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_count) WHERE {
-          %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
+          {{ subject }} %CURRENT_PREDICATE% ?qlue_ls_entity .
         } GROUP BY ?qlue_ls_entity }
         OPTIONAL { ?qlue_ls_entity rdf:type [ obo:IAO_0000412 obo:chebi.owl; rdfs:label ?qlue_ls_label_or_null ] }
         OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label_or_null }
@@ -442,19 +477,19 @@
       } ORDER BY ASC(?qlue_ls_label)
 
       {% endif %}
-    predicatCompletionContextSensitive: |-
+    predicateCompletionContextSensitive: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      # IF !CURRENT_SUBJECT_VARIABLE #
+      {% if subject is not variable %}
 
       SELECT ?qlue_ls_entity (SAMPLE(?qlue_ls_label_) AS ?qlue_ls_label) (SAMPLE(?qlue_ls_alias_) AS ?qlue_ls_alias) ?qlue_ls_count ?qui_reversed WHERE {
         { { SELECT ?qlue_ls_entity (COUNT(?qui_object) AS ?qlue_ls_count)
-          WHERE { %CURRENT_SUBJECT% ?qlue_ls_entity ?qui_object  }
+          WHERE { {{ subject }} ?qlue_ls_entity ?qui_object  }
           GROUP BY ?qlue_ls_entity } BIND (0 AS ?qui_reversed) }
         UNION
         { { SELECT ?qlue_ls_entity (COUNT(?qui_subject) AS ?qlue_ls_count)
-          WHERE { ?qui_subject ?qlue_ls_entity %CURRENT_SUBJECT%  }
+          WHERE { ?qui_subject ?qlue_ls_entity {{ subject }}  }
           GROUP BY ?qlue_ls_entity } BIND (1 AS ?qui_reversed) }
         OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label_or_null }
         BIND (IF(?qlue_ls_label_or_null, ?qlue_ls_label_or_null, ?qlue_ls_entity) AS ?qlue_ls_label_)
@@ -465,7 +500,7 @@
       } GROUP BY ?qlue_ls_entity ?qlue_ls_count ?qui_reversed ORDER BY DESC(?qlue_ls_count)
 
       {% endif %}
-      # IF CURRENT_SUBJECT_VARIABLE #
+      {% if subject is variable %}
 
       SELECT ?qlue_ls_entity (SAMPLE(?qlue_ls_label_) AS ?qlue_ls_label) (SAMPLE(?qlue_ls_alias_) AS ?qlue_ls_alias) ?qlue_ls_count WHERE {
         # IF CONNECTED_TRIPLES_EMPTY #
@@ -473,8 +508,8 @@
           WHERE { ?qui_subject ?qlue_ls_entity ?qui_object }
           GROUP BY ?qlue_ls_entity }
         {% else %}
-        { SELECT ?qlue_ls_entity (COUNT(DISTINCT %CURRENT_SUBJECT%) AS ?qlue_ls_count)
-          WHERE { %CONNECTED_TRIPLES% %CURRENT_SUBJECT% ?qlue_ls_entity ?qui_object }
+        { SELECT ?qlue_ls_entity (COUNT(DISTINCT {{ subject }}) AS ?qlue_ls_count)
+          WHERE { {{ context }} {{ subject }} ?qlue_ls_entity ?qui_object }
           GROUP BY ?qlue_ls_entity }
         {% endif %}
         OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label_or_null }
@@ -492,7 +527,7 @@
       {% endfor %}
       SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_count) WHERE {
-          %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
+          {{ context }} {{ subject }} %CURRENT_PREDICATE% ?qlue_ls_entity .
         } GROUP BY ?qlue_ls_entity }
         OPTIONAL { ?qlue_ls_entity rdf:type [ obo:IAO_0000412 obo:chebi.owl; rdfs:label ?qlue_ls_label_or_null ] }
         OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label_or_null }
@@ -562,7 +597,7 @@
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      {% if not search_term or search_term == "" %}
+      {% if not search_term %}
 
       {% else %}
 
@@ -596,7 +631,7 @@
         {
           { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
             { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
-              %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity
+              {{ subject }} %CURRENT_PREDICATE% ?qlue_ls_entity
             } GROUP BY ?qlue_ls_entity }
             ?qlue_ls_entity rdfs:label ?name BIND(?name AS ?alias)
             {% if search_term %}
@@ -606,7 +641,7 @@
         } UNION {
          { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
             { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
-              %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity
+              {{ subject }} %CURRENT_PREDICATE% ?qlue_ls_entity
             } GROUP BY ?qlue_ls_entity }
             ?qlue_ls_entity up:scientificName ?name BIND(?name AS ?alias)
             {% if search_term %}
@@ -616,7 +651,7 @@
         } UNION {
           { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
             { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
-              %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity
+              {{ subject }} %CURRENT_PREDICATE% ?qlue_ls_entity
             } GROUP BY ?qlue_ls_entity }
             BIND(?qlue_ls_entity AS ?name) BIND(?qlue_ls_entity AS ?alias)
             {% if search_term %}
@@ -629,7 +664,7 @@
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      {% if not search_term or search_term == "" %}
+      {% if not search_term %}
 
       {% else %}
 
@@ -644,30 +679,33 @@
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
 
       {% endif %}
-    predicatCompletionContextSensitive: |-
+    predicateCompletionContextSensitive: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      # IF !CURRENT_SUBJECT_VARIABLE #
+      {% if subject is not variable %}
 
       SELECT ?qlue_ls_entity (MIN(?name) as ?qlue_ls_label) (MIN(?alias) as ?qlue_ls_alias) (SAMPLE(?count_2) as ?qlue_ls_count) ?qui_reversed WHERE {
         { { SELECT ?qlue_ls_entity (COUNT(?qui_tmp) AS ?count_2)
-          WHERE { %CURRENT_SUBJECT% ?qlue_ls_entity ?qui_tmp  }
+          WHERE { {{ subject }} ?qlue_ls_entity ?qui_tmp  }
           GROUP BY ?qlue_ls_entity }
         BIND (0 AS ?qui_reversed) }
         UNION
         { { SELECT ?qlue_ls_entity (COUNT(?qui_tmp) AS ?count_2)
-          WHERE { ?qui_tmp ?qlue_ls_entity %CURRENT_SUBJECT%  }
+          WHERE { ?qui_tmp ?qlue_ls_entity {{ subject }}  }
           GROUP BY ?qlue_ls_entity }
           BIND (1 AS ?qui_reversed) }
-        { %WARMUP_QUERY_5% }
+        { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
+        { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE { ?qui_subject ?qlue_ls_entity ?qui_object } GROUP BY ?qlue_ls_entity }
+        BIND(?qlue_ls_entity AS ?name) BIND(?qlue_ls_entity AS ?alias)
+      } }
         {% if search_term %}
         FILTER REGEX(STR(?qlue_ls_entity), "{{ search_term }}", "i")
         {% endif %}
       } GROUP BY ?qlue_ls_entity ?qui_reversed ORDER BY DESC(?qlue_ls_count)
 
       {% endif %}
-      # IF CONNECTED_TRIPLES_EMPTY AND CURRENT_SUBJECT_VARIABLE #
+      {% if not context and subject is variable %}
 
       SELECT ?qlue_ls_entity (?qlue_ls_entity AS ?qlue_ls_label) (?qlue_ls_entity AS ?qlue_ls_alias) (?count AS ?qlue_ls_count) WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE { ?qui_subject ?qlue_ls_entity ?qui_object } GROUP BY ?qlue_ls_entity }
@@ -678,11 +716,11 @@
 
       {% endif %}
 
-      # IF !CONNECTED_TRIPLES_EMPTY AND CURRENT_SUBJECT_VARIABLE #
+      {% if context and subject is variable %}
 
       SELECT ?qlue_ls_entity (?qlue_ls_entity AS ?qlue_ls_label) (?qlue_ls_entity AS ?qlue_ls_alias) (?count AS ?qlue_ls_count) WHERE {
-        { SELECT ?qlue_ls_entity (COUNT(DISTINCT %CURRENT_SUBJECT%) AS ?count)
-          WHERE { %CONNECTED_TRIPLES% %CURRENT_SUBJECT% ?qlue_ls_entity ?qui_object }
+        { SELECT ?qlue_ls_entity (COUNT(DISTINCT {{ subject }}) AS ?count)
+          WHERE { {{ context }} {{ subject }} ?qlue_ls_entity ?qui_object }
           GROUP BY ?qlue_ls_entity }
         {% if search_term %}
         FILTER REGEX(STR(?qlue_ls_entity), "{{ search_term }}", "i")
@@ -698,8 +736,8 @@
         {
           { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
             { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
-              # %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
-              %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity
+              # {{ context }} {{ subject }} %CURRENT_PREDICATE% ?qlue_ls_entity .
+              {{ subject }} %CURRENT_PREDICATE% ?qlue_ls_entity
             } GROUP BY ?qlue_ls_entity }
             ?qlue_ls_entity rdfs:label ?name BIND(?name AS ?alias)
             {% if search_term %}
@@ -709,8 +747,8 @@
         } UNION {
          { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
             { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
-              # %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
-              %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity
+              # {{ context }} {{ subject }} %CURRENT_PREDICATE% ?qlue_ls_entity .
+              {{ subject }} %CURRENT_PREDICATE% ?qlue_ls_entity
             } GROUP BY ?qlue_ls_entity }
             ?qlue_ls_entity up:scientificName ?name BIND(?name AS ?alias)
             {% if search_term %}
@@ -720,8 +758,8 @@
         } UNION {
           { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
             { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
-              # %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
-              %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity
+              # {{ context }} {{ subject }} %CURRENT_PREDICATE% ?qlue_ls_entity .
+              {{ subject }} %CURRENT_PREDICATE% ?qlue_ls_entity
             } GROUP BY ?qlue_ls_entity }
             BIND(?qlue_ls_entity AS ?name) BIND(?qlue_ls_entity AS ?alias)
             {% if search_term %}
@@ -798,9 +836,9 @@
       {% endfor %}
       SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?alias) as ?qlue_ls_alias) (SAMPLE(?count) as ?qlue_ls_count) WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
-          %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
+          {{ subject }} %CURRENT_PREDICATE% ?qlue_ls_entity .
         } GROUP BY ?qlue_ls_entity }
-        {% if not search_term or search_term == "" %}
+        {% if not search_term %}
         OPTIONAL { ?qlue_ls_entity osmkey:name ?name }
         BIND (?qlue_ls_entity AS ?alias)
         {% else %}
@@ -829,18 +867,18 @@
                            ?qlue_ls_entity osmrel:member/osm2rdfmember:id/osm2rdf:length ?length } GROUP BY ?qlue_ls_entity } }
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
       {% endif %}
-    predicatCompletionContextSensitive: |-
+    predicateCompletionContextSensitive: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      # IF !CURRENT_SUBJECT_VARIABLE #
+      {% if subject is not variable %}
       SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?name) as ?qlue_ls_alias) (SAMPLE(?count) as ?qlue_ls_count) ?qui_reversed WHERE {
         { { SELECT ?qlue_ls_entity (COUNT(?qui_object) AS ?count)
-          WHERE { %CURRENT_SUBJECT% ?qlue_ls_entity ?qui_object  }
+          WHERE { {{ subject }} ?qlue_ls_entity ?qui_object  }
           GROUP BY ?qlue_ls_entity } BIND (0 AS ?qui_reversed) }
         UNION
         { { SELECT ?qlue_ls_entity (COUNT(?qui_subject) AS ?count)
-          WHERE { ?qui_subject ?qlue_ls_entity %CURRENT_SUBJECT%  }
+          WHERE { ?qui_subject ?qlue_ls_entity {{ subject }}  }
           GROUP BY ?qlue_ls_entity } BIND (1 AS ?qui_reversed) }
         BIND (?qlue_ls_entity AS ?name)
         {% if search_term %}
@@ -848,15 +886,15 @@
         {% endif %}
       } GROUP BY ?qlue_ls_entity ?qui_reversed ORDER BY DESC(?qlue_ls_count)
       {% endif %}
-      # IF CURRENT_SUBJECT_VARIABLE #
+      {% if subject is variable %}
       SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?name) as ?qlue_ls_alias) (SAMPLE(?count) as ?qlue_ls_count) WHERE {
         # IF CONNECTED_TRIPLES_EMPTY #
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count)
           WHERE { ?qui_subject ?qlue_ls_entity ?qui_object }
           GROUP BY ?qlue_ls_entity }
         {% else %}
-        { SELECT ?qlue_ls_entity (COUNT(DISTINCT %CURRENT_SUBJECT%) AS ?count)
-          WHERE { %CONNECTED_TRIPLES% %CURRENT_SUBJECT% ?qlue_ls_entity ?qui_object }
+        { SELECT ?qlue_ls_entity (COUNT(DISTINCT {{ subject }}) AS ?count)
+          WHERE { {{ context }} {{ subject }} ?qlue_ls_entity ?qui_object }
           GROUP BY ?qlue_ls_entity }
         {% endif %}
         BIND (?qlue_ls_entity AS ?name)
@@ -871,9 +909,9 @@
       {% endfor %}
       SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?alias) as ?qlue_ls_alias) (SAMPLE(?count) as ?qlue_ls_count) WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
-          %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
+          {{ context }} {{ subject }} %CURRENT_PREDICATE% ?qlue_ls_entity .
         } GROUP BY ?qlue_ls_entity }
-        {% if not search_term or search_term == "" %}
+        {% if not search_term %}
         OPTIONAL { ?qlue_ls_entity osmkey:name ?name }
         BIND (?qlue_ls_entity AS ?alias)
         {% else %}
@@ -950,7 +988,7 @@
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count)
           WHERE { ?qui_subject ?qlue_ls_entity ?qui_object }
           GROUP BY ?qlue_ls_entity }
-        {% if not search_term or search_term == "" %}
+        {% if not search_term %}
         ?qui_tmp_1 ?qui_tmp_2 ?qlue_ls_entity .
         ?qui_tmp_1 @en@rdfs:label ?name .
         BIND (?name AS ?alias)
@@ -967,9 +1005,9 @@
       {% endfor %}
       SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?alias) as ?qlue_ls_alias) (SAMPLE(?count) as ?qlue_ls_count) WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
-          %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
+          {{ subject }} %CURRENT_PREDICATE% ?qlue_ls_entity .
         } GROUP BY ?qlue_ls_entity }
-        {% if not search_term or search_term == "" %}
+        {% if not search_term %}
         OPTIONAL { ?qlue_ls_entity @en@rdfs:label ?name }
         BIND (?qlue_ls_entity AS ?alias)
         {% else %}
@@ -994,21 +1032,21 @@
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
 
       {% endif %}
-    predicatCompletionContextSensitive: |-
+    predicateCompletionContextSensitive: |-
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      # IF !CURRENT_SUBJECT_VARIABLE #
+      {% if subject is not variable %}
 
       SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?alias) as ?qlue_ls_alias) (SAMPLE(?count) as ?qlue_ls_count) ?qui_reversed WHERE {
         { { SELECT ?qlue_ls_entity (COUNT(?qui_object) AS ?count)
-          WHERE { %CURRENT_SUBJECT% ?qlue_ls_entity ?qui_object  }
+          WHERE { {{ subject }} ?qlue_ls_entity ?qui_object  }
           GROUP BY ?qlue_ls_entity } BIND (0 AS ?qui_reversed) }
         UNION
         { { SELECT ?qlue_ls_entity (COUNT(?qui_subject) AS ?count)
-          WHERE { ?qui_subject ?qlue_ls_entity %CURRENT_SUBJECT%  }
+          WHERE { ?qui_subject ?qlue_ls_entity {{ subject }}  }
           GROUP BY ?qlue_ls_entity } BIND (1 AS ?qui_reversed) }
-        {% if not search_term or search_term == "" %}
+        {% if not search_term %}
         ?qui_tmp_1 ?qui_tmp_2 ?qlue_ls_entity .
         ?qui_tmp_1 @en@rdfs:label ?name .
         BIND (?name AS ?alias)
@@ -1021,7 +1059,7 @@
       } GROUP BY ?qlue_ls_entity ?qui_reversed ORDER BY DESC(?qlue_ls_count)
 
       {% endif %}
-      # IF CURRENT_SUBJECT_VARIABLE #
+      {% if subject is variable %}
 
       SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?alias) as ?qlue_ls_alias) (SAMPLE(?count) as ?qlue_ls_count) WHERE {
         # IF CONNECTED_TRIPLES_EMPTY #
@@ -1029,11 +1067,11 @@
           WHERE { ?qui_subject ?qlue_ls_entity ?qui_object }
           GROUP BY ?qlue_ls_entity }
         {% else %}
-        { SELECT ?qlue_ls_entity (COUNT(DISTINCT %CURRENT_SUBJECT%) AS ?count)
-          WHERE { %CONNECTED_TRIPLES% %CURRENT_SUBJECT% ?qlue_ls_entity ?qui_object }
+        { SELECT ?qlue_ls_entity (COUNT(DISTINCT {{ subject }}) AS ?count)
+          WHERE { {{ context }} {{ subject }} ?qlue_ls_entity ?qui_object }
           GROUP BY ?qlue_ls_entity }
         {% endif %}
-        {% if not search_term or search_term == "" %}
+        {% if not search_term %}
         ?qui_tmp_1 ?qui_tmp_2 ?qlue_ls_entity .
         ?qui_tmp_1 @en@rdfs:label ?name .
         BIND (?name AS ?alias)
@@ -1052,9 +1090,9 @@
       {% endfor %}
       SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?alias) as ?qlue_ls_alias) (SAMPLE(?count) as ?qlue_ls_count) WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
-          %CONNECTED_TRIPLES% %CURRENT_SUBJECT% %CURRENT_PREDICATE% ?qlue_ls_entity .
+          {{ context }} {{ subject }} %CURRENT_PREDICATE% ?qlue_ls_entity .
         } GROUP BY ?qlue_ls_entity }
-        {% if not search_term or search_term == "" %}
+        {% if not search_term %}
         OPTIONAL { ?qlue_ls_entity @en@rdfs:label ?name }
         BIND (?qlue_ls_entity AS ?alias)
         {% else %}

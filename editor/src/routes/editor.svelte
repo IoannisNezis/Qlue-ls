@@ -62,7 +62,6 @@
                     })
                     .then((response) => {
                         const edits = response.map((edit) => {
-                            console.log(edit);
                             return {
                                 range: {
                                     startLineNumber: edit.range.start.line + 1,

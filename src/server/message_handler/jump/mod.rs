@@ -30,7 +30,7 @@ pub(super) async fn handle_jump_request(
         .params
         .base
         .position
-        .to_byte_index(&document.text)
+        .byte_index(&document.text)
         .ok_or(LSPError::new(
             ErrorCode::InvalidRequest,
             "given position is not inside document",
@@ -66,7 +66,7 @@ pub(super) async fn handle_jump_request(
 }
 
 fn relevant_positions(
-    document: &TextDocumentItem,
+    _document: &TextDocumentItem,
     root: SyntaxNode,
 ) -> Vec<(TextSize, Option<&str>, Option<&str>)> {
     let mut res = Vec::new();

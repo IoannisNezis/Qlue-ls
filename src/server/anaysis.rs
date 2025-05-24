@@ -119,38 +119,6 @@ fn get_all_uris(
 /// * The syntax tree for the document cannot be accessed.
 /// * The query for extracting `PrefixDecl` fails to build or execute.
 ///
-/// # Example
-///
-/// Given the following SPARQL query in the document located at `file://example.sparql`:
-///
-/// ```sparql
-/// PREFIX ex: <http://example.org/>
-/// PREFIX foaf: <http://xmlns.com/foaf/0.1/>
-///
-/// SELECT ?name WHERE {
-///   ?person a foaf:Person .
-///   ?person foaf:name ?name .
-/// }
-/// ```
-///
-/// Calling the function:
-///
-/// ```rust
-/// let namespaces = get_declared_namespaces(&analysis_state, "file://example.sparql")?;
-/// for (prefix, range) in namespaces {
-///     println!("Found prefix: {} at range: {:?}", prefix, range);
-/// }
-/// ```
-///
-/// Would return:
-///
-/// ```text
-/// Ok(vec![
-///     ("ex".to_string(), Range { start: Position { line: 0, character: 7 }, end: Position { line: 0, character: 9 } }),
-///     ("foaf".to_string(), Range { start: Position { line: 1, character: 7 }, end: Position { line: 1, character: 11 } }),
-/// ])
-/// ```
-///
 /// # Notes
 ///
 /// The function assumes that the document is written in SPARQL syntax and uses

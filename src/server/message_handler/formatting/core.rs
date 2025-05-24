@@ -193,7 +193,7 @@ fn merge_comments(
                             )
                         }
                         None => {
-                            let indent = match next_edit.range.end.to_byte_index(text) {
+                            let indent = match next_edit.range.end.byte_index(text) {
                                 Some(start_next_token) => {
                                     match text.get(start_next_token..start_next_token + 1) {
                                         Some("}") => comment.indentation_level.saturating_sub(1),

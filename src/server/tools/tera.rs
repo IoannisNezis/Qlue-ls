@@ -1,4 +1,3 @@
-use indoc::indoc;
 use tera::{
     helpers::tests::{number_args_allowed, value_defined},
     Result, Tera, Value,

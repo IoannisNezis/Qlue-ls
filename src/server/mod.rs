@@ -18,7 +18,7 @@ use log::{error, info};
 use lsp::{
     errors::{ErrorCode, LSPError},
     rpc::{RecoverId, RequestIdOrNull, ResponseMessage},
-    Backend, ServerInfo,
+    ServerInfo,
 };
 use message_handler::dispatch;
 
@@ -102,18 +102,6 @@ impl Server {
     ///   - `uri_prefix`: A `String` representing the URI namespace prefix.
     ///   - `curie`: A `String` representing the compact CURIE form of the URI.
     /// - `None` if the URI cannot be found or shortened.
-    ///
-    /// # Example
-    /// ```rust
-    /// let uri = "http://example.com/resource";
-    /// if let Some((prefix, uri_prefix, curie)) = instance.shorten_uri(uri) {
-    ///     println!("Prefix: {}", prefix);
-    ///     println!("URI Prefix: {}", uri_prefix);
-    ///     println!("CURIE: {}", curie);
-    /// } else {
-    ///     println!("Failed to shorten URI.");
-    /// }
-    /// ```
     ///
     /// # Errors
     /// Returns `None` if:

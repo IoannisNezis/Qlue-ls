@@ -13,7 +13,7 @@ def "main pull" [] {
 }
 
 def "main transform" [] {
-	let data = (open "all.yaml" | select name slug baseUrl suggestedPrefixes subjectName predicateName objectName suggestSubjectsContextInsensitive suggestPredicatesContextInsensitive suggestObjectsContextInsensitive suggestSubjects suggestPredicates suggestObjects  warmupQuery1 warmupQuery2 warmupQuery3 warmupQuery4  entityScorePattern entityNameAndAliasPattern predicateNameAndAliasPatternWithoutContext predicateNameAndAliasPatternWithoutContextDefault | rename name slug url     prefixMap          hoverName   hoverPredicate hoverObject subjectCompletionQuery          predicateCompletionQuery objectCompletionQuery subjectCompletionQueryContextSensitive  predicateCompletionQueryContextSensitive objectCompletionQueryContextSensitive)
+	let data = (open "all.yaml" | select name slug baseUrl suggestedPrefixes subjectName predicateName objectName suggestSubjectsContextInsensitive suggestPredicatesContextInsensitive suggestObjectsContextInsensitive suggestSubjects suggestPredicates suggestObjects  warmupQuery1 warmupQuery2 warmupQuery3 warmupQuery4 warmupQuery5  entityScorePattern entityNameAndAliasPattern entityNameAndAliasPatternDefault predicateNameAndAliasPatternWithoutContext predicateNameAndAliasPatternWithoutContextDefault predicateNameAndAliasPatternWithContext predicateNameAndAliasPatternWithContextDefault | rename name slug url     prefixMap          hoverName   hoverPredicate hoverObject subjectCompletionQuery          predicateCompletionQuery objectCompletionQuery subjectCompletionQueryContextSensitive  predicateCompletionQueryContextSensitive objectCompletionQueryContextSensitive)
 	| upsert prefixMap {|row|
 		$row.prefixMap
 			| lines
@@ -46,7 +46,7 @@ def "main transform" [] {
 			predicateCompletion: $backend.predicateCompletionQuery,
 			objectCompletion: $backend.objectCompletionQuery,
 			subjectCompletionContextSensitive: $backend.subjectCompletionQueryContextSensitive,
-			predicatCompletionContextSensitive: $backend.predicateCompletionQueryContextSensitive,
+			predicateCompletionContextSensitive: $backend.predicateCompletionQueryContextSensitive,
 			objectCompletionContextSensitive: $backend.objectCompletionQueryContextSensitive
 		}
 	}
@@ -73,8 +73,16 @@ def replace [backend, query: string] {
 	$backend | get $query
 		| str replace --all "%WARMUP_QUERY_1%" $backend.warmupQuery1
 		| str replace --all "%WARMUP_QUERY_2%" $backend.warmupQuery2
+		| str replace --all "%WARMUP_QUERY_3%" $backend.warmupQuery3
+		| str replace --all "%WARMUP_QUERY_4%" $backend.warmupQuery4
+		| str replace --all "%WARMUP_QUERY_5%" $backend.warmupQuery5
 		| str replace --all "%ENTITY_SCORE_PATTERN%" $backend.entityScorePattern
 		| str replace --all "%ENTITY_NAME_AND_ALIAS_PATTERN%" $backend.entityNameAndAliasPattern
+		| str replace --all "%ENTITY_NAME_AND_ALIAS_PATTERN_DEFAULT%" $backend.entityNameAndAliasPatternDefault
+		| str replace --all "%PREDICATE_NAME_AND_ALIAS_PATTERN_WITH_CONTEXT%" $backend.predicateNameAndAliasPatternWithContext
+		| str replace --all "%PREDICATE_NAME_AND_ALIAS_PATTERN_WITH_CONTEXT_DEFAULT%" $backend.predicateNameAndAliasPatternWithContextDefault
+		| str replace --all "%PREDICATE_NAME_AND_ALIAS_PATTERN_WITHOUT_CONTEXT%" $backend.predicateNameAndAliasPatternWithContext
+		| str replace --all "%PREDICATE_NAME_AND_ALIAS_PATTERN_WITHOUT_CONTEXT_DEFAULT%" $backend.predicateNameAndAliasPatternWithContextDefault
 		| str replace --all "?qui_entity" "?qlue_ls_entity"
 		| str replace --all "?qleverui_entity" "?qlue_ls_entity"
 		| str replace --all "?qui_count" "?qlue_ls_count"
@@ -84,8 +92,16 @@ def replace [backend, query: string] {
 		| str replace --all "?qui_name" "?qlue_ls_label"
 		| str replace --all "?qleverui_name" "?qlue_ls_label"
 		| str replace --all "%CURRENT_WORD%" "{{ search_term }}"
-		| str replace --all "# IF CURRENT_WORD_EMPTY #" "{% if not search_term or search_term == "" %}"
+		| str replace --all "%CURRENT_SUBJECT%" "{{ subject }}"
+		| str replace --all "%CONNECTED_TRIPLES%" "{{ context }}"
+		| str replace --all "# IF CURRENT_WORD_EMPTY #" "{% if not search_term %}"
+		| str replace --all "# IF CURRENT_SUBJECT_VARIABLE #" "{% if subject is variable %}"
+		| str replace --all "# IF !CURRENT_SUBJECT_VARIABLE #" "{% if subject is not variable %}"
 		| str replace --all "# IF !CURRENT_WORD_EMPTY #" "{% if search_term %}"
+		| str replace --all "# IF CURRENT_SUBJECT_VARIABLE AND CONNECTED_TRIPLES_EMPTY #" "{% if subject is variable and context %}"
+		| str replace --all "# IF CURRENT_SUBJECT_VARIABLE AND !CONNECTED_TRIPLES_EMPTY #" "{% if subject is variable and context %}"
+		| str replace --all "# IF !CONNECTED_TRIPLES_EMPTY AND CURRENT_SUBJECT_VARIABLE #" "{% if context and subject is variable %}"
+		| str replace --all "# IF CONNECTED_TRIPLES_EMPTY AND CURRENT_SUBJECT_VARIABLE #" "{% if not context and subject is variable %}"
 		| str replace --all "# ELSE #" "{% else %}"
 		| str replace --all "# ENDIF #" "{% endif %}"
 		| str replace --all "%PREFIXES%" "{% for prefix in prefixes %}\nPREFIX {{prefix.0}}: <{{prefix.1}}>\n{% endfor %}"

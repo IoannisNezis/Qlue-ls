@@ -55,7 +55,7 @@ pub enum ErrorCode {
      * request before the server has received the `initialize` request.
      */
     ServerNotInitialized = -32002,
-    UnknownErrorCode = -32001,
+    Unknown = -32001,
 
     /**
      * This is the end range of JSON-RPC reserved error codes.

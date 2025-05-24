@@ -20,7 +20,7 @@ use crate::server::{
 
 use super::{error::CompletionError, utils::get_prefix_declarations};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(super) struct CompletionEnvironment {
     pub(super) location: CompletionLocation,
     pub(super) trigger_textdocument_position: Position,
@@ -34,7 +34,7 @@ pub(super) struct CompletionEnvironment {
     pub(super) context: Option<Context>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub(super) enum CompletionLocation {
     /// Unsupported location
     Unknown,
@@ -206,6 +206,11 @@ pub(super) enum CompletionLocation {
 }
 
 impl CompletionEnvironment {
+    /// Create a tera template context filled with the following variables:
+    ///
+    /// - `search_term` : query string to find the entity
+    /// - `context` : connected triples for context sensitive completions
+    /// - `prefixes` : used prefixes in this query
     pub(super) async fn template_context(&self, server_rc: Rc<Mutex<Server>>) -> tera::Context {
         let mut template_context = tera::Context::new();
         template_context.insert("search_term", &self.search_term);
@@ -223,9 +228,9 @@ impl CompletionEnvironment {
             }
             _ => vec![],
         };
-        self.context
-            .as_ref()
-            .map(|context| prefixes.extend(context.prefixes.clone()));
+        if let Some(ref context) = self.context {
+            prefixes.extend(context.prefixes.clone());
+        }
         let prefix_declarations =
             get_prefix_declarations(server_rc, self.backend.as_ref(), prefixes).await;
         template_context.insert("prefixes", &prefix_declarations);
@@ -241,11 +246,11 @@ impl CompletionEnvironment {
         let document = server
             .state
             .get_document(&document_position.text_document.uri)
-            .map_err(|err| CompletionError::LocalizationError(err.message))?;
+            .map_err(|err| CompletionError::Localization(err.message))?;
         let offset = (document_position
             .position
-            .to_byte_index(&document.text)
-            .ok_or(CompletionError::LocalizationError(format!(
+            .byte_index(&document.text)
+            .ok_or(CompletionError::Localization(format!(
                 "Position ({}) not inside document range",
                 document_position.position
             )))? as u32)
@@ -352,9 +357,9 @@ fn get_location(
             SyntaxKind::PathOneInPropertySet,
             SyntaxKind::PathAlternative
         ]) || continues_with!([SyntaxKind::iri])
-            && anchor.parent().map_or(false, |parent| {
-                parent.kind() == SyntaxKind::PathOneInPropertySet
-            })
+            && anchor
+                .parent()
+                .is_some_and(|parent| parent.kind() == SyntaxKind::PathOneInPropertySet)
         {
             if let Some(blank_node_property) =
                 anchor.parent_ancestors().find_map(BlankPropertyList::cast)

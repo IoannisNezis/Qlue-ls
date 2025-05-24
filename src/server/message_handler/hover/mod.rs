@@ -24,7 +24,7 @@ pub(super) async fn handle_hover_request(
     let root = parse_query(&document.text);
     let offset = request
         .get_position()
-        .to_byte_index(&document.text)
+        .byte_index(&document.text)
         .ok_or_else(|| {
             LSPError::new(
                 ErrorCode::InvalidParams,

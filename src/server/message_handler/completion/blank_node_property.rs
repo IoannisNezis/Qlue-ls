@@ -36,11 +36,11 @@ fn local_context(environment: &CompletionEnvironment) -> Option<String> {
                 .contains(&SyntaxKind::PropertyListPathNotEmpty)
             || prop_list.property_list().is_none()
         {
-            Some(format!("[] ?qlue_ls_entity []"))
+            Some("[] ?qlue_ls_entity []".to_string())
         } else {
             let properties = prop_list.property_list().unwrap().properties();
             if environment.continuations.contains(&SyntaxKind::VerbPath) {
-                Some(format!("[] ?qlue_ls_entity []"))
+                Some("[] ?qlue_ls_entity []".to_string())
             } else if properties.len() == 1 {
                 reduce_path(
                     "[]",

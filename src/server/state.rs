@@ -141,7 +141,7 @@ impl ServerState {
         uri: &str,
         new_tree: Option<Tree>,
     ) -> Result<(), LSPError> {
-        if self.documents.get(uri).is_some() {
+        if self.documents.contains_key(uri) {
             self.documents
                 .entry(uri.to_string())
                 .and_modify(|(_document, old_tree)| *old_tree = new_tree);
@@ -155,7 +155,7 @@ impl ServerState {
     }
 
     pub(crate) fn get_default_converter(&self) -> Option<&Converter> {
-        self.uri_converter.get((&self.default_backend).as_ref()?)
+        self.uri_converter.get(self.default_backend.as_ref()?)
     }
 
     pub(crate) fn get_converter(&self, backend_name: &str) -> Option<&Converter> {

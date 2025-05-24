@@ -24,7 +24,7 @@ pub(super) async fn handle_codeaction_request(
 ) -> Result<(), LSPError> {
     let server = server_rc.lock().await;
     let mut code_action_response = CodeActionResponse::new(request.get_id());
-    code_action_response.add_code_actions(generate_code_actions(&*server, &request.params)?);
+    code_action_response.add_code_actions(generate_code_actions(&server, &request.params)?);
     code_action_response.add_code_actions(
         request
             .params
@@ -32,7 +32,7 @@ pub(super) async fn handle_codeaction_request(
             .diagnostics
             .into_iter()
             .filter_map(|diagnostic| {
-                match get_quickfix(&*server, &request.params.text_document.uri, diagnostic) {
+                match get_quickfix(&server, &request.params.text_document.uri, diagnostic) {
                     Ok(code_action) => code_action,
                     Err(err) => {
                         log::error!(
@@ -72,7 +72,7 @@ fn generate_code_actions(
             if token.kind() == SyntaxKind::IRIREF
                 && token
                     .parent()
-                    .map_or(false, |parent| parent.kind() == SyntaxKind::iri)
+                    .is_some_and(|parent| parent.kind() == SyntaxKind::iri)
             {
                 if let Some(code_action) = shorten_all_uris(server, document) {
                     code_actions.push(code_action)

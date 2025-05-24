@@ -7,12 +7,14 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct SparqlResult {
+    #[allow(dead_code)]
     pub head: SparqlResultsVars,
     pub results: SparqlResultsBindings,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct SparqlResultsVars {
+    #[allow(dead_code)]
     pub vars: Vec<String>,
 }
 

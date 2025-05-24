@@ -44,7 +44,7 @@
 
     function refreshAvailibility() {
         checkAvailibility();
-        setTimeout(refreshAvailibility, 10000);
+        setTimeout(refreshAvailibility, 60000);
     }
 
     $effect(() => {

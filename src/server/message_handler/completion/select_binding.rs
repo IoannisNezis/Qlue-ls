@@ -69,7 +69,7 @@ pub(super) fn completions(
             items,
         })
     } else {
-        Err(CompletionError::ResolveError(format!(
+        Err(CompletionError::Resolve(format!(
             "select binding completions was called with location: {:?}",
             context.location
         )))

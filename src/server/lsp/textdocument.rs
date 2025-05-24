@@ -1,7 +1,6 @@
 use std::{
     fmt::{self, Display},
     iter::once,
-    usize,
 };
 
 use log::error;
@@ -47,7 +46,7 @@ impl TextDocumentItem {
 
         // WARNING: Always keep one newline at the end of a document to stay POSIX conform!
         // https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_206
-        match self.text.chars().rev().next() {
+        match self.text.chars().next_back() {
             Some('\n') => {}
             _ => self.text.push('\n'),
         };
@@ -67,8 +66,7 @@ impl TextDocumentItem {
         let last_char = self
             .text
             .chars()
-            .rev()
-            .next()
+            .next_back()
             .expect("At least one character has to be in the text");
         match last_char {
             '\n' => Range::new(0, 0, line_count as u32, 0),
@@ -76,8 +74,7 @@ impl TextDocumentItem {
                 let last_line = self
                     .text
                     .lines()
-                    .rev()
-                    .next()
+                    .next_back()
                     .expect("At least one line hat to be in the text");
                 Range::new(0, 0, (line_count - 1) as u32, last_line.len() as u32)
             }
@@ -123,7 +120,7 @@ impl Position {
     /// - offset is not on the border of a UTF-8 codepoint
     pub fn from_byte_index(offset: usize, text: &str) -> Option<Self> {
         let mut offset_count = 0;
-        let mut position = Position::new(0, 0);
+        let mut position = Self::new(0, 0);
         for char in text.chars() {
             if offset_count >= offset {
                 break;
@@ -140,11 +137,7 @@ impl Position {
         }
         // NOTE: the byte offset MUST be at the start or end of a UTF-8 char.
         // https://datatracker.ietf.org/doc/html/rfc2119
-        if offset_count == offset {
-            return Some(position);
-        }
-
-        return None;
+        (offset_count == offset).then_some(position)
     }
 
     pub(crate) fn from_point(position: Point) -> Position {
@@ -179,22 +172,13 @@ impl Position {
     /// mapped to its corresponding byte index in the UTF-8 encoded string,
     /// preserving the integrity of multi-byte characters.
     ///
-    /// # Examples
-    ///
-    /// ```
-    /// let text = String::from("a😃b"); // "a" (1 byte), "😃" (4 bytes), "b" (1 byte)
-    /// let utf16_position = 2; // Position after the emoji
-    /// let byte_index = Position::new(0,3).to_byte_index(&text);
-    /// assert_eq!(byte_index, Some(5)); // Correctly maps to the byte index
-    /// ```
-    ///
     /// # Caveats
     ///
     /// * If `text` contains invalid UTF-8 sequences, the behavior of this function
     ///   is undefined.
     /// * Ensure the provided UTF-16 position aligns with the logical structure of
     ///   the string.
-    pub fn to_byte_index(&self, text: &str) -> Option<usize> {
+    pub fn byte_index(&self, text: &str) -> Option<usize> {
         if self.line == 0 && self.character == 0 && text.is_empty() {
             return Some(0);
         }
@@ -211,7 +195,7 @@ impl Position {
             byte_index += char.len_utf8();
             utf16_index += char.len_utf16();
         }
-        return Some(byte_index);
+        Some(byte_index)
     }
 
     /// Converts a UTF-8 based position to a UTF-16 based position.
@@ -308,8 +292,8 @@ impl Range {
         }
     }
 
-    pub fn to_byte_index_range(&self, text: &String) -> Option<std::ops::Range<usize>> {
-        match (self.start.to_byte_index(text), self.end.to_byte_index(text)) {
+    pub fn to_byte_index_range(&self, text: &str) -> Option<std::ops::Range<usize>> {
+        match (self.start.byte_index(text), self.end.byte_index(text)) {
             (Some(from), Some(to)) => Some(from..to),
             _ => None,
         }
@@ -614,14 +598,14 @@ mod tests {
     #[test]
     fn position_to_byte_index() {
         let text = "aä�𐀀".to_string();
-        assert_eq!(Position::new(0, 0).to_byte_index(&text), Some(0));
-        assert_eq!(Position::new(0, 1).to_byte_index(&text), Some(1));
-        assert_eq!(Position::new(0, 2).to_byte_index(&text), Some(3));
-        assert_eq!(Position::new(0, 3).to_byte_index(&text), Some(6));
-        assert_eq!(Position::new(0, 5).to_byte_index(&text), Some(10));
-        assert_eq!(Position::new(1, 0).to_byte_index(&text), Some(11));
-        assert_eq!(Position::new(0, 6).to_byte_index(&text), None);
-        assert_eq!(Position::new(2, 0).to_byte_index(&text), None);
+        assert_eq!(Position::new(0, 0).byte_index(&text), Some(0));
+        assert_eq!(Position::new(0, 1).byte_index(&text), Some(1));
+        assert_eq!(Position::new(0, 2).byte_index(&text), Some(3));
+        assert_eq!(Position::new(0, 3).byte_index(&text), Some(6));
+        assert_eq!(Position::new(0, 5).byte_index(&text), Some(10));
+        assert_eq!(Position::new(1, 0).byte_index(&text), Some(11));
+        assert_eq!(Position::new(0, 6).byte_index(&text), None);
+        assert_eq!(Position::new(2, 0).byte_index(&text), None);
     }
 
     #[test]
@@ -639,7 +623,7 @@ mod tests {
         );
         let range = Range::new(1, 0, 2, 0);
         let pos = range.start;
-        assert_eq!(pos.to_byte_index(&text), Some(6));
+        assert_eq!(pos.byte_index(&text), Some(6));
         assert_eq!(
             Range::new(1, 0, 2, 0).to_byte_index_range(&text),
             Some(6..12)

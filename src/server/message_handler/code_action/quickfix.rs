@@ -83,7 +83,7 @@ fn declare_prefix(
         if let Some(Ok(record)) = server
             .state
             .get_default_converter()
-            .and_then(|converter| Some(converter.find_by_prefix(&prefix)))
+            .map(|converter| converter.find_by_prefix(prefix))
         {
             Ok(Some(CodeAction {
                 title: format!("Declare prefix \"{}\"", prefix),

@@ -5,18 +5,10 @@ use serde::Deserialize;
 
 use super::lsp::Backend;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 #[serde(default)]
 pub struct BackendsSettings {
     pub backends: HashMap<String, BackendConfiguration>,
-}
-
-impl Default for BackendsSettings {
-    fn default() -> Self {
-        Self {
-            backends: HashMap::new(),
-        }
-    }
 }
 
 #[derive(Debug, Deserialize, Clone)]

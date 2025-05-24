@@ -17,16 +17,16 @@ pub enum RPCMessage {
 }
 
 impl RPCMessage {
-    pub fn get_id(&self) -> Option<&RequestId> {
-        match self {
-            RPCMessage::Request(request_message) => Some(&request_message.id),
-            RPCMessage::Response(response_message) => match &response_message.id {
-                RequestIdOrNull::RequestId(request_id) => Some(&request_id),
-                RequestIdOrNull::Null => None,
-            },
-            _ => None,
-        }
-    }
+    // pub fn get_id(&self) -> Option<&RequestId> {
+    //     match self {
+    //         RPCMessage::Request(request_message) => Some(&request_message.id),
+    //         RPCMessage::Response(response_message) => match &response_message.id {
+    //             RequestIdOrNull::RequestId(request_id) => Some(&request_id),
+    //             RequestIdOrNull::Null => None,
+    //         },
+    //         _ => None,
+    //     }
+    // }
     pub fn get_method(&self) -> Option<&str> {
         match self {
             RPCMessage::Notification(notification) => Some(&notification.method),
@@ -234,8 +234,8 @@ impl NotificationMessageBase {
     }
 }
 
-pub fn deserialize_message(message: &String) -> Result<RPCMessage, LSPError> {
-    serde_json::from_str(&message).map_err(|error| {
+pub fn deserialize_message(message: &str) -> Result<RPCMessage, LSPError> {
+    serde_json::from_str(message).map_err(|error| {
         error!(
             "Error while serializing message:\n{}-----------------------\n{}",
             error, message,
@@ -281,10 +281,9 @@ mod tests {
 
     #[test]
     fn deserialize_notification() {
-        let maybe_initialized = deserialize_message(
-            &r#"{"params":{"a":2},"jsonrpc":"2.0","method":"initialized"}"#.to_string(),
-        )
-        .unwrap();
+        let maybe_initialized =
+            deserialize_message(r#"{"params":{"a":2},"jsonrpc":"2.0","method":"initialized"}"#)
+                .unwrap();
         assert_eq!(
             maybe_initialized,
             RPCMessage::Notification(NotificationMessage {
@@ -298,7 +297,7 @@ mod tests {
     #[test]
     fn deserialize_request() {
         let maybe_request = deserialize_message(
-            &r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"a":[1,2,3]}}"#.to_string(),
+            r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"a":[1,2,3]}}"#,
         );
         assert_eq!(
             maybe_request,
@@ -316,8 +315,7 @@ mod tests {
 
     #[test]
     fn deserialize_response() {
-        let maybe_response =
-            deserialize_message(&r#"{"jsonrpc":"2.0","id":1,"result":{"a":1}}"#.to_string());
+        let maybe_response = deserialize_message(r#"{"jsonrpc":"2.0","id":1,"result":{"a":1}}"#);
         assert_eq!(
             maybe_response,
             Ok(RPCMessage::Response(ResponseMessage {

@@ -1,0 +1,5 @@
+[book]
+authors = ["Ioannis Nezis"]
+language = "en"
+src = "src"
+title = "Qlue-ls documentation"

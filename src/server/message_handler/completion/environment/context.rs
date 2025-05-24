@@ -9,7 +9,7 @@ use text_size::TextSize;
 
 use super::{query_graph::QueryGraph, CompletionLocation};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct Context {
     pub nodes: Vec<SyntaxNode>,
     pub prefixes: HashSet<String>,
@@ -20,13 +20,19 @@ impl Serialize for Context {
     where
         S: serde::Serializer,
     {
-        let s = self
-            .nodes
-            .iter()
-            .map(|node| node.to_string())
-            .collect::<Vec<_>>()
-            .join(" .\n");
-        serializer.serialize_str(&s)
+        if self.nodes.is_empty() {
+            serializer.serialize_none()
+        } else {
+            let s = format!(
+                "{{{}}}",
+                self.nodes
+                    .iter()
+                    .map(|node| node.to_string())
+                    .collect::<Vec<_>>()
+                    .join(" .\n")
+            );
+            serializer.serialize_str(&s)
+        }
     }
 }
 
@@ -143,7 +149,7 @@ mod test {
 
     fn location_at(input: &str, cursor: Position) -> Context {
         let root = parse_query(input);
-        let offset = (cursor.to_byte_index(input).unwrap() as u32).into();
+        let offset = (cursor.byte_index(input).unwrap() as u32).into();
         let trigger_token = get_trigger_token(&root, offset).unwrap();
         let anchor = get_anchor_token(trigger_token);
         let continuations = get_continuations(&root, &anchor);
@@ -164,10 +170,10 @@ mod test {
         let position = Position::new(3, 6);
         let context = location_at(input, position);
         assert_eq!(
-            context.to_string(),
+            serde_json::to_value(&context).unwrap().as_str().unwrap(),
             indoc! {
-                "?s <p1> <o1> .
-                 ?s <p2> <o2>"
+                "{?s <p1> <o1> .
+                 ?s <p2> <o2>}"
             }
         );
     }
@@ -185,9 +191,9 @@ mod test {
         let position = Position::new(3, 6);
         let context = location_at(input, position);
         assert_eq!(
-            context.to_string(),
+            serde_json::to_value(&context).unwrap().as_str().unwrap(),
             indoc! {
-                "?s <p2> <o2>"
+                "{?s <p2> <o2>}"
             }
         );
     }
@@ -205,11 +211,11 @@ mod test {
         let position = Position::new(3, 6);
         let context = location_at(input, position);
         assert_eq!(
-            context.to_string(),
+            serde_json::to_value(&context).unwrap().as_str().unwrap(),
             indoc! {
-                "?n1 <p1> ?n2 .
+                "{?n1 <p1> ?n2 .
                  FILTER (?n2) .
-                 ?n2 <p2> <o2>"
+                 ?n2 <p2> <o2>}"
             }
         );
     }
@@ -232,10 +238,10 @@ mod test {
         let position = Position::new(8, 6);
         let context = location_at(input, position);
         assert_eq!(
-            context.to_string(),
+            serde_json::to_value(&context).unwrap().as_str().unwrap(),
             indoc! {
-                "?n1 <> ?n2 .
-                 ?n2 <> <>"
+                "{?n1 <> ?n2 .
+                 ?n2 <> <>}"
             }
         );
     }
@@ -280,9 +286,9 @@ mod test {
         let position = Position::new(31, 4);
         let context = location_at(input, position);
         assert_eq!(
-            context.to_string(),
+            serde_json::to_value(&context).unwrap().as_str().unwrap(),
             indoc! {
-                "{
+                "{{
                   Select * WHERE {
                     ?n1 <> <>
                   }
@@ -296,7 +302,7 @@ mod test {
                   Select (?n2 as ?n1) WHERE {
                     ?n1 <> <>
                   }
-                 }"
+                 }}"
             }
         );
     }
@@ -320,14 +326,14 @@ mod test {
         let position = Position::new(9, 6);
         let context = location_at(input, position);
         assert_eq!(
-            context.to_string(),
+            serde_json::to_value(&context).unwrap().as_str().unwrap(),
             indoc! {
-              r#"?n1 <p1> ?n2 .
+              r#"{?n1 <p1> ?n2 .
                  ?n6 <> ?n4 .
                  ?n4 <p2> ?n3 .
                  ?n4 <> ?n9 .
                  ?n5 ?n6 "dings" .
-                 ?n4 <> ?n2"#
+                 ?n4 <> ?n2}"#
             }
         );
     }
@@ -346,7 +352,7 @@ mod test {
     //     let position = Position::new(3, 8);
     //     let context = location_at(input, position);
     //     assert_eq!(
-    //         context.to_string(),
+    //         serde_json::to_value(&context).unwrap().as_str().unwrap(),
     //         indoc! {
     //             "?s <p1> <o1>"
     //         }

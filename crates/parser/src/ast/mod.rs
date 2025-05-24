@@ -111,7 +111,7 @@ impl SelectQuery {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct SelectClause {
     syntax: SyntaxNode,
 }
@@ -302,11 +302,6 @@ impl GroupGraphPattern {
 }
 
 #[derive(Debug)]
-pub struct SubSelect {
-    syntax: SyntaxNode,
-}
-
-#[derive(Debug)]
 pub struct TriplesBlock {
     syntax: SyntaxNode,
 }
@@ -335,7 +330,7 @@ pub struct Subject {
     syntax: SyntaxNode,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Triple {
     syntax: SyntaxNode,
 }
@@ -424,7 +419,7 @@ pub struct ObjectList {
     syntax: SyntaxNode,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct BlankPropertyList {
     syntax: SyntaxNode,
 }

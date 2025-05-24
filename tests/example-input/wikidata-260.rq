@@ -1,7 +1,0 @@
-SELECT ?label ?coord ?place
-WHERE
-{
-   ?subj wdt:P31 wd:Q744913 .
-   ?subj wdt:P625 ?coord .
-   ?subj rdfs:label ?label FILTER (lang(?label) = "en")
-}

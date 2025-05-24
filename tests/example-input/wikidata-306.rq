@@ -1,9 +1,0 @@
-SELECT ?s ?desc (COUNT(DISTINCT ?label) as ?labelcount)
-WHERE
-{
-  ?s wdt:P31 wd:Q7725634 .
-  ?s rdfs:label ?label .
-  OPTIONAL {
-     ?s rdfs:label ?desc FILTER (lang(?desc) = "en").
-   }
- } GROUP BY ?s ?desc ORDER BY DESC(?labelcount)

@@ -1,7 +1,0 @@
-PREFIX olympics: <http://wallscope.co.uk/ontology/olympics/>
-INSERT {
-  ?v <a> <b>
-}
-WHERE {
-  VALUES ?v { 1 2 }
-}

@@ -1,7 +1,0 @@
-SELECT ?play ?playLabel
-WHERE
-{
-  ?play wdt:P31 wd:Q25379 .
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "en,es,pt,de,fr,ja,zh" . }
-}
-LIMIT 1000

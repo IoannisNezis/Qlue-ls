@@ -1,8 +1,0 @@
-SELECT ?s ?desc
-WHERE
-{
-  ?s wdt:P279 wd:Q7725634 .
-  OPTIONAL {
-     ?s rdfs:label ?desc FILTER (lang(?desc) = "en").
-   }
- }

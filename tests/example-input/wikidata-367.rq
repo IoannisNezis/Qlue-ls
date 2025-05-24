@@ -1,7 +1,0 @@
-SELECT ?l
-WHERE {
-  wd:Q5571382 ?p wd:Q223243 .
-  ?property ?ref ?p .
-  ?property rdf:type wikibase:Property .
-  ?property rdfs:label ?l FILTER (lang(?l) = "en")
-}

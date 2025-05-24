@@ -1,7 +1,0 @@
-SELECT (count(?v) as ?c) ?globe
-WHERE
-{
-  ?v wikibase:geoGlobe ?globe
-}
-GROUP BY ?globe
-ORDER BY DESC(?c)

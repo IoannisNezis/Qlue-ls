@@ -60,7 +60,9 @@ pub(super) async fn handle_completion_request(
                 CompletionLocation::BlankNodeObject(_) => {
                     blank_node_object::completions(server_rc.clone(), env).await
                 }
-                CompletionLocation::ServiceUrl => service_url::completions(server_rc.clone()).await,
+                CompletionLocation::ServiceUrl => {
+                    service_url::completions(server_rc.clone(), env).await
+                }
                 CompletionLocation::FilterConstraint | CompletionLocation::GroupCondition => {
                     variable::completions_transformed(env)
                 }

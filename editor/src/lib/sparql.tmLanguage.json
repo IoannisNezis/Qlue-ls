@@ -88,28 +88,13 @@
     "comments": {
       "patterns": [
         {
-          "name": "comment.block.sparql",
-          "begin": "/\\*",
-          "beginCaptures": {
-            "0": {
-              "name": "punctuation.definition.comment.sparql"
-            }
-          },
-          "end": "\\*/",
-          "endCaptures": {
-            "0": {
-              "name": "punctuation.definition.comment.sparql"
-            }
-          }
-        },
-        {
-          "begin": "(^\\s+)?(?=//)",
+          "begin": "(^\\s+)?#",
           "beginCaptures": {
             "1": {
               "name": "punctuation.whitespace.comment.leading.cs"
             }
           },
-          "end": "(?=$)",
+          "end": "$",
           "name": "comment.line.sparql"
         }
       ]

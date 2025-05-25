@@ -1,6 +1,6 @@
-mod core;
+mod core_new;
 mod utils;
-use core::*;
+use core_new::*;
 use std::rc::Rc;
 
 use futures::lock::Mutex;
@@ -23,8 +23,8 @@ pub(super) async fn handle_format_request(
     let server = server_rc.lock().await;
     let (document, tree) = server.state.get_state(request.get_document_uri())?;
     let edits = format_document(
-        document,
-        tree,
+        &document,
+        // tree,
         request.get_options(),
         &server.settings.format,
     )?;
@@ -43,7 +43,7 @@ pub fn format_raw(text: String) -> Result<String, String> {
             let mut document = TextDocumentItem::new("tmp", &text);
             let edits = format_document(
                 &document,
-                &tree,
+                // &tree,
                 &FormattingOptions {
                     tab_size: 2,
                     insert_spaces: true,

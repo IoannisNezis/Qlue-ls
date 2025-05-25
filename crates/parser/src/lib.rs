@@ -5,6 +5,7 @@ pub mod syntax_kind;
 mod syntax_node;
 mod utils;
 
+use parser::{guess_operation_type, TopEntryPoint};
 pub use utils::*;
 
 #[cfg(target_arch = "wasm32")]
@@ -23,6 +24,13 @@ pub fn parse_query(input: &str) -> SyntaxNode {
 
 pub fn parse_update(input: &str) -> SyntaxNode {
     SyntaxNode::new_root(parser::parse_text(input, parser::TopEntryPoint::UpdateUnit))
+}
+
+pub fn parse(input: &str) -> SyntaxNode {
+    match guess_operation_type(input) {
+        Some(TopEntryPoint::QueryUnit) | None => parse_query(input),
+        Some(TopEntryPoint::UpdateUnit) => parse_update(input),
+    }
 }
 
 #[cfg(test)]

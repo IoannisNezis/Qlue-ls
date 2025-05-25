@@ -200,5 +200,25 @@ fn lex(text: &str) -> Vec<Token> {
     tokens
 }
 
+pub fn guess_operation_type(input: &str) -> Option<TopEntryPoint> {
+    let tokens = lex(input);
+    tokens.iter().find_map(|token| match token.kind {
+        SyntaxKind::SELECT => Some(TopEntryPoint::QueryUnit),
+        SyntaxKind::LOAD
+        | SyntaxKind::CLEAR
+        | SyntaxKind::DROP
+        | SyntaxKind::CREATE
+        | SyntaxKind::ADD
+        | SyntaxKind::MOVE
+        | SyntaxKind::COPY
+        | SyntaxKind::INSERT
+        | SyntaxKind::INSERT_DATA
+        | SyntaxKind::DELETE
+        | SyntaxKind::DELETE_DATA
+        | SyntaxKind::USING => Some(TopEntryPoint::UpdateUnit),
+        _ => None,
+    })
+}
+
 #[cfg(test)]
 mod tests;

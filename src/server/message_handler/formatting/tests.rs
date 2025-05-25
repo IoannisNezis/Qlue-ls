@@ -34,7 +34,7 @@ fn format_and_compare(ugly_query: &str, pretty_query: &str, format_settings: &Fo
     let tree = parser
         .parse(ugly_query.as_bytes(), None)
         .expect("could not parse");
-    let edits = format_document(&document, &tree, &format_options, format_settings).unwrap();
+    let edits = format_document(&document, &format_options, format_settings).unwrap();
     check_collision(&edits);
     document.apply_text_edits(edits);
     assert_eq!(document.text, pretty_query);
@@ -273,10 +273,9 @@ fn format_binary_expression() {
 
 #[test]
 fn format_bind() {
-    let ugly_query = indoc!("SELECT * {?s ?p ?o Bind (1 as ?var )}\n");
+    let ugly_query = indoc!("SELECT * {BIND (1 as ?var )}\n");
     let pretty_query = indoc!(
         "SELECT * {
-           ?s ?p ?o
            BIND (1 AS ?var)
          }
          "
@@ -285,8 +284,8 @@ fn format_bind() {
 }
 
 #[test]
-fn format_inline_data() {
-    let ugly_query = indoc!("SELECT * {values ?a { 1 2 3}}\n");
+fn format_data_inline() {
+    let ugly_query = indoc!("SELECT * {VALUES ?a {  1  2  3  }}\n");
     let pretty_query = indoc!(
         "SELECT * {
            VALUES ?a { 1 2 3 }
@@ -873,7 +872,7 @@ fn format_commas() {
 }
 
 #[test]
-fn format_filter_inline() {
+fn format_inline_filter() {
     let ugly_query = indoc!(
         r#"SELECT * WHERE {
            FILTER (?a)

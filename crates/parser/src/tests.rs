@@ -30,6 +30,12 @@ fn tokenize_langtag() {
 }
 
 #[test]
+fn tokenize_delete_where() {
+    let tokens = tokenize(r#"delete where where"#);
+    assert_eq!(tokens, vec![SyntaxKind::DELETE_WHERE, SyntaxKind::WHERE,])
+}
+
+#[test]
 fn tokenize_brack() {
     let tokens = tokenize("[] [ ] [ ?var ] ");
     assert_eq!(

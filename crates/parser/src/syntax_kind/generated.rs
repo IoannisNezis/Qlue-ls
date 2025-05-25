@@ -93,9 +93,9 @@ pub enum SyntaxKind {
     #[token("DATA", ignore(case))]
     DATA,
     INSERT_DATA,
-    #[regex(r"(?i)DELETE\s+DATA")]
+    #[regex(r"(?i:DELETE\s+DATA)")]
     DELETE_DATA,
-    #[token(r"(?i)DELETE\s+WHERE")]
+    #[regex(r"(?i:DELETE\s+WHERE)")]
     DELETE_WHERE,
     #[token("DELETE", ignore(case))]
     DELETE,

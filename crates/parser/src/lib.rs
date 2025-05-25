@@ -39,9 +39,7 @@ mod tests;
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 pub fn get_parse_tree(input: &str, offset: u32) -> JsValue {
-    use parser::TopEntryPoint;
-
-    let root = SyntaxNode::new_root(parser::parse_text(input, TopEntryPoint::QueryUnit));
+    let root = parse(input);
     build_js_tree(&root, TextSize::new(offset))
 }
 

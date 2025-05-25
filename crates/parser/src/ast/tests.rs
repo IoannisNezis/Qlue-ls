@@ -2,8 +2,7 @@ use rowan::TextRange;
 
 use crate::{
     ast::{
-        self, AstNode, BlankPropertyList, GroupGraphPattern, QueryUnit, Triple, TriplesBlock,
-        WhereClause,
+        AstNode, BlankPropertyList, GroupGraphPattern, QueryUnit, Triple, TriplesBlock, WhereClause,
     },
     parse_query, SyntaxNode,
 };

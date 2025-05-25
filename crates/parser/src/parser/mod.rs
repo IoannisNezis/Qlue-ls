@@ -171,6 +171,7 @@ impl Parser {
     }
 }
 
+#[derive(Debug)]
 pub enum TopEntryPoint {
     QueryUnit,
     UpdateUnit,
@@ -203,7 +204,9 @@ fn lex(text: &str) -> Vec<Token> {
 pub fn guess_operation_type(input: &str) -> Option<TopEntryPoint> {
     let tokens = lex(input);
     tokens.iter().find_map(|token| match token.kind {
-        SyntaxKind::SELECT => Some(TopEntryPoint::QueryUnit),
+        SyntaxKind::SELECT | SyntaxKind::CONSTRUCT | SyntaxKind::ASK | SyntaxKind::DESCRIBE => {
+            Some(TopEntryPoint::QueryUnit)
+        }
         SyntaxKind::LOAD
         | SyntaxKind::CLEAR
         | SyntaxKind::DROP
@@ -215,6 +218,7 @@ pub fn guess_operation_type(input: &str) -> Option<TopEntryPoint> {
         | SyntaxKind::INSERT_DATA
         | SyntaxKind::DELETE
         | SyntaxKind::DELETE_DATA
+        | SyntaxKind::DELETE_WHERE
         | SyntaxKind::USING => Some(TopEntryPoint::UpdateUnit),
         _ => None,
     })

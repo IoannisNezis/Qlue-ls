@@ -66,6 +66,15 @@ impl PrefixDeclaration {
                 .to_string(),
         )
     }
+
+    pub fn raw_uri_prefix(&self) -> Option<String> {
+        let s = self
+            .syntax
+            .first_child_or_token_by_kind(&|kind| kind == SyntaxKind::IRIREF)?
+            .to_string();
+        (s.len() >= 2).then_some(s[1..(s.len() - 1)].to_string())
+    }
+
     pub fn uri_prefix(&self) -> Option<String> {
         Some(
             self.syntax

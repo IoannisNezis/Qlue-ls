@@ -33,11 +33,11 @@ pub(super) async fn handle_completion_request(
         .map_err(to_lsp_error)?;
 
     let completion_list = if env.trigger_kind == CompletionTriggerKind::TriggerCharacter
-        && env.trigger_character.as_ref().map_or(false, |tc| tc == "?")
+        && env.trigger_character.as_ref().is_some_and(|tc| tc == "?")
         || env
             .search_term
             .as_ref()
-            .map_or(false, |search_term| search_term.starts_with("?"))
+            .is_some_and(|search_term| search_term.starts_with("?"))
     {
         Some(variable::completions(env).map_err(to_lsp_error)?)
     } else if env.location == CompletionLocation::Unknown {

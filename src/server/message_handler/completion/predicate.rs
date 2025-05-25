@@ -150,5 +150,5 @@ fn local_template_context(environment: &CompletionEnvironment) -> Result<Context
     } else {
         panic!("predicate completion called for non predicate location");
     }
-    return Ok(template_context);
+    Ok(template_context)
 }

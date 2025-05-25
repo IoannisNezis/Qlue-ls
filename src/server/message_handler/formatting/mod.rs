@@ -23,7 +23,7 @@ pub(super) async fn handle_format_request(
     let server = server_rc.lock().await;
     let (document, tree) = server.state.get_state(request.get_document_uri())?;
     let edits = format_document(
-        &document,
+        document,
         tree,
         request.get_options(),
         &server.settings.format,
@@ -52,7 +52,7 @@ pub fn format_raw(text: String) -> Result<String, String> {
             )
             .map_err(|err| err.message)?;
             document.apply_text_edits(edits);
-            return Ok(document.text);
+            Ok(document.text)
         }
         Err(_) => panic!("Could not setup parser"),
     }

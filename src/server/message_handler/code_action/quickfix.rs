@@ -136,7 +136,7 @@ mod test {
         let document = TextDocumentItem::new("uri", text);
         let tree = parser.parse(&document.text, None);
         state.add_document(document, tree);
-        return state;
+        state
     }
     #[test]
     fn shorten_uri_undeclared() {

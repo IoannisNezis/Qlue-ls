@@ -24,7 +24,7 @@ pub(super) async fn completions(
             .state
             .get_all_backends()
             .into_iter()
-            .filter(|backend| !default_backend.is_some_and(|default| backend.name == default.name))
+            .filter(|backend| default_backend.is_none_or(|default| backend.name != default.name))
             .map(|backend| {
                 let (prefix, import_edit) = backend_prefix(query_unit.as_ref(), backend);
                 CompletionItem {

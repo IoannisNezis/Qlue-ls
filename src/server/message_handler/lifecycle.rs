@@ -71,82 +71,80 @@ pub(super) async fn handle_initialize_request(
                     }
                 }
                 for config in backend_configs.into_iter() {
-                    match config {
-                        BackendConfiguration {
-                            backend,
-                            prefix_map,
-                            default,
-                            queries,
-                        } => {
-                            server
-                                .state
-                                .add_prefix_map(backend.name.clone(), prefix_map)
-                                .await
-                                .map_err(|err| {
-                                    log::error!("{}", err);
-                                    LSPError::new(
-                                        ErrorCode::InvalidParams,
-                                        &format!("Could not load prefix map:\n\"{}\"", err),
-                                    )
-                                })?;
-                            server
-                                .tools
-                                .tera
-                                .add_raw_template(
-                                    &format!("{}-subjectCompletion", &backend.name),
-                                    &queries.subject_completion,
-                                )
-                                .map_err(|err| {
-                                    log::error!("{}", err);
-                                    LSPError::new(
-                                        ErrorCode::InvalidParams,
-                                        &format!(
-                                            "Could not load template: subjectCompletion of backend {}",
-                                            &backend.name
-                                        ),
-                                    )
-                                })?;
-                            server
-                                .tools
-                                .tera
-                                .add_raw_template(
-                                    &format!("{}-predicateCompletion", &backend.name),
-                                    &queries.predicate_completion,
-                                )
-                                .map_err(|err| {
-                                    log::error!("{}", err);
-                                    LSPError::new(
-                                        ErrorCode::InvalidParams,
-                                        &format!(
-                                            "Could not load template: predicateCompletion of backend {}",
-                                            &backend.name
-                                        ),
-                                    )
-                                })?;
-                            server
-                                .tools
-                                .tera
-                                .add_raw_template(
-                                    &format!("{}-objectCompletion", &backend.name),
-                                    &queries.object_completion,
-                                )
-                                .map_err(|err| {
-                                    log::error!("{}", err);
-                                    LSPError::new(
-                                        ErrorCode::InvalidParams,
-                                        &format!(
-                                            "Could not load template: objectCompletion of backend {}",
-                                            &backend.name
-                                        ),
-                                    )
-                                })?;
-                            if default {
-                                server.state.set_default_backend(backend.name.clone());
-                            }
+                    let BackendConfiguration {
+                        backend,
+                        prefix_map,
+                        default,
+                        queries,
+                    } = config;
 
-                            server.state.add_backend(backend);
-                        }
+                    server
+                        .state
+                        .add_prefix_map(backend.name.clone(), prefix_map)
+                        .await
+                        .map_err(|err| {
+                            log::error!("{}", err);
+                            LSPError::new(
+                                ErrorCode::InvalidParams,
+                                &format!("Could not load prefix map:\n\"{}\"", err),
+                            )
+                        })?;
+                    server
+                        .tools
+                        .tera
+                        .add_raw_template(
+                            &format!("{}-subjectCompletion", &backend.name),
+                            &queries.subject_completion,
+                        )
+                        .map_err(|err| {
+                            log::error!("{}", err);
+                            LSPError::new(
+                                ErrorCode::InvalidParams,
+                                &format!(
+                                    "Could not load template: subjectCompletion of backend {}",
+                                    &backend.name
+                                ),
+                            )
+                        })?;
+                    server
+                        .tools
+                        .tera
+                        .add_raw_template(
+                            &format!("{}-predicateCompletion", &backend.name),
+                            &queries.predicate_completion,
+                        )
+                        .map_err(|err| {
+                            log::error!("{}", err);
+                            LSPError::new(
+                                ErrorCode::InvalidParams,
+                                &format!(
+                                    "Could not load template: predicateCompletion of backend {}",
+                                    &backend.name
+                                ),
+                            )
+                        })?;
+                    server
+                        .tools
+                        .tera
+                        .add_raw_template(
+                            &format!("{}-objectCompletion", &backend.name),
+                            &queries.object_completion,
+                        )
+                        .map_err(|err| {
+                            log::error!("{}", err);
+                            LSPError::new(
+                                ErrorCode::InvalidParams,
+                                &format!(
+                                    "Could not load template: objectCompletion of backend {}",
+                                    &backend.name
+                                ),
+                            )
+                        })?;
+                    if default {
+                        server.state.set_default_backend(backend.name.clone());
                     }
+
+                    server.state.add_backend(backend);
                 }
 
                 let progress_report_1 = ProgressNotification::report_notification(

@@ -121,7 +121,7 @@ impl Server {
     }
 }
 
-async fn handle_error(server_rc: Rc<Mutex<Server>>, message: &String, error: LSPError) {
+async fn handle_error(server_rc: Rc<Mutex<Server>>, message: &str, error: LSPError) {
     log::error!(
         "Error occured while handling message:\n\"{}\"\n\n{:?}\n{}",
         message,
@@ -129,7 +129,7 @@ async fn handle_error(server_rc: Rc<Mutex<Server>>, message: &String, error: LSP
         error.message
     );
     if let Ok(id) =
-        serde_json::from_str::<RecoverId>(&message).map(|msg| RequestIdOrNull::RequestId(msg.id))
+        serde_json::from_str::<RecoverId>(message).map(|msg| RequestIdOrNull::RequestId(msg.id))
     {
         if let Err(error) = server_rc
             .lock()

@@ -49,7 +49,7 @@ use super::{
 
 pub(super) async fn dispatch(
     server_rc: Rc<Mutex<Server>>,
-    message_string: &String,
+    message_string: &str,
 ) -> Result<(), LSPError> {
     let message = deserialize_message(message_string)?;
     let method = message.get_method().unwrap_or("");
@@ -61,7 +61,7 @@ pub(super) async fn dispatch(
 
     macro_rules! call_async {
         ($handler:ident) => {{
-            let message_copy = message_string.clone();
+            let message_copy = message_string.to_string();
             let task = spawn_local(async move {
                 if let Err(err) = $handler(server_rc.clone(), message.parse().unwrap()).await {
                     handle_error(server_rc, &message_copy, err).await;

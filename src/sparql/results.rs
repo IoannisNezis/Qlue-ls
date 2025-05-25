@@ -50,7 +50,7 @@ impl RDFTerm {
                 lang: _,
                 datatype: _,
             }
-            | RDFTerm::Uri { value } => &value,
+            | RDFTerm::Uri { value } => value,
         }
     }
 }
@@ -151,7 +151,7 @@ mod test {
     ]
   }
 }"#;
-        let results: SparqlResult = serde_json::from_str(&result_str).unwrap();
+        let results: SparqlResult = serde_json::from_str(result_str).unwrap();
         assert_eq!(results.head.vars, vec!["first", "second"]);
         assert!(matches!(
             results.results.bindings[0].get("first").unwrap(),

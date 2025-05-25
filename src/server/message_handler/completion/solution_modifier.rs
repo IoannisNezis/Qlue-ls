@@ -97,7 +97,7 @@ pub(super) fn completions(
             command: None,
         });
     }
-    return Ok(CompletionList {
+    Ok(CompletionList {
         is_incomplete: false,
         item_defaults: Some(ItemDefaults {
             insert_text_format: Some(InsertTextFormat::Snippet),
@@ -106,5 +106,5 @@ pub(super) fn completions(
             edit_range: None,
         }),
         items,
-    });
+    })
 }

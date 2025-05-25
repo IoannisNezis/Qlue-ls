@@ -1,6 +1,6 @@
 use core::fmt;
 use lazy_static::lazy_static;
-use std::{collections::HashSet, usize, vec};
+use std::{collections::HashSet, vec};
 
 use tree_sitter::{Node, Point, Tree, TreeCursor};
 
@@ -136,7 +136,7 @@ pub(super) fn format_document(
 fn merge_comments(
     edits: Vec<ConsolidatedTextEdit>,
     comments: Vec<CommentMarker>,
-    text: &String,
+    text: &str,
     indent_base: &str,
 ) -> Result<Vec<TextEdit>, LSPError> {
     let mut comment_iter = comments.into_iter().rev().peekable();
@@ -311,7 +311,7 @@ fn collect_format_edits(
                     }
                     _ => acc.0.push(child),
                 };
-                return acc;
+                acc
             });
 
     // NOTE: Step 1: Separation
@@ -409,7 +409,7 @@ fn node_augmentation(
 
     // NOTE: Capitalize keywords
     if KEYWORDS.contains(&node.kind()) && settings.capitalize_keywords {
-        augmentations.push(TextEdit::new(Range::from_node(&node), node.kind()));
+        augmentations.push(TextEdit::new(Range::from_node(node), node.kind()));
     }
     augmentations
 }
@@ -513,7 +513,7 @@ fn in_node_augmentation(
                     if prop_list.kind() == "PropertyListPathNotEmpty" =>
                 {
                     let insert = match settings.align_predicates {
-                        true => &format!("{}", " ".repeat(get_column_width(subject) + 1)),
+                        true => &" ".repeat(get_column_width(subject) + 1),
                         false => "  ",
                     };
                     let mut cursor = prop_list.walk();
@@ -685,7 +685,7 @@ fn pre_node_augmentation(
         | "InlineData"
         | "Update"
         | "Update1"
-            if node.prev_sibling().map_or(false, |prev| prev.kind() != ".") =>
+            if node.prev_sibling().is_some_and(|prev| prev.kind() != ".") =>
         {
             Some(get_linebreak(&indentation, indent_base))
         }
@@ -706,15 +706,13 @@ fn pre_node_augmentation(
             match settings.where_new_line
                 || node
                     .parent()
-                    .map_or(false, |parent| parent.kind() == "ConstructQuery")
+                    .is_some_and(|parent| parent.kind() == "ConstructQuery")
                 || node
                     .parent()
-                    .map(|parent| parent.kind() == "DescribeQuery")
-                    .unwrap_or(false)
+                    .is_some_and(|parent| parent.kind() == "DescribeQuery")
                 || node
                     .prev_sibling()
-                    .map(|sibling| sibling.kind() == "DatasetClause")
-                    .unwrap_or(false)
+                    .is_some_and(|sibling| sibling.kind() == "DatasetClause")
             {
                 true => Some(get_linebreak(&indentation, indent_base)),
                 false => Some(" ".to_string()),

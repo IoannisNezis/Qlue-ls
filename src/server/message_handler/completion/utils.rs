@@ -62,12 +62,12 @@ pub(super) async fn dispatch_completion_query(
                 fetch_online_completions(
                     server_rc.clone(),
                     &query_unit,
-                    &backend,
+                    backend,
                     &format!("{}-{}", backend.name, completion_template),
                     template_context,
                 )
                 .await?,
-                get_replace_range(&environment),
+                get_replace_range(environment),
                 trigger_on_accept.then_some("triggerNewCompletion"),
                 server_rc.lock().await.settings.completion.result_size_limit,
             ))
@@ -79,13 +79,20 @@ pub(super) async fn dispatch_completion_query(
     }
 }
 
+pub(super) struct InternalCompletionItem {
+    label: Option<String>,
+    detail: Option<String>,
+    value: String,
+    import_edit: Option<TextEdit>,
+}
+
 pub(super) async fn fetch_online_completions(
     server_rc: Rc<Mutex<Server>>,
     query_unit: &QueryUnit,
     backend: &Backend,
     query_template: &str,
     mut query_template_context: Context,
-) -> Result<Vec<(Option<String>, Option<String>, String, Option<TextEdit>)>, CompletionError> {
+) -> Result<Vec<InternalCompletionItem>, CompletionError> {
     let (url, query, timeout_ms) = {
         let server = server_rc.lock().await;
         query_template_context.insert("limit", &server.settings.completion.result_size_limit);
@@ -117,14 +124,19 @@ pub(super) async fn fetch_online_completions(
                 .get("qlue_ls_entity")
                 .expect("Every completion query should provide a `qlue_ls_entity`");
             let (value, import_edit) =
-                render_rdf_term(&*server, query_unit, rdf_term, &backend.name);
+                render_rdf_term(&server, query_unit, rdf_term, &backend.name);
             let label = binding
                 .get("qlue_ls_label")
                 .map(|rdf_term| rdf_term.value().to_string());
             let detail = binding
                 .get("qlue_ls_detail")
                 .map(|rdf_term: &RDFTerm| rdf_term.value().to_string());
-            (label, detail, value, import_edit)
+            InternalCompletionItem {
+                label,
+                detail,
+                value,
+                import_edit,
+            }
         })
         .collect())
 }
@@ -138,14 +150,14 @@ fn render_rdf_term(
     match rdf_term {
         RDFTerm::Uri { value } => match server.shorten_uri(value, Some(backend_name)) {
             Some((prefix, uri, curie)) => {
-                let prefix_decl_edit = if query_unit.prologue().as_ref().map_or(true, |prologue| {
+                let prefix_decl_edit = if query_unit.prologue().as_ref().is_none_or(|prologue| {
                     prologue
                         .prefix_declarations()
                         .iter()
                         .all(|prefix_declaration| {
                             prefix_declaration
                                 .prefix()
-                                .map_or(false, |declared_prefix| declared_prefix != prefix)
+                                .is_some_and(|declared_prefix| declared_prefix != prefix)
                         })
                 }) {
                     Some(TextEdit::new(
@@ -185,7 +197,7 @@ pub(super) fn get_replace_range(context: &CompletionEnvironment) -> Range {
     }
 }
 
-pub(super) async fn get_prefix_declarations<'a>(
+pub(super) async fn get_prefix_declarations(
     server_rc: Rc<Mutex<Server>>,
     backend: Option<&Backend>,
     prefixes: Vec<String>,
@@ -287,7 +299,7 @@ pub(super) fn reduce_path(
 }
 
 pub(super) fn to_completion_items(
-    items: Vec<(Option<String>, Option<String>, String, Option<TextEdit>)>,
+    items: Vec<InternalCompletionItem>,
     range: Range,
     command: Option<&str>,
     limit: u32,
@@ -295,31 +307,38 @@ pub(super) fn to_completion_items(
     let items: Vec<_> = items
         .into_iter()
         .enumerate()
-        .map(
-            |(idx, (label, detail, value, import_edit))| CompletionItem {
-                label: format!("{} ", label.as_ref().unwrap_or(&value)),
-                label_details: detail
-                    .map(|detail| CompletionItemLabelDetails { detail })
-                    .or(label.and(Some(CompletionItemLabelDetails {
-                        detail: value.clone(),
+        .map(|(idx, internal_completion_item)| CompletionItem {
+            label: format!(
+                "{} ",
+                internal_completion_item
+                    .label
+                    .as_ref()
+                    .unwrap_or(&internal_completion_item.value)
+            ),
+            label_details: internal_completion_item
+                .detail
+                .map(|detail| CompletionItemLabelDetails { detail })
+                .or(internal_completion_item
+                    .label
+                    .and(Some(CompletionItemLabelDetails {
+                        detail: internal_completion_item.value.clone(),
                     }))),
-                detail: None,
-                sort_text: Some(format!("{:0>5}", idx + 100)),
-                insert_text: None,
-                text_edit: Some(TextEdit {
-                    range: range.clone(),
-                    new_text: format!("{} ", value),
-                }),
-                kind: CompletionItemKind::Value,
-                insert_text_format: None,
-                additional_text_edits: import_edit.map(|edit| vec![edit]),
-                command: command.map(|command| Command {
-                    title: command.to_string(),
-                    command: command.to_string(),
-                    arguments: None,
-                }),
-            },
-        )
+            detail: None,
+            sort_text: Some(format!("{:0>5}", idx + 100)),
+            insert_text: None,
+            text_edit: Some(TextEdit {
+                range: range.clone(),
+                new_text: format!("{} ", internal_completion_item.value),
+            }),
+            kind: CompletionItemKind::Value,
+            insert_text_format: None,
+            additional_text_edits: internal_completion_item.import_edit.map(|edit| vec![edit]),
+            command: command.map(|command| Command {
+                title: command.to_string(),
+                command: command.to_string(),
+                arguments: None,
+            }),
+        })
         .collect();
     CompletionList {
         is_incomplete: items.len() == limit as usize,

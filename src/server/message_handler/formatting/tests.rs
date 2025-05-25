@@ -10,12 +10,12 @@ use crate::server::{
     message_handler::formatting::format_document,
 };
 
-fn check_collision(edits: &Vec<TextEdit>) {
+fn check_collision(edits: &[TextEdit]) {
     for idx1 in 0..edits.len() {
         for idx2 in idx1 + 1..edits.len() {
             let a = edits.get(idx1).unwrap();
             let b = edits.get(idx2).unwrap();
-            assert!(!a.overlaps(&b));
+            assert!(!a.overlaps(b));
         }
     }
 }
@@ -783,8 +783,10 @@ fn format_anon() {
 
 #[test]
 fn format_comment_indentation() {
-    let mut settings = FormatSettings::default();
-    settings.tab_size = Some(4);
+    let settings = FormatSettings {
+        tab_size: Some(4),
+        ..Default::default()
+    };
     let ugly_query = indoc!(
         "SELECT * WHERE {
            {} UNION # comment
@@ -1009,8 +1011,10 @@ fn format_group_concat() {
 
 #[test]
 fn format_setting_align_prefixes() {
-    let mut format_settings = FormatSettings::default();
-    format_settings.align_prefixes = true;
+    let mut format_settings = FormatSettings {
+        align_prefixes: true,
+        ..Default::default()
+    };
     let ugly_query = indoc!(
         "PREFIX namespace123: <iri> PREFIX namespace12: <iri> PREFIX namespace1: <iri>
          SELECT * WHERE {}
@@ -1037,8 +1041,10 @@ fn format_setting_align_prefixes() {
 
 #[test]
 fn format_setting_align_predicates() {
-    let mut format_settings = FormatSettings::default();
-    format_settings.align_predicates = true;
+    let mut format_settings = FormatSettings {
+        align_prefixes: true,
+        ..Default::default()
+    };
     let ugly_query = indoc!(
         "SELECT * WHERE {
            ?adlasjsalkdjaldasjd <> <> ; <> <>
@@ -1067,8 +1073,10 @@ fn format_setting_align_predicates() {
 
 #[test]
 fn format_setting_separate_prolouge() {
-    let mut format_settings = FormatSettings::default();
-    format_settings.separate_prolouge = true;
+    let mut format_settings = FormatSettings {
+        separate_prolouge: true,
+        ..Default::default()
+    };
     let ugly_query = indoc!(
         "PREFIX namespace: <iri>
          SELECT * WHERE {}
@@ -1093,8 +1101,10 @@ fn format_setting_separate_prolouge() {
 
 #[test]
 fn format_setting_capitalize_keywords() {
-    let mut format_settings = FormatSettings::default();
-    format_settings.capitalize_keywords = true;
+    let mut format_settings = FormatSettings {
+        capitalize_keywords: true,
+        ..Default::default()
+    };
     let ugly_query = indoc!(
         "prefix namespace: <iri>
          select * where {}
@@ -1118,8 +1128,10 @@ fn format_setting_capitalize_keywords() {
 
 #[test]
 fn format_setting_insert_spaces() {
-    let mut format_settings = FormatSettings::default();
-    format_settings.insert_spaces = Some(true);
+    let mut format_settings = FormatSettings {
+        insert_spaces: Some(true),
+        ..Default::default()
+    };
     let ugly_query = indoc!(
         "SELECT * WHERE { ?a ?b ?c }
          "
@@ -1144,9 +1156,11 @@ fn format_setting_insert_spaces() {
 
 #[test]
 fn format_setting_tab_size() {
-    let mut format_settings = FormatSettings::default();
-    format_settings.tab_size = Some(4);
-    format_settings.insert_spaces = Some(true);
+    let format_settings = FormatSettings {
+        tab_size: Some(4),
+        insert_spaces: Some(true),
+        ..Default::default()
+    };
     let ugly_query = indoc!(
         "SELECT * WHERE { ?a ?b ?c }
          "
@@ -1163,8 +1177,10 @@ fn format_setting_tab_size() {
 
 #[test]
 fn format_setting_where_new_line() {
-    let mut format_settings = FormatSettings::default();
-    format_settings.where_new_line = true;
+    let mut format_settings = FormatSettings {
+        where_new_line: true,
+        ..Default::default()
+    };
     let ugly_query = indoc!(
         "SELECT * WHERE { ?a ?b ?c }
          "
@@ -1190,8 +1206,10 @@ fn format_setting_where_new_line() {
 
 #[test]
 fn format_setting_filter_same_line() {
-    let mut format_settings = FormatSettings::default();
-    format_settings.filter_same_line = true;
+    let mut format_settings = FormatSettings {
+        filter_same_line: true,
+        ..Default::default()
+    };
     let ugly_query = indoc!(
         "SELECT * WHERE { ?a ?b ?c FILTER (?a)}
          "

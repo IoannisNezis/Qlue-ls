@@ -35,7 +35,7 @@ pub(super) async fn handle_diagnostic_request(
     }
 
     if let Some(uncompacted_uri_diagnostics) =
-        uncompacted_uri::diagnostics(document, &*server, parse_tree)
+        uncompacted_uri::diagnostics(document, &server, parse_tree)
     {
         diagnostics.extend(uncompacted_uri_diagnostics);
     }

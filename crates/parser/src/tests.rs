@@ -1,6 +1,5 @@
-use logos::Logos;
-
 use crate::syntax_kind::SyntaxKind;
+use logos::Logos;
 
 fn tokenize(input: &str) -> Vec<SyntaxKind> {
     let mut token_kinds = Vec::new();

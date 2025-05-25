@@ -6,9 +6,9 @@ use logos::Logos;
 pub enum SyntaxKind {
     Eof = 0,
     Error,
-    #[regex(r#"[ \t\n\r\f]+"#)]
+    #[regex(r"[ \t\n\r\f]+")]
     WHITESPACE,
-    #[regex(r#"#\.*\n"#)]
+    #[regex(r"#.*")]
     Comment,
     #[token("BASE", ignore(case))]
     BASE,

@@ -22,7 +22,7 @@ struct Token {
 
 impl Token {
     fn is_trivia(&self) -> bool {
-        matches!(self.kind, SyntaxKind::WHITESPACE)
+        matches!(self.kind, SyntaxKind::WHITESPACE | SyntaxKind::Comment)
     }
 }
 

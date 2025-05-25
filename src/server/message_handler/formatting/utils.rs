@@ -1,6 +1,6 @@
 use ll_sparql_parser::syntax_kind::SyntaxKind;
 
-pub const KEYWORDS: [SyntaxKind; 111] = [
+pub const KEYWORDS: [SyntaxKind; 110] = [
     SyntaxKind::a,
     SyntaxKind::BASE,
     SyntaxKind::PREFIX,
@@ -108,7 +108,6 @@ pub const KEYWORDS: [SyntaxKind; 111] = [
     SyntaxKind::COPY,
     SyntaxKind::INSERT,
     SyntaxKind::DATA,
-    SyntaxKind::DELETE,
     SyntaxKind::WITH,
     SyntaxKind::USING,
     SyntaxKind::CREATE,

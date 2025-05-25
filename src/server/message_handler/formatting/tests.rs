@@ -29,7 +29,6 @@ fn format_and_compare(ugly_query: &str, pretty_query: &str, format_settings: &Fo
     parser
         .set_language(&tree_sitter_sparql::LANGUAGE.into())
         .unwrap();
-    // let tree = parser.parse(ugly_query, None).unwrap();
     let mut document = TextDocumentItem::new("testdocument", ugly_query);
     let tree = parser
         .parse(ugly_query.as_bytes(), None)
@@ -507,7 +506,7 @@ fn format_delete_where() {
     let ugly_query = indoc!(
         "delete   where
          {
-            ?a ?b ?c.
+                ?a ?b ?c.
              graph <a> {
          ?c ?b ?a }.
          ?d ?e ?f
@@ -539,7 +538,7 @@ fn format_delete_where() {
 fn format_modify() {
     let ugly_query = indoc!(
         "With <a> delete
-         { 
+                        { 
          ?a  ?b   ?C   
           } insert { ?x ?y ?z } using <a> using named <b> where
              {
@@ -1328,11 +1327,12 @@ fn format_comments_3() {
 #[test]
 fn format_construct_where() {
     let ugly_query = indoc!(
-        r#"CONSTRUCT WHERE { ?s ?p ?o }
+        r#"CONSTRUCT WHERE { ?s ?p ?o . ?s ?p ?o }
           "#
     );
     let pretty_query = indoc!(
         r#"CONSTRUCT WHERE {
+             ?s ?p ?o .
              ?s ?p ?o
            }
           "#

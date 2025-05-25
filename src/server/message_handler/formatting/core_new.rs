@@ -1,13 +1,10 @@
 use core::fmt;
-use lazy_static::lazy_static;
-use ll_sparql_parser::ast::QueryUnit;
-use std::result;
-use std::{collections::HashSet, vec};
+use std::vec;
 
 use ll_sparql_parser::{
-    parse_query, print_full_tree, syntax_kind::SyntaxKind, SyntaxElement, SyntaxElementChildren,
-    SyntaxNode,
+    parse, print_full_tree, syntax_kind::SyntaxKind, SyntaxElement, SyntaxNode,
 };
+use streaming_iterator::empty;
 use text_size::{TextRange, TextSize};
 
 use crate::server::{
@@ -26,14 +23,13 @@ pub(super) fn format_document(
     options: &FormattingOptions,
     settings: &FormatSettings,
 ) -> Result<Vec<TextEdit>, LSPError> {
-    let mut settings = settings.clone();
     settings.insert_spaces.unwrap_or(options.insert_spaces);
     let indent_string = match settings.insert_spaces.unwrap_or(options.insert_spaces) {
         true => " ".repeat(settings.tab_size.unwrap_or(options.tab_size) as usize),
         false => "\t".to_string(),
     };
     let walker = Walker::new(
-        parse_query(&document.text),
+        parse(&document.text),
         &document.text,
         settings,
         indent_string,
@@ -87,15 +83,23 @@ struct CommentMarker {
     trailing: bool,
 }
 
-lazy_static! {
-    static ref INC_INDENTATION: HashSet<SyntaxKind> = HashSet::from([
-        SyntaxKind::BlankNodePropertyListPath,
-        SyntaxKind::GroupGraphPattern,
-        // SyntaxKind::TriplesTemplateBlock,
-        SyntaxKind::BrackettedExpression,
-        SyntaxKind::ConstructTemplate,
-        SyntaxKind::QuadData,
-    ]);
+fn inc_indent(node: &SyntaxNode) -> u8 {
+    match node.kind() {
+        SyntaxKind::BlankNodePropertyListPath
+        | SyntaxKind::GroupGraphPattern
+        | SyntaxKind::BrackettedExpression
+        | SyntaxKind::ConstructTemplate
+        | SyntaxKind::Quads
+        | SyntaxKind::QuadsNotTriples => 1,
+        SyntaxKind::ConstructQuery
+            if node
+                .first_child()
+                .is_some_and(|node| node.kind() != SyntaxKind::ConstructTemplate) =>
+        {
+            1
+        }
+        _ => 0,
+    }
 }
 
 struct Walker<'a> {
@@ -151,22 +155,24 @@ impl<'a> Walker<'a> {
         indentation: u8,
     ) -> Vec<SimplifiedTextEdit> {
         match node.kind() {
-            SyntaxKind::QueryUnit => match (children.first(), children.last()) {
-                (Some(first), Some(last)) => vec![
-                    SimplifiedTextEdit::new(
-                        TextRange::new(0.into(), first.text_range().start()),
+            SyntaxKind::QueryUnit | SyntaxKind::UpdateUnit => {
+                match (children.first(), children.last()) {
+                    (Some(first), Some(last)) => vec![
+                        SimplifiedTextEdit::new(
+                            TextRange::new(0.into(), first.text_range().start()),
+                            "",
+                        ),
+                        SimplifiedTextEdit::new(
+                            TextRange::new(last.text_range().end(), node.text_range().end()),
+                            "\n",
+                        ),
+                    ],
+                    _ => vec![SimplifiedTextEdit::new(
+                        TextRange::new(0.into(), node.text_range().end()),
                         "",
-                    ),
-                    SimplifiedTextEdit::new(
-                        TextRange::new(last.text_range().end(), node.text_range().end()),
-                        "\n",
-                    ),
-                ],
-                _ => vec![SimplifiedTextEdit::new(
-                    TextRange::new(0.into(), node.text_range().end()),
-                    "",
-                )],
-            },
+                    )],
+                }
+            }
             SyntaxKind::Prologue if self.settings.align_prefixes => {
                 let prefix_pos_and_length: Vec<(TextSize, TextSize)> = children
                     .iter()
@@ -359,19 +365,20 @@ impl<'a> Walker<'a> {
             SyntaxKind::DescribeQuery => children
                 .iter()
                 .filter_map(|child| match child.kind() {
-                    SyntaxKind::VAR1 | SyntaxKind::VAR2 | SyntaxKind::IRIREF | SyntaxKind::Star => {
-                        Some(SimplifiedTextEdit::new(
-                            TextRange::empty(child.text_range().start()),
-                            " ",
-                        ))
-                    }
+                    SyntaxKind::VAR1
+                    | SyntaxKind::VAR2
+                    | SyntaxKind::VarOrIri
+                    | SyntaxKind::Star => Some(SimplifiedTextEdit::new(
+                        TextRange::empty(child.text_range().start()),
+                        " ",
+                    )),
                     _ => None,
                 })
                 .collect(),
             SyntaxKind::Modify => children
                 .iter()
                 .filter_map(|child| match child.kind() {
-                    SyntaxKind::IRIREF => Some(vec![SimplifiedTextEdit::new(
+                    SyntaxKind::iri => Some(vec![SimplifiedTextEdit::new(
                         TextRange::empty(child.text_range().start()),
                         " ",
                     )]),
@@ -447,6 +454,85 @@ impl<'a> Walker<'a> {
                     " ",
                 )]
             }
+            SyntaxKind::DELETE => {
+                if self.settings.capitalize_keywords {
+                    vec![SimplifiedTextEdit::new(node.text_range(), "DELETE")]
+                } else if node.text_range().len() > TextSize::new(6) {
+                    vec![SimplifiedTextEdit::new(
+                        TextRange::new(TextSize::new(6), node.text_range().end()),
+                        "",
+                    )]
+                } else {
+                    vec![]
+                }
+            }
+            SyntaxKind::QuadPattern | SyntaxKind::QuadData => children
+                .iter()
+                .filter_map(|child| match child.kind() {
+                    SyntaxKind::RCurly => Some(SimplifiedTextEdit::new(
+                        TextRange::empty(child.text_range().start()),
+                        "\n",
+                    )),
+                    _ => None,
+                })
+                .collect(),
+            SyntaxKind::QuadsNotTriples => children
+                .iter()
+                .filter_map(|child| match child.kind() {
+                    SyntaxKind::GRAPH => Some(SimplifiedTextEdit::new(
+                        TextRange::empty(child.text_range().end()),
+                        " ",
+                    )),
+                    SyntaxKind::VarOrIri => Some(SimplifiedTextEdit::new(
+                        TextRange::empty(child.text_range().end()),
+                        " ",
+                    )),
+                    SyntaxKind::RCurly => Some(SimplifiedTextEdit::new(
+                        TextRange::empty(child.text_range().start()),
+                        &self.get_linebreak(indentation),
+                    )),
+                    _ => None,
+                })
+                .collect(),
+            SyntaxKind::DELETE_WHERE => {
+                let start = node.text_range().start();
+                let p1 = node.text_range().start() + TextSize::new(6);
+                let end = node.text_range().end();
+                let p2 = node.text_range().end() - TextSize::new(5);
+
+                let mut res = vec![SimplifiedTextEdit::new(TextRange::new(p1, p2), " ")];
+                if self.settings.capitalize_keywords {
+                    res.push(SimplifiedTextEdit::new(TextRange::new(start, p1), "DELETE"));
+                    res.push(SimplifiedTextEdit::new(TextRange::new(p2, end), "WHERE"));
+                }
+                res
+            }
+            SyntaxKind::DELETE_DATA => {
+                let start = node.text_range().start();
+                let p1 = node.text_range().start() + TextSize::new(6);
+                let end = node.text_range().end();
+                let p2 = node.text_range().end() - TextSize::new(4);
+
+                let mut res = vec![SimplifiedTextEdit::new(TextRange::new(p1, p2), " ")];
+                if self.settings.capitalize_keywords {
+                    res.push(SimplifiedTextEdit::new(TextRange::new(start, p1), "DELETE"));
+                    res.push(SimplifiedTextEdit::new(TextRange::new(p2, end), "DATA"));
+                }
+                res
+            }
+            SyntaxKind::INSERT_DATA => {
+                let start = node.text_range().start();
+                let p1 = node.text_range().start() + TextSize::new(6);
+                let end = node.text_range().end();
+                let p2 = node.text_range().end() - TextSize::new(4);
+
+                let mut res = vec![SimplifiedTextEdit::new(TextRange::new(p1, p2), " ")];
+                if self.settings.capitalize_keywords {
+                    res.push(SimplifiedTextEdit::new(TextRange::new(start, p1), "INSERT"));
+                    res.push(SimplifiedTextEdit::new(TextRange::new(p2, end), "DATA"));
+                }
+                res
+            }
             _ => Vec::new(),
         }
     }
@@ -460,8 +546,8 @@ impl<'a> Walker<'a> {
             SyntaxKind::ConstructTriples
             | SyntaxKind::SubSelect
             | SyntaxKind::SolutionModifier
-            | SyntaxKind::Quads
             | SyntaxKind::DatasetClause
+            | SyntaxKind::TriplesTemplate
             | SyntaxKind::TriplesBlock
             | SyntaxKind::UNION => Some(self.get_linebreak(indentation)),
 
@@ -481,21 +567,21 @@ impl<'a> Walker<'a> {
             {
                 Some(prev)
                     if prev.kind() == SyntaxKind::TriplesBlock
-                        && dbg!(self.text.get(
-                            prev.text_range().end().into()..node.text_range().start().into()
-                        ))
-                        .map_or(false, |s| !s.contains("\n"))
+                        && self
+                            .text
+                            .get(prev.text_range().end().into()..node.text_range().start().into())
+                            .map_or(false, |s| !s.contains("\n"))
                         && self.settings.filter_same_line =>
                 {
                     Some(" ".to_string())
                 }
                 _ => Some(self.get_linebreak(indentation)),
             },
-            SyntaxKind::QuadsNotTriples | SyntaxKind::Update | SyntaxKind::UpdateOne
+            SyntaxKind::QuadsNotTriples | SyntaxKind::UpdateOne
                 if node
                     .as_node()
                     .and_then(|node| node.first_token().unwrap().prev_token())
-                    .map_or(false, |prev| prev.kind() != SyntaxKind::Dot) =>
+                    .is_some_and(|prev| prev.kind() != SyntaxKind::Dot) =>
             {
                 Some(self.get_linebreak(indentation))
             }
@@ -597,7 +683,6 @@ impl<'a> Walker<'a> {
             // },
             SyntaxKind::GroupGraphPatternSub
             | SyntaxKind::ConstructTriples
-            | SyntaxKind::Quads
             | SyntaxKind::SubSelect => Some(self.get_linebreak(indentation.saturating_sub(1))),
             _ => None,
         }?;
@@ -676,14 +761,10 @@ impl Iterator for Walker<'_> {
         let augmentation_edits = self.node_augmentation(&element, &children, indentation);
 
         if let SyntaxElement::Node(node) = &element {
+            let new_indent = indentation + inc_indent(&node);
             self.queue.extend(
-                node.children_with_tokens().zip(std::iter::repeat(
-                    indentation
-                        + INC_INDENTATION
-                            .contains(&node.kind())
-                            .then(|| 1)
-                            .unwrap_or(0),
-                )),
+                node.children_with_tokens()
+                    .zip(std::iter::repeat(new_indent)),
             );
         }
 
@@ -747,6 +828,8 @@ fn get_separator(kind: SyntaxKind) -> Seperator {
         | SyntaxKind::SelectClause
         | SyntaxKind::GroupCondition
         | SyntaxKind::PropertyListPathNotEmpty
+        | SyntaxKind::QuadPattern
+        | SyntaxKind::QuadsNotTriples
         | SyntaxKind::Bind => Seperator::Empty,
         SyntaxKind::BaseDecl
         | SyntaxKind::PrefixDecl
@@ -788,7 +871,6 @@ fn get_separator(kind: SyntaxKind) -> Seperator {
         | SyntaxKind::PropertyListNotEmpty
         | SyntaxKind::Path
         | SyntaxKind::TriplesSameSubjectPath
-        | SyntaxKind::QuadsNotTriples
         | SyntaxKind::PathAlternative
         | SyntaxKind::RelationalExpression
         | SyntaxKind::ConditionalAndExpression

@@ -221,6 +221,7 @@
     wikibase: http://wikiba.se/ontology#
     schema: http://schema.org/
     xsd: http://www.w3.org/2001/XMLSchema#
+    issn: http://issn.org/resource/ISSN/
   default: true
   queries:
     subjectCompletion: |-
@@ -273,7 +274,7 @@
       {% for prefix in prefixes %}
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
-      SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_count WHERE {
+      SELECT ?qlue_ls_entity ?qlue_ls_count WHERE {
         {% if subject is not variable %}
         { { SELECT ?qlue_ls_entity (COUNT(?qui_object) AS ?qlue_ls_count)
           WHERE { {{ local_context }} }
@@ -298,14 +299,13 @@
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-      SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
+      SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_count WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_count) WHERE {
           {{ context }} {{ local_context }} .
         } GROUP BY ?qlue_ls_entity }
-        OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_alias }
-        BIND (COALESCE(?qlue_ls_alias, ?qlue_ls_entity) AS ?qlue_ls_label)
+        OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label }
         {% if search_term %}
-        FILTER (REGEX(STR(?qlue_ls_label), "^{{ search_term }}") || REGEX(STR(?qlue_ls_alias), "^{{ search_term }}"))
+        FILTER (REGEX(STR(?qlue_ls_entity), "^{{ search_term }}") || REGEX(STR(?qlue_ls_label), "^{{ search_term }}"))
         {% endif %}
       } ORDER BY DESC(?qlue_ls_count)
       LIMIT {{ limit }} OFFSET {{ offset }}

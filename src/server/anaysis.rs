@@ -1,7 +1,4 @@
-use ll_sparql_parser::{
-    ast::{AstNode, Iri, PrefixDeclaration, Prologue, QueryUnit},
-    parse,
-};
+use ll_sparql_parser::ast::{AstNode, Iri, PrefixDeclaration, Prologue, QueryUnit};
 
 use super::{
     lsp::errors::{ErrorCode, LSPError},
@@ -10,7 +7,7 @@ use super::{
 };
 
 pub fn namespace_is_declared(
-    server_state: &ServerState,
+    server_state: &mut ServerState,
     document_uri: &str,
     namespace: &str,
 ) -> Result<bool, LSPError> {
@@ -20,11 +17,10 @@ pub fn namespace_is_declared(
 }
 
 pub fn find_all_uncompacted_iris(
-    server: &Server,
+    server: &mut Server,
     document_uri: &str,
 ) -> Result<Vec<Iri>, LSPError> {
-    let document = server.state.get_document(document_uri)?;
-    let root = parse(&document.text);
+    let root = server.state.get_cached_parse_tree(document_uri)?;
     let query_unit = QueryUnit::cast(root).ok_or(LSPError::new(
         ErrorCode::InternalError,
         "find_all_uncompacted_uris is not jet suported for update",
@@ -63,11 +59,10 @@ pub fn find_all_uncompacted_iris(
 /// This function can return a `LSPError` if:
 /// * The document specified by `document_uri` cannot be found or loaded.
 pub(crate) fn find_all_prefix_declarations(
-    server_state: &ServerState,
+    server_state: &mut ServerState,
     document_uri: &str,
 ) -> Result<Vec<PrefixDeclaration>, LSPError> {
-    let document = server_state.get_document(document_uri)?;
-    let root = parse(&document.text);
+    let root = server_state.get_cached_parse_tree(document_uri)?;
     Ok(root
         .first_child()
         .and_then(|child| child.first_child())
@@ -104,7 +99,7 @@ mod tests {
              }"
         ));
         server.state = state;
-        let uncompacted_iris = find_all_uncompacted_iris(&server, "uri").unwrap();
+        let uncompacted_iris = find_all_uncompacted_iris(&mut server, "uri").unwrap();
         assert_eq!(
             uncompacted_iris
                 .into_iter()
@@ -116,14 +111,14 @@ mod tests {
 
     #[test]
     fn declared_namespaces() {
-        let state = setup_state(indoc!(
+        let mut state = setup_state(indoc!(
             "PREFIX wdt: <iri>
                  PREFIX wd: <iri>
                  PREFIX wdt: <iri>
 
                  SELECT * {}"
         ));
-        let declared_namesapces = find_all_prefix_declarations(&state, "uri").unwrap();
+        let declared_namesapces = find_all_prefix_declarations(&mut state, "uri").unwrap();
         assert_eq!(
             declared_namesapces
                 .iter()

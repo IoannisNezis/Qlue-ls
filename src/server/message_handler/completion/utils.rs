@@ -324,7 +324,7 @@ pub(super) fn to_completion_items(
                         detail: internal_completion_item.value.clone(),
                     }))),
             detail: None,
-            sort_text: Some(format!("{:0>5}", idx + 100)),
+            sort_text: Some(format!("{:0>5}", idx + 100)), // NOTE: The first 100 id's. are reserved
             insert_text: None,
             text_edit: Some(TextEdit {
                 range: range.clone(),

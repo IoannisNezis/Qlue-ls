@@ -12,7 +12,7 @@ use crate::server::{
     lsp::{
         diagnostic::{Diagnostic, DiagnosticCode},
         errors::{ErrorCode, LSPError},
-        textdocument::{Range, TextDocumentItem, TextEdit},
+        textdocument::{Range, TextEdit},
         CodeAction, CodeActionKind, CodeActionParams, CodeActionRequest, CodeActionResponse,
     },
     Server,
@@ -22,9 +22,9 @@ pub(super) async fn handle_codeaction_request(
     server_rc: Rc<Mutex<Server>>,
     request: CodeActionRequest,
 ) -> Result<(), LSPError> {
-    let server = server_rc.lock().await;
+    let mut server = server_rc.lock().await;
     let mut code_action_response = CodeActionResponse::new(request.get_id());
-    code_action_response.add_code_actions(generate_code_actions(&server, &request.params)?);
+    code_action_response.add_code_actions(generate_code_actions(&mut server, &request.params)?);
     code_action_response.add_code_actions(
         request
             .params
@@ -32,7 +32,7 @@ pub(super) async fn handle_codeaction_request(
             .diagnostics
             .into_iter()
             .filter_map(|diagnostic| {
-                match get_quickfix(&server, &request.params.text_document.uri, diagnostic) {
+                match get_quickfix(&mut server, &request.params.text_document.uri, diagnostic) {
                     Ok(code_action) => code_action,
                     Err(err) => {
                         log::error!(
@@ -49,7 +49,7 @@ pub(super) async fn handle_codeaction_request(
 }
 
 fn generate_code_actions(
-    server: &Server,
+    server: &mut Server,
     params: &CodeActionParams,
 ) -> Result<Vec<CodeAction>, LSPError> {
     let document_uri = &params.text_document.uri;
@@ -74,7 +74,7 @@ fn generate_code_actions(
                     .parent()
                     .is_some_and(|parent| parent.kind() == SyntaxKind::iri)
             {
-                if let Some(code_action) = shorten_all_uris(server, document) {
+                if let Some(code_action) = shorten_all_uris(server, document_uri) {
                     code_actions.push(code_action)
                 }
             } else if [SyntaxKind::VAR1, SyntaxKind::VAR2].contains(&token.kind()) {
@@ -93,22 +93,22 @@ fn generate_code_actions(
 }
 
 // TODO: Handle errors properly.
-fn shorten_all_uris(server: &Server, document: &TextDocumentItem) -> Option<CodeAction> {
+fn shorten_all_uris(server: &mut Server, document_uri: &String) -> Option<CodeAction> {
     let mut code_action = CodeAction::new("Shorten all URI's", Some(CodeActionKind::Refactor));
-    let uncompacted_uris = find_all_uncompacted_iris(server, &document.uri).ok()?;
+    let uncompacted_uris = find_all_uncompacted_iris(server, document_uri).ok()?;
     let mut declared_uri_prefix_set: HashSet<String> =
-        find_all_prefix_declarations(&server.state, &document.uri)
+        find_all_prefix_declarations(&mut server.state, document_uri)
             .ok()?
             .into_iter()
             .filter_map(|prefix_declaration| prefix_declaration.raw_uri_prefix())
             .collect();
-
+    let document = server.state.get_document(document_uri).ok()?;
     uncompacted_uris.iter().for_each(|iri| {
         if let Some((prefix, uri_prefix, curie)) =
             server.shorten_uri(&iri.raw_iri().expect("iri should be uncompacted"), None)
         {
             code_action.add_edit(
-                &document.uri,
+                document_uri,
                 TextEdit::new(
                     Range::from_byte_offset_range(iri.syntax().text_range(), &document.text)
                         .unwrap(),
@@ -117,7 +117,7 @@ fn shorten_all_uris(server: &Server, document: &TextDocumentItem) -> Option<Code
             );
             if !declared_uri_prefix_set.contains(&uri_prefix) {
                 code_action.add_edit(
-                    &document.uri,
+                    document_uri,
                     TextEdit::new(
                         Range::new(0, 0, 0, 0),
                         &format!("PREFIX {}: <{}>\n", prefix, uri_prefix),
@@ -178,8 +178,7 @@ mod test {
              }"
         ));
         server.state = state;
-        let document = server.state.get_document("uri").unwrap();
-        let code_action = shorten_all_uris(&server, document).unwrap();
+        let code_action = shorten_all_uris(&mut server, &"uri".to_string()).unwrap();
         assert_eq!(
             code_action.edit.changes.get("uri").unwrap(),
             &vec![
@@ -204,8 +203,7 @@ mod test {
              }"
         ));
         server.state = state;
-        let document = server.state.get_document("uri").unwrap();
-        let code_action = shorten_all_uris(&server, document).unwrap();
+        let code_action = shorten_all_uris(&mut server, &"uri".to_string()).unwrap();
         assert_eq!(
             code_action.edit.changes.get("uri").unwrap(),
             &vec![

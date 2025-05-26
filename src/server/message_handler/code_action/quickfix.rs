@@ -14,7 +14,7 @@ use log::error;
 use std::collections::HashMap;
 
 pub(super) fn get_quickfix(
-    server: &Server,
+    server: &mut Server,
     document_uri: &String,
     diagnostic: Diagnostic,
 ) -> Result<Option<CodeAction>, LSPError> {
@@ -43,7 +43,7 @@ fn remove_prefix_declaration(
 }
 
 fn shorten_uri(
-    server: &Server,
+    server: &mut Server,
     document_uri: &String,
     diagnostic: Diagnostic,
 ) -> Result<Option<CodeAction>, LSPError> {
@@ -53,7 +53,7 @@ fn shorten_uri(
                 serde_parse(data)?;
             let mut code_action = CodeAction::new("Shorten URI", Some(CodeActionKind::QuickFix));
             code_action.add_edit(document_uri, TextEdit::new(diagnostic.range, &curie));
-            if !namespace_is_declared(&server.state, document_uri, &prefix)? {
+            if !namespace_is_declared(&mut server.state, document_uri, &prefix)? {
                 code_action.add_edit(
                     document_uri,
                     TextEdit::new(
@@ -140,7 +140,6 @@ mod test {
              }"
         ));
         server.state = state;
-        let document = server.state.get_document("uri").unwrap();
         let diagnostic = Diagnostic {
             range: Range::new(1, 5, 1, 29),
             severity: diagnostic::DiagnosticSeverity::Information,
@@ -154,7 +153,7 @@ mod test {
             ])),
         };
 
-        let code_action = shorten_uri(&server, &document.uri, diagnostic)
+        let code_action = shorten_uri(&mut server, &"uri".to_string(), diagnostic)
             .unwrap()
             .unwrap();
 
@@ -180,7 +179,6 @@ mod test {
              }"
         ));
         server.state = state;
-        let document = server.state.get_document("uri").unwrap();
         let diagnostic = Diagnostic {
             range: Range::new(2, 5, 2, 29),
             severity: diagnostic::DiagnosticSeverity::Information,
@@ -194,7 +192,7 @@ mod test {
             ])),
         };
 
-        let code_action = shorten_uri(&server, &document.uri, diagnostic)
+        let code_action = shorten_uri(&mut server, &"uri".to_string(), diagnostic)
             .unwrap()
             .unwrap();
         assert_eq!(

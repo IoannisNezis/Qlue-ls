@@ -74,6 +74,14 @@ impl TextDocumentItem {
     pub(crate) fn get_range(&self, range: &Range) -> Option<&str> {
         self.text.get(range.to_byte_index_range(&self.text)?)
     }
+
+    pub(crate) fn increase_version(&mut self) {
+        self.version += 1;
+    }
+
+    pub(crate) fn version(&self) -> u32 {
+        self.version
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]

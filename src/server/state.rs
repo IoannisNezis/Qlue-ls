@@ -4,6 +4,7 @@ use super::lsp::{
     Backend, TextDocumentContentChangeEvent, TraceValue,
 };
 use curies::{Converter, CuriesError};
+use ll_sparql_parser::{parse, SyntaxNode};
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq)]
@@ -20,6 +21,7 @@ pub struct ServerState {
     backends: HashMap<String, Backend>,
     uri_converter: HashMap<String, Converter>,
     default_backend: Option<String>,
+    parse_tree_cache: Option<(String, u32, SyntaxNode)>,
 }
 
 impl ServerState {
@@ -31,6 +33,7 @@ impl ServerState {
             backends: HashMap::new(),
             uri_converter: HashMap::new(),
             default_backend: None,
+            parse_tree_cache: None,
         }
     }
 
@@ -90,17 +93,17 @@ impl ServerState {
         uri: &String,
         content_changes: Vec<TextDocumentContentChangeEvent>,
     ) -> Result<(), LSPError> {
-        let document = &mut self.documents.get_mut(uri).ok_or(LSPError::new(
+        let document = self.documents.get_mut(uri).ok_or(LSPError::new(
             ErrorCode::InvalidParams,
             &format!("Could not change unknown document {}", uri),
         ))?;
-
         document.apply_text_edits(
             content_changes
                 .into_iter()
                 .map(TextEdit::from_text_document_content_change_event)
                 .collect::<Vec<TextEdit>>(),
         );
+        document.increase_version();
         Ok(())
     }
 
@@ -109,6 +112,21 @@ impl ServerState {
             ErrorCode::InvalidRequest,
             &format!("Requested document \"{}\"could not be found", uri),
         ))
+    }
+
+    pub(super) fn get_cached_parse_tree(&mut self, uri: &str) -> Result<SyntaxNode, LSPError> {
+        let document = self.documents.get(uri).ok_or(LSPError::new(
+            ErrorCode::InvalidRequest,
+            &format!("Requested document \"{}\"could not be found", uri),
+        ))?;
+        if let Some((cached_uri, cached_version, cached_root)) = self.parse_tree_cache.as_ref() {
+            if uri == cached_uri && *cached_version == document.version() {
+                return Ok(cached_root.clone());
+            }
+        }
+        let root = parse(&document.text);
+        self.parse_tree_cache = Some((uri.to_string(), document.version(), root.clone()));
+        Ok(root)
     }
 
     pub(crate) fn get_default_converter(&self) -> Option<&Converter> {

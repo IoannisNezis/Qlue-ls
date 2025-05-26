@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- replace tree-sitter with hand-written parser
+  - this effects almost everything and behaviour changes are possible
+- **breaking** identify operation type always returns a String
+- update various dependencies
+
+### Fixed
+
+- syntax highlighting of comments in demo editor
+- tokeize 'DELETE WHERE'
+- tokenize comments
+
 ## [0.6.4]
 
 ### Added

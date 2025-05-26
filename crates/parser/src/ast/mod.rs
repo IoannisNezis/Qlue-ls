@@ -521,8 +521,8 @@ impl Iri {
 
     pub fn is_uncompressed(&self) -> bool {
         self.syntax
-            .first_child()
-            .map_or(false, |child| child.kind() == SyntaxKind::IRIREF)
+            .first_child_or_token()
+            .is_some_and(|child| child.kind() == SyntaxKind::IRIREF)
     }
 }
 

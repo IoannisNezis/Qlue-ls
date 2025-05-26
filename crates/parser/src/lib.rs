@@ -5,18 +5,16 @@ pub mod syntax_kind;
 mod syntax_node;
 mod utils;
 
-use parser::{guess_operation_type, TopEntryPoint};
-pub use utils::*;
-
 #[cfg(target_arch = "wasm32")]
 use js_sys::{Array, Object, Reflect};
+pub use parser::{guess_operation_type, TopEntryPoint};
 #[cfg(target_arch = "wasm32")]
 use rowan::TextSize;
 use syntax_kind::SyntaxKind;
+pub use syntax_node::*;
+pub use utils::*;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
-
-pub use syntax_node::*;
 
 pub fn parse_query(input: &str) -> SyntaxNode {
     SyntaxNode::new_root(parser::parse_text(input, parser::TopEntryPoint::QueryUnit))

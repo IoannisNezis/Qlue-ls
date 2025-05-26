@@ -1,6 +1,6 @@
 mod utils;
 
-use std::usize;
+use std::{collections::HashMap, usize};
 
 use rowan::{cursor::SyntaxToken, SyntaxNodeChildren, TextSize};
 use utils::nth_ancestor;

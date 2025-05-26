@@ -1,7 +1,8 @@
 use futures::lock::Mutex;
 use ll_sparql_parser::{
-    ast::{AstNode, Path, QueryUnit},
+    ast::{AstNode, Path, Prologue, QueryUnit},
     syntax_kind::SyntaxKind,
+    SyntaxNode,
 };
 use std::{fmt::Display, rc::Rc};
 use tera::Context;
@@ -210,23 +211,23 @@ pub(super) fn get_replace_range(context: &CompletionEnvironment) -> Range {
     }
 }
 
-pub(super) async fn get_prefix_declarations(
-    server_rc: Rc<Mutex<Server>>,
-    backend: Option<&Backend>,
-    prefixes: Vec<String>,
-) -> Vec<(String, String)> {
-    let server = server_rc.lock().await;
-    backend
-        .map(|backend| {
-            prefixes
-                .into_iter()
-                .filter_map(|prefix| {
-                    server
-                        .state
-                        .get_converter(&backend.name)
-                        .and_then(|converter| converter.find_by_prefix(&prefix).ok())
+pub(super) async fn get_prefix_declarations(root: &SyntaxNode) -> Vec<(String, String)> {
+    root.first_child()
+        .and_then(|child| child.first_child())
+        .and_then(Prologue::cast)
+        .map(|prologue| {
+            prologue
+                .prefix_declarations()
+                .iter()
+                .filter_map(|prefix_declaration| {
+                    match (
+                        prefix_declaration.prefix(),
+                        prefix_declaration.raw_uri_prefix(),
+                    ) {
+                        (Some(prefix), Some(uri_prefix)) => Some((prefix, uri_prefix)),
+                        _ => None,
+                    }
                 })
-                .map(|record| (record.prefix.clone(), record.uri_prefix.clone()))
                 .collect()
         })
         .unwrap_or_default()

@@ -231,8 +231,7 @@ impl CompletionEnvironment {
         if let Some(ref context) = self.context {
             prefixes.extend(context.prefixes.clone());
         }
-        let prefix_declarations =
-            get_prefix_declarations(server_rc, self.backend.as_ref(), prefixes).await;
+        let prefix_declarations = get_prefix_declarations(&self.tree).await;
         template_context.insert("prefixes", &prefix_declarations);
         template_context
     }
@@ -278,7 +277,8 @@ impl CompletionEnvironment {
                                                 .is_some_and(|prefix| {
                                                     prefix == prefixed_name.prefix()
                                                 })
-                                                .then_some(prefix_declaration.raw_uri_prefix()).flatten()
+                                                .then_some(prefix_declaration.raw_uri_prefix())
+                                                .flatten()
                                         },
                                     )
                                 })

@@ -111,7 +111,20 @@ pub(super) async fn fetch_online_completions(
     log::debug!("Query:\n{}", query);
     let result = fetch_sparql_result(&url, &query, timeout_ms)
         .await
-        .map_err(|err| CompletionError::Request(err.message))?;
+        .map_err(|err| match err {
+            crate::server::fetch::SparqlRequestError::Timeout => {
+                CompletionError::Request("Completion query timed out".to_string())
+            }
+            crate::server::fetch::SparqlRequestError::Connection => {
+                CompletionError::Request("Completion query failed, connection errored".to_string())
+            }
+            crate::server::fetch::SparqlRequestError::Response(msg) => {
+                CompletionError::Request(msg)
+            }
+            crate::server::fetch::SparqlRequestError::Deserialization(msg) => {
+                CompletionError::Request(msg)
+            }
+        })?;
     log::info!("Result size: {}", result.results.bindings.len());
 
     let server = server_rc.lock().await;

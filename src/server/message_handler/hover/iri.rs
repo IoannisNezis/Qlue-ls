@@ -47,7 +47,9 @@ pub(super) async fn hover(server: &Server, token: SyntaxToken) -> Result<Option<
         ))?
         .url;
     let sparql_response =
-        fetch_sparql_result(backend_url, &query, server.settings.completion.timeout_ms).await?;
+        fetch_sparql_result(backend_url, &query, server.settings.completion.timeout_ms)
+            .await
+            .map_err(|_err| LSPError::new(ErrorCode::InternalError, "hover query failed"))?;
     match sparql_response.results.bindings.first() {
         Some(binding) => binding
             .get("qlue_ls_entity")

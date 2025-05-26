@@ -174,49 +174,28 @@ Here is a quick guide to set this project up for development.
 
 You will only have to do this once.
 
-### install node dependencies
+In the `justfile` and `Makefile` you will find the target `init_dev`, run it:
 
 ```bash
-cd editor
-npm install
+just init_dev
 ```
 
-### build wasm & bindings
-
-If you have [just](https://github.com/casey/just) installed:
+or 
 
 ```bash
-just build-wasm
+make init_dev
 ```
 
-If you have [make](https://wiki.ubuntuusers.de/Makefile/) installed:
-
-```bash
-make wasm
-```
+It will:
+  - install node dependencies
+  - build wasm binaries
+  - link against local packages
+  - run the vite dev server
 
 If you don't have [just](https://github.com/casey/just) or [make](https://wiki.ubuntuusers.de/Makefile/) installed:
 
 **Install [just](https://github.com/casey/just)**
 
-
-### link against local packages
-
-```bash
-cd pkg
-npm link
-cd ../editor
-npm link qlue-ls
-```
-
-## Run application
-
-```bash
-cd editor
-npm run dev
-```
-
-Now the webapp should be running, open the browser on `localhost:5173`.
 
 ## Automatically rebuild on change
 

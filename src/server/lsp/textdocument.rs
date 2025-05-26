@@ -1,17 +1,7 @@
-use std::{
-    fmt::{self, Display},
-    iter::once,
-};
-
+use super::TextDocumentContentChangeEvent;
 use log::error;
 use serde::{Deserialize, Serialize};
-
-use tree_sitter::{Node, Point};
-
-use super::{
-    errors::{ErrorCode, LSPError},
-    TextDocumentContentChangeEvent,
-};
+use std::fmt::{self, Display};
 
 pub type DocumentUri = String;
 
@@ -140,13 +130,6 @@ impl Position {
         (offset_count == offset).then_some(position)
     }
 
-    pub(crate) fn from_point(position: Point) -> Position {
-        Position {
-            line: position.row as u32,
-            character: position.column as u32,
-        }
-    }
-
     /// Converts a UTF-16 based position within a string to a byte index.
     ///
     /// # Arguments
@@ -197,44 +180,6 @@ impl Position {
         }
         Some(byte_index)
     }
-
-    /// Converts a UTF-8 based position to a UTF-16 based position.
-    pub fn translate_to_utf16_encoding(&mut self, text: &String) -> Result<(), LSPError> {
-        let line = text
-            .lines()
-            .chain(once(""))
-            .nth(self.line as usize)
-            .ok_or_else(|| {
-                LSPError::new(
-                    ErrorCode::InternalError,
-                    &format!(
-                        "Failed to translate UTF-8 position to UTF-16 position: {} in\n\"{}\" Not enough lines.",
-                        self, text
-                    ),
-                )
-            })?;
-        let mut utf16_index = 0;
-        let mut utf8_index = 0;
-        for char in line.chars() {
-            if utf8_index == self.character as usize {
-                break;
-            }
-            utf8_index += char.len_utf8();
-            utf16_index += char.len_utf16();
-
-            if utf8_index > self.character as usize {
-                return Err(LSPError::new(
-                    ErrorCode::InternalError,
-                    &format!(
-                        "UTF-8 index: {} is not on the boundary of a UTF-8 code point in \"{}\"",
-                        self.character, line
-                    ),
-                ));
-            }
-        }
-        self.character = utf16_index as u32;
-        Ok(())
-    }
 }
 
 impl PartialOrd for Position {
@@ -277,32 +222,10 @@ impl Range {
         }
     }
 
-    // pub (crate) fn from_ts_point(from: Point)
-    pub(crate) fn between(node1: &Node, node2: &Node) -> Range {
-        Self {
-            start: Position::from_point(node1.end_position()),
-            end: Position::from_point(node2.start_position()),
-        }
-    }
-
-    pub(crate) fn from_node(node: &Node) -> Range {
-        Self {
-            start: Position::from_point(node.start_position()),
-            end: Position::from_point(node.end_position()),
-        }
-    }
-
     pub fn to_byte_index_range(&self, text: &str) -> Option<std::ops::Range<usize>> {
         match (self.start.byte_index(text), self.end.byte_index(text)) {
             (Some(from), Some(to)) => Some(from..to),
             _ => None,
-        }
-    }
-
-    pub(crate) fn from_ts_positions(start_position: Point, end_position: Point) -> Range {
-        Self {
-            start: Position::from_point(start_position),
-            end: Position::from_point(end_position),
         }
     }
 
@@ -313,12 +236,6 @@ impl Range {
 
     fn is_empty(&self) -> bool {
         self.start == self.end
-    }
-
-    pub(crate) fn translate_to_utf16_encoding(&mut self, text: &String) -> Result<(), LSPError> {
-        self.start.translate_to_utf16_encoding(text)?;
-        self.end.translate_to_utf16_encoding(text)?;
-        Ok(())
     }
 
     pub(crate) fn from_byte_offset_range(range: text_size::TextRange, text: &str) -> Option<Range> {
@@ -433,29 +350,29 @@ mod tests {
         assert_eq!(Position::from_byte_index(2, s), None);
     }
 
-    #[test]
-    fn translate_utf8_utf16() {
-        let s = "aä😀\n".to_string();
-        let mut p0 = Position::new(0, 0);
-        p0.translate_to_utf16_encoding(&s).unwrap();
-        assert_eq!(p0, Position::new(0, 0));
-
-        let mut p1 = Position::new(0, 1);
-        p1.translate_to_utf16_encoding(&s).unwrap();
-        assert_eq!(p1, Position::new(0, 1));
-
-        let mut p2 = Position::new(0, 3);
-        p2.translate_to_utf16_encoding(&s).unwrap();
-        assert_eq!(p2, Position::new(0, 2));
-
-        let mut p3 = Position::new(0, 7);
-        p3.translate_to_utf16_encoding(&s).unwrap();
-        assert_eq!(p3, Position::new(0, 4));
-
-        let mut p4 = Position::new(1, 0);
-        p4.translate_to_utf16_encoding(&s).unwrap();
-        assert_eq!(p4, Position::new(1, 0));
-    }
+    // #[test]
+    // fn translate_utf8_utf16() {
+    //     let s = "aä😀\n".to_string();
+    //     let mut p0 = Position::new(0, 0);
+    //     p0.translate_to_utf16_encoding(&s).unwrap();
+    //     assert_eq!(p0, Position::new(0, 0));
+    //
+    //     let mut p1 = Position::new(0, 1);
+    //     p1.translate_to_utf16_encoding(&s).unwrap();
+    //     assert_eq!(p1, Position::new(0, 1));
+    //
+    //     let mut p2 = Position::new(0, 3);
+    //     p2.translate_to_utf16_encoding(&s).unwrap();
+    //     assert_eq!(p2, Position::new(0, 2));
+    //
+    //     let mut p3 = Position::new(0, 7);
+    //     p3.translate_to_utf16_encoding(&s).unwrap();
+    //     assert_eq!(p3, Position::new(0, 4));
+    //
+    //     let mut p4 = Position::new(1, 0);
+    //     p4.translate_to_utf16_encoding(&s).unwrap();
+    //     assert_eq!(p4, Position::new(1, 0));
+    // }
 
     #[test]
     fn full_range_empty() {

@@ -4,8 +4,7 @@ use futures::lock::Mutex;
 
 use crate::server::{
     lsp::{
-        errors::{ErrorCode, LSPError},
-        DidChangeTextDocumentNotification, DidOpenTextDocumentNotification,
+        errors::LSPError, DidChangeTextDocumentNotification, DidOpenTextDocumentNotification,
         DidSaveTextDocumentNotification,
     },
     Server,
@@ -17,8 +16,7 @@ pub(super) async fn handle_did_open_notification(
 ) -> Result<(), LSPError> {
     let mut server = server_rc.lock().await;
     let document = did_open_notification.get_text_document();
-    let tree = server.tools.parser.parse(document.text.as_bytes(), None);
-    server.state.add_document(document, tree);
+    server.state.add_document(document);
     Ok(())
 }
 
@@ -31,19 +29,6 @@ pub(super) async fn handle_did_change_notification(
     server
         .state
         .change_document(uri, did_change_notification.params.content_changes)?;
-    let text = server.state.get_document(uri)?.text.clone();
-    // let old_tree = server.state.get_tree(&uri).ok();
-    let new_tree = server.tools.parser.parse(text.as_bytes(), None);
-    if new_tree.is_none() {
-        log::warn!("Could not build new parse-tree for \"{}\"", uri);
-    }
-    if let Err(err) = server.state.update_tree(uri, new_tree) {
-        log::error!("{}", err.message);
-        return Err(LSPError::new(
-            ErrorCode::InternalError,
-            &format!("Error while building parse-tree:\n{}", err.message),
-        ));
-    }
 
     Ok(())
 }

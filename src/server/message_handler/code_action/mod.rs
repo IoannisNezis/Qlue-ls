@@ -4,11 +4,11 @@ mod quickfix;
 use std::{collections::HashSet, rc::Rc};
 
 use futures::lock::Mutex;
-use ll_sparql_parser::{parse_query, syntax_kind::SyntaxKind, TokenAtOffset};
+use ll_sparql_parser::{ast::AstNode, parse_query, syntax_kind::SyntaxKind, TokenAtOffset};
 use quickfix::get_quickfix;
 
 use crate::server::{
-    anaysis::{get_all_uncompacted_uris, get_declared_uri_prefixes},
+    anaysis::{find_all_prefix_declarations, find_all_uncompacted_iris},
     lsp::{
         diagnostic::{Diagnostic, DiagnosticCode},
         errors::{ErrorCode, LSPError},
@@ -95,18 +95,26 @@ fn generate_code_actions(
 // TODO: Handle errors properly.
 fn shorten_all_uris(server: &Server, document: &TextDocumentItem) -> Option<CodeAction> {
     let mut code_action = CodeAction::new("Shorten all URI's", Some(CodeActionKind::Refactor));
-    let uncompacted_uris = get_all_uncompacted_uris(server, &document.uri).ok()?;
+    let uncompacted_uris = find_all_uncompacted_iris(server, &document.uri).ok()?;
     let mut declared_uri_prefix_set: HashSet<String> =
-        get_declared_uri_prefixes(&server.state, &document.uri)
+        find_all_prefix_declarations(&server.state, &document.uri)
             .ok()?
             .into_iter()
-            .map(|(uri, _range)| uri[1..uri.len() - 1].to_string())
+            .filter_map(|prefix_declaration| prefix_declaration.raw_uri_prefix())
             .collect();
 
-    uncompacted_uris.iter().for_each(|(uri, range)| {
-        if let Some((prefix, uri_prefix, curie)) = server.shorten_uri(&uri[1..uri.len() - 1], None)
+    uncompacted_uris.iter().for_each(|iri| {
+        if let Some((prefix, uri_prefix, curie)) =
+            server.shorten_uri(&iri.raw_iri().expect("iri should be uncompacted"), None)
         {
-            code_action.add_edit(&document.uri, TextEdit::new(range.clone(), &curie));
+            code_action.add_edit(
+                &document.uri,
+                TextEdit::new(
+                    Range::from_byte_offset_range(iri.syntax().text_range(), &document.text)
+                        .unwrap(),
+                    &curie,
+                ),
+            );
             if !declared_uri_prefix_set.contains(&uri_prefix) {
                 code_action.add_edit(
                     &document.uri,
@@ -130,10 +138,6 @@ fn shorten_all_uris(server: &Server, document: &TextDocumentItem) -> Option<Code
 mod test {
     use std::collections::HashMap;
 
-    use indoc::indoc;
-    use tree_sitter::Parser;
-    use tree_sitter_sparql::LANGUAGE;
-
     use crate::server::{
         lsp::{
             textdocument::{Range, TextDocumentItem, TextEdit},
@@ -143,6 +147,7 @@ mod test {
         state::ServerState,
         Server,
     };
+    use indoc::indoc;
 
     fn setup_state(text: &str) -> ServerState {
         let mut state = ServerState::new();
@@ -158,13 +163,8 @@ mod test {
                 HashMap::from_iter([("schema".to_string(), "https://schema.org/".to_string())]),
             )
             .unwrap();
-        let mut parser = Parser::new();
-        if let Err(err) = parser.set_language(&LANGUAGE.into()) {
-            log::error!("Could not initialize parser:\n{}", err)
-        }
         let document = TextDocumentItem::new("uri", text);
-        let tree = parser.parse(&document.text, None);
-        state.add_document(document, tree);
+        state.add_document(document);
         state
     }
 

@@ -3,67 +3,98 @@ use indoc::indoc;
 use crate::server::message_handler::identification::determine_operation_type;
 
 fn expect_type(operation: &str, expected_type: &str) {
-    let determined_type =
-        determine_operation_type(operation.into()).expect("could not determine operation type");
+    let determined_type = determine_operation_type(operation.into());
     assert_eq!(determined_type, expected_type);
 }
 
 #[test]
 fn query_basic() {
     expect_type(indoc!("SELECT * WHERE { ?s ?p ?o }"), "Query");
-    expect_type(indoc!(
-        "SELECT * WHERE {
+    expect_type(
+        indoc!(
+            "SELECT * WHERE {
             ?s ?p ?o
-        }"), "Query");
+        }"
+        ),
+        "Query",
+    );
 
-    expect_type(indoc!(
-        "SELECT * {
+    expect_type(
+        indoc!(
+            "SELECT * {
             ?s ?p ?o
-        }"), "Query");
-    expect_type(indoc!(
-        "# some comment
+        }"
+        ),
+        "Query",
+    );
+    expect_type(
+        indoc!(
+            "# some comment
         SELECT (count(?s) as ?count)
         WHERE
         {
             ?s ?p ?o
-        }"), "Query");
+        }"
+        ),
+        "Query",
+    );
 }
 
 #[test]
 fn query_comments() {
-    expect_type(indoc!(
-        "# DELETE WHERE { ?s ?p ?o }
+    expect_type(
+        indoc!(
+            "# DELETE WHERE { ?s ?p ?o }
         SELECT * WHERE {
             ?s ?p ?o
-        }"), "Query");
-    expect_type(indoc!(
-        "# INSERT DATA { <a> <b> <c> }
+        }"
+        ),
+        "Query",
+    );
+    expect_type(
+        indoc!(
+            "# INSERT DATA { <a> <b> <c> }
         SELECT * WHERE {
             ?s ?p ?o
-        }"), "Query");
-    expect_type(indoc!(
-        "# many
+        }"
+        ),
+        "Query",
+    );
+    expect_type(
+        indoc!(
+            "# many
         # comments
         # before
         # the
         # operation
         SELECT * WHERE {
             ?s ?p ?o
-        }"), "Query");
+        }"
+        ),
+        "Query",
+    );
 }
 
 #[test]
 fn query_prefix() {
-    expect_type(indoc!(
-        "PREFIX f: <foo>
+    expect_type(
+        indoc!(
+            "PREFIX f: <foo>
         SELECT * WHERE {
             ?s ?p ?o
-        }"), "Query");
-    expect_type(indoc!(
-        "PREFIX : <foo>
+        }"
+        ),
+        "Query",
+    );
+    expect_type(
+        indoc!(
+            "PREFIX : <foo>
         SELECT * WHERE {
             ?s ?p ?o
-        }"), "Query");
+        }"
+        ),
+        "Query",
+    );
 }
 
 #[test]
@@ -92,27 +123,39 @@ fn query_complex() {
          } ORDER BY DESC(?dist)"
     ), "Query");
     // This is syntax is a QLever specific extension of SPARQL.
-    expect_type(indoc!(
-        "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    expect_type(
+        indoc!(
+            "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
         SELECT * WHERE {
           ?a @en@rdfs:label ?b
-        }"), "Query");
+        }"
+        ),
+        "Query",
+    );
 }
 
 #[test]
 fn update_basic() {
-    expect_type(indoc!(
-        "INSERT DATA {}"), "Update");
-    expect_type(indoc!(
-        "DELETE DATA {
+    expect_type(indoc!("INSERT DATA {}"), "Update");
+    expect_type(
+        indoc!(
+            "DELETE DATA {
             <a> <b> <c>
-        }"), "Update");
-    expect_type(indoc!(
-        "DELETE WHERE {
+        }"
+        ),
+        "Update",
+    );
+    expect_type(
+        indoc!(
+            "DELETE WHERE {
             ?s <foo> <bar>
-        }"), "Update");
-    expect_type(indoc!(
-        "DELETE {
+        }"
+        ),
+        "Update",
+    );
+    expect_type(
+        indoc!(
+            "DELETE {
             ?s <foo> <bar>
         }
         INSERT {
@@ -120,13 +163,17 @@ fn update_basic() {
         }
         WHERE {
             ?s <foo> <bar>
-        }"), "Update");
+        }"
+        ),
+        "Update",
+    );
 }
 
 #[test]
 fn update_complex() {
-    expect_type(indoc!(
-        "# This Update changes all foo to bar
+    expect_type(
+        indoc!(
+            "# This Update changes all foo to bar
         # But not if it is a leap day
         #!TEMPLATE REGION=osmrel:1686344
         PREFIX foo: <http://www.opengis.net/rdf#>
@@ -141,14 +188,20 @@ fn update_complex() {
         {
             <a> <b> <c>
         }"
-    ), "Update");
+        ),
+        "Update",
+    );
 }
 
 #[test]
 fn unknown() {
     expect_type("", "Unknown");
     expect_type("THIS IS NOT SPARQL", "Unknown");
-    expect_type(indoc!(
-        "PREFIX foo: <bar>
-        QLEVER * { ?s ?p foo:bar }"), "Unknown");
+    expect_type(
+        indoc!(
+            "PREFIX foo: <bar>
+        QLEVER * { ?s ?p foo:bar }"
+        ),
+        "Unknown",
+    );
 }

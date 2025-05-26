@@ -1,190 +1,117 @@
+use ll_sparql_parser::{
+    ast::{AstNode, Iri, PrefixDeclaration, Prologue, QueryUnit},
+    parse,
+};
+
 use super::{
-    lsp::{
-        errors::{ErrorCode, LSPError},
-        textdocument::Range,
-    },
+    lsp::errors::{ErrorCode, LSPError},
     state::ServerState,
     Server,
 };
-use std::collections::HashSet;
-use streaming_iterator::StreamingIterator;
-use tree_sitter::{Node, Query, QueryCursor};
-
-fn build_query(query_str: &str) -> Result<Query, LSPError> {
-    Query::new(&tree_sitter_sparql::LANGUAGE.into(), query_str).map_err(|error| {
-        LSPError::new(
-            ErrorCode::InternalError,
-            &format!(
-                "Building tree-sitter query failed:\n{}\n{}",
-                query_str, error
-            ),
-        )
-    })
-}
-
-fn collect_all_unique_captures(
-    node: Node,
-    query_str: &str,
-    text: &str,
-) -> Result<Vec<String>, LSPError> {
-    let query = build_query(query_str)?;
-    let mut capture_set: HashSet<String> = HashSet::new();
-    let mut query_cursor = QueryCursor::new();
-    let mut captures = query_cursor.captures(&query, node, text.as_bytes());
-    while let Some((mat, capture_index)) = captures.next() {
-        let node: Node = mat.captures[*capture_index].node;
-        if node.end_byte() != node.start_byte() {
-            capture_set.insert(node.utf8_text(text.as_bytes()).unwrap().to_string());
-        }
-    }
-    Ok(capture_set.into_iter().collect())
-}
 
 pub fn namespace_is_declared(
     server_state: &ServerState,
     document_uri: &str,
     namespace: &str,
 ) -> Result<bool, LSPError> {
-    let declared_namespaces: HashSet<String> = get_declared_prefixes(server_state, document_uri)?
-        .into_iter()
-        .map(|(namespace, _range)| namespace)
-        .collect();
-    Ok(declared_namespaces.contains(namespace))
+    Ok(find_all_prefix_declarations(server_state, document_uri)?
+        .iter()
+        .any(|node| node.prefix().is_some_and(|prefix| prefix == namespace)))
 }
 
-pub fn get_all_uncompacted_uris(
+pub fn find_all_uncompacted_iris(
     server: &Server,
     document_uri: &str,
-) -> Result<Vec<(String, Range)>, LSPError> {
-    let (document, tree) = server.state.get_state(document_uri)?;
-    let declared_uris = collect_all_unique_captures(
-        tree.root_node(),
-        "(PrefixDecl (IRIREF) @variable)",
-        &document.text,
-    )?;
-    let prefix_set: HashSet<String> = HashSet::from_iter(declared_uris);
-    let all_uris = get_all_uris(&server.state, document_uri)?;
-    Ok(all_uris
-        .into_iter()
-        .filter(|(uri, _range)| !prefix_set.contains(uri))
-        .collect())
-}
-
-fn get_all_uris(
-    analyis_state: &ServerState,
-    document_uri: &str,
-) -> Result<Vec<(String, Range)>, LSPError> {
-    let (document, tree) = analyis_state.get_state(document_uri)?;
-    let query_str = "(IRIREF) @iri";
-    let query = build_query(query_str)?;
-    let mut query_cursor = QueryCursor::new();
-    let mut captures = query_cursor.captures(&query, tree.root_node(), document.text.as_bytes());
-    let mut namespaces: Vec<(String, Range)> = Vec::new();
-    while let Some((mat, capture_index)) = captures.next() {
-        let node = mat.captures[*capture_index].node;
-        namespaces.push((
-            node.utf8_text(document.text.as_bytes())
-                .unwrap()
-                .to_string(),
-            Range::from_node(&node),
-        ));
-    }
-    Ok(namespaces)
+) -> Result<Vec<Iri>, LSPError> {
+    let document = server.state.get_document(document_uri)?;
+    let root = parse(&document.text);
+    let query_unit = QueryUnit::cast(root).ok_or(LSPError::new(
+        ErrorCode::InternalError,
+        "find_all_uncompacted_uris is not jet suported for update",
+    ))?;
+    Ok(query_unit
+        .prologue()
+        .and_then(|prologue| prologue.syntax().next_sibling())
+        .or(Some(query_unit.syntax().clone()))
+        .map(|node| {
+            node.descendants()
+                .filter_map(Iri::cast)
+                .filter(|iri| iri.is_uncompressed())
+                .collect()
+        })
+        .unwrap_or_default())
 }
 
 /// Extracts the declared namespaces from a SPARQL document.
 ///
 /// This function parses the specified document to identify namespace declarations
-/// (`PrefixDecl`) and returns a list of tuples, each containing the namespace prefix
-/// and its corresponding range within the document.
+/// (`PrefixDecl`) and returns a list of nodes, each containing the range namespace prefix
 ///
 /// # Arguments
 ///
-/// * `analysis_state` - A reference to the `ServerState` object, which provides access
-///   to the document and its syntax tree.
+/// * `server_state` - A reference to the `ServerState` object, which provides access
+///   to the document
 /// * `document_uri` - A string slice representing the URI of the document to analyze.
 ///
 /// # Returns
 ///
-/// * `Ok(Vec<(String, Range)>)` - A vector of tuples where each tuple consists of:
-///   - A `String` representing the namespace prefix.
-///   - A `Range` specifying the location of the prefix in the document.
-/// * `Err(LSPError)` - An error if the document or its syntax tree cannot be
-///   retrieved, or if the query for namespace declarations fails.
+/// * `Ok(Vec<PrefixDeclaration>)` - A Vec of nodes in the abstract syntax tree
+/// * `Err(LSPError)` - An error if the document
 ///
 /// # Errors
 ///
 /// This function can return a `LSPError` if:
 /// * The document specified by `document_uri` cannot be found or loaded.
-/// * The syntax tree for the document cannot be accessed.
-/// * The query for extracting `PrefixDecl` fails to build or execute.
-///
-/// # Notes
-///
-/// The function assumes that the document is written in SPARQL syntax and uses
-/// Tree-sitter for syntax tree traversal to locate namespace declarations.
-pub(crate) fn get_declared_prefixes(
+pub(crate) fn find_all_prefix_declarations(
     server_state: &ServerState,
     document_uri: &str,
-) -> Result<Vec<(String, Range)>, LSPError> {
-    let (document, tree) = server_state.get_state(document_uri)?;
-    let query = build_query("(PrefixDecl (PNAME_NS (PN_PREFIX) @prefix))")?;
-    let mut query_cursor = QueryCursor::new();
-    let mut captures = query_cursor.captures(&query, tree.root_node(), document.text.as_bytes());
-    let mut namespaces: Vec<(String, Range)> = Vec::new();
-    while let Some((mat, capture_index)) = captures.next() {
-        let node = mat.captures[*capture_index].node;
-        namespaces.push((
-            node.utf8_text(document.text.as_bytes())
-                .unwrap()
-                .to_string(),
-            Range::from_node(&node),
-        ));
-    }
-    Ok(namespaces)
-}
-
-pub(crate) fn get_declared_uri_prefixes(
-    server_state: &ServerState,
-    document_uri: &str,
-) -> Result<Vec<(String, Range)>, LSPError> {
-    let (document, tree) = server_state.get_state(document_uri)?;
-    let query = build_query("(PrefixDecl (PNAME_NS (PN_PREFIX)) (IRIREF) @uri)")?;
-    let mut query_cursor = QueryCursor::new();
-    let mut captures = query_cursor.captures(&query, tree.root_node(), document.text.as_bytes());
-    let mut namespaces: Vec<(String, Range)> = Vec::new();
-    while let Some((mat, capture_index)) = captures.next() {
-        let node = mat.captures[*capture_index].node;
-        namespaces.push((
-            node.utf8_text(document.text.as_bytes())
-                .unwrap()
-                .to_string(),
-            Range::from_node(&node),
-        ));
-    }
-    Ok(namespaces)
+) -> Result<Vec<PrefixDeclaration>, LSPError> {
+    let document = server_state.get_document(document_uri)?;
+    let root = parse(&document.text);
+    Ok(root
+        .first_child()
+        .and_then(|child| child.first_child())
+        .and_then(Prologue::cast)
+        .map(|prologue| prologue.prefix_declarations())
+        .unwrap_or_default())
 }
 
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
-    use tree_sitter::Parser;
-    use tree_sitter_sparql::LANGUAGE;
 
     use crate::server::{
-        anaysis::get_declared_prefixes, lsp::textdocument::TextDocumentItem, state::ServerState,
+        anaysis::{find_all_prefix_declarations, find_all_uncompacted_iris},
+        lsp::textdocument::TextDocumentItem,
+        state::ServerState,
+        Server,
     };
 
     fn setup_state(text: &str) -> ServerState {
         let mut state = ServerState::new();
-        let mut parser = Parser::new();
-        if let Err(err) = parser.set_language(&LANGUAGE.into()) {
-            log::error!("Could not initialize parser:\n{}", err)
-        }
         let document = TextDocumentItem::new("uri", text);
-        let tree = parser.parse(&document.text, None);
-        state.add_document(document, tree);
+        state.add_document(document);
         state
+    }
+
+    #[test]
+    fn test_find_all_uncompacted_iris() {
+        let mut server = Server::new(|_message| {});
+        let state = setup_state(indoc!(
+            "SELECT * {
+               ?a <https://schema.org/name> ?b .
+               ?c <https://schema.org/name> ?d
+             }"
+        ));
+        server.state = state;
+        let uncompacted_iris = find_all_uncompacted_iris(&server, "uri").unwrap();
+        assert_eq!(
+            uncompacted_iris
+                .into_iter()
+                .map(|iri| iri.raw_iri().unwrap())
+                .collect::<Vec<_>>(),
+            vec!["https://schema.org/name", "https://schema.org/name"]
+        );
     }
 
     #[test]
@@ -196,12 +123,12 @@ mod tests {
 
                  SELECT * {}"
         ));
-        let declared_namesapces = get_declared_prefixes(&state, "uri").unwrap();
+        let declared_namesapces = find_all_prefix_declarations(&state, "uri").unwrap();
         assert_eq!(
             declared_namesapces
                 .iter()
-                .map(|(namespace, _range)| namespace)
-                .collect::<Vec<&String>>(),
+                .filter_map(|prefix_declaration| prefix_declaration.prefix())
+                .collect::<Vec<_>>(),
             vec!["wdt", "wd", "wdt"]
         );
     }

@@ -1,13 +1,10 @@
-use std::collections::HashMap;
-
-use curies::{Converter, CuriesError};
-use tree_sitter::Tree;
-
 use super::lsp::{
     errors::{ErrorCode, LSPError},
     textdocument::{TextDocumentItem, TextEdit},
     Backend, TextDocumentContentChangeEvent, TraceValue,
 };
+use curies::{Converter, CuriesError};
+use std::collections::HashMap;
 
 #[derive(Debug, PartialEq)]
 pub enum ServerStatus {
@@ -19,7 +16,7 @@ pub enum ServerStatus {
 pub struct ServerState {
     pub status: ServerStatus,
     pub trace_value: TraceValue,
-    documents: HashMap<String, (TextDocumentItem, Option<Tree>)>,
+    documents: HashMap<String, TextDocumentItem>,
     backends: HashMap<String, Backend>,
     uri_converter: HashMap<String, Converter>,
     default_backend: Option<String>,
@@ -83,9 +80,9 @@ impl ServerState {
         self.backends.get(backend_name)
     }
 
-    pub(super) fn add_document(&mut self, text_document: TextDocumentItem, tree: Option<Tree>) {
+    pub(super) fn add_document(&mut self, text_document: TextDocumentItem) {
         self.documents
-            .insert(text_document.uri.clone(), (text_document, tree));
+            .insert(text_document.uri.clone(), text_document);
     }
 
     pub(super) fn change_document(
@@ -93,14 +90,10 @@ impl ServerState {
         uri: &String,
         content_changes: Vec<TextDocumentContentChangeEvent>,
     ) -> Result<(), LSPError> {
-        let document = &mut self
-            .documents
-            .get_mut(uri)
-            .ok_or(LSPError::new(
-                ErrorCode::InvalidParams,
-                &format!("Could not change unknown document {}", uri),
-            ))?
-            .0;
+        let document = &mut self.documents.get_mut(uri).ok_or(LSPError::new(
+            ErrorCode::InvalidParams,
+            &format!("Could not change unknown document {}", uri),
+        ))?;
 
         document.apply_text_edits(
             content_changes
@@ -111,47 +104,11 @@ impl ServerState {
         Ok(())
     }
 
-    pub(super) fn get_state(&self, uri: &str) -> Result<(&TextDocumentItem, &Tree), LSPError> {
-        match self.documents.get(uri) {
-            Some((document, Some(tree))) => Ok((document, tree)),
-            Some((_document, None)) => Err(LSPError::new(
-                ErrorCode::InternalError,
-                &format!("Could not find parse-tree for \"{}\"", uri),
-            )),
-            None => Err(LSPError::new(
-                ErrorCode::InternalError,
-                &format!("Could not find document \"{}\"", uri),
-            )),
-        }
-    }
-
     pub(super) fn get_document(&self, uri: &str) -> Result<&TextDocumentItem, LSPError> {
-        Ok(&self
-            .documents
-            .get(uri)
-            .ok_or(LSPError::new(
-                ErrorCode::InvalidRequest,
-                &format!("Requested document \"{}\"could not be found", uri),
-            ))?
-            .0)
-    }
-
-    pub(super) fn update_tree(
-        &mut self,
-        uri: &str,
-        new_tree: Option<Tree>,
-    ) -> Result<(), LSPError> {
-        if self.documents.contains_key(uri) {
-            self.documents
-                .entry(uri.to_string())
-                .and_modify(|(_document, old_tree)| *old_tree = new_tree);
-            Ok(())
-        } else {
-            Err(LSPError::new(
-                ErrorCode::InternalError,
-                &format!("Could not update parse-tree, no entry for \"{}\"", uri),
-            ))
-        }
+        self.documents.get(uri).ok_or(LSPError::new(
+            ErrorCode::InvalidRequest,
+            &format!("Requested document \"{}\"could not be found", uri),
+        ))
     }
 
     pub(crate) fn get_default_converter(&self) -> Option<&Converter> {

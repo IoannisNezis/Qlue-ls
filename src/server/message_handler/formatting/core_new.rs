@@ -1,10 +1,7 @@
 use core::fmt;
 use std::vec;
 
-use ll_sparql_parser::{
-    parse, print_full_tree, syntax_kind::SyntaxKind, SyntaxElement, SyntaxNode,
-};
-use streaming_iterator::empty;
+use ll_sparql_parser::{parse, syntax_kind::SyntaxKind, SyntaxElement, SyntaxNode};
 use text_size::{TextRange, TextSize};
 
 use crate::server::{
@@ -32,18 +29,13 @@ pub(super) fn format_document(
         parse(&document.text),
         &document.text,
         settings,
-        indent_string,
+        indent_string.clone(),
     );
 
-    let mut siplified_edits: Vec<_> = walker.into_iter().flatten().collect();
+    let (simplified_edits, simpified_comments) = walker.collect_edits_and_comments();
 
-    siplified_edits.sort_by(|a, b| {
-        b.range
-            .end()
-            .cmp(&a.range.end())
-            .then_with(|| b.range.start().cmp(&a.range.start()))
-    });
-    let mut edits = transform_edits(siplified_edits, &document.text);
+    let comments = transform_comments(simpified_comments, &document.text);
+    let mut edits = transform_edits(simplified_edits, &document.text);
     edits.sort_by(|a, b| {
         b.range
             .start
@@ -51,10 +43,8 @@ pub(super) fn format_document(
             .then_with(|| b.range.end.cmp(&a.range.end))
     });
     edits.sort_by(|a, b| b.range.start.cmp(&a.range.start));
-    edits = consolidate_edits(edits)
-        .into_iter()
-        .map(|ce| ce.fuse())
-        .collect();
+    let consolidated_edits = consolidate_edits(edits);
+    edits = merge_comments(consolidated_edits, comments, &document.text, &indent_string)?;
     edits = remove_redundent_edits(edits, document);
 
     Ok(edits)
@@ -79,7 +69,38 @@ impl SimplifiedTextEdit {
 struct CommentMarker {
     text: String,
     position: Position,
-    indentation_level: usize,
+    indentation_level: u8,
+    trailing: bool,
+}
+
+impl CommentMarker {
+    fn to_edit(&self, indent_base: &str) -> TextEdit {
+        let prefix = match (
+            self.position.line == 0 && self.position.character == 0,
+            self.trailing,
+        ) {
+            (true, _) => "",
+            (false, true) => " ",
+            (false, false) => &format!("\n{}", indent_base.repeat(self.indentation_level as usize)),
+        };
+
+        TextEdit::new(
+            Range::new(
+                self.position.line,
+                self.position.character,
+                self.position.line,
+                self.position.character,
+            ),
+            &format!("{}{}", prefix, &self.text),
+        )
+    }
+}
+
+#[derive(Debug)]
+struct SimplifiedCommentMarker {
+    text: String,
+    position: TextSize,
+    indentation_level: u8,
     trailing: bool,
 }
 
@@ -126,7 +147,7 @@ impl<'a> Walker<'a> {
     fn node_augmentation(
         &self,
         node: &SyntaxElement,
-        children: &Vec<SyntaxElement>,
+        children: &[SyntaxElement],
         indentation: u8,
     ) -> Vec<SimplifiedTextEdit> {
         let mut augmentations = self.in_node_augmentation(node, children, indentation);
@@ -151,7 +172,7 @@ impl<'a> Walker<'a> {
     fn in_node_augmentation(
         &self,
         node: &SyntaxElement,
-        children: &Vec<SyntaxElement>,
+        children: &[SyntaxElement],
         indentation: u8,
     ) -> Vec<SimplifiedTextEdit> {
         match node.kind() {
@@ -219,14 +240,14 @@ impl<'a> Walker<'a> {
                     SyntaxKind::LParen if idx == 0 => None,
                     _ if child
                         .prev_sibling_or_token()
-                        .map_or(false, |prev| prev.kind() == SyntaxKind::LParen) =>
+                        .is_some_and(|prev| prev.kind() == SyntaxKind::LParen) =>
                     {
                         None
                     }
                     _ if idx > 0
                         && children
                             .get(idx - 1)
-                            .map_or(false, |prev| prev.kind() == SyntaxKind::LParen) =>
+                            .is_some_and(|prev| prev.kind() == SyntaxKind::LParen) =>
                     {
                         None
                     }
@@ -256,36 +277,18 @@ impl<'a> Walker<'a> {
                 })
                 .collect(),
 
-            SyntaxKind::PropertyListPathNotEmpty => match node.parent().map(|parent| parent.kind())
-            {
-                // Some(SyntaxKind::BlankNodePropertyListPath) => children
-                //     .iter()
-                //     .enumerate()
-                //     .filter_map(|(idx, child)| match child.kind() {
-                //         SyntaxKind::Semicolon if idx < children.len() - 1 => {
-                //             let linebreak = self.get_linebreak(indentation);
-                //             Some(SimplifiedTextEdit::new(
-                //                 TextRange::empty(child.text_range().end()),
-                //                 &linebreak[..linebreak.len() - 1],
-                //             ))
-                //         }
-                //         _ => None,
-                //     })
-                //     .collect(),
-                _ => children
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(idx, child)| match child.kind() {
-                        SyntaxKind::Semicolon
-                        | SyntaxKind::ObjectListPath
-                        | SyntaxKind::ObjectList => Some(SimplifiedTextEdit::new(
+            SyntaxKind::PropertyListPathNotEmpty => children
+                .iter()
+                .filter_map(|child| match child.kind() {
+                    SyntaxKind::Semicolon | SyntaxKind::ObjectListPath | SyntaxKind::ObjectList => {
+                        Some(SimplifiedTextEdit::new(
                             TextRange::empty(child.text_range().start()),
                             " ",
-                        )),
-                        _ => None,
-                    })
-                    .collect(),
-            },
+                        ))
+                    }
+                    _ => None,
+                })
+                .collect(),
 
             SyntaxKind::BlankNodePropertyListPath => {
                 match children.get(1).and_then(|child| child.as_node()) {
@@ -312,10 +315,9 @@ impl<'a> Walker<'a> {
                         if prop_list.kind() == SyntaxKind::PropertyListPathNotEmpty =>
                     {
                         let insert = match self.settings.align_predicates {
-                            true => &format!(
-                                "{}",
-                                " ".repeat((subject.text_range().len() + TextSize::new(1)).into())
-                            ),
+                            true => {
+                                &" ".repeat((subject.text_range().len() + TextSize::new(1)).into())
+                            }
                             false => "  ",
                         };
                         prop_list
@@ -447,7 +449,7 @@ impl<'a> Walker<'a> {
             | SyntaxKind::DOUBLE_NEGATIVE
                 if node
                     .parent()
-                    .map_or(false, |parent| parent.prev_sibling().is_some()) =>
+                    .is_some_and(|parent| parent.prev_sibling().is_some()) =>
             {
                 vec![SimplifiedTextEdit::new(
                     TextRange::empty(node.text_range().start() + TextSize::new(1)),
@@ -555,7 +557,7 @@ impl<'a> Walker<'a> {
                 if node
                     .as_node()
                     .and_then(|node| node.first_child())
-                    .map_or(false, |child| child.kind() != SyntaxKind::Filter) =>
+                    .is_some_and(|child| child.kind() != SyntaxKind::Filter) =>
             {
                 Some(self.get_linebreak(indentation))
             }
@@ -570,7 +572,7 @@ impl<'a> Walker<'a> {
                         && self
                             .text
                             .get(prev.text_range().end().into()..node.text_range().start().into())
-                            .map_or(false, |s| !s.contains("\n"))
+                            .is_some_and(|s| !s.contains("\n"))
                         && self.settings.filter_same_line =>
                 {
                     Some(" ".to_string())
@@ -598,27 +600,17 @@ impl<'a> Walker<'a> {
                 Some(SyntaxKind::BlankNodePropertyListPath)
                     if node
                         .as_node()
-                        .map_or(false, |node| node.children_with_tokens().count() <= 3) =>
+                        .is_some_and(|node| node.children_with_tokens().count() <= 3) =>
                 {
                     Some(" ".to_string())
                 }
                 _ => None,
             },
-            SyntaxKind::TriplesTemplate => {
-                match node
-                    .as_node()
-                    .and_then(prev_non_comment_sibling)
-                    .map(|node| node.kind())
-                {
-                    Some(x) if x != SyntaxKind::Dot => Some(self.get_linebreak(indentation)),
-                    _ => None,
-                }
-            }
             SyntaxKind::WhereClause => {
                 match self.settings.where_new_line
                     || node
                         .parent()
-                        .map_or(false, |parent| parent.kind() == SyntaxKind::ConstructQuery)
+                        .is_some_and(|parent| parent.kind() == SyntaxKind::ConstructQuery)
                     || node
                         .parent()
                         .map(|parent| parent.kind() == SyntaxKind::DescribeQuery)
@@ -662,14 +654,14 @@ impl<'a> Walker<'a> {
                 Some(SyntaxKind::BlankNodePropertyListPath)
                     if node
                         .as_node()
-                        .map_or(false, |node| node.children().count() > 3) =>
+                        .is_some_and(|node| node.children().count() > 3) =>
                 {
                     Some(self.get_linebreak(indentation.saturating_sub(1)))
                 }
                 Some(SyntaxKind::BlankNodePropertyListPath)
                     if node
                         .as_node()
-                        .map_or(false, |node| node.children().count() <= 3) =>
+                        .is_some_and(|node| node.children().count() <= 3) =>
                 {
                     Some(" ".to_string())
                 }
@@ -696,36 +688,73 @@ impl<'a> Walker<'a> {
     fn get_linebreak(&self, indentation: u8) -> String {
         format!("\n{}", self.indent_base.repeat(indentation as usize))
     }
+
+    fn comment_marker(
+        &self,
+        comment_node: &SyntaxElement,
+        indentation_level: u8,
+    ) -> SimplifiedCommentMarker {
+        assert_eq!(comment_node.kind(), SyntaxKind::Comment);
+        let mut maybe_attach = Some(comment_node.clone());
+        while let Some(kind) = maybe_attach.as_ref().map(|node| node.kind()) {
+            match kind {
+                SyntaxKind::Comment | SyntaxKind::WHITESPACE => {
+                    maybe_attach = maybe_attach.and_then(|node| node.prev_sibling_or_token())
+                }
+                _ => break,
+            }
+        }
+        let attach = maybe_attach
+            .or(comment_node.parent().map(SyntaxElement::Node))
+            .expect("all comment nodes should have a parent");
+
+        let trailing = self
+            .text
+            .get(attach.text_range().end().into()..comment_node.text_range().start().into())
+            .is_some_and(|s| !s.contains("\n"));
+        SimplifiedCommentMarker {
+            text: comment_node.to_string(),
+            position: match attach.kind() {
+                SyntaxKind::QueryUnit | SyntaxKind::UpdateUnit => TextSize::new(0),
+                _ => attach.text_range().end(),
+            },
+
+            trailing,
+            indentation_level,
+        }
+    }
+
+    fn collect_edits_and_comments(self) -> (Vec<SimplifiedTextEdit>, Vec<SimplifiedCommentMarker>) {
+        let mut res_edits = Vec::new();
+        let mut res_comments = Vec::new();
+        for (edits, comments) in self.into_iter() {
+            res_edits.extend(edits);
+            res_comments.extend(comments);
+        }
+        (res_edits, res_comments)
+    }
 }
 
 impl Iterator for Walker<'_> {
-    type Item = Vec<SimplifiedTextEdit>;
+    type Item = (Vec<SimplifiedTextEdit>, Vec<SimplifiedCommentMarker>);
 
     fn next(&mut self) -> Option<Self::Item> {
         let (element, indentation) = self.queue.pop()?;
         // NOTE: Extract comments
-        // let (children, mut comments): (Vec<SyntaxElement>, Vec<CommentMarker>) = element
-        //     .as_node()
-        //     .map(|node| {
-        //         node.children_with_tokens()
-        //             .fold((vec![], vec![]), |mut acc, child| {
-        //                 match child.kind() {
-        //                     SyntaxKind::WHITESPACE => {}
-        //                     SyntaxKind::Comment if node.kind() != SyntaxKind::Error => {
-        //                         acc.1.push(comment_marker(&child, indentation))
-        //                     }
-        //                     _ => acc.0.push(child),
-        //                 };
-        //                 return acc;
-        //             })
-        //     })
-        //     .unwrap_or_default();
-        let children: Vec<SyntaxElement> = element
+        let (children, comments): (Vec<SyntaxElement>, Vec<SimplifiedCommentMarker>) = element
             .as_node()
             .map(|node| {
                 node.children_with_tokens()
-                    .filter(|child| !child.kind().is_trivia())
-                    .collect()
+                    .fold((vec![], vec![]), |mut acc, child| {
+                        match child.kind() {
+                            SyntaxKind::WHITESPACE => {}
+                            SyntaxKind::Comment if node.kind() != SyntaxKind::Error => acc
+                                .1
+                                .push(self.comment_marker(&child, indentation + inc_indent(node))),
+                            _ => acc.0.push(child),
+                        };
+                        acc
+                    })
             })
             .unwrap_or_default();
 
@@ -761,19 +790,20 @@ impl Iterator for Walker<'_> {
         let augmentation_edits = self.node_augmentation(&element, &children, indentation);
 
         if let SyntaxElement::Node(node) = &element {
-            let new_indent = indentation + inc_indent(&node);
+            let new_indent = indentation + inc_indent(node);
             self.queue.extend(
                 node.children_with_tokens()
                     .zip(std::iter::repeat(new_indent)),
             );
         }
 
-        Some(
+        Some((
             augmentation_edits
                 .into_iter()
-                .chain(seperation_edits.into_iter())
+                .chain(seperation_edits)
                 .collect(),
-        )
+            comments,
+        ))
     }
 }
 
@@ -882,18 +912,60 @@ fn get_separator(kind: SyntaxKind) -> Seperator {
     }
 }
 
-fn prev_non_comment_sibling<'a>(node: &SyntaxNode) -> Option<SyntaxNode> {
-    let mut prev = node.prev_sibling()?;
-    while matches!(prev.kind(), SyntaxKind::Comment) {
-        prev = prev.prev_sibling()?;
+fn transform_comments(
+    mut comments: Vec<SimplifiedCommentMarker>,
+    text: &str,
+) -> Vec<CommentMarker> {
+    if comments.is_empty() {
+        return vec![];
     }
-    Some(prev)
-}
-
-fn transform_edits(simplified_edits: Vec<SimplifiedTextEdit>, text: &str) -> Vec<TextEdit> {
+    comments.sort_by(|a, b| a.position.cmp(&b.position));
     let mut position = Position::new(0, 0);
     let mut byte_offset = 0;
-    let mut marker = position.clone();
+    let mut comments = comments.into_iter();
+    let mut result = Vec::new();
+    let mut chars = text.chars();
+    let mut next_comment = comments
+        .next()
+        .expect("There should be atleast one comment, since the length is > 0");
+    let mut next_char = chars.next();
+    loop {
+        if TextSize::new(byte_offset) == next_comment.position {
+            result.push(CommentMarker {
+                text: next_comment.text,
+                position,
+                indentation_level: next_comment.indentation_level,
+                trailing: next_comment.trailing,
+            });
+            next_comment = if let Some(comment) = comments.next() {
+                comment
+            } else {
+                break;
+            }
+        } else if let Some(char) = next_char {
+            byte_offset += char.len_utf8() as u32;
+            if matches!(char, '\n') {
+                position.line += 1;
+                position.character = 0;
+            } else {
+                position.character += char.len_utf16() as u32;
+            }
+            next_char = chars.next();
+        }
+    }
+    result
+}
+
+fn transform_edits(mut simplified_edits: Vec<SimplifiedTextEdit>, text: &str) -> Vec<TextEdit> {
+    simplified_edits.sort_by(|a, b| {
+        b.range
+            .end()
+            .cmp(&a.range.end())
+            .then_with(|| b.range.start().cmp(&a.range.start()))
+    });
+    let mut position = Position::new(0, 0);
+    let mut byte_offset = 0;
+    let mut marker = position;
     let mut edits = simplified_edits.into_iter().rev();
     let mut result = Vec::new();
     let mut chars = text.chars();
@@ -901,7 +973,7 @@ fn transform_edits(simplified_edits: Vec<SimplifiedTextEdit>, text: &str) -> Vec
     let mut next_char = chars.next();
     loop {
         if TextSize::new(byte_offset) == next_edit.range.start() {
-            marker = position.clone();
+            marker = position;
         }
 
         if TextSize::new(byte_offset) == next_edit.range.end() {
@@ -1035,27 +1107,95 @@ impl ConsolidatedTextEdit {
     }
 }
 
-// fn comment_marker(comment_node: &SyntaxElement, indentation: u8) -> CommentMarker {
-//     assert_eq!(comment_node.kind(), SyntaxKind::Comment);
-//     let mut maybe_attach = Some(*comment_node);
-//     while let Some(kind) = maybe_attach.map(|node| node.kind()) {
-//         match kind {
-//             SyntaxKind::Comment | SyntaxKind::WHITESPACE => {
-//                 maybe_attach = maybe_attach.and_then(|node| node.prev_sibling_or_token())
-//             }
-//             _ => break,
-//         }
-//     }
-//     let attach = maybe_attach
-//         .or(comment_node.parent().map(SyntaxElement::Node))
-//         .expect("all comment nodes should have a parent");
-//     CommentMarker {
-//         text: comment_node.to_string(),
-//         position: match attach.kind() {
-//             SyntaxKind::QueryUnit => Position::new(0, 0),
-//             _ => Position::from_point(attach.end_position()),
-//         },
-//         trailing: attach.end_position().row == comment_node.start_position().row,
-//         indentation_level: indentation,
-//     }
-// }
+fn merge_comments(
+    edits: Vec<ConsolidatedTextEdit>,
+    comments: Vec<CommentMarker>,
+    text: &str,
+    indent_base: &str,
+) -> Result<Vec<TextEdit>, LSPError> {
+    let mut comment_iter = comments.into_iter().rev().peekable();
+    let mut merged_edits =
+        edits
+            .into_iter()
+            .fold(vec![], |mut acc: Vec<TextEdit>, mut consolidated_edit| {
+                let start_position = consolidated_edit
+                    .edits
+                    .first()
+                    .expect("Every consolidated edit should consist of at least one edit")
+                    .range
+                    .start;
+
+                while comment_iter
+                    .peek()
+                    .map(|comment| comment.position >= start_position)
+                    .unwrap_or(false)
+                {
+                    let comment = comment_iter
+                        .next()
+                        .expect("comment itterator should not be empty");
+
+                    // NOTE: In some Edgecase the comment is in the middle of a (consolidated)
+                    // edit. For Example
+                    // Select #comment
+                    // * {}
+                    // In this case this edits needs to be split into two edits.
+                    let (previous_edit, next_edit) = consolidated_edit.split_at(comment.position);
+                    let (mut previous_edit, mut next_edit) = (previous_edit, next_edit.fuse());
+                    // WARNING: This could cause issues.
+                    // The amout of chars is neccesarily equal to the amout of
+                    // utf-8 bytes. Here i assume that all whispace is 1 utf8 byte long.
+                    match next_edit
+                        .new_text
+                        .chars()
+                        .enumerate()
+                        .find_map(|(idx, char)| {
+                            (!char.is_whitespace() || char == '\n').then_some((idx, char))
+                        }) {
+                        Some((idx, '\n')) => {
+                            next_edit.new_text = format!(
+                                "{}{}",
+                                comment.to_edit(indent_base).new_text,
+                                &next_edit.new_text[idx..]
+                            )
+                        }
+                        Some((idx, _char)) => {
+                            next_edit.new_text = format!(
+                                "{}\n{}{}",
+                                comment.to_edit(indent_base).new_text,
+                                indent_base.repeat(comment.indentation_level as usize),
+                                &next_edit.new_text[idx..]
+                            )
+                        }
+                        None => {
+                            let indent = match next_edit.range.end.byte_index(text) {
+                                Some(start_next_token) => {
+                                    match text.get(start_next_token..start_next_token + 1) {
+                                        Some("}") => comment.indentation_level.saturating_sub(1),
+                                        _ => comment.indentation_level,
+                                    }
+                                }
+                                None => comment.indentation_level,
+                            };
+                            next_edit.new_text = format!(
+                                "{}\n{}",
+                                comment.to_edit(indent_base).new_text,
+                                indent_base.repeat(indent as usize)
+                            )
+                        }
+                    };
+                    previous_edit.edits.push(next_edit);
+                    consolidated_edit = previous_edit;
+                }
+
+                acc.push(consolidated_edit.fuse());
+                acc
+            });
+    // NOTE: all remaining comments are attached to 0:0.
+    comment_iter.for_each(|comment| {
+        let comment_edit = comment.to_edit(indent_base);
+        merged_edits.push(TextEdit::new(Range::new(0, 0, 0, 0), "\n"));
+        merged_edits.push(comment_edit);
+    });
+
+    Ok(merged_edits)
+}

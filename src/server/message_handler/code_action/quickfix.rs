@@ -124,18 +124,11 @@ mod test {
         Server,
     };
     use indoc::indoc;
-    use tree_sitter::Parser;
-    use tree_sitter_sparql::LANGUAGE;
 
     fn setup_state(text: &str) -> ServerState {
         let mut state = ServerState::new();
-        let mut parser = Parser::new();
-        if let Err(err) = parser.set_language(&LANGUAGE.into()) {
-            log::error!("Could not initialize parser:\n{}", err)
-        }
         let document = TextDocumentItem::new("uri", text);
-        let tree = parser.parse(&document.text, None);
-        state.add_document(document, tree);
+        state.add_document(document);
         state
     }
     #[test]

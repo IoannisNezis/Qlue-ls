@@ -1,5 +1,4 @@
 use indoc::indoc;
-use tree_sitter::Parser;
 
 use crate::server::{
     configuration::FormatSettings,
@@ -25,14 +24,7 @@ fn format_and_compare(ugly_query: &str, pretty_query: &str, format_settings: &Fo
         tab_size: 2,
         insert_spaces: true,
     };
-    let mut parser = Parser::new();
-    parser
-        .set_language(&tree_sitter_sparql::LANGUAGE.into())
-        .unwrap();
     let mut document = TextDocumentItem::new("testdocument", ugly_query);
-    let tree = parser
-        .parse(ugly_query.as_bytes(), None)
-        .expect("could not parse");
     let edits = format_document(&document, &format_options, format_settings).unwrap();
     check_collision(&edits);
     document.apply_text_edits(edits);

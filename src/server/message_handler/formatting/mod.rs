@@ -1,6 +1,6 @@
-mod core_new;
+mod core;
 mod utils;
-use core_new::*;
+use core::*;
 use std::rc::Rc;
 
 use futures::lock::Mutex;

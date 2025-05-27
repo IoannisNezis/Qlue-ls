@@ -92,7 +92,7 @@ Customizable options to align with preferred query styles are also implemented.
 
 | Type        | Name             | Description                   |
 |:------------|:-----------------|:------------------------------|
-| ❌ error     | undefined prefix | a used prefix is not declared |
+| ❌ error    | undefined prefix | a used prefix is not declared |
 | ⚠️  warning | unused prefix    | a declared prefix is not used |
 | ℹ️  info    | uncompacted uri  | a raw uncompacted uri is used |
 
@@ -224,5 +224,3 @@ have fun!
 
 * [TJ DeVries](https://github.com/tjdevries) for the inspiration and great tutorials
 * [Chris Biscardi](https://github.com/christopherbiscardi) for teaching me Rust
-* [GordianDziwis](https://github.com/GordianDziwis) for providing a sparql-tree-sitter grammar
-

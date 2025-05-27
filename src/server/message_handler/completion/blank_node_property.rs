@@ -13,7 +13,7 @@ pub(super) async fn completions(
     server_rc: Rc<Mutex<Server>>,
     environment: CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
-    let mut template_context = environment.template_context(server_rc.clone()).await;
+    let mut template_context = environment.template_context().await;
     template_context.insert("local_context", &local_context(&environment));
 
     dispatch_completion_query(

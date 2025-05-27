@@ -36,14 +36,14 @@
     {
       "scope": "variable.prefix.sparql",
       "settings": {
-        "foreground": "#b16286",
+        "foreground": "#cc241d",
         "fontStyle": "italic"
       }
     },
     {
       "scope": "variable.reference.sparql",
       "settings": {
-        "foreground": "#d3869b",
+        "foreground": "#d79921",
         "fontStyle": "italic"
       }
     },
@@ -78,6 +78,6 @@
         "foreground": "#fe8019",
         "fontStyle": "italic bold"
       }
-    },
+    }
   ]
 }

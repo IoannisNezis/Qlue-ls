@@ -211,7 +211,7 @@ impl CompletionEnvironment {
     /// - `search_term` : query string to find the entity
     /// - `context` : connected triples for context sensitive completions
     /// - `prefixes` : used prefixes in this query
-    pub(super) async fn template_context(&self, server_rc: Rc<Mutex<Server>>) -> tera::Context {
+    pub(super) async fn template_context(&self) -> tera::Context {
         let mut template_context = tera::Context::new();
         template_context.insert("search_term", &self.search_term);
         template_context.insert("context", &self.context);

@@ -35,7 +35,7 @@ pub(super) async fn completions(
     .iter()
     .any(|kind| environment.continuations.contains(kind))
     {
-        let template_context = environment.template_context(server_rc.clone()).await;
+        let template_context = environment.template_context().await;
         if let Ok(completion_list) = dispatch_completion_query(
             server_rc,
             &environment,

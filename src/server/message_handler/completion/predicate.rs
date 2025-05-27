@@ -17,7 +17,7 @@ pub(super) async fn completions(
     environment: CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
     // NOTE: Compute template Context
-    let mut template_context = environment.template_context(server_rc.clone()).await;
+    let mut template_context = environment.template_context().await;
     template_context.extend(local_template_context(&environment)?);
 
     let (sender, reciever) = oneshot::channel::<CompletionList>();

@@ -1,11 +1,8 @@
 mod utils;
-
-use std::{collections::HashMap, usize};
-
-use rowan::{cursor::SyntaxToken, SyntaxNodeChildren, TextSize};
-use utils::nth_ancestor;
-
 use crate::{syntax_kind::SyntaxKind, Sparql, SyntaxNode};
+use rowan::{cursor::SyntaxToken, SyntaxNodeChildren, TextRange, TextSize};
+use std::usize;
+use utils::nth_ancestor;
 
 #[derive(Debug, PartialEq)]
 pub struct QueryUnit {
@@ -391,6 +388,13 @@ impl PropertyPath {
     pub fn text(&self) -> String {
         format!("{} {}", self.verb.text(), self.object.text())
     }
+
+    pub fn text_range(&self) -> TextRange {
+        TextRange::new(
+            self.verb.syntax().text_range().start(),
+            self.object.syntax.text_range().end(),
+        )
+    }
 }
 
 #[derive(Debug)]
@@ -692,6 +696,7 @@ impl AstNode for Path {
             kind,
             SyntaxKind::Path
                 | SyntaxKind::VerbPath
+                | SyntaxKind::VerbSimple
                 | SyntaxKind::PathAlternative
                 | SyntaxKind::PathSequence
                 | SyntaxKind::PathElt

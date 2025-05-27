@@ -4,7 +4,7 @@ use crate::{
     ast::{
         AstNode, BlankPropertyList, GroupGraphPattern, QueryUnit, Triple, TriplesBlock, WhereClause,
     },
-    parse_query, SyntaxNode,
+    parse, parse_query, SyntaxNode,
 };
 
 fn walk(node: SyntaxNode, mut path: Vec<usize>) -> Option<SyntaxNode> {
@@ -16,6 +16,31 @@ fn walk(node: SyntaxNode, mut path: Vec<usize>) -> Option<SyntaxNode> {
         return walk(child, path);
     }
     None
+}
+
+#[test]
+fn property_list() {
+    let input = "SELECT * WHERE { ?a ?b ?c ;  ?x }";
+    let root = parse(input);
+    let query = QueryUnit::cast(root).unwrap();
+    let triples = query
+        .select_query()
+        .unwrap()
+        .where_clause()
+        .unwrap()
+        .group_graph_pattern()
+        .unwrap()
+        .triple_blocks()
+        .first()
+        .unwrap()
+        .triples();
+    let property_list = triples
+        .first()
+        .unwrap()
+        .properties_list_path()
+        .unwrap()
+        .properties();
+    assert_eq!(property_list.len(), 2);
 }
 
 #[test]

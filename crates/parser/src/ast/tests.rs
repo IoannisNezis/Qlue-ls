@@ -19,6 +19,22 @@ fn walk(node: SyntaxNode, mut path: Vec<usize>) -> Option<SyntaxNode> {
 }
 
 #[test]
+fn values_clause() {
+    let input = "SELECT * WHERE { VALUES ?x {} }";
+    let root = parse(input);
+    let query = QueryUnit::cast(root).unwrap();
+    let gpnt = query
+        .select_query()
+        .unwrap()
+        .where_clause()
+        .unwrap()
+        .group_graph_pattern()
+        .unwrap()
+        .group_pattern_not_triples();
+    assert_eq!(gpnt.len(), 1)
+}
+
+#[test]
 fn property_list() {
     let input = "SELECT * WHERE { ?a ?b ?c ;  ?x }";
     let root = parse(input);

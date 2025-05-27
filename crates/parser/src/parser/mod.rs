@@ -218,8 +218,7 @@ pub fn guess_operation_type(input: &str) -> Option<TopEntryPoint> {
         | SyntaxKind::INSERT_DATA
         | SyntaxKind::DELETE
         | SyntaxKind::DELETE_DATA
-        | SyntaxKind::DELETE_WHERE
-        | SyntaxKind::USING => Some(TopEntryPoint::UpdateUnit),
+        | SyntaxKind::DELETE_WHERE => Some(TopEntryPoint::UpdateUnit),
         _ => None,
     })
 }

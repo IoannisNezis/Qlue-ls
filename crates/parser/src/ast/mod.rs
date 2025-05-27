@@ -1373,9 +1373,9 @@ impl AstNode for GraphPatternNotTriples {
             )),
             SyntaxKind::Filter => Some(GraphPatternNotTriples::Filter(Filter::cast(child)?)),
             SyntaxKind::Bind => Some(GraphPatternNotTriples::Bind(Bind::cast(child)?)),
-            SyntaxKind::InlineData => Some(GraphPatternNotTriples::InlineData(InlineData::cast(
-                syntax,
-            )?)),
+            SyntaxKind::InlineData => {
+                Some(GraphPatternNotTriples::InlineData(InlineData::cast(child)?))
+            }
             _ => None,
         }
     }

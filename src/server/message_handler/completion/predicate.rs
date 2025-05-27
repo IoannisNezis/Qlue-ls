@@ -93,43 +93,30 @@ fn local_template_context(environment: &CompletionEnvironment) -> Result<Context
                     triple.text()
                 )))?
                 .properties();
-            if environment.continuations.contains(&SyntaxKind::VerbPath) {
+            if properties.is_empty() {
                 template_context.insert(
                     "local_context",
                     &format!("{} ?qlue_ls_entity []", triple.text()),
                 );
-            } else if properties.len() == 1 {
-                template_context.insert(
-                    "local_context",
-                    &reduce_path(
-                        &subject_string,
-                        &properties[0].verb,
-                        "[]",
-                        environment
-                            .anchor_token
-                            .as_ref()
-                            .unwrap()
-                            .text_range()
-                            .end(),
-                    )
-                    .ok_or(CompletionError::Resolve(
-                        "Could not build path for completion query".to_string(),
-                    ))?,
-                );
             } else {
                 let (last_prop, prev_prop) = properties.split_last().unwrap();
-
-                template_context.insert(
-                    "local_context",
-                    &format!(
-                        "{} {} . {}",
+                let mut context = environment.context.clone().unwrap_or_default();
+                if environment.anchor_token.as_ref().is_some_and(|anchor| {
+                    anchor.text_range().start() < last_prop.text_range().end()
+                }) {
+                    // NOTE: The completion was triggerd within the last property
+                    context.raw_inject = format!(
+                        "{} {}",
                         subject_string,
                         prev_prop
                             .iter()
                             .map(|prop| prop.text())
                             .collect::<Vec<_>>()
-                            .join(" ; "),
-                        reduce_path(
+                            .join(" ; ")
+                    );
+                    template_context.insert(
+                        "local_context",
+                        &reduce_path(
                             &subject_string,
                             &last_prop.verb,
                             "[]",
@@ -138,13 +125,29 @@ fn local_template_context(environment: &CompletionEnvironment) -> Result<Context
                                 .as_ref()
                                 .unwrap()
                                 .text_range()
-                                .end()
+                                .end(),
                         )
                         .ok_or(CompletionError::Resolve(
                             "Could not build path for completion query".to_string(),
-                        ))?
-                    ),
-                );
+                        ))?,
+                    );
+                } else {
+                    // NOTE: The completion was triggerd after the last property
+                    context.raw_inject = format!(
+                        "{} {}",
+                        subject_string,
+                        properties
+                            .iter()
+                            .map(|prop| prop.text())
+                            .collect::<Vec<_>>()
+                            .join(" ; ")
+                    );
+                    template_context.insert(
+                        "local_context",
+                        &format!("{} ?qlue_ls_entity []", subject_string),
+                    );
+                }
+                template_context.insert("context", &context);
             }
         };
     } else {

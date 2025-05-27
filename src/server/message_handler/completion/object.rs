@@ -65,7 +65,7 @@ fn local_template_context(environment: &CompletionEnvironment) -> Result<Context
     let mut template_context = Context::new();
 
     if let CompletionLocation::Object(triple) = &environment.location {
-        let subject = triple
+        let subject_string = triple
             .subject()
             .ok_or(CompletionError::Resolve(format!(
                 "Could not find subject in triple: \"{}\"",
@@ -73,28 +73,43 @@ fn local_template_context(environment: &CompletionEnvironment) -> Result<Context
             )))?
             .text();
 
-        template_context.insert("subject", &subject);
+        template_context.insert("subject", &subject_string);
+
+        let properties = triple
+            .properties_list_path()
+            .ok_or(CompletionError::Resolve(format!(
+                "Could not find properties list in triple: \"{}\"",
+                triple.text()
+            )))?
+            .properties();
+
+        let (last_prop, prev_prop) = properties
+            .split_last()
+            .expect("There should be atleast one property, since this is a object completion");
+
+        log::info!("{:?}", last_prop.text());
+        let mut context = environment.context.clone().unwrap_or_default();
+        if !prev_prop.is_empty() {
+            context.raw_inject = format!(
+                "{} {}",
+                subject_string,
+                prev_prop
+                    .iter()
+                    .map(|prop| prop.text())
+                    .collect::<Vec<_>>()
+                    .join(" ; ")
+            );
+        }
+        log::info!("{:?}", context.raw_inject);
         template_context.insert(
             "local_context",
             &format!(
                 "{} {} ?qlue_ls_entity",
-                subject,
-                triple
-                    .properties_list_path()
-                    .ok_or(CompletionError::Resolve(format!(
-                        "Could not find properties list in triple: \"{}\"",
-                        triple.text()
-                    )))?
-                    .text_until(
-                        environment
-                            .anchor_token
-                            .as_ref()
-                            .unwrap()
-                            .text_range()
-                            .end()
-                    )
+                subject_string,
+                last_prop.verb.text()
             ),
         );
+        template_context.insert("context", &context);
     } else {
         panic!("object completion called for non object location");
     }

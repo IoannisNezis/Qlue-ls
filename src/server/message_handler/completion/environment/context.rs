@@ -9,10 +9,11 @@ use text_size::TextSize;
 
 use super::{query_graph::QueryGraph, CompletionLocation};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub(crate) struct Context {
     pub nodes: Vec<SyntaxNode>,
     pub prefixes: HashSet<String>,
+    pub raw_inject: String,
 }
 
 impl Serialize for Context {
@@ -24,12 +25,17 @@ impl Serialize for Context {
             serializer.serialize_none()
         } else {
             let s = format!(
-                "{{{}}}",
+                "{{{}{}}}",
                 self.nodes
                     .iter()
                     .map(|node| node.to_string())
                     .collect::<Vec<_>>()
-                    .join(" .\n")
+                    .join(" .\n"),
+                if self.raw_inject.is_empty() {
+                    String::new()
+                } else {
+                    format!(". {}", &self.raw_inject)
+                }
             );
             serializer.serialize_str(&s)
         }
@@ -43,6 +49,43 @@ pub(super) fn context(location: &CompletionLocation) -> Option<Context> {
         }
         _ => None,
     }
+}
+
+fn compute_context(triple: &Triple) -> Option<Context> {
+    let mut graph = QueryGraph::new();
+    // NOTE: this ensures that the trigger triple is node no. 0
+    graph.add_node(
+        triple.syntax().clone(),
+        triple.variables().iter().map(|var| var.text()).collect(),
+    );
+
+    collect_nodes(
+        &mut graph,
+        triple.triples_block()?.group_graph_pattern()?,
+        triple.syntax().text_range().start(),
+    );
+    // NOTE: compute edges based on visible variables of each pattern
+    graph.connect();
+
+    let mut nodes: Vec<SyntaxNode> = graph
+        .component(0)
+        .into_iter()
+        .filter(|node| node.text_range() != triple.syntax().text_range())
+        .collect();
+    nodes.sort_by_key(|node| node.text_range().start());
+    let prefixes: HashSet<String> = nodes
+        .iter()
+        .flat_map(|node| {
+            node.descendants()
+                .filter_map(PrefixedName::cast)
+                .map(|prefixed_name| prefixed_name.prefix())
+        })
+        .collect();
+    Some(Context {
+        nodes,
+        prefixes,
+        raw_inject: String::new(),
+    })
 }
 
 fn collect_nodes(graph: &mut QueryGraph, group_graph_pattern: GroupGraphPattern, cutoff: TextSize) {
@@ -98,39 +141,6 @@ fn collect_nodes(graph: &mut QueryGraph, group_graph_pattern: GroupGraphPattern,
                 .collect(),
         );
     }
-}
-
-fn compute_context(triple: &Triple) -> Option<Context> {
-    let mut graph = QueryGraph::new();
-    // NOTE: this ensures that the trigger triple is node no. 0
-    graph.add_node(
-        triple.syntax().clone(),
-        triple.variables().iter().map(|var| var.text()).collect(),
-    );
-
-    collect_nodes(
-        &mut graph,
-        triple.triples_block()?.group_graph_pattern()?,
-        triple.syntax().text_range().start(),
-    );
-    // NOTE: compute edges based on visible variables of each pattern
-    graph.connect();
-
-    let mut nodes: Vec<SyntaxNode> = graph
-        .component(0)
-        .into_iter()
-        .filter(|node| node.text_range() != triple.syntax().text_range())
-        .collect();
-    nodes.sort_by_key(|node| node.text_range().start());
-    let prefixes: HashSet<String> = nodes
-        .iter()
-        .flat_map(|node| {
-            node.descendants()
-                .filter_map(PrefixedName::cast)
-                .map(|prefixed_name| prefixed_name.prefix())
-        })
-        .collect();
-    Some(Context { nodes, prefixes })
 }
 
 #[cfg(test)]

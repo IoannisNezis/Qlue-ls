@@ -535,6 +535,7 @@ impl<'a> Walker<'a> {
                 }
                 res
             }
+            SyntaxKind::a => vec![SimplifiedTextEdit::new(node.text_range(), "a")],
             _ => Vec::new(),
         }
     }

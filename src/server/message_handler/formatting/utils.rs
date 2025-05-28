@@ -1,7 +1,7 @@
 use ll_sparql_parser::syntax_kind::SyntaxKind;
 
-pub const KEYWORDS: [SyntaxKind; 110] = [
-    SyntaxKind::a,
+pub const KEYWORDS: [SyntaxKind; 109] = [
+    // SyntaxKind::a,
     SyntaxKind::BASE,
     SyntaxKind::PREFIX,
     SyntaxKind::SELECT,

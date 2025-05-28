@@ -1351,3 +1351,18 @@ fn format_unreasonable_dots() {
     );
     format_and_compare(ugly_query, pretty_query, &FormatSettings::default());
 }
+
+#[test]
+fn format_a() {
+    let ugly_query = indoc!(
+        "SELECT * WHERE { ?sub a ?ob }
+         "
+    );
+    let pretty_query = indoc!(
+        "SELECT * WHERE {
+           ?sub a ?ob
+         }
+         "
+    );
+    format_and_compare(ugly_query, pretty_query, &FormatSettings::default());
+}

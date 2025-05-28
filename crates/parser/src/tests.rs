@@ -15,6 +15,19 @@ fn tokenize(input: &str) -> Vec<SyntaxKind> {
 }
 
 #[test]
+fn tokenize_blank_node_label() {
+    let tokens = tokenize(r#"_:asdasdbc _:_-- _:123.345.abc"#);
+    assert_eq!(
+        tokens,
+        vec![
+            SyntaxKind::BLANK_NODE_LABEL,
+            SyntaxKind::BLANK_NODE_LABEL,
+            SyntaxKind::BLANK_NODE_LABEL
+        ]
+    )
+}
+
+#[test]
 fn tokenize_langtag() {
     let tokens = tokenize(r#""dings"@de "foo"@a-109283"#);
     assert_eq!(

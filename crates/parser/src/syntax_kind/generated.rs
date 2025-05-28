@@ -178,131 +178,131 @@ pub enum SyntaxKind {
     NOT,
     #[token("-")]
     Minus,
-    #[token("STR")]
+    #[token("STR", ignore(case))]
     STR,
-    #[token("LANG")]
+    #[token("LANG", ignore(case))]
     LANG,
-    #[token("LANGMATCHES")]
+    #[token("LANGMATCHES", ignore(case))]
     LANGMATCHES,
-    #[token("DATATYPE")]
+    #[token("DATATYPE", ignore(case))]
     DATATYPE,
-    #[token("BOUND")]
+    #[token("BOUND", ignore(case))]
     BOUND,
-    #[token("IRI")]
+    #[token("IRI", ignore(case))]
     IRI,
-    #[token("URI")]
+    #[token("URI", ignore(case))]
     URI,
-    #[token("BNODE")]
+    #[token("BNODE", ignore(case))]
     BNODE,
-    #[token("RAND")]
+    #[token("RAND", ignore(case))]
     RAND,
-    #[token("ABS")]
+    #[token("ABS", ignore(case))]
     ABS,
-    #[token("CEIL")]
+    #[token("CEIL", ignore(case))]
     CEIL,
-    #[token("FLOOR")]
+    #[token("FLOOR", ignore(case))]
     FLOOR,
-    #[token("ROUND")]
+    #[token("ROUND", ignore(case))]
     ROUND,
-    #[token("CONCAT")]
+    #[token("CONCAT", ignore(case))]
     CONCAT,
-    #[token("STRLEN")]
+    #[token("STRLEN", ignore(case))]
     STRLEN,
-    #[token("UCASE")]
+    #[token("UCASE", ignore(case))]
     UCASE,
-    #[token("LCASE")]
+    #[token("LCASE", ignore(case))]
     LCASE,
-    #[token("ENCODE_FOR_URI")]
+    #[token("ENCODE_FOR_URI", ignore(case))]
     ENCODE_FOR_URI,
-    #[token("CONTAINS")]
+    #[token("CONTAINS", ignore(case))]
     CONTAINS,
-    #[token("STRSTARTS")]
+    #[token("STRSTARTS", ignore(case))]
     STRSTARTS,
-    #[token("STRENDS")]
+    #[token("STRENDS", ignore(case))]
     STRENDS,
-    #[token("STRBEFORE")]
+    #[token("STRBEFORE", ignore(case))]
     STRBEFORE,
-    #[token("STRAFTER")]
+    #[token("STRAFTER", ignore(case))]
     STRAFTER,
-    #[token("YEAR")]
+    #[token("YEAR", ignore(case))]
     YEAR,
-    #[token("MONTH")]
+    #[token("MONTH", ignore(case))]
     MONTH,
-    #[token("DAY")]
+    #[token("DAY", ignore(case))]
     DAY,
-    #[token("HOURS")]
+    #[token("HOURS", ignore(case))]
     HOURS,
-    #[token("MINUTES")]
+    #[token("MINUTES", ignore(case))]
     MINUTES,
-    #[token("SECONDS")]
+    #[token("SECONDS", ignore(case))]
     SECONDS,
-    #[token("TIMEZONE")]
+    #[token("TIMEZONE", ignore(case))]
     TIMEZONE,
-    #[token("TZ")]
+    #[token("TZ", ignore(case))]
     TZ,
-    #[token("NOW")]
+    #[token("NOW", ignore(case))]
     NOW,
-    #[token("UUID")]
+    #[token("UUID", ignore(case))]
     UUID,
-    #[token("STRUUID")]
+    #[token("STRUUID", ignore(case))]
     STRUUID,
-    #[token("MD5")]
+    #[token("MD5", ignore(case))]
     MD5,
-    #[token("SHA1")]
+    #[token("SHA1", ignore(case))]
     SHA1,
-    #[token("SHA256")]
+    #[token("SHA256", ignore(case))]
     SHA256,
-    #[token("SHA384")]
+    #[token("SHA384", ignore(case))]
     SHA384,
-    #[token("SHA512")]
+    #[token("SHA512", ignore(case))]
     SHA512,
-    #[token("COALESCE")]
+    #[token("COALESCE", ignore(case))]
     COALESCE,
-    #[token("IF")]
+    #[token("IF", ignore(case))]
     IF,
-    #[token("STRLANG")]
+    #[token("STRLANG", ignore(case))]
     STRLANG,
-    #[token("STRDT")]
+    #[token("STRDT", ignore(case))]
     STRDT,
-    #[token("sameTerm")]
+    #[token("sameTerm", ignore(case))]
     sameTerm,
-    #[token("isIRI")]
+    #[token("isIRI", ignore(case))]
     isIRI,
-    #[token("isURI")]
+    #[token("isURI", ignore(case))]
     isURI,
-    #[token("isBLANK")]
+    #[token("isBLANK", ignore(case))]
     isBLANK,
-    #[token("isLITERAL")]
+    #[token("isLITERAL", ignore(case))]
     isLITERAL,
-    #[token("isNUMERIC")]
+    #[token("isNUMERIC", ignore(case))]
     isNUMERIC,
-    #[token("REGEX")]
+    #[token("REGEX", ignore(case))]
     REGEX,
-    #[token("SUBSTR")]
+    #[token("SUBSTR", ignore(case))]
     SUBSTR,
-    #[token("REPLACE")]
+    #[token("REPLACE", ignore(case))]
     REPLACE,
-    #[token("EXISTS")]
+    #[token("EXISTS", ignore(case))]
     EXISTS,
-    #[token("COUNT")]
+    #[token("COUNT", ignore(case))]
     COUNT,
-    #[token("SUM")]
+    #[token("SUM", ignore(case))]
     SUM,
-    #[token("MIN")]
+    #[token("MIN", ignore(case))]
     MIN,
-    #[token("MAX")]
+    #[token("MAX", ignore(case))]
     MAX,
-    #[token("AVG")]
+    #[token("AVG", ignore(case))]
     AVG,
-    #[token("SAMPLE")]
+    #[token("SAMPLE", ignore(case))]
     SAMPLE,
-    #[token("GROUP_CONCAT")]
+    #[token("GROUP_CONCAT", ignore(case))]
     GROUP_CONCAT,
-    #[token("SEPARATOR")]
+    #[token("SEPARATOR", ignore(case))]
     SEPARATOR,
     #[regex("@[a-zA-Z]+(?:-[a-zA-Z0-9]+)*")]
     LANGTAG,
-    #[token("DoubleZirkumflex")]
+    #[token("^^")]
     DoubleZirkumflex,
     #[regex(r"\d+")]
     INTEGER,
@@ -336,10 +336,14 @@ pub enum SyntaxKind {
     // TODO: add regex
     #[token("STRING_LITERAL_LONG2")]
     STRING_LITERAL_LONG2,
-    #[regex(r"[A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}](?:[A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}0-9\u{00B7}\u{0300}-\u{036F}\u{203F}-\u{2040}_.-]*[A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}0-9\u{00B7}\u{0300}-\u{036F}\u{203F}-\u{2040}_-])?:(?:[A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}_0-9:]|%[0-9A-Fa-f])(?:[A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}0-9\u{00B7}\u{0300}-\u{036F}\u{203F}-\u{2040}_:\.-]|%[0-9A-Fa-f])*(?:[A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}0-9\u{00B7}\u{0300}-\u{036F}\u{203F}-\u{2040}_:-]|%[0-9A-Fa-f])?")]
+    #[regex(r"[A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}](?:[A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}0-9\u{00B7}\u{0300}-\u{036F}\u{203F}-\u{2040}_\.-]*[A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}0-9\u{00B7}\u{0300}-\u{036F}\u{203F}-\u{2040}_-])?:(?:[A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}_0-9:]|%[0-9A-Fa-f])(?:[A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}0-9\u{00B7}\u{0300}-\u{036F}\u{203F}-\u{2040}_:\.-]|%[0-9A-Fa-f])*(?:[A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}0-9\u{00B7}\u{0300}-\u{036F}\u{203F}-\u{2040}_:-]|%[0-9A-Fa-f])?")]
     PNAME_LN,
-    // TODO: provide regex https://www.w3.org/TR/sparql11-query/#rBLANK_NODE_LABEL
-    #[token("BLANK_NODE_LABEL")]
+
+    // FIXME: This regex allows "." as suffix (incorrect).
+    // The correct regex currently (28.05.25) causes issues.
+    // This is  known problem of logos and might be solved in the future
+    // https://github.com/maciejhirsz/logos/issues/291
+    #[regex(r"_:(?:(?:[A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}_])|(?:[0-9]))(?:[A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}_0-9\u{00B7}\u{0300}-\u{036F}\u{203F}-\u{2040}\.-]*)?")]
     BLANK_NODE_LABEL,
     // FIXME: here we want tu use \[\s*\]
     // but this is causing issues with LBrack.

@@ -37,7 +37,7 @@ impl Default for CompletionSettings {
     fn default() -> Self {
         Self {
             timeout_ms: 5000,
-            result_size_limit: 42,
+            result_size_limit: 100,
         }
     }
 }

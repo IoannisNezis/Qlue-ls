@@ -105,15 +105,18 @@ fn local_template_context(environment: &CompletionEnvironment) -> Result<Context
                     anchor.text_range().start() < last_prop.text_range().end()
                 }) {
                     // NOTE: The completion was triggerd within the last property
-                    context.raw_inject = format!(
-                        "{} {}",
-                        subject_string,
-                        prev_prop
-                            .iter()
-                            .map(|prop| prop.text())
-                            .collect::<Vec<_>>()
-                            .join(" ; ")
-                    );
+                    if !prev_prop.is_empty() {
+                        context.raw_inject = format!(
+                            "{} {}",
+                            subject_string,
+                            prev_prop
+                                .iter()
+                                .map(|prop| prop.text())
+                                .collect::<Vec<_>>()
+                                .join(" ; ")
+                        );
+                    }
+
                     template_context.insert(
                         "local_context",
                         &reduce_path(

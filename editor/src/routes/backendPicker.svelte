@@ -67,9 +67,6 @@
     });
 
     let modal: HTMLDialogElement = $state();
-    $effect(() => {
-        console.log(modal);
-    });
 </script>
 
 <div

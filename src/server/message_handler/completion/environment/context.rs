@@ -21,10 +21,19 @@ impl Serialize for Context {
     where
         S: serde::Serializer,
     {
-        if self.nodes.is_empty() {
-            serializer.serialize_none()
-        } else {
-            let s = format!(
+        match (!self.nodes.is_empty(), !self.raw_inject.is_empty()) {
+            (false, false) => serializer.serialize_none(),
+            (false, true) => serializer.serialize_str(&format!("{{{}}}", self.raw_inject)),
+            (true, false) => serializer.serialize_str(&format!(
+                "{{{}}}",
+                self.nodes
+                    .iter()
+                    .map(|node| node.to_string())
+                    .collect::<Vec<_>>()
+                    .join(" .\n")
+            )),
+
+            (true, true) => serializer.serialize_str(&format!(
                 "{{{}{}}}",
                 self.nodes
                     .iter()
@@ -36,8 +45,7 @@ impl Serialize for Context {
                 } else {
                     format!(". {}", &self.raw_inject)
                 }
-            );
-            serializer.serialize_str(&s)
+            )),
         }
     }
 }

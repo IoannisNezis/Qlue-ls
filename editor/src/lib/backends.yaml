@@ -222,7 +222,7 @@
     schema: http://schema.org/
     xsd: http://www.w3.org/2001/XMLSchema#
     issn: http://issn.org/resource/ISSN/
-  default: true
+  default: false
   queries:
     subjectCompletion: |-
       {% for prefix in prefixes %}
@@ -731,7 +731,7 @@
     osm2rdfgeom: https://osm2rdf.cs.uni-freiburg.de/rdf/geom#
     osm2rdfmember: https://osm2rdf.cs.uni-freiburg.de/rdf/member#
     qlss: https://qlever.cs.uni-freiburg.de/spatialSearch/
-  default: false
+  default: true
   queries:
     subjectCompletion: |-
       {% for prefix in prefixes %}

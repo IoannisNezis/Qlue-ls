@@ -1,7 +1,6 @@
 <script lang="ts">
     import { backends, type Backend, type BackendConf } from '$lib/backends';
     import { LanguageClientWrapper } from 'monaco-editor-wrapper';
-    import BackendDetail from './backendDetail.svelte';
     interface Props {
         languageClientWrapper: LanguageClientWrapper;
         backend: Backend;
@@ -66,9 +65,17 @@
                 });
         }
     });
+
+    let modal: HTMLDialogElement = $state();
+    $effect(() => {
+        console.log(modal);
+    });
 </script>
 
-<div class="flex flex-row border-s border-gray-600 px-3">
+<div
+    class="flex w-44 flex-row rounded-sm border border-gray-600 bg-gray-700 px-3 py-1 hover:cursor-pointer"
+    onclick={() => modal.showModal()}
+>
     {#if backend_state.availibility == 'unknown'}
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" class="size-6"
             ><radialGradient
@@ -152,5 +159,43 @@
             />
         </svg>
     {/if}
-    <BackendDetail bind:backend />
+    <span class="ms-3">
+        {backend.name}
+    </span>
+    <dialog
+        bind:this={modal}
+        onclick={(e) => {
+            if (e.target === modal) modal.close();
+        }}
+        id="my_modal_1"
+        class="modal"
+    >
+        <div class="modal-box max-w-none md:w-3/4 lg:w-2/3">
+            <select bind:value={backend} class="select">
+                {#each backends as backendConf}
+                    <option value={backendConf.backend}>{backendConf.backend.name}</option>
+                {/each}
+            </select>
+            <div class="divider"></div>
+            <div class="grid grid-cols-3">
+                <div>slug:</div>
+                <div class="col-span-2">
+                    {backend.slug}
+                </div>
+                <div>url:</div>
+                <div class="col-span-2">
+                    {backend.url}
+                </div>
+                <div>health-check:</div>
+                <div class="col-span-2">
+                    {backend.healthCheckUrl}
+                </div>
+            </div>
+            <div class="modal-action">
+                <form method="dialog">
+                    <button class="btn">Close</button>
+                </form>
+            </div>
+        </div>
+    </dialog>
 </div>

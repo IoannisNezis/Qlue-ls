@@ -8,6 +8,7 @@
     import type { editor } from 'monaco-editor';
     import { backends } from '$lib/backends';
     import Tree from './tree.svelte';
+    import BackendPicker from './backendPicker.svelte';
 
     let { ready = $bindable() } = $props();
 
@@ -154,37 +155,41 @@
     let showTree = $state(false);
 </script>
 
-<div class="relative grid grid-cols-3">
-    <div
-        id="editor"
-        class="container transition-all {showTree ? 'col-span-2' : 'col-span-3'}"
-        bind:this={editorContainer}
-    ></div>
-    <!-- svelte-ignore a11y_consider_explicit_label -->
-    {#if showTree}
-        <Tree input={content} {cursorOffset}></Tree>
-    {/if}
-    <button
-        onclick={() => (showTree = !showTree)}
-        class="absolute right-2 top-2 rounded-sm bg-gray-700 px-2 py-2 font-bold text-white hover:bg-gray-600"
-    >
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke-width="1.5"
-            stroke="currentColor"
-            class="size-5 transition duration-200 {showTree ? 'rotate-180' : ''}"
+<BackendPicker {languageClientWrapper} bind:backend></BackendPicker>
+<div class="rounded-xs mt-5 border-2 border-gray-700 bg-[#282828]">
+    <div class="relative grid grid-cols-3">
+        <div
+            id="editor"
+            class="container transition-all {showTree ? 'col-span-2' : 'col-span-3'}"
+            bind:this={editorContainer}
+        ></div>
+        <!-- svelte-ignore a11y_consider_explicit_label -->
+        {#if showTree}
+            <Tree input={content} {cursorOffset}></Tree>
+        {/if}
+        <button
+            aria-label="Toggle the syntax tree display"
+            onclick={() => (showTree = !showTree)}
+            class="absolute right-2 top-2 rounded-sm bg-gray-700 px-2 py-2 font-bold text-white hover:cursor-pointer hover:bg-gray-600"
         >
-            <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="m18.75 4.5-7.5 7.5 7.5 7.5m-6-15L5.25 12l7.5 7.5"
-            />
-        </svg>
-    </button>
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="size-5 transition duration-200 {showTree ? 'rotate-180' : ''}"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="m18.75 4.5-7.5 7.5 7.5 7.5m-6-15L5.25 12l7.5 7.5"
+                />
+            </svg>
+        </button>
+    </div>
+    <Statusbar {markers}></Statusbar>
 </div>
-<Statusbar {languageClientWrapper} {markers} bind:backend></Statusbar>
 
 <style>
     #editor {

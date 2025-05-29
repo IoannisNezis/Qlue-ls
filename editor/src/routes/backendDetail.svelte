@@ -7,7 +7,7 @@
     let modal: HTMLElement;
 </script>
 
-<button class="hover:cursor-pointer" onclick={() => modal.showModal()}>{backend.name}</button>
+<button onclick={() => modal.showModal()}>{backend.name}</button>
 <dialog bind:this={modal} id="my_modal_1" class="modal">
     <div class="modal-box max-w-none md:w-3/4 lg:w-2/3">
         <select bind:value={backend} class="select">

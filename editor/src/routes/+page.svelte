@@ -16,7 +16,7 @@
             </div>
         </div>
     {/if}
-    <div class="rounded-xs mt-10 border-2 border-gray-700 bg-[#282828]" class:hidden={!ready}>
+    <div class:hidden={!ready} class="mt-5">
         <Editor bind:ready></Editor>
     </div>
 </div>

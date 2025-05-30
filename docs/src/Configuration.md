@@ -8,7 +8,7 @@ Completion queries are send to the backend to retriev the completion suggestions
 These Queries are individual for each knowledgebase.  
 The user has to define a query template for each type of online-completion.
 
-#### Completion query autonomy
+#### Completion query anatomy
 
 Each completion query **MUST** result must contain the follwing variables.
 
@@ -49,9 +49,10 @@ Takes a string and checks if its a SPARQL variable or not.
 
 Each template has the following variables availible:
 
-| Variable | Content | Example |
-| -------- | ------- | ------- |
-| prefixes | list of prefix, iri pairs | [("rdfs", "http://www.w3.org/2000/01/rdf-schema#"), ("rdf","http://www.w3.org/1999/02/22-rdf-syntax-ns#")] |
-| subject | subject of current triple | "?sub" |
-| local_context | triple to | |
+| Variable      | Content                              | Example |
+| ------------- | ------------------------------------ | ------- |
+| prefixes      | list of prefix, iri pairs            | [("rdfs", "http://www.w3.org/2000/01/rdf-schema#"), ("rdf","http://www.w3.org/1999/02/22-rdf-syntax-ns#")] |
+| subject       | subject of current triple            | "?sub" |
+| local_context | Query pattern for the current triple | "?sub ?qlue_ls_entity []"  |
+| context       | Query pattern for the constrainig part of the query | "?sub rdfs:type <Thing> . ?sub <n> 42"  |
 

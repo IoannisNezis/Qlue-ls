@@ -1,7 +1,6 @@
 use ll_sparql_parser::{
     ast::{AstNode, Iri, QueryUnit},
     syntax_kind::SyntaxKind,
-    SyntaxNode,
 };
 
 use crate::server::{
@@ -15,11 +14,11 @@ use crate::server::{
 
 pub(super) fn diagnostics(
     document: &TextDocumentItem,
+    query_unit: &QueryUnit,
     server: &Server,
-    parse_tree: SyntaxNode,
 ) -> Option<Vec<Diagnostic>> {
     Some(
-        QueryUnit::cast(parse_tree)?
+        query_unit
             .select_query()?
             .preorder_find_kind(SyntaxKind::iri)
             .into_iter()

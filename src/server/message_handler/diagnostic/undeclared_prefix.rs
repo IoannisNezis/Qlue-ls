@@ -1,29 +1,30 @@
 use std::collections::HashSet;
 
-use ll_sparql_parser::{
-    ast::{AstNode, PrefixedName, QueryUnit},
-    SyntaxNode,
-};
+use ll_sparql_parser::ast::{AstNode, PrefixedName, QueryUnit};
 
-use crate::server::lsp::{
-    base_types::LSPAny,
-    diagnostic::{Diagnostic, DiagnosticCode, DiagnosticSeverity},
-    textdocument::{Range, TextDocumentItem},
+use crate::server::{
+    lsp::{
+        base_types::LSPAny,
+        diagnostic::{Diagnostic, DiagnosticCode, DiagnosticSeverity},
+        textdocument::{Range, TextDocumentItem},
+    },
+    Server,
 };
 
 pub(super) fn diagnostics(
     document: &TextDocumentItem,
-    parse_tree: SyntaxNode,
+    query_unit: &QueryUnit,
+    _server: &Server,
 ) -> Option<Vec<Diagnostic>> {
-    let qu = QueryUnit::cast(parse_tree)?;
-    let prefixed_names = qu
+    let prefixed_names = query_unit
         .select_query()?
         .collect_decendants(&PrefixedName::can_cast)
         .into_iter()
         .map(|node| PrefixedName::cast(node).unwrap());
 
     let declared_prefixes: HashSet<String> = HashSet::from_iter(
-        qu.prologue()
+        query_unit
+            .prologue()
             .map_or(Vec::new(), |prologue| prologue.prefix_declarations())
             .iter()
             .filter_map(|prefix_decl| prefix_decl.prefix()),

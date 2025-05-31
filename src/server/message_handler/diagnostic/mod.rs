@@ -4,7 +4,10 @@ mod unused_prefix;
 use std::rc::Rc;
 
 use futures::lock::Mutex;
-use ll_sparql_parser::parse_query;
+use ll_sparql_parser::{
+    ast::{AstNode, QueryUnit},
+    parse,
+};
 
 use crate::server::{
     lsp::{errors::LSPError, DiagnosticRequest, DiagnosticResponse},
@@ -19,33 +22,21 @@ pub(super) async fn handle_diagnostic_request(
     let document = server
         .state
         .get_document(&request.params.text_document.uri)?;
-    let parse_tree = parse_query(&document.text);
-
-    let mut diagnostics = Vec::new();
-    if let Some(unused_prefix_diagnostics) =
-        unused_prefix::diagnostics(document, parse_tree.clone())
-    {
-        diagnostics.extend(unused_prefix_diagnostics);
+    let ast = QueryUnit::cast(parse(&document.text)).ok_or(LSPError::new(
+        crate::server::lsp::errors::ErrorCode::InternalError,
+        "diagnostics are currently only supported for query operations",
+    ))?;
+    let mut diagnostic_accu = Vec::new();
+    macro_rules! add {
+        ($diagnostic_provider:path) => {
+            if let Some(diagnostics) = $diagnostic_provider(document, &ast, &server) {
+                diagnostic_accu.extend(diagnostics);
+            }
+        };
     }
+    add!(unused_prefix::diagnostics);
+    add!(undeclared_prefix::diagnostics);
+    add!(uncompacted_uri::diagnostics);
 
-    if let Some(undeclared_prefix_diagnostics) =
-        undeclared_prefix::diagnostics(document, parse_tree.clone())
-    {
-        diagnostics.extend(undeclared_prefix_diagnostics);
-    }
-
-    if let Some(uncompacted_uri_diagnostics) =
-        uncompacted_uri::diagnostics(document, &server, parse_tree)
-    {
-        diagnostics.extend(uncompacted_uri_diagnostics);
-    }
-
-    server.send_message(DiagnosticResponse::new(request.get_id(), diagnostics))
+    server.send_message(DiagnosticResponse::new(request.get_id(), diagnostic_accu))
 }
-
-// fn undefined_select_binding(
-//     server: &Server,
-//     document: &TextDocumentItem,
-// ) -> Result<impl Iterator<Item = Diagnostic>, LSPError> {
-//     todo!()
-// }

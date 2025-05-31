@@ -1,29 +1,32 @@
 use std::collections::HashSet;
 
-use ll_sparql_parser::{
-    ast::{AstNode, PrefixedName, QueryUnit},
-    SyntaxNode,
-};
+use ll_sparql_parser::ast::{AstNode, PrefixedName, QueryUnit};
 
-use crate::server::lsp::{
-    diagnostic::{Diagnostic, DiagnosticCode, DiagnosticSeverity},
-    textdocument::{Range, TextDocumentItem},
+use crate::server::{
+    lsp::{
+        diagnostic::{Diagnostic, DiagnosticCode, DiagnosticSeverity},
+        textdocument::{Range, TextDocumentItem},
+    },
+    Server,
 };
 
 pub(super) fn diagnostics(
     document: &TextDocumentItem,
-    parse_tree: SyntaxNode,
+    query_unit: &QueryUnit,
+    _server: &Server,
 ) -> Option<Vec<Diagnostic>> {
-    let qu = QueryUnit::cast(parse_tree)?;
-    let prefix_declarations = qu.prologue()?.prefix_declarations();
-    let used_prefixes: HashSet<String> = qu.select_query().map_or(HashSet::new(), |select_query| {
-        HashSet::from_iter(
-            select_query
-                .collect_decendants(&PrefixedName::can_cast)
-                .into_iter()
-                .map(|node| PrefixedName::cast(node).unwrap().prefix()),
-        )
-    });
+    let prefix_declarations = query_unit.prologue()?.prefix_declarations();
+    let used_prefixes: HashSet<String> =
+        query_unit
+            .select_query()
+            .map_or(HashSet::new(), |select_query| {
+                HashSet::from_iter(
+                    select_query
+                        .collect_decendants(&PrefixedName::can_cast)
+                        .into_iter()
+                        .map(|node| PrefixedName::cast(node).unwrap().prefix()),
+                )
+            });
     Some(
         prefix_declarations
             .into_iter()

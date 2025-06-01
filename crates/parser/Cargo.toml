@@ -1,6 +1,6 @@
 [package]
 name = "ll-sparql-parser"
-version = "0.12.0"
+version = "0.12.1"
 edition = "2021"
 authors = ["Ioannis Nezis <ioannis@nezis.de>"]
 description = "A resilient LL parser for SPARQL"

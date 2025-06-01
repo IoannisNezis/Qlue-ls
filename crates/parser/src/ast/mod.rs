@@ -46,6 +46,17 @@ pub struct SolutionModifier {
     syntax: SyntaxNode,
 }
 
+impl SolutionModifier {
+    pub fn group_clause(&self) -> Option<GroupClause> {
+        GroupClause::cast(self.syntax.first_child()?)
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct GroupClause {
+    syntax: SyntaxNode,
+}
+
 #[derive(Debug, PartialEq)]
 pub struct PrefixDeclaration {
     syntax: SyntaxNode,
@@ -123,13 +134,76 @@ pub struct SelectClause {
 }
 
 impl SelectClause {
+    /// All selected variables.
+    /// This excludes variables used in assignments
+    ///
+    /// **Example**
+    /// ```sparql
+    /// Select ?a (?b as ?c) {
+    ///     ...
+    /// }
+    /// ```
+    ///
+    /// here `variables` would return just **?a** and not **?b** or **?c**.
     pub fn variables(&self) -> Vec<Var> {
+        self.syntax
+            .children()
+            .into_iter()
+            .filter_map(Var::cast)
+            .filter(|var| {
+                var.syntax()
+                    .prev_sibling()
+                    .is_none_or(|var| var.kind() != SyntaxKind::Expression)
+            })
+            .collect()
+    }
+
+    /// All selected variables plus all assigned variables.
+    /// This excludes variables used in assignments
+    ///
+    /// **Example**
+    /// ```sparql
+    /// Select ?a (?b as ?c) {
+    ///     ...
+    /// }
+    /// ```
+    /// result: [**?a**, **?c**]
+    pub fn projected_variables(&self) -> Vec<Var> {
         self.syntax.children().filter_map(Var::cast).collect()
+    }
+
+    /// All assignments in the select clause.
+    pub fn assignments(&self) -> Vec<Assignment> {
+        self.syntax
+            .children()
+            .filter_map(Var::cast)
+            .filter_map(|variable| {
+                variable
+                    .syntax()
+                    .prev_sibling()
+                    .and_then(Expression::cast)
+                    .map(|expression| Assignment {
+                        expression,
+                        variable,
+                    })
+            })
+            .collect()
     }
 
     pub fn select_query(&self) -> Option<SelectQuery> {
         SelectQuery::cast(self.syntax.parent()?)
     }
+}
+
+#[derive(Debug)]
+pub struct Assignment {
+    expression: Expression,
+    variable: Var,
+}
+
+#[derive(Debug)]
+struct Expression {
+    syntax: SyntaxNode,
 }
 
 #[derive(Debug)]
@@ -893,6 +967,30 @@ impl AstNode for TriplesBlock {
     }
 }
 
+impl AstNode for Expression {
+    #[inline]
+    fn kind() -> SyntaxKind {
+        SyntaxKind::Expression
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        self.syntax.descendants().filter_map(Var::cast).collect()
+    }
+}
+
 impl AstNode for GroupGraphPattern {
     #[inline]
     fn kind() -> SyntaxKind {
@@ -1187,7 +1285,7 @@ impl AstNode for SelectClause {
     }
 
     fn visible_variables(&self) -> Vec<Var> {
-        self.variables()
+        self.projected_variables()
     }
 }
 
@@ -1236,6 +1334,35 @@ impl AstNode for SolutionModifier {
 
     fn visible_variables(&self) -> Vec<Var> {
         vec![]
+    }
+}
+
+impl AstNode for GroupClause {
+    #[inline]
+    fn kind() -> SyntaxKind {
+        SyntaxKind::GroupClause
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        self.syntax
+            .children()
+            .into_iter()
+            .filter_map(|group_condition| group_condition.last_child())
+            .filter_map(Var::cast)
+            .collect()
     }
 }
 

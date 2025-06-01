@@ -19,6 +19,41 @@ fn walk(node: SyntaxNode, mut path: Vec<usize>) -> Option<SyntaxNode> {
 }
 
 #[test]
+fn select_clause() {
+    let input = "SELECT ?a (3 as ?b) ?e (?c as ?d) { }";
+    let query = QueryUnit::cast(parse(input)).unwrap();
+    let select_clause = query.select_query().unwrap().select_clause().unwrap();
+    assert_eq!(
+        select_clause
+            .variables()
+            .into_iter()
+            .map(|var| var.text())
+            .collect::<Vec<_>>(),
+        vec!["?a", "?e"]
+    );
+    assert_eq!(
+        select_clause
+            .projected_variables()
+            .into_iter()
+            .map(|var| var.text())
+            .collect::<Vec<_>>(),
+        vec!["?a", "?b", "?e", "?d"]
+    );
+    assert_eq!(
+        select_clause
+            .assignments()
+            .into_iter()
+            .map(|assignment| format!(
+                "{} as {}",
+                assignment.expression.text(),
+                assignment.variable.text()
+            ))
+            .collect::<Vec<_>>(),
+        vec!["3 as ?b", "?c as ?d"]
+    );
+}
+
+#[test]
 fn values_clause() {
     let input = "SELECT * WHERE { VALUES ?x {} }";
     let root = parse(input);

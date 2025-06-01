@@ -1,7 +1,3 @@
-use std::collections::HashSet;
-
-use ll_sparql_parser::ast::{AstNode, PrefixedName, QueryUnit};
-
 use crate::server::{
     lsp::{
         base_types::LSPAny,
@@ -10,6 +6,11 @@ use crate::server::{
     },
     Server,
 };
+use ll_sparql_parser::ast::{AstNode, PrefixedName, QueryUnit};
+use std::{collections::HashSet, sync::LazyLock};
+
+pub static CODE: LazyLock<DiagnosticCode> =
+    LazyLock::new(|| DiagnosticCode::String("undeclared-prefix".to_string()));
 
 pub(super) fn diagnostics(
     document: &TextDocumentItem,
@@ -42,7 +43,7 @@ pub(super) fn diagnostics(
                     .expect("prefix declaration text range should be in text"),
                     severity: DiagnosticSeverity::Error,
                     source: Some("qlue-ls".to_string()),
-                    code: Some(DiagnosticCode::String("undeclared-prefix".to_string())),
+                    code: Some((*CODE).clone()),
                     message: format!(
                         "'{}' is used here, but was never declared\n",
                         prefixed_name.prefix()

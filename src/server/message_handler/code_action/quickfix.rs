@@ -8,6 +8,7 @@ use crate::server::{
         textdocument::{Range, TextEdit},
         CodeAction, CodeActionKind, WorkspaceEdit,
     },
+    message_handler::diagnostic,
     Server,
 };
 use log::error;
@@ -18,17 +19,19 @@ pub(super) fn get_quickfix(
     document_uri: &String,
     diagnostic: Diagnostic,
 ) -> Result<Option<CodeAction>, LSPError> {
-    match diagnostic.code {
-        Some(DiagnosticCode::String(ref diagnostic_code)) => match diagnostic_code.as_str() {
-            "undeclared-prefix" => declare_prefix(server, document_uri, diagnostic),
-            "uncompacted-uri" => shorten_uri(server, document_uri, diagnostic),
-            "unused-prefix" => remove_prefix_declaration(document_uri, diagnostic),
-            _ => {
-                log::warn!("Unknown diagnostic code: {}", diagnostic_code);
-                Ok(None)
-            }
-        },
-        _ => Ok(None),
+    if let Some(code) = diagnostic.code.as_ref() {
+        if code == &*diagnostic::undeclared_prefix::CODE {
+            declare_prefix(server, document_uri, diagnostic)
+        } else if code == &*diagnostic::uncompacted_uri::CODE {
+            shorten_uri(server, document_uri, diagnostic)
+        } else if code == &*diagnostic::unused_prefix::CODE {
+            remove_prefix_declaration(document_uri, diagnostic)
+        } else {
+            log::warn!("Unknown diagnostic code: {:?}", code);
+            Ok(None)
+        }
+    } else {
+        Ok(None)
     }
 }
 

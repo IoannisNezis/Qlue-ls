@@ -1,7 +1,3 @@
-use std::collections::HashSet;
-
-use ll_sparql_parser::ast::{AstNode, PrefixedName, QueryUnit};
-
 use crate::server::{
     lsp::{
         diagnostic::{Diagnostic, DiagnosticCode, DiagnosticSeverity},
@@ -9,6 +5,11 @@ use crate::server::{
     },
     Server,
 };
+use ll_sparql_parser::ast::{AstNode, PrefixedName, QueryUnit};
+use std::{collections::HashSet, sync::LazyLock};
+
+pub static CODE: LazyLock<DiagnosticCode> =
+    LazyLock::new(|| DiagnosticCode::String("unused-prefix".to_string()));
 
 pub(super) fn diagnostics(
     document: &TextDocumentItem,
@@ -40,7 +41,7 @@ pub(super) fn diagnostics(
                         .expect("prefix declaration text range should be in text"),
                         severity: DiagnosticSeverity::Warning,
                         source: Some("qlue-ls".to_string()),
-                        code: Some(DiagnosticCode::String("unused-prefix".to_string())),
+                        code: Some((*CODE).clone()),
                         message: format!(
                             "'{}' is declared here, but was never used\n",
                             prefix_declaration.prefix().unwrap_or("prefix".to_string())

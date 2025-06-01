@@ -1,7 +1,4 @@
-use ll_sparql_parser::{
-    ast::{AstNode, Iri, QueryUnit},
-    syntax_kind::SyntaxKind,
-};
+use std::sync::LazyLock;
 
 use crate::server::{
     lsp::{
@@ -11,6 +8,13 @@ use crate::server::{
     },
     Server,
 };
+use ll_sparql_parser::{
+    ast::{AstNode, Iri, QueryUnit},
+    syntax_kind::SyntaxKind,
+};
+
+pub static CODE: LazyLock<DiagnosticCode> =
+    LazyLock::new(|| DiagnosticCode::String("uncompacted-uri".to_string()));
 
 pub(super) fn diagnostics(
     document: &TextDocumentItem,
@@ -27,7 +31,7 @@ pub(super) fn diagnostics(
                 Some(raw_iri) => match server.shorten_uri(&raw_iri, None) {
                     Some((prefix, namespace, curie)) => Some(Diagnostic {
                         source: None,
-                        code: Some(DiagnosticCode::String("uncompacted-uri".to_string())),
+                        code: Some((*CODE).clone()),
                         range: Range::from_byte_offset_range(
                             iri.syntax().text_range(),
                             &document.text,

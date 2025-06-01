@@ -6,7 +6,10 @@ use crate::server::{
     Server,
 };
 use ll_sparql_parser::ast::{AstNode, QueryUnit};
-use std::collections::HashSet;
+use std::{collections::HashSet, sync::LazyLock};
+
+pub static CODE: LazyLock<DiagnosticCode> =
+    LazyLock::new(|| DiagnosticCode::String("ungrouped-select-var".to_string()));
 
 pub(super) fn diagnostics(
     document: &TextDocumentItem,
@@ -34,7 +37,7 @@ pub(super) fn diagnostics(
             .into_iter()
             .filter_map(|var| {
                 (!group_vars_str.contains(&var.text())).then_some(Diagnostic {
-                    code: Some(DiagnosticCode::String("ungrouped-select-var".to_string())),
+                    code: Some((*CODE).clone()),
                     range: Range::from_byte_offset_range(var.syntax().text_range(), &document.text)
                         .unwrap(),
                     severity: DiagnosticSeverity::Error,

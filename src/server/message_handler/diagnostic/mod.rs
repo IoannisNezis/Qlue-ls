@@ -1,19 +1,18 @@
-mod uncompacted_uri;
-mod undeclared_prefix;
-mod ungrouped_select_variable;
-mod unused_prefix;
-use std::rc::Rc;
-
-use futures::lock::Mutex;
-use ll_sparql_parser::{
-    ast::{AstNode, QueryUnit},
-    parse,
-};
+pub mod uncompacted_uri;
+pub mod undeclared_prefix;
+pub mod ungrouped_select_variable;
+pub mod unused_prefix;
 
 use crate::server::{
     lsp::{errors::LSPError, DiagnosticRequest, DiagnosticResponse},
     Server,
 };
+use futures::lock::Mutex;
+use ll_sparql_parser::{
+    ast::{AstNode, QueryUnit},
+    parse,
+};
+use std::rc::Rc;
 
 pub(super) async fn handle_diagnostic_request(
     server_rc: Rc<Mutex<Server>>,

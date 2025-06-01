@@ -48,7 +48,7 @@ pub(crate) struct Diagnostic {
     pub data: Option<LSPAny>,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 #[serde(untagged)]
 pub(crate) enum DiagnosticCode {
     String(String),

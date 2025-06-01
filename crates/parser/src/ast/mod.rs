@@ -1466,7 +1466,7 @@ impl AstNode for SelectQuery {
                     .map(|where_clause| where_clause.visible_variables())
                     .unwrap_or_default()
             } else {
-                select_clause.variables()
+                select_clause.visible_variables()
             }
         } else {
             Vec::new()

@@ -90,11 +90,12 @@ Customizable options to align with preferred query styles are also implemented.
 
 ** provided diagnostics**:
 
-| Type        | Name             | Description                   |
-|:------------|:-----------------|:------------------------------|
-| ❌ error    | undefined prefix | a used prefix is not declared |
-| ⚠️  warning | unused prefix    | a declared prefix is not used |
-| ℹ️  info    | uncompacted uri  | a raw uncompacted uri is used |
+| Type        | Name                      | Description                      |
+|:------------|:--------------------------|:---------------------------------|
+| ❌ error    | undefined prefix          | a used prefix is not declared    |
+| ❌ error    | ungrouped select variable | selected variable is not grouped |
+| ⚠️  warning | unused prefix             | a declared prefix is not used    |
+| ℹ️  info    | uncompacted uri           | a raw uncompacted uri is used    |
 
 ## ✨ Completion
 

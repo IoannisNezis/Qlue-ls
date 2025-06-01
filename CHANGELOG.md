@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- diagnostic: when group by is used: are the selected variables in the group by clause?
+
 ### Fixed
 
 - property list completion context

@@ -1,3 +1,4 @@
+pub mod invalid_projection_variable;
 pub mod uncompacted_uri;
 pub mod undeclared_prefix;
 pub mod ungrouped_select_variable;
@@ -39,6 +40,7 @@ pub(super) async fn handle_diagnostic_request(
     add!(uncompacted_uri::diagnostics);
     add!(uncompacted_uri::diagnostics);
     add!(ungrouped_select_variable::diagnostics);
+    add!(invalid_projection_variable::diagnostics);
 
     server.send_message(DiagnosticResponse::new(request.get_id(), diagnostic_accu))
 }

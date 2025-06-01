@@ -1,5 +1,6 @@
 mod uncompacted_uri;
 mod undeclared_prefix;
+mod ungrouped_select_variable;
 mod unused_prefix;
 use std::rc::Rc;
 
@@ -37,6 +38,8 @@ pub(super) async fn handle_diagnostic_request(
     add!(unused_prefix::diagnostics);
     add!(undeclared_prefix::diagnostics);
     add!(uncompacted_uri::diagnostics);
+    add!(uncompacted_uri::diagnostics);
+    add!(ungrouped_select_variable::diagnostics);
 
     server.send_message(DiagnosticResponse::new(request.get_id(), diagnostic_accu))
 }

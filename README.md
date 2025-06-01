@@ -88,6 +88,9 @@ Customizable options to align with preferred query styles are also implemented.
 
 **Status**: Partial support
 
+Diagnostics provide feadback on the query.  
+Diagnostics come in severity: error, warning and info
+
 ** provided diagnostics**:
 
 | Type        | Name                        | Description                      |
@@ -100,17 +103,14 @@ Customizable options to align with preferred query styles are also implemented.
 
 ## ✨ Completion
 
-**Status**: Partial support
+**Status**: Full support
 
-I split auto-completion into 3 stages:
+Completion provides suggestions how the query could continue.
 
-1. Static (Keywords, constructs, ...)
-2. Dynamic offline (local defined variables)
-3. Dynamic online (with data from a knowledge-graph)
+For completion of subjects, predicates or objects the language server sends
+completion-queries to the backend and gets the completions from the knowledge-graph.  
 
-The implementation is in Stage 2.8.  
-Dynamic online completion works!
-At the moment the context is limited to the Tripple the completion is requested from. Next step is to introduce full context sensitivity.
+**These completion queries have to be configured for each knowledge-graph.**
 
 ## 🛠️ Code Actions
 

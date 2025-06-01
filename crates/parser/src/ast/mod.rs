@@ -197,13 +197,29 @@ impl SelectClause {
 
 #[derive(Debug)]
 pub struct Assignment {
-    expression: Expression,
-    variable: Var,
+    pub expression: Expression,
+    pub variable: Var,
 }
 
 #[derive(Debug)]
-struct Expression {
+pub struct Expression {
     syntax: SyntaxNode,
+}
+
+impl Expression {
+    pub fn unaggregated_variables(&self) -> Vec<Var> {
+        let mut res = vec![];
+        let mut stack = vec![self.syntax.clone()];
+        while let Some(node) = stack.pop() {
+            if node.kind() != SyntaxKind::Aggregate {
+                stack.extend(node.children());
+            }
+            if let Some(var) = Var::cast(node) {
+                res.push(var);
+            }
+        }
+        res
+    }
 }
 
 #[derive(Debug)]

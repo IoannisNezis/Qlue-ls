@@ -19,6 +19,31 @@ fn walk(node: SyntaxNode, mut path: Vec<usize>) -> Option<SyntaxNode> {
 }
 
 #[test]
+fn expression() {
+    let input = "SELECT (3 as ?b)  (Min(?c) + (?d*10) as ?d) { }";
+    let query = QueryUnit::cast(parse(input)).unwrap();
+    let expressions: Vec<_> = query
+        .select_query()
+        .unwrap()
+        .select_clause()
+        .unwrap()
+        .assignments()
+        .into_iter()
+        .map(|assignment| assignment.expression)
+        .collect();
+    assert_eq!(
+        expressions
+            .iter()
+            .flat_map(|ex| ex
+                .unaggregated_variables()
+                .into_iter()
+                .map(|var| var.text()))
+            .collect::<Vec<_>>(),
+        vec!["?d"]
+    );
+}
+
+#[test]
 fn select_clause() {
     let input = "SELECT ?a (3 as ?b) ?e (?c as ?d) { }";
     let query = QueryUnit::cast(parse(input)).unwrap();

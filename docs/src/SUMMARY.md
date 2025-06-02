@@ -1,8 +1,9 @@
 # Summary
 
-- [Introduction](./Introduction.md)
+- [Introduction](./introduction.md)
 
 # User Guide
 
-- [Installation](./Installation.md)
-- [Configuration](./Configuration.md)
+- [Installation](./installation.md)
+- [Getting Started](./getting_started.md)
+- [Configuration](./configuration.md)

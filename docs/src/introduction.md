@@ -20,8 +20,8 @@ Capabilities are for example:
 
 This Book documents:
 
+- how to install Qlue-ls
 - the implemented capabilities
-- how to use qlue-ls together with **monaco**, **neovim**
-- how to configure qlue-ls
+- how to configure Qlue-ls
 - how to write autocompletion templates
 

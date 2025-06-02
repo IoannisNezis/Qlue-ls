@@ -5,5 +5,6 @@
 # User Guide
 
 - [Installation](./installation.md)
-- [Getting Started](./getting_started.md)
+- [Capabilities](./capabilities.md)
 - [Configuration](./configuration.md)
+- [Query Templates](./query_templates.md)

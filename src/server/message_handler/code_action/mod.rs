@@ -10,7 +10,7 @@ use quickfix::get_quickfix;
 use crate::server::{
     anaysis::{find_all_prefix_declarations, find_all_uncompacted_iris},
     lsp::{
-        diagnostic::{Diagnostic, DiagnosticCode},
+        diagnostic::{Diagnostic},
         errors::{ErrorCode, LSPError},
         textdocument::{Range, TextEdit},
         CodeAction, CodeActionKind, CodeActionParams, CodeActionRequest, CodeActionResponse,

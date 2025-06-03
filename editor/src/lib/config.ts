@@ -1,5 +1,4 @@
 import languageServerWorkerUrl from "./languageServer.worker?worker&url";
-import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import { configureDefaultWorkerFactory } from 'monaco-editor-wrapper/workers/workerLoaders';
 import sparqlTextmateGrammar from './sparql.tmLanguage.json?raw';
 import sparqlLanguateConfig from './sparql.configuration.json?raw';
@@ -89,13 +88,13 @@ export async function buildWrapperConfig(container: HTMLElement, initial: string
                                 padding: {
                                         top: 10,
                                         bottom: 10
-                                }
+                                },
                         }
                 },
                 vscodeApiConfig: {
                         userConfiguration: {
                                 json: JSON.stringify({
-                                        'workbench.colorTheme': 'SPARQL Custom Theme',
+                                        'workbench.colorTheme': 'custom',
                                         'editor.guides.bracketPairsHorizontal': 'active',
                                         'editor.lightbulb.enabled': 'On',
                                         'editor.wordBasedSuggestions': 'off',
@@ -124,6 +123,7 @@ export async function buildWrapperConfig(container: HTMLElement, initial: string
                                         }],
                                         themes: [
                                                 {
+                                                        "id": "custom",
                                                         "label": "SPARQL Custom Theme",
                                                         "uiTheme": "vs-dark",
                                                         "path": "./sparql-theme.json"

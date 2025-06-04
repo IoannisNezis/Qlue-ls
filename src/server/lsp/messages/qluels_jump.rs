@@ -24,6 +24,8 @@ impl JumpRequest {
 pub struct JumpParams {
     #[serde(flatten)]
     pub base: TextDocumentPositionParams,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub previous: Option<bool>,
 }
 
 #[derive(Debug, Serialize, PartialEq)]

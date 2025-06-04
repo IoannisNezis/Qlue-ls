@@ -51,7 +51,9 @@
 
         monaco.editor.addCommand({
             id: 'jumpToNextPosition',
-            run: () => {
+            run: (_get, args) => {
+                console.log(args);
+                // NOTE: Format document
                 languageClientWrapper
                     ?.getLanguageClient()!
                     .sendRequest('textDocument/formatting', {
@@ -75,18 +77,22 @@
                         });
                         editor.getModel()!.applyEdits(edits);
 
-                        const cursorPosition = editor.getPosition();
+                        // NOTE: request jump position
+                        const cursorPosition = editor.getPosition()!;
                         languageClientWrapper
                             ?.getLanguageClient()!
                             .sendRequest('qlueLs/jump', {
                                 textDocument: { uri: editor.getModel()?.uri.toString() },
                                 position: {
-                                    line: cursorPosition?.lineNumber - 1,
-                                    character: cursorPosition?.column - 1
-                                }
+                                    line: cursorPosition.lineNumber - 1,
+                                    character: cursorPosition.column - 1
+                                },
+                                previous: args === 'prev'
                             })
                             .then((response) => {
+                                // NOTE: move cursor
                                 if (response) {
+                                    console.log(response);
                                     const newCursorPosition = {
                                         lineNumber: response.position.line + 1,
                                         column: response.position.character + 1
@@ -128,7 +134,13 @@
         });
         monaco.editor.addKeybindingRule({
             command: 'jumpToNextPosition',
+            commandArgs: 'next',
             keybinding: monaco.KeyMod.Alt | monaco.KeyCode.KeyN
+        });
+        monaco.editor.addKeybindingRule({
+            command: 'jumpToNextPosition',
+            commandArgs: 'prev',
+            keybinding: monaco.KeyMod.Alt | monaco.KeyCode.KeyP
         });
         wrapper.getEditor()!.addAction({
             id: 'Execute Query',

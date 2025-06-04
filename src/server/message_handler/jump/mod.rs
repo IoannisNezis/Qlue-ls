@@ -3,9 +3,7 @@ use std::rc::Rc;
 use futures::lock::Mutex;
 use ll_sparql_parser::{
     ast::{AstNode, QueryUnit},
-    parse_query,
-    syntax_kind::SyntaxKind,
-    SyntaxNode, TokenAtOffset,
+    parse_query, SyntaxNode,
 };
 use text_size::TextSize;
 
@@ -26,73 +24,114 @@ pub(super) async fn handle_jump_request(
     let document_uri = &request.params.base.text_document.uri;
     let document = server.state.get_document(document_uri)?;
     let root = parse_query(&document.text);
-    let offset = request
-        .params
-        .base
-        .position
-        .byte_index(&document.text)
-        .ok_or(LSPError::new(
-            ErrorCode::InvalidRequest,
-            "given position is not inside document",
-        ))?;
-    let current_offset = match root.token_at_offset(TextSize::new(offset as u32)) {
-        TokenAtOffset::Single(mut token) | TokenAtOffset::Between(mut token, _) => {
-            while let Some(next) = token.next_token() {
-                if matches!(next.kind(), SyntaxKind::WHITESPACE) {
-                    token = next;
-                } else {
-                    break;
-                }
-            }
-            token.text_range().end()
-        }
-        TokenAtOffset::None => TextSize::new(offset as u32),
-    };
-    let results = relevant_positions(document, root);
-    let first = results.first().cloned();
-    let next = results
-        .into_iter()
-        .find(|(offset, _, _)| offset > &current_offset)
-        .or(first)
-        .map(|(offset, before, after)| {
-            JumpResult::new(
-                Position::from_byte_index(offset.into(), &document.text).unwrap(),
-                before,
-                after,
-            )
-        });
-    server.send_message(JumpResponse::new(request.get_id(), next))?;
+    let cursor_offset = TextSize::new(
+        request
+            .params
+            .base
+            .position
+            .byte_index(&document.text)
+            .ok_or(LSPError::new(
+                ErrorCode::InvalidRequest,
+                "given position is not inside document",
+            ))? as u32,
+    );
+    let results = relevant_positions(
+        document,
+        root,
+        request.params.previous.is_some_and(|prev| prev),
+    );
+    log::info!("cursor_offset: {:?}", cursor_offset);
+    let jump_position = if request.params.previous.is_some_and(|prev| prev) {
+        // NOTE: Jump to previous position
+        let last = results.last().cloned();
+        results
+            .into_iter()
+            .rev()
+            .find(|(offset, _, _)| {
+                log::info!("{:?} < {:?}", offset, cursor_offset);
+                offset < &cursor_offset
+            })
+            .or(last)
+    } else {
+        // NOTE: Jump to next position
+        let first = results.first().cloned();
+        results
+            .into_iter()
+            .find(|(offset, _, _)| offset > &cursor_offset)
+            .or(first)
+    }
+    .map(|(offset, before, after)| {
+        JumpResult::new(
+            Position::from_byte_index(offset.into(), &document.text).unwrap(),
+            before,
+            after,
+        )
+    });
+    server.send_message(JumpResponse::new(request.get_id(), jump_position))?;
     Ok(())
 }
 
 fn relevant_positions(
     _document: &TextDocumentItem,
     root: SyntaxNode,
+    jump_to_previous: bool,
 ) -> Vec<(TextSize, Option<&str>, Option<&str>)> {
     let mut res = Vec::new();
     if let Some(query_unit) = QueryUnit::cast(root) {
-        if let Some(offset) = query_unit
-            .select_query()
-            .and_then(|sq| sq.select_clause())
-            .map(|sc| sc.syntax().text_range().end())
-        {
-            res.push((offset, Some(" "), None));
+        // NOTE: End of select clause
+        if let Some(offset) = query_unit.select_query().and_then(|sq| {
+            if jump_to_previous {
+                sq.where_clause().map(|wc| wc.syntax().text_range().start())
+            } else {
+                sq.select_clause().map(|sc| sc.syntax().text_range().end())
+            }
+        }) {
+            res.push((
+                offset,
+                (!jump_to_previous).then_some(" "),
+                jump_to_previous.then_some(" "),
+            ));
         }
-        if let Some(offset) = query_unit
+        // NOTE: End of group graph pattern
+        if let Some((offset, has_children)) = query_unit
             .select_query()
             .and_then(|sq| sq.where_clause())
             .and_then(|sq| sq.group_graph_pattern())
-            .and_then(|ggp| ggp.syntax().last_child_or_token())
-            .map(|child| child.text_range().start())
+            .and_then(|ggp| {
+                ggp.syntax().last_child_or_token().map(|token| {
+                    (
+                        token.text_range().start(),
+                        ggp.syntax().first_child().is_some(),
+                    )
+                })
+            })
         {
-            res.push((offset, Some("\n  "), Some("\n")));
+            // FIXME: Here i asume that the tab_size is 2 and insert_spaces is true
+            res.push((
+                offset,
+                has_children.then_some("  ").or(Some("\n  ")),
+                Some("\n"),
+            ));
         }
-        if let Some(offset) = query_unit.select_query().and_then(|sq| {
-            sq.soulution_modifier()
-                .map(|sm| sm.syntax().text_range().end())
-                .or(sq.where_clause().map(|wc| wc.syntax().text_range().end()))
-        }) {
-            res.push((offset, Some("\n"), None));
+        // NOTE: End of soulution modifier
+        if jump_to_previous {
+            if let Some(offset) = query_unit
+                .syntax()
+                .last_token()
+                .map(|token| token.text_range().end())
+            {
+                log::info!("end of sm: {:?}", offset);
+                res.push((offset, None, None));
+            }
+        } else {
+            if let Some(offset) = query_unit.select_query().and_then(|sq| {
+                sq.soulution_modifier()
+                    .map(|sm| sm.syntax().clone())
+                    .or(sq.where_clause().map(|wc| wc.syntax().clone()))
+                    .map(|node| node.text_range().end())
+            }) {
+                res.push((offset, Some("\n"), None));
+            }
         }
     }
     res

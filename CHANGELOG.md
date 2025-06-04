@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0]
+
+### Added
+
+- jump to previous important position
+
+### Fixed
+
+- when jumping to the end of the top ggp and its not empty the formatting is now fixed
+
 ## [0.7.2]
 
 ### Added

@@ -63,24 +63,31 @@ pub(crate) fn remove_prefix_declaration(
                         })
                         .and_then(|text_range| {
                             let prefix_decl = tree.covering_element(text_range);
-                            assert!(matches!(prefix_decl.kind(), SyntaxKind::PrefixDecl));
-                            let mut maybe_next = prefix_decl
-                                .as_node()
-                                .and_then(|node| node.last_token())
-                                .and_then(|token| token.next_token());
-                            while let Some(next) = maybe_next.as_ref() {
-                                if next.kind().is_trivia() {
-                                    maybe_next = next.next_token();
-                                } else {
-                                    break;
-                                }
-                            }
-                            maybe_next.and_then(|next| {
-                                Range::from_byte_offset_range(
-                                    TextRange::new(text_range.start(), next.text_range().start()),
-                                    &document.text,
-                                )
-                            })
+                            (prefix_decl.kind() == SyntaxKind::PrefixDecl)
+                                .then_some({
+                                    assert!(matches!(prefix_decl.kind(), SyntaxKind::PrefixDecl));
+                                    let mut maybe_next = prefix_decl
+                                        .as_node()
+                                        .and_then(|node| node.last_token())
+                                        .and_then(|token| token.next_token());
+                                    while let Some(next) = maybe_next.as_ref() {
+                                        if next.kind().is_trivia() {
+                                            maybe_next = next.next_token();
+                                        } else {
+                                            break;
+                                        }
+                                    }
+                                    maybe_next.and_then(|next| {
+                                        Range::from_byte_offset_range(
+                                            TextRange::new(
+                                                text_range.start(),
+                                                next.text_range().start(),
+                                            ),
+                                            &document.text,
+                                        )
+                                    })
+                                })
+                                .flatten()
                         })
                 })
         });

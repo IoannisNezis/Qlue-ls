@@ -129,6 +129,7 @@ pub enum SyntaxKind {
     FILTER,
     #[token(",")]
     Comma,
+    // FIXME: https://github.com/maciejhirsz/logos/issues/291
     #[token(" a ")]
     a,
     #[token("|")]

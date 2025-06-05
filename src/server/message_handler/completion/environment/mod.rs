@@ -511,6 +511,9 @@ fn get_anchor_token(mut token: SyntaxToken) -> Option<SyntaxToken> {
             | SyntaxKind::RParen
             | SyntaxKind::Slash
             | SyntaxKind::Zirkumflex
+            // FIXME: This is also related to THE bug in the tokenizer
+            // https://github.com/maciejhirsz/logos/issues/291
+            | SyntaxKind::a
     ) {
         token = token.prev_token()?;
     }

@@ -255,3 +255,10 @@ fn tigger_token_at_end() {
         SyntaxKind::RCurly
     ));
 }
+
+#[test]
+fn localize_a() {
+    //           01234567890123456789012
+    let input = "Select * { ?a a  }";
+    assert!(matches!(location(input, 16), CompletionLocation::Object(_),));
+}

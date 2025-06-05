@@ -1,10 +1,21 @@
+<script lang="ts">
+    let { version } = $props();
+</script>
+
 <nav class="border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
     <div class="max-w-(--breakpoint-xl) mx-auto flex flex-wrap items-center justify-between p-4">
         <a href="/" class="flex items-center space-x-3 rtl:space-x-reverse">
             <img src="favicon.png" class="logo h-10" alt="Logo" />
-            <span class="self-center whitespace-nowrap text-2xl font-semibold dark:text-[#d79921]">
-                Qlue-ls
-            </span>
+            <div class="self-center">
+                <span class="whitespace-nowrap text-2xl font-semibold dark:text-[#d79921]">
+                    Qlue-ls
+                </span>
+                {#if version}
+                    <span class="whitespace-nowrap font-mono text-sm dark:text-[#d79921]">
+                        v{version}
+                    </span>
+                {/if}
+            </div>
         </a>
         <div>
             <a

@@ -10,7 +10,7 @@
     import Tree from './tree.svelte';
     import BackendPicker from './backendPicker.svelte';
 
-    let { ready = $bindable() } = $props();
+    let { ready = $bindable(), version = $bindable() } = $props();
 
     let editorContainer: HTMLElement;
     let wrapper: MonacoEditorLanguageClientWrapper | undefined;
@@ -31,6 +31,7 @@
         await wrapper.initAndStart(wrapperConfig);
         ready = true;
         languageClientWrapper = wrapper.getLanguageClientWrapper('sparql');
+        version = languageClientWrapper?.getLanguageClient()?.initializeResult?.serverInfo?.version;
         let editor = wrapper.getEditor()!;
 
         monaco.editor.onDidChangeMarkers(() => {

@@ -4,9 +4,10 @@
     import LoadingAnimation from './loadingAnimation.svelte';
 
     let ready = $state(false);
+    let version = $state('');
 </script>
 
-<Header></Header>
+<Header {version}></Header>
 <div class="container m-auto">
     {#if !ready}
         <div class="rounded-xs mt-10 grid h-[650px] place-content-center border-2 bg-[#282828] p-2">
@@ -17,6 +18,6 @@
         </div>
     {/if}
     <div class:hidden={!ready} class="mt-5">
-        <Editor bind:ready></Editor>
+        <Editor bind:ready bind:version></Editor>
     </div>
 </div>

@@ -50,6 +50,10 @@ impl SolutionModifier {
     pub fn group_clause(&self) -> Option<GroupClause> {
         GroupClause::cast(self.syntax.first_child()?)
     }
+
+    pub fn select_query(&self) -> Option<SelectQuery> {
+        self.syntax.parent().and_then(SelectQuery::cast)
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -1565,6 +1569,7 @@ pub trait AstNode {
 
     fn syntax(&self) -> &SyntaxNode;
 
+    /// Returns all variables "visible" from outside the node.
     fn visible_variables(&self) -> Vec<Var>;
 
     fn has_error(&self) -> bool {

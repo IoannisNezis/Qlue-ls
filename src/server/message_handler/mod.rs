@@ -9,6 +9,7 @@ mod jump;
 mod lifecycle;
 mod misc;
 mod textdocument_syncronization;
+mod workspace;
 
 use std::rc::Rc;
 
@@ -30,6 +31,7 @@ use misc::handle_set_trace_notifcation;
 use textdocument_syncronization::{
     handle_did_change_notification, handle_did_open_notification, handle_did_save_notification,
 };
+use workspace::handle_workspace_edit_response;
 
 pub use formatting::format_raw;
 
@@ -52,7 +54,8 @@ pub(super) async fn dispatch(
     message_string: &str,
 ) -> Result<(), LSPError> {
     let message = deserialize_message(message_string)?;
-    let method = message.get_method().unwrap_or("");
+    let method = message.get_method().unwrap_or("response");
+
     macro_rules! call {
         ($handler:ident) => {
             $handler(server_rc, message.parse()?).await
@@ -82,6 +85,11 @@ pub(super) async fn dispatch(
         "textDocument/codeAction" => call!(handle_codeaction_request),
         "textDocument/hover" => call_async!(handle_hover_request),
         "textDocument/completion" => call_async!(handle_completion_request),
+        // NOTE: LSP extensions Requests
+        "qlueLs/addBackend" => call!(handle_add_backend_notification),
+        "qlueLs/updateDefaultBackend" => call!(handle_update_backend_default_notification),
+        "qlueLs/pingBackend" => call_async!(handle_ping_backend_request),
+        "qlueLs/jump" => call!(handle_jump_request),
         // NOTE: Notifications
         "initialized" => call!(handle_initialized_notifcation),
         "exit" => call!(handle_exit_notifcation),
@@ -89,11 +97,11 @@ pub(super) async fn dispatch(
         "textDocument/didChange" => call!(handle_did_change_notification),
         "textDocument/didSave" => call!(handle_did_save_notification),
         "$/setTrace" => call!(handle_set_trace_notifcation),
-        // NOTE: LSP extensions Requests
-        "qlueLs/addBackend" => call!(handle_add_backend_notification),
-        "qlueLs/updateDefaultBackend" => call!(handle_update_backend_default_notification),
-        "qlueLs/pingBackend" => call_async!(handle_ping_backend_request),
-        "qlueLs/jump" => call!(handle_jump_request),
+        // NOTE: Resonses
+        "response" => {
+            call!(handle_workspace_edit_response)
+        }
+
         // NOTE: Known unsupported message
         "$/cancelRequest" => {
             log::warn!("Received cancel request (unsupported)");

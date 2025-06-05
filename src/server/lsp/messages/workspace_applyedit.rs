@@ -39,8 +39,9 @@ pub struct ApplyWorkspaceEditParams {
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct WorkspaceEditResponse {
+    #[serde(flatten)]
     base: ResponseMessageBase,
-    result: Option<ApplyWorkspaceEditResult>,
+    pub result: Option<ApplyWorkspaceEditResult>,
 }
 
 #[derive(Debug, Deserialize, PartialEq)]

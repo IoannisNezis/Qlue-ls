@@ -6,8 +6,8 @@ pub mod unused_prefix_declaration;
 
 use crate::server::{
     lsp::{
-        diagnostic::Diagnostic, errors::LSPError, DiagnosticRequest, DiagnosticResponse,
-        WorkspaceEditRequest,
+        base_types::LSPAny, diagnostic::Diagnostic, errors::LSPError, DiagnosticRequest,
+        DiagnosticResponse, WorkspaceEditRequest,
     },
     message_handler::code_action::declare_prefix,
     Server,
@@ -17,7 +17,10 @@ use ll_sparql_parser::{
     ast::{AstNode, QueryUnit},
     parse,
 };
-use std::{collections::HashMap, rc::Rc};
+use std::{
+    collections::{HashMap, HashSet},
+    rc::Rc,
+};
 
 use super::code_action::remove_prefix_declaration;
 
@@ -61,22 +64,31 @@ fn declare_and_undeclare_prefixes(
     diagnostics: &Vec<Diagnostic>,
 ) {
     let document_uri = request.params.text_document.uri.clone();
+    let mut prefixes = HashSet::<&str>::new();
     let edits: Vec<_> = diagnostics
         .iter()
         .filter_map(|diagnostic| {
-            match diagnostic.code.as_ref() {
-                Some(code) if code == &*undeclared_prefix::CODE => {
-                    declare_prefix(&server, &document_uri, diagnostic.clone())
+            if let Some(LSPAny::String(prefix)) = diagnostic.data.as_ref() {
+                if prefixes.insert(prefix) {
+                    match diagnostic.code.as_ref() {
+                        Some(code) if code == &*undeclared_prefix::CODE => {
+                            declare_prefix(&server, &document_uri, diagnostic.clone())
+                        }
+                        Some(code) if code == &*unused_prefix_declaration::CODE => {
+                            remove_prefix_declaration(server, &document_uri, diagnostic.clone())
+                        }
+                        _ => Ok(None),
+                    }
+                    .ok()
+                    .flatten()
+                    .and_then(|code_action| code_action.edit.changes)
+                    .and_then(|mut changes| changes.remove(&document_uri))
+                } else {
+                    None
                 }
-                Some(code) if code == &*unused_prefix_declaration::CODE => {
-                    remove_prefix_declaration(server, &document_uri, diagnostic.clone())
-                }
-                _ => Ok(None),
+            } else {
+                None
             }
-            .ok()
-            .flatten()
-            .and_then(|code_action| code_action.edit.changes)
-            .and_then(|mut changes| changes.remove(&document_uri))
         })
         .flatten()
         .collect();

@@ -1,5 +1,6 @@
 use crate::server::{
     lsp::{
+        base_types::LSPAny,
         diagnostic::{Diagnostic, DiagnosticCode, DiagnosticSeverity},
         textdocument::{Range, TextDocumentItem},
     },
@@ -46,7 +47,9 @@ pub(super) fn diagnostics(
                             "'{}' is declared here, but was never used\n",
                             prefix_declaration.prefix().unwrap_or("prefix".to_string())
                         ),
-                        data: None,
+                        data: prefix_declaration
+                            .prefix()
+                            .map(|prefix| LSPAny::String(prefix)),
                     })
             })
             .collect(),

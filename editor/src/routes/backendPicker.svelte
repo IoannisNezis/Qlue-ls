@@ -30,6 +30,12 @@
     }
 
     $effect(() => {
+        if (languageClientWrapper) {
+            backends.forEach(addBackend);
+        }
+    });
+
+    $effect(() => {
         if (backend && languageClientWrapper) {
             languageClientWrapper
                 .getLanguageClient()!

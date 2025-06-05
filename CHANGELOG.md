@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0]
+
+### Added
+
+- automatically declare and undeclare prefixes
+
+### Fixed
+
+- completion localization after "a"
+
 ## [0.8.0]
 
 ### Added

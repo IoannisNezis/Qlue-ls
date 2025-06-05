@@ -22,6 +22,7 @@ pub struct ServerState {
     uri_converter: HashMap<String, Converter>,
     default_backend: Option<String>,
     parse_tree_cache: Option<(String, u32, SyntaxNode)>,
+    request_id_counter: u32,
 }
 
 impl ServerState {
@@ -34,7 +35,14 @@ impl ServerState {
             uri_converter: HashMap::new(),
             default_backend: None,
             parse_tree_cache: None,
+            request_id_counter: 0,
         }
+    }
+
+    pub fn bumb_request_id(&mut self) -> u32 {
+        let current_id = self.request_id_counter;
+        self.request_id_counter += 1;
+        current_id
     }
 
     pub fn get_backend_name_by_url(&self, url: &str) -> Option<String> {

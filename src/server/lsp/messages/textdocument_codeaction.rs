@@ -8,7 +8,7 @@ use crate::server::lsp::{
     textdocument::{DocumentUri, Range, TextDocumentIdentifier, TextEdit},
 };
 
-use super::diagnostic::Diagnostic;
+use super::{diagnostic::Diagnostic, workspace::WorkspaceEdit};
 
 #[derive(Debug, Deserialize)]
 pub struct CodeActionRequest {
@@ -112,24 +112,20 @@ impl CodeAction {
             title: title.to_string(),
             kind,
             edit: WorkspaceEdit {
-                changes: HashMap::new(),
+                changes: Some(HashMap::new()),
             },
             diagnostics: vec![],
         }
     }
 
     pub(crate) fn add_edit(&mut self, document_uri: &DocumentUri, change: TextEdit) {
-        self.edit
-            .changes
-            .entry(document_uri.to_string())
-            .and_modify(|e| e.push(change.clone()))
-            .or_insert(vec![change]);
+        if let Some(changes) = self.edit.changes.as_mut() {
+            changes
+                .entry(document_uri.to_string())
+                .and_modify(|e| e.push(change.clone()))
+                .or_insert(vec![change]);
+        }
     }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct WorkspaceEdit {
-    pub changes: HashMap<DocumentUri, Vec<TextEdit>>,
 }
 
 #[cfg(test)]
@@ -144,10 +140,10 @@ mod test {
     #[test]
     fn serialize() {
         let mut code_action_response = CodeActionResponse::new(&RequestId::Integer(42));
-        let changes = HashMap::from([(
+        let changes = Some(HashMap::from([(
             "file:///test.rq".to_string(),
             vec![TextEdit::new(Range::new(0, 0, 0, 0), "test")],
-        )]);
+        )]));
         let code_action = CodeAction {
             title: "test-action".to_string(),
             kind: None,

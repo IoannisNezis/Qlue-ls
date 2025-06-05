@@ -23,7 +23,7 @@ pub(super) fn code_action(token: &SyntaxToken, document: &TextDocumentItem) -> O
         kind: None,
         diagnostics: vec![],
         edit: WorkspaceEdit {
-            changes: HashMap::from_iter([(
+            changes: Some(HashMap::from_iter([(
                 document.uri.to_string(),
                 vec![TextEdit::new(
                     Range {
@@ -32,7 +32,7 @@ pub(super) fn code_action(token: &SyntaxToken, document: &TextDocumentItem) -> O
                     },
                     &format!(" FILTER ({})", var.syntax()),
                 )],
-            )]),
+            )])),
         },
     })
 }

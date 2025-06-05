@@ -70,11 +70,27 @@ impl Default for FormatSettings {
     }
 }
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize)]
 pub struct Settings {
+    /// Format settings
     pub format: FormatSettings,
+    /// Completion Settings
     pub completion: CompletionSettings,
+    /// Backend configurations
     pub backends: Option<BackendsSettings>,
+    /// Automatically add and remove prefix declarations
+    pub manage_prefix_declarations: bool,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            format: FormatSettings::default(),
+            completion: CompletionSettings::default(),
+            backends: None,
+            manage_prefix_declarations: true,
+        }
+    }
 }
 
 fn load_user_configuration() -> Result<Settings, ConfigError> {

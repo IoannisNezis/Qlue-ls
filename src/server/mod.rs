@@ -37,6 +37,7 @@ pub struct Server {
     pub(crate) state: ServerState,
     pub(crate) settings: Settings,
     pub(crate) capabilities: lsp::capabilities::ServerCapabilities,
+    pub(crate) client_capabilities: Option<lsp::capabilities::ClientCapabilities>,
     pub(crate) server_info: ServerInfo,
     tools: Tools,
     send_message_clusure: Box<dyn Fn(String)>,
@@ -50,6 +51,7 @@ impl Server {
             state: ServerState::new(),
             settings: Settings::new(),
             capabilities: create_capabilities(),
+            client_capabilities: None,
             server_info: ServerInfo {
                 name: "Qlue-ls".to_string(),
                 version: Some(version.to_string()),
@@ -57,6 +59,10 @@ impl Server {
             tools: Tools::init(),
             send_message_clusure: Box::new(write_function),
         }
+    }
+
+    pub(crate) fn bumb_request_id(&mut self) -> u32 {
+        self.state.bumb_request_id()
     }
 
     pub fn get_version(&self) -> String {

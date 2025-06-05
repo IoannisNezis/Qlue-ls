@@ -11,7 +11,7 @@ fn match_location_at_offset(input: &str, matcher: CompletionLocation, offset: u3
 fn location(input: &str, offset: u32) -> CompletionLocation {
     let root = parse_query(input);
     let trigger_token = get_trigger_token(&root, offset.into());
-    let anchor = trigger_token.and_then(get_anchor_token);
+    let anchor = trigger_token.and_then(|token| get_anchor_token(token, offset.into()));
     let continuations = get_continuations(&root, &anchor);
     get_location(&anchor, &continuations, offset.into())
 }
@@ -20,7 +20,9 @@ fn location(input: &str, offset: u32) -> CompletionLocation {
 fn find_anchor_path() {
     let root = parse_query("Select * {?s ^}");
     let trigger_token = get_trigger_token(&root, 14.into());
-    let anchor = trigger_token.and_then(get_anchor_token).unwrap();
+    let anchor = trigger_token
+        .and_then(|token| get_anchor_token(token, 14.into()))
+        .unwrap();
     assert_eq!(anchor.kind(), SyntaxKind::Zirkumflex)
 }
 

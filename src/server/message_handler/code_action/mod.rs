@@ -7,10 +7,13 @@ use futures::lock::Mutex;
 use ll_sparql_parser::{ast::AstNode, parse_query, syntax_kind::SyntaxKind, TokenAtOffset};
 use quickfix::get_quickfix;
 
+pub(crate) use quickfix::declare_prefix;
+pub(crate) use quickfix::remove_prefix_declaration;
+
 use crate::server::{
     anaysis::{find_all_prefix_declarations, find_all_uncompacted_iris},
     lsp::{
-        diagnostic::{Diagnostic},
+        diagnostic::Diagnostic,
         errors::{ErrorCode, LSPError},
         textdocument::{Range, TextEdit},
         CodeAction, CodeActionKind, CodeActionParams, CodeActionRequest, CodeActionResponse,
@@ -180,7 +183,7 @@ mod test {
         server.state = state;
         let code_action = shorten_all_uris(&mut server, &"uri".to_string()).unwrap();
         assert_eq!(
-            code_action.edit.changes.get("uri").unwrap(),
+            code_action.edit.changes.unwrap().get("uri").unwrap(),
             &vec![
                 TextEdit::new(Range::new(1, 5, 1, 30), "schema:name"),
                 TextEdit::new(
@@ -205,7 +208,7 @@ mod test {
         server.state = state;
         let code_action = shorten_all_uris(&mut server, &"uri".to_string()).unwrap();
         assert_eq!(
-            code_action.edit.changes.get("uri").unwrap(),
+            code_action.edit.changes.unwrap().get("uri").unwrap(),
             &vec![
                 TextEdit::new(Range::new(2, 5, 2, 30), "schema:name"),
                 TextEdit::new(Range::new(3, 5, 3, 30), "schema:name"),

@@ -169,7 +169,7 @@ mod test {
         let root = parse_query(input);
         let offset = (cursor.byte_index(input).unwrap() as u32).into();
         let trigger_token = get_trigger_token(&root, offset).unwrap();
-        let anchor = get_anchor_token(trigger_token);
+        let anchor = get_anchor_token(trigger_token, offset);
         let continuations = get_continuations(&root, &anchor);
         let location = get_location(&anchor, &continuations, offset);
         context(&location).unwrap()

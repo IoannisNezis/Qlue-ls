@@ -11,8 +11,10 @@ use crate::server::{
     message_handler::diagnostic,
     Server,
 };
+use ll_sparql_parser::syntax_kind::SyntaxKind;
 use log::error;
 use std::collections::HashMap;
+use text_size::{TextRange, TextSize};
 
 pub(super) fn get_quickfix(
     server: &mut Server,
@@ -24,8 +26,8 @@ pub(super) fn get_quickfix(
             declare_prefix(server, document_uri, diagnostic)
         } else if code == &*diagnostic::uncompacted_uri::CODE {
             shorten_uri(server, document_uri, diagnostic)
-        } else if code == &*diagnostic::unused_prefix::CODE {
-            remove_prefix_declaration(document_uri, diagnostic)
+        } else if code == &*diagnostic::unused_prefix_declaration::CODE {
+            remove_prefix_declaration(server, document_uri, diagnostic)
         } else {
             log::warn!("Unknown diagnostic code: {:?}", code);
             Ok(None)
@@ -35,13 +37,57 @@ pub(super) fn get_quickfix(
     }
 }
 
-fn remove_prefix_declaration(
+pub(crate) fn remove_prefix_declaration(
+    server: &mut Server,
     document_uri: &String,
     diagnostic: Diagnostic,
 ) -> Result<Option<CodeAction>, LSPError> {
+    let optimal_range = server
+        .state
+        .get_cached_parse_tree(document_uri)
+        .ok()
+        .and_then(|tree| {
+            server
+                .state
+                .get_document(document_uri)
+                .ok()
+                .and_then(|document| {
+                    diagnostic
+                        .range
+                        .to_byte_index_range(&document.text)
+                        .map(|text_range| {
+                            TextRange::new(
+                                TextSize::new(text_range.start as u32),
+                                TextSize::new(text_range.end as u32),
+                            )
+                        })
+                        .and_then(|text_range| {
+                            let prefix_decl = tree.covering_element(text_range);
+                            assert!(matches!(prefix_decl.kind(), SyntaxKind::PrefixDecl));
+                            let mut maybe_next = prefix_decl
+                                .as_node()
+                                .and_then(|node| node.last_token())
+                                .and_then(|token| token.next_token());
+                            while let Some(next) = maybe_next.as_ref() {
+                                if next.kind().is_trivia() {
+                                    maybe_next = next.next_token();
+                                } else {
+                                    break;
+                                }
+                            }
+                            maybe_next.and_then(|next| {
+                                Range::from_byte_offset_range(
+                                    TextRange::new(text_range.start(), next.text_range().start()),
+                                    &document.text,
+                                )
+                            })
+                        })
+                })
+        });
+    let range = optimal_range.unwrap_or(diagnostic.range);
     let mut code_action =
         CodeAction::new("remove prefix declaration", Some(CodeActionKind::QuickFix));
-    code_action.add_edit(document_uri, TextEdit::new(diagnostic.range, ""));
+    code_action.add_edit(document_uri, TextEdit::new(range, ""));
     Ok(Some(code_action))
 }
 
@@ -77,7 +123,7 @@ fn shorten_uri(
     }
 }
 
-fn declare_prefix(
+pub(crate) fn declare_prefix(
     server: &Server,
     document_uri: &str,
     diagnostic: Diagnostic,
@@ -92,13 +138,13 @@ fn declare_prefix(
                 title: format!("Declare prefix \"{}\"", prefix),
                 kind: Some(CodeActionKind::QuickFix),
                 edit: WorkspaceEdit {
-                    changes: HashMap::from([(
+                    changes: Some(HashMap::from([(
                         document_uri.to_string(),
                         vec![TextEdit::new(
                             Range::new(0, 0, 0, 0),
                             &format!("PREFIX {}: <{}>\n", prefix, record.uri_prefix),
                         )],
-                    )]),
+                    )])),
                 },
                 diagnostics: vec![diagnostic],
             }))
@@ -161,7 +207,7 @@ mod test {
             .unwrap();
 
         assert_eq!(
-            code_action.edit.changes.get("uri").unwrap(),
+            code_action.edit.changes.unwrap().get("uri").unwrap(),
             &vec![
                 TextEdit::new(Range::new(1, 5, 1, 29), "schema:name"),
                 TextEdit::new(
@@ -199,7 +245,7 @@ mod test {
             .unwrap()
             .unwrap();
         assert_eq!(
-            code_action.edit.changes.get("uri").unwrap(),
+            code_action.edit.changes.unwrap().get("uri").unwrap(),
             &vec![TextEdit::new(Range::new(2, 5, 2, 29), "schema:name"),]
         );
     }

@@ -52,6 +52,7 @@ pub(super) async fn handle_initialize_request(
                         .unwrap_or("no version specified".to_string())
                 );
             }
+            server.client_capabilities = Some(initialize_request.params.capabilities.clone());
             if let Some(ref work_done_token) =
                 initialize_request.params.progress_params.work_done_token
             {

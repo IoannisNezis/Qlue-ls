@@ -9,7 +9,7 @@ use ll_sparql_parser::ast::{AstNode, PrefixedName, QueryUnit};
 use std::{collections::HashSet, sync::LazyLock};
 
 pub static CODE: LazyLock<DiagnosticCode> =
-    LazyLock::new(|| DiagnosticCode::String("unused-prefix".to_string()));
+    LazyLock::new(|| DiagnosticCode::String("unused-prefix-declaration".to_string()));
 
 pub(super) fn diagnostics(
     document: &TextDocumentItem,

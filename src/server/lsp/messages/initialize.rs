@@ -1,5 +1,5 @@
 use crate::server::lsp::{
-    capabilities::ServerCapabilities,
+    capabilities::{ClientCapabilities, ServerCapabilities},
     rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
     workdoneprogress::WorkDoneProgressParams,
 };
@@ -25,6 +25,7 @@ pub struct InitializeParams {
     pub client_info: Option<ClientInfo>,
     #[serde(flatten)]
     pub progress_params: WorkDoneProgressParams,
+    pub capabilities: ClientCapabilities,
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
@@ -81,6 +82,7 @@ impl InitializeResponse {
 #[cfg(test)]
 mod tests {
     use crate::server::lsp::{
+        capabilities::ClientCapabilities,
         rpc::{Message, RequestId, RequestMessageBase},
         workdoneprogress::{ProgressToken, WorkDoneProgressParams},
         ClientInfo, ProcessId,
@@ -90,7 +92,7 @@ mod tests {
 
     #[test]
     fn deserialize() {
-        let message = br#"{"jsonrpc":"2.0","id": 1,"method":"initialize","params":{"processId":null,"clientInfo":{"name":"dings","version":"42.1"},"workDoneToken":"1"}}"#;
+        let message = br#"{"jsonrpc":"2.0","id": 1,"method":"initialize","params":{"processId":null,"clientInfo":{"name":"dings","version":"42.1"},"capabilities":{},"workDoneToken":"1"}}"#;
         let init_request: InitializeRequest = serde_json::from_slice(message).unwrap();
         assert_eq!(
             init_request,
@@ -108,6 +110,7 @@ mod tests {
                         name: "dings".to_string(),
                         version: Some("42.1".to_string())
                     }),
+                    capabilities: ClientCapabilities { workspace: None },
                     progress_params: WorkDoneProgressParams {
                         work_done_token: Some(ProgressToken::Text("1".to_string()))
                     }

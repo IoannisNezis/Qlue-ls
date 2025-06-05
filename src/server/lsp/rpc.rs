@@ -96,7 +96,7 @@ pub struct RequestMessage {
     pub params: Option<Params>,
 }
 
-#[derive(Deserialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
 pub struct RequestMessageBase {
     #[serde(flatten)]
     pub base: Message,
@@ -108,6 +108,15 @@ pub struct RequestMessageBase {
      * The method to be invoked.
      */
     pub method: String,
+}
+impl RequestMessageBase {
+    pub(crate) fn new(method: &str, id: u32) -> Self {
+        Self {
+            base: Message::new(),
+            id: RequestId::Integer(id),
+            method: method.to_string(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -171,7 +180,7 @@ pub enum RequestIdOrNull {
     Null,
 }
 
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct ResponseMessageBase {
     #[serde(flatten)]
     pub base: Message,

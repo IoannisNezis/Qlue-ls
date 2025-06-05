@@ -19,6 +19,8 @@ mod textdocument_publishdiagnostics;
 mod trace;
 mod utils;
 mod window_showmessage;
+mod workspace;
+mod workspace_applyedit;
 
 pub use command::*;
 pub use initialize::*;
@@ -37,3 +39,5 @@ pub use textdocument_didsave::*;
 pub use textdocument_formatting::*;
 pub use textdocument_hover::*;
 pub use trace::*;
+pub use workspace::*;
+pub use workspace_applyedit::*;

@@ -289,7 +289,7 @@ impl CompletionEnvironment {
                 .and_then(|backend_name| server.state.get_backend(&backend_name).cloned())
                 .or(server.state.get_default_backend().cloned())
         });
-        let anchor_token = trigger_token.and_then(get_anchor_token);
+        let anchor_token = trigger_token.and_then(|token| get_anchor_token(token, offset));
         let search_term = get_search_term(&tree, &anchor_token, offset);
         let continuations = get_continuations(&tree, &anchor_token);
         let location = get_location(&anchor_token, &continuations, offset);
@@ -498,10 +498,13 @@ fn get_trigger_token(root: &SyntaxNode, offset: TextSize) -> Option<SyntaxToken>
     }
 }
 
-fn get_anchor_token(mut token: SyntaxToken) -> Option<SyntaxToken> {
+fn get_anchor_token(
+    mut trigger_token: SyntaxToken,
+    trigger_offset: TextSize,
+) -> Option<SyntaxToken> {
     // NOTE: Skip first token in some cases:
     if !matches!(
-        token.kind(),
+        trigger_token.kind(),
         SyntaxKind::Error
             | SyntaxKind::WHITESPACE
             | SyntaxKind::Dot
@@ -510,23 +513,25 @@ fn get_anchor_token(mut token: SyntaxToken) -> Option<SyntaxToken> {
             | SyntaxKind::RCurly
             | SyntaxKind::RParen
             | SyntaxKind::Slash
-            | SyntaxKind::Zirkumflex
-            // FIXME: This is also related to THE bug in the tokenizer
-            // https://github.com/maciejhirsz/logos/issues/291
-            | SyntaxKind::a
-    ) {
-        token = token.prev_token()?;
+            | SyntaxKind::Zirkumflex 
+    ) &&
+// FIXME: This is also related to THE bug in the tokenizer
+// https://github.com/maciejhirsz/logos/issues/291
+        (!matches!(trigger_token.kind(), SyntaxKind::a)
+            || trigger_token.text_range().contains(trigger_offset))
+     {
+        trigger_token = trigger_token.prev_token()?;
     }
-    while token.kind() == SyntaxKind::WHITESPACE
-        || token.parent().unwrap().kind() == SyntaxKind::Error
+    while trigger_token.kind() == SyntaxKind::WHITESPACE
+        || trigger_token.parent().unwrap().kind() == SyntaxKind::Error
     {
-        if let Some(prev) = token.prev_token() {
-            token = prev
+        if let Some(prev) = trigger_token.prev_token() {
+            trigger_token = prev
         } else {
             return None;
         }
     }
-    Some(token)
+    Some(trigger_token)
 }
 
 #[cfg(test)]

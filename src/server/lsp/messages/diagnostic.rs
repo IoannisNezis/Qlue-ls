@@ -4,7 +4,7 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 use crate::server::lsp::{base_types::LSPAny, textdocument::Range};
 
 // https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnostic
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub(crate) struct Diagnostic {
     /**
      * The range at which the message applies.
@@ -56,7 +56,7 @@ pub(crate) enum DiagnosticCode {
 }
 
 // https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnosticSeverity
-#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Clone)]
 #[repr(u8)]
 pub enum DiagnosticSeverity {
     Error = 1,

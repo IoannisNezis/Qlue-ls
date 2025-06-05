@@ -55,6 +55,28 @@ pub struct DocumentFormattingOptions {
     // WARNING: This could also inherit WorkDoneProgressOptions (not implemented yet).
 }
 
+// https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#clientCapabilities
+#[derive(Debug, Deserialize, PartialEq, Clone)]
+pub struct ClientCapabilities {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub workspace: Option<WorkspaceCapablities>,
+}
+
+#[derive(Debug, Deserialize, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceCapablities {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub apply_edit: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub workspace_edit: Option<WorkspaceEditClientCapabilities>,
+}
+
+#[derive(Debug, Deserialize, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceEditClientCapabilities {
+    pub document_changes: Option<bool>,
+}
+
 #[cfg(test)]
 mod tests {
 

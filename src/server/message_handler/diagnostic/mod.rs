@@ -52,12 +52,7 @@ pub(super) async fn handle_diagnostic_request(
     add!(ungrouped_select_variable::diagnostics);
     add!(invalid_projection_variable::diagnostics);
 
-    if client_support_workspace_edits(&server)
-        && server
-            .settings
-            .manage_prefix_declarations
-            .is_some_and(identity)
-    {
+    if client_support_workspace_edits(&server) {
         declare_and_undeclare_prefixes(&mut server, &request, &diagnostic_accu);
     }
 
@@ -77,10 +72,20 @@ fn declare_and_undeclare_prefixes(
             if let Some(LSPAny::String(prefix)) = diagnostic.data.as_ref() {
                 if prefixes.insert(prefix) {
                     match diagnostic.code.as_ref() {
-                        Some(code) if code == &*undeclared_prefix::CODE => {
+                        Some(code)
+                            if code == &*undeclared_prefix::CODE
+                                && server.settings.prefixes.as_ref().is_some_and(|prefixes| {
+                                    prefixes.add_missing.is_some_and(identity)
+                                }) =>
+                        {
                             declare_prefix(&server, &document_uri, diagnostic.clone())
                         }
-                        Some(code) if code == &*unused_prefix_declaration::CODE => {
+                        Some(code)
+                            if code == &*unused_prefix_declaration::CODE
+                                && server.settings.prefixes.as_ref().is_some_and(|prefixes| {
+                                    prefixes.remove_unused.is_some_and(identity)
+                                }) =>
+                        {
                             remove_prefix_declaration(server, &document_uri, diagnostic.clone())
                         }
                         _ => Ok(None),

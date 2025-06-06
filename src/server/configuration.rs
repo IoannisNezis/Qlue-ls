@@ -71,6 +71,21 @@ impl Default for FormatSettings {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct PrefixesSettings {
+    pub add_missing: Option<bool>,
+    pub remove_unused: Option<bool>,
+}
+
+impl Default for PrefixesSettings {
+    fn default() -> Self {
+        Self {
+            add_missing: Some(true),
+            remove_unused: Some(true),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
 pub struct Settings {
     /// Format settings
     pub format: FormatSettings,
@@ -79,7 +94,7 @@ pub struct Settings {
     /// Backend configurations
     pub backends: Option<BackendsSettings>,
     /// Automatically add and remove prefix declarations
-    pub manage_prefix_declarations: Option<bool>,
+    pub prefixes: Option<PrefixesSettings>,
 }
 
 impl Default for Settings {
@@ -88,7 +103,7 @@ impl Default for Settings {
             format: FormatSettings::default(),
             completion: CompletionSettings::default(),
             backends: None,
-            manage_prefix_declarations: Some(true),
+            prefixes: Some(PrefixesSettings::default()),
         }
     }
 }

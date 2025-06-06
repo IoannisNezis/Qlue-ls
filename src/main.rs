@@ -11,7 +11,6 @@ use std::{
     sync::mpsc::channel,
 };
 
-use camino::Utf8PathBuf;
 use futures::lock::Mutex;
 use log::LevelFilter;
 use log4rs::{
@@ -47,7 +46,7 @@ enum Command {
         /// Avoid writing formatted file back; instead, exit with a non-zero status code if any files would have been modified, and zero otherwise
         #[arg(short, long)]
         check: bool,
-        path: Utf8PathBuf,
+        path: PathBuf,
     },
     /// Watch the logs
     Logs,
@@ -118,16 +117,16 @@ fn main() {
                             let unchanged = formatted_contents == contents;
                             if check {
                                 if unchanged {
-                                    println!("{path} already formatted");
+                                    println!("{} is already formatted", path.to_string_lossy());
                                     exit(0);
                                 } else {
-                                    println!("{path} would be reformatted");
+                                    println!("{} would be reformatted", path.to_string_lossy());
                                     exit(1);
                                 }
                             }
                             if writeback {
                                 if unchanged {
-                                    println!("{path} left unchanged");
+                                    println!("{} left unchanged", path.to_string_lossy());
                                 } else {
                                     let mut file = OpenOptions::new()
                                         .write(true)
@@ -137,7 +136,7 @@ fn main() {
                                         .expect("Could not write to file");
                                     file.write_all(formatted_contents.as_bytes())
                                         .expect("Unable to write");
-                                    println!("{path} reformatted");
+                                    println!("{} reformatted", path.to_string_lossy());
                                 }
                             } else {
                                 println!("{}", formatted_contents);

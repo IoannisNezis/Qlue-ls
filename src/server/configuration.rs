@@ -79,7 +79,7 @@ pub struct Settings {
     /// Backend configurations
     pub backends: Option<BackendsSettings>,
     /// Automatically add and remove prefix declarations
-    pub manage_prefix_declarations: bool,
+    pub manage_prefix_declarations: Option<bool>,
 }
 
 impl Default for Settings {
@@ -88,7 +88,7 @@ impl Default for Settings {
             format: FormatSettings::default(),
             completion: CompletionSettings::default(),
             backends: None,
-            manage_prefix_declarations: true,
+            manage_prefix_declarations: Some(true),
         }
     }
 }

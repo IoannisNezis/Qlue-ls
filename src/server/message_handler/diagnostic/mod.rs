@@ -19,6 +19,7 @@ use ll_sparql_parser::{
 };
 use std::{
     collections::{HashMap, HashSet},
+    convert::identity,
     rc::Rc,
 };
 
@@ -51,7 +52,12 @@ pub(super) async fn handle_diagnostic_request(
     add!(ungrouped_select_variable::diagnostics);
     add!(invalid_projection_variable::diagnostics);
 
-    if client_support_workspace_edits(&server) && server.settings.manage_prefix_declarations {
+    if client_support_workspace_edits(&server)
+        && server
+            .settings
+            .manage_prefix_declarations
+            .is_some_and(identity)
+    {
         declare_and_undeclare_prefixes(&mut server, &request, &diagnostic_accu);
     }
 

@@ -22,7 +22,7 @@ build-wasm profile="release" target="web":
 	wasm-pack build --{{profile}} --target {{target}}
 
 watch-and-run recipe="test":
-	watchexec --restart watch src --exts toml just {{recipe}}
+	watchexec --restart --watch src  -- just {{recipe}}
 
 publish:
 	wasm-pack publish

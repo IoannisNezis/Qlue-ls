@@ -4,11 +4,10 @@ mod stdio_reader;
 
 use std::{
     fs::{File, OpenOptions},
-    io::{self, BufRead, BufReader, Read, Seek, Write},
+    io::{self, Read, Write},
     path::PathBuf,
     process::exit,
     rc::Rc,
-    sync::mpsc::channel,
 };
 
 use futures::lock::Mutex;
@@ -19,7 +18,6 @@ use log4rs::{
     encode::pattern::PatternEncoder,
     Config,
 };
-use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use server::{format_raw, handle_message, Server};
 
 use clap::{Parser, Subcommand};
@@ -48,7 +46,7 @@ enum Command {
         check: bool,
         path: PathBuf,
     },
-    /// Watch the logs
+    /// Watch the logs (linux users only)
     Logs,
 }
 
@@ -152,44 +150,15 @@ fn main() {
         }
         Command::Logs => {
             let logfile_path = get_logfile_path();
-            // Open the file and seek to the end (to mimic `tail -f` behavior)
-            let mut file = File::open(&logfile_path).expect("Could not open file");
-            let mut pos = std::fs::metadata(&logfile_path)
-                .expect("could not read file metatdaa")
-                .len();
-
-            let (tx, rx) = channel();
-
-            // Create a file watcher
-            let mut watcher: RecommendedWatcher =
-                Watcher::new(tx, notify::Config::default()).expect("Could not create watcher");
-
-            // Start watching the file
-            watcher
-                .watch(logfile_path.as_ref(), RecursiveMode::NonRecursive)
-                .expect("Could not watch file");
-
-            for res in rx {
-                match res {
-                    Ok(_event) => {
-                        // ignore any event that didn't change the pos
-                        if file.metadata().unwrap().len() == pos {
-                            continue;
-                        }
-
-                        // read from pos to end of file
-                        file.seek(std::io::SeekFrom::Start(pos)).unwrap();
-
-                        // update post to end of file
-                        pos = file.metadata().unwrap().len();
-
-                        let reader = BufReader::new(&file);
-                        for line in reader.lines() {
-                            println!("{}", line.unwrap());
-                        }
-                    }
-                    Err(error) => println!("{error:?}"),
-                }
+            if !std::process::Command::new("tail")
+                .args(["--lines", "0"])
+                .arg("-f")
+                .arg(logfile_path)
+                .status()
+                .expect("Failed to start 'tail' process")
+                .success()
+            {
+                println!("tail exited with non-zero status");
             }
         }
     };

@@ -213,7 +213,6 @@ impl CompletionEnvironment {
     /// - `prefixes` : used prefixes in this query
     pub(super) async fn template_context(&self) -> tera::Context {
         let mut template_context = tera::Context::new();
-        template_context.insert("search_term", &self.search_term);
         template_context.insert("context", &self.context);
         let mut prefixes = match &self.location {
             CompletionLocation::Predicate(triple) | CompletionLocation::Object(triple) => {
@@ -233,6 +232,24 @@ impl CompletionEnvironment {
         }
         let prefix_declarations = get_prefix_declarations(&self.tree).await;
         template_context.insert("prefixes", &prefix_declarations);
+        template_context.insert("search_term", &self.search_term);
+        if let Some(search_term) = self.search_term.as_ref() {
+            // NOTE: if the search term contains a ":"
+            // its very likely the user is typing a prefix
+            // to handle this: decompress the prefix and
+            // augment the search_term
+            if let Some(uncompressed) = search_term.find(":").map(|idx|{
+                let (prefix, resource) = search_term.split_at(idx);
+                prefix_declarations.iter().find_map(|prefix_decl| {
+                    (prefix_decl.0 == prefix)
+                        .then_some(prefix_decl.1.clone())
+                }).map(|uri_prefix| uri_prefix + &resource[1..])
+            })
+            {
+                template_context.insert("search_term_uncompressed", &uncompressed);
+            }
+        }
+
         template_context
     }
 
@@ -323,15 +340,15 @@ fn get_search_term(
         root.text_range()
             .contains_range(range)
             .then_some({
-                let s = root
-                    .text()
+                root.text()
                     .slice(range)
                     .to_string()
                     .trim_start()
-                    .to_string();
-                s.chars().any(|char| !char.is_whitespace()).then_some(s)
+                    .to_string()
             })
-            .flatten()
+            .filter(|search_term|
+                // NOTE: If the search term contains just is_whitespace
+                search_term.chars().any(|char| !char.is_whitespace()))
     })
 }
 
@@ -515,11 +532,11 @@ fn get_anchor_token(
             | SyntaxKind::Slash
             | SyntaxKind::Zirkumflex 
     ) &&
-// FIXME: This is also related to THE bug in the tokenizer
-// https://github.com/maciejhirsz/logos/issues/291
+        // FIXME: This is also related to THE bug in the tokenizer
+        // https://github.com/maciejhirsz/logos/issues/291
         (!matches!(trigger_token.kind(), SyntaxKind::a)
             || trigger_token.text_range().contains(trigger_offset))
-     {
+    {
         trigger_token = trigger_token.prev_token()?;
     }
     while trigger_token.kind() == SyntaxKind::WHITESPACE

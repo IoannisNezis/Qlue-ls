@@ -32,6 +32,7 @@ pub(super) fn completions(
         detail: Some("Variable".to_string()),
         kind: CompletionItemKind::Variable,
         sort_text: None,
+        filter_text: None,
         text_edit: None,
         insert_text_format: Some(InsertTextFormat::PlainText),
         additional_text_edits: None,

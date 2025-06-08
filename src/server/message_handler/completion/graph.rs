@@ -15,6 +15,7 @@ pub(super) fn completions(
             kind: CompletionItemKind::Value,
             detail: Some("hier könnte ihr Graph stehen".to_string()),
             sort_text: None,
+            filter_text: None,
             insert_text: Some("<graph>".to_string()),
             text_edit: None,
             insert_text_format: Some(InsertTextFormat::PlainText),

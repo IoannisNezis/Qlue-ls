@@ -84,6 +84,7 @@ pub(super) struct InternalCompletionItem {
     label: Option<String>,
     detail: Option<String>,
     value: String,
+    filter_text: Option<String>,
     import_edit: Option<TextEdit>,
 }
 
@@ -145,10 +146,23 @@ pub(super) async fn fetch_online_completions(
             let detail = binding
                 .get("qlue_ls_detail")
                 .map(|rdf_term: &RDFTerm| rdf_term.value().to_string());
+            let filter_text = query_template_context
+                .get("search_term_uncompressed")
+                .is_some()
+                .then_some(query_template_context.get("search_term"))
+                .flatten()
+                .and_then(|value| {
+                    if let serde_json::Value::String(s) = value {
+                        Some(s.clone())
+                    } else {
+                        None
+                    }
+                });
             InternalCompletionItem {
                 label,
                 detail,
                 value,
+                filter_text,
                 import_edit,
             }
         })
@@ -338,8 +352,10 @@ pub(super) fn to_completion_items(
                         detail: internal_completion_item.value.clone(),
                     }))),
             detail: None,
-            sort_text: Some(format!("{:0>5}", idx + 100)), // NOTE: The first 100 id's. are reserved
+            // NOTE: The first 100 id's. are reserved
+            sort_text: Some(format!("{:0>5}", idx + 100)),
             insert_text: None,
+            filter_text: internal_completion_item.filter_text,
             text_edit: Some(TextEdit {
                 range: range.clone(),
                 new_text: format!("{} ", internal_completion_item.value),

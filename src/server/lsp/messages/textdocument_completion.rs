@@ -109,6 +109,8 @@ pub struct CompletionItem {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sort_text: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub filter_text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub insert_text: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub text_edit: Option<TextEdit>,
@@ -135,6 +137,7 @@ impl CompletionItem {
             kind,
             detail,
             sort_text,
+            filter_text: None,
             insert_text: Some(insert_text.to_string()),
             text_edit: None,
             insert_text_format: None,
@@ -238,6 +241,7 @@ mod tests {
             label_details: None,
             detail: Some("Select query".to_string()),
             sort_text: None,
+            filter_text: None,
             insert_text: Some("SELECT ${1:*} WHERE {\n  $0\n}".to_string()),
             text_edit: None,
             kind: CompletionItemKind::Snippet,

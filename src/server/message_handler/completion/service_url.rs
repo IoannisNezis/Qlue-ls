@@ -34,6 +34,7 @@ pub(super) async fn completions(
                     kind: CompletionItemKind::Value,
                     detail: Some(backend.url.clone()),
                     sort_text: None,
+                    filter_text: None,
                     insert_text: Some(prefix),
                     text_edit: None,
                     insert_text_format: Some(InsertTextFormat::PlainText),

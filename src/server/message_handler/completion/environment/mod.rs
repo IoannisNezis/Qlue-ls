@@ -238,14 +238,15 @@ impl CompletionEnvironment {
             // its very likely the user is typing a prefix
             // to handle this: decompress the prefix and
             // augment the search_term
-            if let Some(uncompressed) = search_term.find(":").map(|idx|{
+            if let Some(uncompressed) = search_term.find(":").map(|idx| {
                 let (prefix, resource) = search_term.split_at(idx);
-                prefix_declarations.iter().find_map(|prefix_decl| {
-                    (prefix_decl.0 == prefix)
-                        .then_some(prefix_decl.1.clone())
-                }).map(|uri_prefix| uri_prefix + &resource[1..])
-            })
-            {
+                prefix_declarations
+                    .iter()
+                    .find_map(|prefix_decl| {
+                        (prefix_decl.0 == prefix).then_some(prefix_decl.1.clone())
+                    })
+                    .map(|uri_prefix| uri_prefix + &resource[1..])
+            }) {
                 template_context.insert("search_term_uncompressed", &uncompressed);
             }
         }

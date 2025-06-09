@@ -1,0 +1,12 @@
+FROM python:3.13-slim AS builder
+
+WORKDIR /docs
+COPY ./docs/ /docs
+RUN pip install .
+RUN mkdocs build
+
+FROM caddy:alpine
+
+COPY --from=builder /docs/site/ /usr/share/caddy
+EXPOSE 80
+CMD ["caddy", "file-server", "--root", "/usr/share/caddy", "--browse"]

@@ -1,4 +1,3 @@
-
 # Completion Queries
 
 Completion queries are send to the backend to retriev the completion suggestions.  

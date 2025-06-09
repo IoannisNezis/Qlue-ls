@@ -1,0 +1,6 @@
+[project]
+name = "Qlue-ls_docs"
+version = "0.1.0"
+description = "Documentation for the Qlue-ls language server"
+requires-python = ">=3.8"
+dependencies = ["mkdocs-material>=9.6.14"]

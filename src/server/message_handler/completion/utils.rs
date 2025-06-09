@@ -4,6 +4,7 @@ use ll_sparql_parser::{
     syntax_kind::SyntaxKind,
     SyntaxNode,
 };
+use log::info;
 use std::{fmt::Display, rc::Rc};
 use tera::Context;
 use text_size::TextSize;
@@ -149,15 +150,8 @@ pub(super) async fn fetch_online_completions(
             let filter_text = query_template_context
                 .get("search_term_uncompressed")
                 .is_some()
-                .then_some(query_template_context.get("search_term"))
-                .flatten()
-                .and_then(|value| {
-                    if let serde_json::Value::String(s) = value {
-                        Some(s.clone())
-                    } else {
-                        None
-                    }
-                });
+                .then_some(label.clone())
+                .flatten();
             InternalCompletionItem {
                 label,
                 detail,

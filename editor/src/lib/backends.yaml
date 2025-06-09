@@ -1082,6 +1082,8 @@
         {% if not search_term %}
         OPTIONAL { ?qlue_ls_entity @en@rdfs:label ?name }
         BIND (?qlue_ls_entity AS ?alias)
+        {% elif search_term_uncompressed %}
+        FILTER REGEX(STR(?qlue_ls_entity), "{{ search_term_uncompressed }}", "i")
         {% else %}
         OPTIONAL { ?qlue_ls_entity @en@rdfs:label ?name }
         OPTIONAL { ?qlue_ls_entity @en@skos:altLabel ?optional_alias }
@@ -1179,6 +1181,8 @@
         {% if not search_term %}
         OPTIONAL { ?qlue_ls_entity @en@rdfs:label ?name }
         BIND (?qlue_ls_entity AS ?alias)
+        {% elif search_term_uncompressed %}
+        FILTER REGEX(STR(?qlue_ls_entity), "{{ search_term_uncompressed }}", "i")
         {% else %}
         OPTIONAL { ?qlue_ls_entity @en@rdfs:label ?name }
         OPTIONAL { ?qlue_ls_entity @en@skos:altLabel ?optional_alias }

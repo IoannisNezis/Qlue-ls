@@ -57,13 +57,17 @@ align_prefixes = true
 separate_prolouge = false
 capitalize_keywords = true
 insert_spaces = true
-tab_size = 10
+tab_size = 2
 where_new_line = true
 filter_same_line = true
 
 [completion]
 timeout_ms = 5000
-result_size_limit = 42
+result_size_limit = 100
+
+[prefixes]
+add_missing = true
+remove_unused = true
 ```
 
 # 🙏 Special Thanks

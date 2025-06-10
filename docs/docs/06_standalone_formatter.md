@@ -1,4 +1,4 @@
-## Formatter
+# Formatter
 
 Qlue-ls can be used as standalone formatter.  
 Just run:

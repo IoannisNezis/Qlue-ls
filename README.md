@@ -11,7 +11,7 @@ To learn more about the origin story of this project, read the [blog post](https
 # 🚀 Capabilities
 
 Here is a quick overview what Qlue-ls can do.  
-A more detailed list can be found in the [documentation](https://docs.qlue-ls.com/capabilities/).
+A more detailed list can be found in the [documentation](https://docs.qlue-ls.com/03_capabilities/).
 
 ## 📐 Formatting
 
@@ -48,6 +48,8 @@ Quickly jump to the next or previous important location in the query.
 # ⚙️  Configuration
 
 Qlue-ls can be configured through a `qlue-ls.toml` or `qlue-ls.yml` file.
+
+Detailed exmplanations can be found in the [documentation](https://docs.qlue-ls.com/04_configuration/).
 
 Here is the full default configuration
 ```toml

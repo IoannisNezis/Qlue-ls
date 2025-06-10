@@ -2,9 +2,10 @@
   🦀 Qlue-ls 🦀
 </h1>
 
-⚡Qlue-ls (pronounced "clueless") is a *blazingly fast* [language server](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification) for [SPARQL](https://de.wikipedia.org/wiki/SPARQL), written in Rust 🦀, build for the web.
+⚡Qlue-ls (pronounced "clueless") is a *blazingly fast* [language server](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification) for [SPARQL](https://de.wikipedia.org/wiki/SPARQL),  
+written in Rust 🦀, build for the web.
 
-If you want to use Qlue-ls, check out the [documentation](https://docs.qlue-ls.com/capabilities/).  
+If you want to use Qlue-ls, check out the [documentation](https://docs.qlue-ls.com).  
 To learn more about the origin story of this project, read the [blog post](https://ad-blog.cs.uni-freiburg.de/post/qlue-ls-a-sparql-language-server/).
 
 # 🚀 Capabilities
@@ -35,6 +36,14 @@ completion-queries to the backend and gets the completions from the knowledge-gr
 
 Code action suggest complex changes to your input.  
 Often in the form of a *quickfix*, to fix a diagnostic.
+
+## ℹ️ Hover
+
+Get information about a token on hover.
+
+## 🕳 Jump
+
+Quickly jump to the next or previous important location in the query.
 
 # ⚙️  Configuration
 

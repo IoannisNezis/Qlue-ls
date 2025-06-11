@@ -106,12 +106,71 @@ Often in the form of a *quickfix*, to fix a diagnostic.
 | add to result     | add variable to selected result       |                   |
 | filter variable   | add filter for this variable          |                   |
 
-## 🕳 Jump
+## Custom Capabilities
 
-The Jump capabilities is a custom capability. That means your lsp-client will not have support for it.  
+Qlue-ls also introduces custom capabilities.  
+That means your lsp-client will not have support for it.  
 You will have to hack your lsp-client to use this.  
+
+### 🕳 Jump
 
 This capability enables "tab navigation".  
 The server provides the next, or previous relevant position in the query.  
 The LSP-client has to move the cursor to this position.  
 This enables the user to quickly jumo to relevalt positions in the query.
+
+*Request*:
+
+- method: 'qlueLs/jump'
+- params: `JumpParams` defined as follows:
+
+```ts
+export interface JumpParams extends TextDocumentPositionParams {
+	previous?: boolean;
+}
+```
+
+*Response*:
+
+- result: `JumpResult` | `null` defined as follows:
+
+```ts
+export interface JumpResult {
+	position: Position;
+    insert_before: string | null;
+    insert_after: string | null;
+}
+```
+
+### ❓ operation identification
+
+Determin if a operation is a query or update.
+
+*Request*:
+
+- method: 'qlueLs/identifyOperationType'
+- params: `IdentifyOperationTypeParams` defined as follows:
+
+```ts
+export interface IdentifyOperationTypeParams {
+	textDocument: TextDocumentIdentifier;
+}
+```
+
+*Response*:
+
+- result: `IdentifyOperationTypeResponse` defined as follows:
+
+```ts
+export interface IdentifyOperationTypeResponse {
+    OperationType: OperationType
+}
+```
+
+```ts
+export enum OperationType {
+    Query: Query,
+    Update: Update,
+    Unknown: Unknown
+}
+```

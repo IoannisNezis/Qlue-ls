@@ -45,6 +45,10 @@ Get information about a token on hover.
 
 Quickly jump to the next or previous important location in the query.
 
+## ❓ operation identification
+
+Determine if a operation is a query or update.
+
 # ⚙️  Configuration
 
 Qlue-ls can be configured through a `qlue-ls.toml` or `qlue-ls.yml` file.

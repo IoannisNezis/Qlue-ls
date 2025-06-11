@@ -1,6 +1,7 @@
 site_name: Qlue-ls, a SPARQL language server
 site_url: https://docs.qlue-ls.com
 repo_url: https://github.com/IoannisNezis/Qlue-ls
+repo_name: IoannisNezis/Qlue-ls
 theme:
   name: material
   logo: assets/logo.png

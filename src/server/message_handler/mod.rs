@@ -40,7 +40,9 @@ use tokio::task::spawn_local;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_futures::spawn_local;
 
-use crate::server::{handle_error, lsp::errors::ErrorCode};
+use crate::server::{
+    handle_error, lsp::errors::ErrorCode, message_handler::identification::handle_identify_request,
+};
 
 use self::formatting::handle_format_request;
 
@@ -90,6 +92,7 @@ pub(super) async fn dispatch(
         "qlueLs/updateDefaultBackend" => call!(handle_update_backend_default_notification),
         "qlueLs/pingBackend" => call_async!(handle_ping_backend_request),
         "qlueLs/jump" => call!(handle_jump_request),
+        "qlueLs/identifyOperationType" => call!(handle_identify_request),
         // NOTE: Notifications
         "initialized" => call!(handle_initialized_notifcation),
         "exit" => call!(handle_exit_notifcation),

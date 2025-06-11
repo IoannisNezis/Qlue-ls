@@ -1,18 +1,33 @@
+use std::rc::Rc;
+
+use futures::lock::Mutex;
 use ll_sparql_parser::{guess_operation_type, TopEntryPoint};
-use wasm_bindgen::prelude::wasm_bindgen;
 
-// FIXME: This should not be exposed to Wasm API
-// This is a dirty hack to get things done in QLever.
-// QLever UI will implement a LSP-Client soon^TM.
-#[wasm_bindgen]
-pub fn determine_operation_type(input: String) -> String {
-    match guess_operation_type(&input) {
-        Some(TopEntryPoint::QueryUnit) => "Query",
-        Some(TopEntryPoint::UpdateUnit) => "Update",
-        None => "Unknown",
-    }
-    .to_string()
+use crate::server::{
+    lsp::{
+        errors::LSPError, DetermineOperationTypeRequest, DetermineOperationTypeResponse,
+        OperationType,
+    },
+    Server,
+};
+
+pub(super) async fn handle_identify_request(
+    server_rc: Rc<Mutex<Server>>,
+    request: DetermineOperationTypeRequest,
+) -> Result<(), LSPError> {
+    let server = server_rc.lock().await;
+    let document = server
+        .state
+        .get_document(&request.params.text_document.uri)?;
+
+    let operation_type = match guess_operation_type(&document.text) {
+        Some(TopEntryPoint::QueryUnit) => OperationType::Query,
+        Some(TopEntryPoint::UpdateUnit) => OperationType::Update,
+        None => OperationType::Unknown,
+    };
+
+    server.send_message(DetermineOperationTypeResponse::new(
+        request.base.id,
+        operation_type,
+    ))
 }
-
-#[cfg(test)]
-mod tests;

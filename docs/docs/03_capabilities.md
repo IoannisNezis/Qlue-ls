@@ -169,8 +169,8 @@ export interface IdentifyOperationTypeResult {
 
 ```ts
 export enum OperationType {
-    Query: Query,
-    Update: Update,
-    Unknown: Unknown
+  Query = "Query",
+  Update = "Update",
+  Unknown = "Unknown"
 }
 ```

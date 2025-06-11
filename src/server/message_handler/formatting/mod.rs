@@ -1,11 +1,5 @@
 mod core;
 mod utils;
-use core::*;
-use std::rc::Rc;
-
-use futures::lock::Mutex;
-use wasm_bindgen::prelude::wasm_bindgen;
-
 use crate::server::{
     configuration::Settings,
     lsp::{
@@ -14,6 +8,9 @@ use crate::server::{
     },
     Server,
 };
+use core::*;
+use futures::lock::Mutex;
+use std::rc::Rc;
 
 pub(super) async fn handle_format_request(
     server_rc: Rc<Mutex<Server>>,
@@ -25,7 +22,6 @@ pub(super) async fn handle_format_request(
     server.send_message(FormattingResponse::new(request.get_id(), edits))
 }
 
-#[wasm_bindgen]
 pub fn format_raw(text: String) -> Result<String, String> {
     let settings = Settings::new();
     let mut document = TextDocumentItem::new("tmp", &text);

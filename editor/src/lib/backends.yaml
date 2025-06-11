@@ -899,7 +899,7 @@
       PREFIX {{prefix.0}}: <{{prefix.1}}>
       {% endfor %}
       {% if subject is not variable %}
-      SELECT ?qlue_ls_entity  (SAMPLE(?count) as ?qlue_ls_count{
+      SELECT ?qlue_ls_entity  (SAMPLE(?count) as ?qlue_ls_count) {
         {
           SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
             {{ local_context }}

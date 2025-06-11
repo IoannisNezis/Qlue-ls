@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- custom capability: determine what type of operation is present
+
 ### changed
 
 - when typing a prefix and a ":", completion now works

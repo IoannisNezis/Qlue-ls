@@ -4,7 +4,6 @@ use ll_sparql_parser::{
     syntax_kind::SyntaxKind,
     SyntaxNode,
 };
-use log::info;
 use std::{fmt::Display, rc::Rc};
 use tera::Context;
 use text_size::TextSize;

@@ -144,7 +144,7 @@ export interface JumpResult {
 
 ### ❓ operation identification
 
-Determin if a operation is a query or update.
+Determine if a operation is a query or update.
 
 *Request*:
 

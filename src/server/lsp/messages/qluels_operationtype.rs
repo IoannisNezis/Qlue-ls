@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use serde::{Deserialize, Serialize};
 
 use crate::server::lsp::{
@@ -8,27 +6,27 @@ use crate::server::lsp::{
 };
 
 #[derive(Debug, Deserialize, PartialEq)]
-pub struct DetermineOperationTypeRequest {
+pub struct IdentifyOperationTypeRequest {
     #[serde(flatten)]
     pub base: RequestMessageBase,
-    pub params: DetermineOperationTypeParams,
+    pub params: IdentifyOperationTypeParams,
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub struct DetermineOperationTypeParams {
+pub struct IdentifyOperationTypeParams {
     pub text_document: TextDocumentIdentifier,
 }
 
 #[derive(Debug, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub struct DetermineOperationTypeResponse {
+pub struct IdentifyOperationTypeResponse {
     #[serde(flatten)]
     base: ResponseMessageBase,
     result: DetermineOperationTypeResult,
 }
 
-impl DetermineOperationTypeResponse {
+impl IdentifyOperationTypeResponse {
     pub fn new(id: RequestId, operation_type: OperationType) -> Self {
         Self {
             base: ResponseMessageBase::success(&id),

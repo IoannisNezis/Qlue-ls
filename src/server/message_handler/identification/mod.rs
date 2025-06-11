@@ -5,7 +5,7 @@ use ll_sparql_parser::{guess_operation_type, TopEntryPoint};
 
 use crate::server::{
     lsp::{
-        errors::LSPError, DetermineOperationTypeRequest, DetermineOperationTypeResponse,
+        errors::LSPError, IdentifyOperationTypeRequest, IdentifyOperationTypeResponse,
         OperationType,
     },
     Server,
@@ -13,7 +13,7 @@ use crate::server::{
 
 pub(super) async fn handle_identify_request(
     server_rc: Rc<Mutex<Server>>,
-    request: DetermineOperationTypeRequest,
+    request: IdentifyOperationTypeRequest,
 ) -> Result<(), LSPError> {
     let server = server_rc.lock().await;
     let document = server
@@ -26,7 +26,7 @@ pub(super) async fn handle_identify_request(
         None => OperationType::Unknown,
     };
 
-    server.send_message(DetermineOperationTypeResponse::new(
+    server.send_message(IdentifyOperationTypeResponse::new(
         request.base.id,
         operation_type,
     ))

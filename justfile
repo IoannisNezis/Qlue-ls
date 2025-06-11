@@ -26,5 +26,5 @@ watch-and-run recipe="test":
 
 publish:
 	wasm-pack publish
-	maturin publish
 	cargo publish
+	maturin publish

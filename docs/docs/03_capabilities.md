@@ -159,10 +159,10 @@ export interface IdentifyOperationTypeParams {
 
 *Response*:
 
-- result: `IdentifyOperationTypeResponse` defined as follows:
+- result: `IdentifyOperationTypeResult` defined as follows:
 
 ```ts
-export interface IdentifyOperationTypeResponse {
+export interface IdentifyOperationTypeResult {
     OperationType: OperationType
 }
 ```

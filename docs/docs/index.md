@@ -1,6 +1,6 @@
 # Welcome
 
-Qlue-ls (pronounced *clueless*) is a Language Server for SPARQL.  
+Qlue-ls (pronounced *clueless*) is a Language Server for SPARQL.
 It's written in Rust and build for the web.
 
 <div class="grid cards" markdown>

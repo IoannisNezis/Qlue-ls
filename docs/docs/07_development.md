@@ -4,11 +4,11 @@ Here is a quick guide to set this project up for development.
 
 ## Requirements
 
- - [rust](https://www.rust-lang.org/tools/install) >= 1.83.0
- - [wasm-pack](https://rustwasm.github.io/wasm-pack/) >= 0.13.1
- - [node & npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) >= 22.14.0 & >= 11.3.0
- - \[Optional\] [just](https://github.com/casey/just)
- - \[Optional\] [watchexec](https://github.com/watchexec/watchexec)
+- [rust](https://www.rust-lang.org/tools/install) >= 1.83.0
+- [wasm-pack](https://rustwasm.github.io/wasm-pack/) >= 0.13.1
+- [node & npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) >= 22.14.0 & >= 11.3.0
+- \[Optional\] [just](https://github.com/casey/just)
+- \[Optional\] [watchexec](https://github.com/watchexec/watchexec)
 
 ## Initial Setup
 
@@ -20,17 +20,18 @@ In the `justfile` and `Makefile` you will find the target `init_dev`, run it:
 just init_dev
 ```
 
-or 
+or
 
 ```bash
 make init_dev
 ```
 
 It will:
-  - install node dependencies
-  - build wasm binaries
-  - link against local packages
-  - run the vite dev server
+
+- install node dependencies
+- build wasm binaries
+- link against local packages
+- run the vite dev server
 
 If you don't have [just](https://github.com/casey/just) or [make](https://wiki.ubuntuusers.de/Makefile/) installed:
 
@@ -59,5 +60,3 @@ just watch-and-run build-wasm
 ```
 
 have fun!
-
-

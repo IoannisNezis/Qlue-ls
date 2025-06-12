@@ -1,6 +1,6 @@
 # Formatter
 
-Qlue-ls can be used as standalone formatter.  
+Qlue-ls can be used as standalone formatter.
 Just run:
 
 ```shell
@@ -12,4 +12,3 @@ You can also format a document in-place using the `writeback` option:
 ```shell
 qlue-ls format --writeback <path_to_document>
 ```
-

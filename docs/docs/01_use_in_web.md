@@ -1,8 +1,7 @@
-# 🌐 use in web
+# 🌐 Use in web
 
-If you want to connect from a web-based-editor, you can use this package as well.  
+If you want to connect from a web-based-editor, you can use this package as well.
 For this purpose this can be compiled to wasm and is available on [npm](https://www.npmjs.com/package/@ioannisnezis/sparql-language-server):
-
 
 ```shell
 npm i qlue-ls

@@ -2,15 +2,26 @@
   🦀 Qlue-ls 🦀
 </h1>
 
-⚡Qlue-ls (pronounced "clueless") is a *blazingly fast* [language server](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification) for [SPARQL](https://de.wikipedia.org/wiki/SPARQL),  
-written in Rust 🦀, build for the web.
+<div align="center">
+    <a href="https://crates.io/crates/qlue-ls">
+        <img alt="crates.io" src="https://img.shields.io/crates/v/qlue-ls.svg" />
+    </a>
+    <a href="https://www.npmjs.com/package/qlue-ls">
+        <img alt="npm" src="https://img.shields.io/npm/v/qlue-ls" />
+    </a>
+    <a href="https://pypi.org/project/qlue-ls">
+        <img alt="PyPI" src="https://img.shields.io/pypi/v/qlue-ls" />
+    </a>
+</div>
 
-If you want to use Qlue-ls, check out the [documentation](https://docs.qlue-ls.com).  
+⚡Qlue-ls (pronounced "clueless") is a *blazingly fast* [language server](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification) for [SPARQL](https://de.wikipedia.org/wiki/SPARQL), written in Rust 🦀, build for the web.
+
+If you want to use Qlue-ls, check out the [documentation](https://docs.qlue-ls.com).
 To learn more about the origin story of this project, read the [blog post](https://ad-blog.cs.uni-freiburg.de/post/qlue-ls-a-sparql-language-server/).
 
 # 🚀 Capabilities
 
-Here is a quick overview what Qlue-ls can do.  
+Here is a quick overview what Qlue-ls can do.
 A more detailed list can be found in the [documentation](https://docs.qlue-ls.com/03_capabilities/).
 
 ## 📐 Formatting
@@ -20,21 +31,19 @@ Customizable options to align with preferred query styles are also implemented.
 
 ## 🩺 Diagnostics
 
-Diagnostics provide feadback on the query.  
-Diagnostics come in severity: error, warning and info
+Diagnostics provide feedback on the query. Diagnostics come in severity: error, warning and info
 
 ## ✨ Completion
 
 Completion provides suggestions how the query could continue.
 
-For completion of subjects, predicates or objects the language server sends
-completion-queries to the backend and gets the completions from the knowledge-graph.  
+For completion of subjects, predicates or objects the language server sends completion-queries to the backend and gets the completions from the knowledge-graph.
 
 **These completion queries have to be configured for each knowledge-graph.**
 
 ## 🛠️ Code Actions
 
-Code action suggest complex changes to your input.  
+Code action suggest complex changes to your input.
 Often in the form of a *quickfix*, to fix a diagnostic.
 
 ## ℹ️ Hover
@@ -56,6 +65,7 @@ Qlue-ls can be configured through a `qlue-ls.toml` or `qlue-ls.yml` file.
 Detailed exmplanations can be found in the [documentation](https://docs.qlue-ls.com/04_configuration/).
 
 Here is the full default configuration
+
 ```toml
 [format]
 align_predicates = true

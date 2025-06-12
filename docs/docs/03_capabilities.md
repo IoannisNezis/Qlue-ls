@@ -1,6 +1,6 @@
 # :rocket: Capabilities
 
-Qlue-s provides SPARQL support to your editor (or tool).  
+Qlue-s provides SPARQL support to your editor (or tool).
 These are structured in Capabilities.
 
 ## ✨ Completion
@@ -10,11 +10,12 @@ Completion provides suggestions how the query could continue.
 Completions are invoked automatically by your editor or by the user
 (usually by the key combination `ctrl` + `space`). They are also triggered when the user types `?`.
 
+
 Qlue-ls provides different types of completions:
 
 ### Variable completion
 
-When a user types a word beginning with `?`, all variables in scope will be returned.  
+When a user types a word beginning with `?`, all variables in scope will be returned.
 
 ```sparql
 SELECT * WHERE {
@@ -36,8 +37,8 @@ A completion request at the [cursor] position will return `[?a, ?c, ?d]` but not
 
 !!! warning
 
-    Variable completion should work everywhere where variables are allowed.  
-    However, note that collecting variables after the cursor is harder then before the cursor  
+    Variable completion should work everywhere where variables are allowed.
+    However, note that collecting variables after the cursor is harder then before the cursor
     and might not work as expected.
 
 ### SPO completion
@@ -53,6 +54,7 @@ Qlue-ls sends 2 queries to the backend, retrieving possible continuations.
 One with constraining context, one without.
 If the context-sensitive query failed, the context-free one is used as a fallback.
 
+
 Note that the quality of the result depends on the query, while the speed depends on the
 triple store.
 
@@ -66,7 +68,7 @@ Customizable options to align with preferred query styles are also implemented.
 
 ## 🩺 Diagnostics
 
-Diagnostics provide feadback on the query.  
+Diagnostics provide feadback on the query.
 Diagnostics come in severity: ❌ error, ⚠️ warning and ℹ️ info.
 
 Here is a complete list of diagnostics qlue-ls can provide:
@@ -81,11 +83,11 @@ Here is a complete list of diagnostics qlue-ls can provide:
 
 ## ℹ️ Hover
 
-When a token is hovered, the server provided information about this token.
 For example when the user hovers a `FILTER`  the server returns a explanation about what a Filter is
+
 and how to use it.
 
-When a backend is configured, the server will access to knowledge-graph to get information about the token.  
+When a backend is configured, the server will access to knowledge-graph to get information about the token.
 For example if the user hovers `osmrel:62768` and a hover request is send, Qlue-ls will respond with
 **"Freiburg im Breisgau"** as this is the label of `osmrel:62768`.
 
@@ -95,7 +97,7 @@ For example if the user hovers `osmrel:62768` and a hover request is send, Qlue-
 
 ## 🛠️ Code Actions
 
-Code action suggest complex changes to your input.  
+Code action suggest complex changes to your input.
 Often in the form of a *quickfix*, to fix a diagnostic.
 
 | name              | description                           | diagnostic        |
@@ -108,9 +110,9 @@ Often in the form of a *quickfix*, to fix a diagnostic.
 
 ## Custom Capabilities
 
-Qlue-ls also introduces custom capabilities.  
-That means your lsp-client will not have support for it.  
-You will have to hack your lsp-client to use this.  
+Qlue-ls also introduces custom capabilities.
+That means your lsp-client will not have support for it.
+You will have to hack your lsp-client to use this.
 
 ### 🕳 Jump
 
@@ -118,6 +120,7 @@ This capability enables "tab navigation".
 The server provides the next, or previous relevant position in the query.
 The LSP-client has to move the cursor to this position.
 This enables the user to quickly jump to relevalt positions in the query.
+
 
 *Request*:
 

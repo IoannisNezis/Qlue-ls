@@ -7,8 +7,8 @@ These are structured in Capabilities.
 
 Completion provides suggestions how the query could continue.
 
-Completions are incoved automattcally by your editor or by the user
-(usualy by the key combination `ctrl` + `space`). They are also triggered when the user types `?`.
+Completions are invoked automatically by your editor or by the user
+(usually by the key combination `ctrl` + `space`). They are also triggered when the user types `?`.
 
 Qlue-ls provides different types of completions:
 
@@ -49,9 +49,9 @@ A completion request at the [cursor] position will return `[?a, ?c, ?d]` but not
 **S**ubject, **P**redicate, **O**bject completions are triggered when the cursor is
 in a [GraphPattern](https://www.w3.org/TR/sparql11-query/#rGroupGraphPattern).
 
-Qlue-ls sends 2 queries to the backend, retrieving possible continuations.  
-One with constraining context, one without.  
-If the context-sensitive query failes, the context-free one is used as a fallback.
+Qlue-ls sends 2 queries to the backend, retrieving possible continuations.
+One with constraining context, one without.
+If the context-sensitive query failed, the context-free one is used as a fallback.
 
 Note that the quality of the result depends on the query, while the speed depends on the
 triple store.
@@ -81,9 +81,9 @@ Here is a complete list of diagnostics qlue-ls can provide:
 
 ## ℹ️ Hover
 
-When a token is hovered, the server provied information about this token.  
-For example when the user hovers a `FILTER`  the server returnes a explanation about what a Filter is
-and how to use it.  
+When a token is hovered, the server provided information about this token.
+For example when the user hovers a `FILTER`  the server returns a explanation about what a Filter is
+and how to use it.
 
 When a backend is configured, the server will access to knowledge-graph to get information about the token.  
 For example if the user hovers `osmrel:62768` and a hover request is send, Qlue-ls will respond with
@@ -114,10 +114,10 @@ You will have to hack your lsp-client to use this.
 
 ### 🕳 Jump
 
-This capability enables "tab navigation".  
-The server provides the next, or previous relevant position in the query.  
-The LSP-client has to move the cursor to this position.  
-This enables the user to quickly jumo to relevalt positions in the query.
+This capability enables "tab navigation".
+The server provides the next, or previous relevant position in the query.
+The LSP-client has to move the cursor to this position.
+This enables the user to quickly jump to relevalt positions in the query.
 
 *Request*:
 

@@ -1064,7 +1064,7 @@ fn format_setting_align_predicates() {
 #[test]
 fn format_setting_separate_prolouge() {
     let mut format_settings = FormatSettings {
-        separate_prolouge: true,
+        separate_prologue: true,
         ..Default::default()
     };
     let ugly_query = indoc!(
@@ -1085,7 +1085,7 @@ fn format_setting_separate_prolouge() {
     );
 
     format_and_compare(ugly_query, pretty_query1, &format_settings);
-    format_settings.separate_prolouge = false;
+    format_settings.separate_prologue = false;
     format_and_compare(ugly_query, pretty_query2, &format_settings);
 }
 

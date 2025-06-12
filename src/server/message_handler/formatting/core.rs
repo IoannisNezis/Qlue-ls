@@ -642,7 +642,7 @@ impl<'a> Walker<'a> {
         let insert = match node.kind() {
             SyntaxKind::UNION => Some(" ".to_string()),
             SyntaxKind::Prologue
-                if self.settings.separate_prolouge
+                if self.settings.separate_prologue
                     && node
                         .as_node()
                         .and_then(|node| node.next_sibling())

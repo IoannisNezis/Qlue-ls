@@ -51,7 +51,7 @@ impl Default for CompletionSettings {
 pub struct FormatSettings {
     pub align_predicates: bool,
     pub align_prefixes: bool,
-    pub separate_prolouge: bool,
+    pub separate_prologue: bool,
     pub capitalize_keywords: bool,
     pub insert_spaces: Option<bool>,
     pub tab_size: Option<u8>,
@@ -64,7 +64,7 @@ impl Default for FormatSettings {
         Self {
             align_predicates: true,
             align_prefixes: false,
-            separate_prolouge: false,
+            separate_prologue: false,
             capitalize_keywords: true,
             insert_spaces: Some(true),
             tab_size: Some(2),

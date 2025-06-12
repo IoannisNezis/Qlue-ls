@@ -1,6 +1,18 @@
 # Getting started
 
-You can use Qlue-ls with any tool that has a lsp-client.  
+<div align="center">
+    <a href="https://crates.io/crates/qlue-ls">
+        <img alt="crates.io" src="https://img.shields.io/crates/v/qlue-ls.svg" />
+    </a>
+    <a href="https://www.npmjs.com/package/qlue-ls">
+        <img alt="npm" src="https://img.shields.io/npm/v/qlue-ls" />
+    </a>
+    <a href="https://pypi.org/project/qlue-ls">
+        <img alt="PyPI" src="https://img.shields.io/pypi/v/qlue-ls" />
+    </a>
+</div>
+
+You can use Qlue-ls with any tool that has a lsp-client.
 
 If you plan to use qlue-ls on your machine, install it first:
 
@@ -49,7 +61,7 @@ vim.api.nvim_create_autocmd({ 'FileType' }, {
 })
 ```
 
-Open a `.rq` file and check that the buffer is attached to th server:
+Open a `.rq` file and check that the buffer is attached to the server:
 
 ```
 :checkhealth lsp

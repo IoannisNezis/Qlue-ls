@@ -8,7 +8,7 @@ Here is the full default configuration:
 [format]
 align_prefixes = false
 align_predicates = true
-separate_prolouge = false
+separate_prologue = false
 capitalize_keywords = true
 insert_spaces = true
 tab_size = 2

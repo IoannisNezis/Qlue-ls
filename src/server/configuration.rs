@@ -1,17 +1,18 @@
 use std::collections::HashMap;
 
 use config::{Config, ConfigError};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use super::lsp::Backend;
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, PartialEq)]
 #[serde(default)]
 pub struct BackendsSettings {
     pub backends: HashMap<String, BackendConfiguration>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct BackendConfiguration {
     pub backend: Backend,
     pub prefix_map: HashMap<String, String>,
@@ -19,15 +20,17 @@ pub struct BackendConfiguration {
     pub queries: Queries,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct Queries {
     pub subject_completion: String,
     pub predicate_completion: String,
     pub object_completion: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
+#[serde(rename_all = "camelCase")]
 pub struct CompletionSettings {
     pub timeout_ms: u32,
     pub result_size_limit: u32,
@@ -42,12 +45,13 @@ impl Default for CompletionSettings {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 #[serde(default)]
+#[serde(rename_all = "camelCase")]
 pub struct FormatSettings {
     pub align_predicates: bool,
     pub align_prefixes: bool,
-    pub separate_prolouge: bool,
+    pub separate_prologue: bool,
     pub capitalize_keywords: bool,
     pub insert_spaces: Option<bool>,
     pub tab_size: Option<u8>,
@@ -60,17 +64,18 @@ impl Default for FormatSettings {
         Self {
             align_predicates: true,
             align_prefixes: false,
-            separate_prolouge: false,
+            separate_prologue: false,
             capitalize_keywords: true,
-            insert_spaces: None,
-            tab_size: None,
+            insert_spaces: Some(true),
+            tab_size: Some(2),
             where_new_line: false,
             filter_same_line: true,
         }
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct PrefixesSettings {
     pub add_missing: Option<bool>,
     pub remove_unused: Option<bool>,
@@ -85,7 +90,7 @@ impl Default for PrefixesSettings {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct Settings {
     /// Format settings
     pub format: FormatSettings,

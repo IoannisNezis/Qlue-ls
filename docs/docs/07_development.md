@@ -40,7 +40,7 @@ If you don't have [just](https://github.com/casey/just) or [make](https://wiki.u
 
 ## Automatically rebuild on change
 
-When developping the cycle is:
+When developing the cycle is:
 
 - Change the code
 - Compile to wasm (or run tests)

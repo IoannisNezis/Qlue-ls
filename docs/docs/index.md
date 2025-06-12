@@ -5,7 +5,7 @@ It's written in Rust and build for the web.
 
 <div class="grid cards" markdown>
 
--   :material-fire:{ .lg .middle } __Powerfull capabillities__
+-   :material-fire:{ .lg .middle } __Powerful capabilities__
 
     ---
 

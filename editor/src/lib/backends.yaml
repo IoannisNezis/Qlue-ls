@@ -537,7 +537,7 @@
 - backend:
     name: UniProt
     slug: uniprot
-    url: https://qlever.cs.uni-freiburg.de/api/uniprot
+    url: https://sparql.uniprot.org/sparql/
     healthCheckUrl: https://qlever.cs.uni-freiburg.de/api/uniprot/ping
   prefixMap:
     annotation: http://purl.uniprot.org/annotation/

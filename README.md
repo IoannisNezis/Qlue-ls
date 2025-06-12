@@ -70,7 +70,7 @@ Here is the full default configuration
 [format]
 align_predicates = true
 align_prefixes = true
-separate_prolouge = false
+separate_prologue = false
 capitalize_keywords = true
 insert_spaces = true
 tab_size = 2

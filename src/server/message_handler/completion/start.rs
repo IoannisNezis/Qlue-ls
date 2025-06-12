@@ -28,7 +28,7 @@ pub(super) async fn completions(
                 "CONSTRUCT",
                 Some("Construct query".to_string()),
                 None,
-                "CONSTRUCT {\n  ${1:?s ?p ?o}\n} WHERE {\n  ${2:?s ?p ?o} .\n}",
+                "CONSTRUCT {\n  ${1:?s ?p ?o}\n} WHERE {\n  ${0:?s ?p ?o} .\n}",
                 CompletionItemKind::Snippet,
                 None,
             ),

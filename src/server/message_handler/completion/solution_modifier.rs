@@ -16,7 +16,7 @@ pub(super) fn completions(
             detail: Some("Group the results".to_string()),
             sort_text: None,
             filter_text: None,
-            insert_text: Some("GROUP BY ${0:?}".to_string()),
+            insert_text: Some("GROUP BY $0".to_string()),
             text_edit: None,
             insert_text_format: None,
             additional_text_edits: None,

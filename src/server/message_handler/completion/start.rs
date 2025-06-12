@@ -44,7 +44,7 @@ pub(super) async fn completions(
                 "DESCRIBE",
                 Some("Describe query".to_string()),
                 None,
-                "DESCRIBE ?s WHERE {\n  ${1:?s ?p ?o}\n}",
+                "DESCRIBE ?s WHERE {\n  ${0:?s ?p ?o}\n}",
                 CompletionItemKind::Snippet,
                 None,
             ),

@@ -8,6 +8,7 @@ mod identification;
 mod jump;
 mod lifecycle;
 mod misc;
+mod settings;
 mod textdocument_syncronization;
 mod workspace;
 
@@ -41,7 +42,12 @@ use tokio::task::spawn_local;
 use wasm_bindgen_futures::spawn_local;
 
 use crate::server::{
-    handle_error, lsp::errors::ErrorCode, message_handler::identification::handle_identify_request,
+    handle_error,
+    lsp::errors::ErrorCode,
+    message_handler::{
+        identification::handle_identify_request,
+        settings::{handle_change_settings_notification, handle_default_settings_request},
+    },
 };
 
 use self::formatting::handle_format_request;
@@ -93,6 +99,7 @@ pub(super) async fn dispatch(
         "qlueLs/pingBackend" => call_async!(handle_ping_backend_request),
         "qlueLs/jump" => call!(handle_jump_request),
         "qlueLs/identifyOperationType" => call!(handle_identify_request),
+        "qlueLs/defaultSettings" => call!(handle_default_settings_request),
         // NOTE: Notifications
         "initialized" => call!(handle_initialized_notifcation),
         "exit" => call!(handle_exit_notifcation),
@@ -100,6 +107,8 @@ pub(super) async fn dispatch(
         "textDocument/didChange" => call!(handle_did_change_notification),
         "textDocument/didSave" => call!(handle_did_save_notification),
         "$/setTrace" => call!(handle_set_trace_notifcation),
+        // NOTE: LSP extensions Notifications
+        "qlueLs/changeSettings" => call!(handle_change_settings_notification),
         // NOTE: Resonses
         "response" => {
             call!(handle_workspace_edit_response)

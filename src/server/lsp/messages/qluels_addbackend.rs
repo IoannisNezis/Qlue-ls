@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::server::lsp::rpc::NotificationMessageBase;
 
@@ -20,7 +20,7 @@ pub struct SetBackendParams {
     pub queries: Option<HashMap<String, String>>,
 }
 
-#[derive(Debug, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Backend {
     pub name: String,

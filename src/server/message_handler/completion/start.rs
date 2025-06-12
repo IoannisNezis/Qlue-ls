@@ -36,7 +36,7 @@ pub(super) async fn completions(
                 "ASK",
                 Some("Ask query".to_string()),
                 None,
-                "ASK WHERE {\n  ${1:?s ?p ?o}\n}",
+                "ASK WHERE {\n  ${0:?s ?p ?o}\n}",
                 CompletionItemKind::Snippet,
                 None,
             ),

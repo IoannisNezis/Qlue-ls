@@ -54,7 +54,7 @@ pub(super) fn completions(
             detail: Some("Sort the results".to_string()),
             sort_text: None,
             filter_text: None,
-            insert_text: Some("ORDER BY ${1|ASC,DESC|}(${0:?})".to_string()),
+            insert_text: Some("ORDER BY ${1|ASC,DESC|}($0)".to_string()),
             text_edit: None,
             insert_text_format: None,
             additional_text_edits: None,

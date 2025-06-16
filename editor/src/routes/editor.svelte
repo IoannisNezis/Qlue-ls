@@ -27,7 +27,7 @@
         const monaco = await import('monaco-editor');
 
         wrapper = new MonacoEditorLanguageClientWrapper();
-        let wrapperConfig = await buildWrapperConfig(editorContainer, content);
+        let wrapperConfig = await buildWrapperConfig(editorContainer, '');
         await wrapper.initAndStart(wrapperConfig);
         ready = true;
         languageClientWrapper = wrapper.getLanguageClientWrapper('sparql');

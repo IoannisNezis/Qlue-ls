@@ -23,7 +23,7 @@ pub fn find_all_uncompacted_iris(
     let root = server.state.get_cached_parse_tree(document_uri)?;
     let query_unit = QueryUnit::cast(root).ok_or(LSPError::new(
         ErrorCode::InternalError,
-        "find_all_uncompacted_uris is not jet suported for update",
+        "find_all_uncompacted_uris is not jet supported for update",
     ))?;
     Ok(query_unit
         .prologue()
@@ -76,7 +76,7 @@ mod tests {
     use indoc::indoc;
 
     use crate::server::{
-        anaysis::{find_all_prefix_declarations, find_all_uncompacted_iris},
+        analysis::{find_all_prefix_declarations, find_all_uncompacted_iris},
         lsp::textdocument::TextDocumentItem,
         state::ServerState,
         Server,
@@ -118,9 +118,9 @@ mod tests {
 
                  SELECT * {}"
         ));
-        let declared_namesapces = find_all_prefix_declarations(&mut state, "uri").unwrap();
+        let declared_namespaces = find_all_prefix_declarations(&mut state, "uri").unwrap();
         assert_eq!(
-            declared_namesapces
+            declared_namespaces
                 .iter()
                 .filter_map(|prefix_declaration| prefix_declaration.prefix())
                 .collect::<Vec<_>>(),

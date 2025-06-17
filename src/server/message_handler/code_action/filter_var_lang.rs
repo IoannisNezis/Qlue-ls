@@ -1,12 +1,19 @@
 //! Filter variable code action
-//! Add Filter expression for variable
-
-use std::collections::HashMap;
+//! Add Lang-Filter expression for variable
+//!
+//!**Example:**
+//!
+//! ?s rdfs:label ?label
+//!
+//! ----------------
+//!
+//! ?s rdfs:label ?label Filter(Lange(?label) = "en"
 
 use ll_sparql_parser::{
-    ast::{AstNode, Var},
+    ast::{AstNode, ObjectList, Var},
     SyntaxToken,
 };
+use std::collections::HashMap;
 
 use crate::server::lsp::{
     textdocument::{Position, Range, TextDocumentItem, TextEdit},
@@ -16,10 +23,11 @@ use crate::server::lsp::{
 pub(super) fn code_action(token: &SyntaxToken, document: &TextDocumentItem) -> Option<CodeAction> {
     let var = Var::cast(token.parent()?)?;
     let triple = var.triple()?;
+    let _object_list = var.syntax().ancestors().nth(4).and_then(ObjectList::cast)?;
     let position =
         Position::from_byte_index(triple.syntax().text_range().end().into(), &document.text)?;
     Some(CodeAction {
-        title: "Filter".to_string(),
+        title: "Lang-Filter".to_string(),
         kind: None,
         diagnostics: vec![],
         edit: WorkspaceEdit {
@@ -30,7 +38,7 @@ pub(super) fn code_action(token: &SyntaxToken, document: &TextDocumentItem) -> O
                         start: position,
                         end: position,
                     },
-                    &format!(" FILTER ({})", var.syntax()),
+                    &format!(r#" FILTER (Lang({}) = "en")"#, var.syntax()),
                 )],
             )])),
         },

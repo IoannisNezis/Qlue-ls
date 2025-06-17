@@ -1,5 +1,6 @@
 mod add_to_result;
 mod filter_var;
+mod filter_var_lang;
 mod quickfix;
 use std::{collections::HashSet, rc::Rc};
 
@@ -87,6 +88,9 @@ fn generate_code_actions(
                     code_actions.push(code_action)
                 }
                 if let Some(code_action) = filter_var::code_action(&token, document) {
+                    code_actions.push(code_action)
+                }
+                if let Some(code_action) = filter_var_lang::code_action(&token, document) {
                     code_actions.push(code_action)
                 }
             }

@@ -445,7 +445,7 @@ impl Triple {
     }
 
     /// Get the `TriplesBlock` this Triple is part of.
-    /// **Note** that this referes to the topmost TriplesBlock and not the next.
+    /// **Note** that this refers to the topmost TriplesBlock and not the next.
     pub fn triples_block(&self) -> Option<TriplesBlock> {
         let mut parent = self.syntax.parent()?;
         if parent.kind() != SyntaxKind::TriplesBlock {

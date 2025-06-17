@@ -7,9 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### changed
+
+- set default settings 'remove_unused' to false
+
 ### Added
 
 - vim mode for demo
+- Lang-Filter code action for objects
 
 ### Fixed
 

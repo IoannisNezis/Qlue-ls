@@ -149,8 +149,7 @@ pub(super) async fn fetch_online_completions(
             let filter_text = query_template_context
                 .get("search_term_uncompressed")
                 .is_some()
-                .then_some(label.clone())
-                .flatten();
+                .then_some(value.to_string());
             InternalCompletionItem {
                 label,
                 detail,

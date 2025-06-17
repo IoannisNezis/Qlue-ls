@@ -14,57 +14,55 @@
     </a>
 </div>
 
-⚡Qlue-ls (pronounced "clueless") is a *blazingly fast* [language server](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification) for [SPARQL](https://de.wikipedia.org/wiki/SPARQL), written in Rust 🦀, build for the web.
+⚡Qlue-ls (pronounced "clueless") is a *blazingly fast* [language server](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification) for [SPARQL](https://de.wikipedia.org/wiki/SPARQL),  
+written in Rust 🦀, build for the web.
 
-If you want to use Qlue-ls, check out the [documentation](https://docs.qlue-ls.com).
-To learn more about the origin story of this project, read the [blog post](https://ad-blog.cs.uni-freiburg.de/post/qlue-ls-a-sparql-language-server/).
+📚 [Documentation](https://docs.qlue-ls.com)  
+📝 [Project Blog Post](https://ad-blog.cs.uni-freiburg.de/post/qlue-ls-a-sparql-language-server/)
 
 # 🚀 Capabilities
 
-Here is a quick overview what Qlue-ls can do.
-A more detailed list can be found in the [documentation](https://docs.qlue-ls.com/03_capabilities/).
+Qlue-ls offers a wide range of LSP features tailored to SPARQL development. For a complete overview, see the [capabilities section](https://docs.qlue-ls.com/03_capabilities/).
 
 ## 📐 Formatting
 
-Formats SPARQL queries to ensure consistent and readable syntax.
-Customizable options to align with preferred query styles are also implemented.
+- Auto-formats SPARQL queries for consistency and readability
+- Fully customizable to match your preferred coding style
 
 ## 🩺 Diagnostics
 
-Diagnostics provide feedback on the query. Diagnostics come in severity: error, warning and info
+- Real-time feedback with severity levels: error, warning, and info
+- Helps catch syntax issues and common mistakes
 
 ## ✨ Completion
 
-Completion provides suggestions how the query could continue.
-
-For completion of subjects, predicates or objects the language server sends completion-queries to the backend and gets the completions from the knowledge-graph.
-
-**These completion queries have to be configured for each knowledge-graph.**
+- Suggests valid continuations while typing SPARQL queries
+- Backend-powered suggestions for subjects, predicates, and objects
+- **Note:** Completion queries must be configured for each knowledge graph
 
 ## 🛠️ Code Actions
 
-Code action suggest complex changes to your input.
-Often in the form of a *quickfix*, to fix a diagnostic.
+- Provides smart quick-fixes for diagnostics
+- Offers suggested improvements and automated edits
 
 ## ℹ️ Hover
 
-Get information about a token on hover.
+- View contextual information by hovering over tokens
 
 ## 🕳 Jump
 
-Quickly jump to the next or previous important location in the query.
+- Navigate quickly between key locations in a query
 
 ## ❓ operation identification
 
-Determine if a operation is a query or update.
+- Detects whether a SPARQL operation is a `query` or an `update`
 
 # ⚙️  Configuration
 
-Qlue-ls can be configured through a `qlue-ls.toml` or `qlue-ls.yml` file.
+Qlue-ls is configured via a qlue-ls.toml or qlue-ls.yml file.  
+Full configuration options are explained in the [documentation](https://docs.qlue-ls.com/04_configuration/).
 
-Detailed exmplanations can be found in the [documentation](https://docs.qlue-ls.com/04_configuration/).
-
-Here is the full default configuration
+## Default Configuration
 
 ```toml
 [format]
@@ -86,8 +84,7 @@ add_missing = true
 remove_unused = false
 ```
 
-# 🙏 Special Thanks
+# 🙏 Acknowledgements
 
-* [TJ DeVries](https://github.com/tjdevries) for the inspiration and great tutorials
-* [Chris Biscardi](https://github.com/christopherbiscardi) for teaching me Rust
-* [Hannah Bast](https://ad.informatik.uni-freiburg.de/staff/bast) for the guidance.
+* [TJ DeVries](https://github.com/tjdevries) - for the inspiration and fantastic tutorials
+* [Hannah Bast](https://ad.informatik.uni-freiburg.de/staff/bast) - for mentorship and guidance.

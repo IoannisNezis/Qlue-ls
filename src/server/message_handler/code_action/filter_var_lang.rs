@@ -38,7 +38,7 @@ pub(super) fn code_action(token: &SyntaxToken, document: &TextDocumentItem) -> O
                         start: position,
                         end: position,
                     },
-                    &format!(r#" FILTER (Lang({}) = "en")"#, var.syntax()),
+                    &format!(r#" FILTER (LANG({}) = "en")"#, var.syntax()),
                 )],
             )])),
         },

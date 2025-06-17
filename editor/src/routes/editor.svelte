@@ -6,6 +6,7 @@
         MonacoEditorLanguageClientWrapper
     } from 'monaco-editor-wrapper';
     import type { editor } from 'monaco-editor';
+    import { initVimMode } from 'monaco-vim';
     import { backends } from '$lib/backends';
     import Tree from './tree.svelte';
     import BackendPicker from './backendPicker.svelte';
@@ -33,6 +34,8 @@
         languageClientWrapper = wrapper.getLanguageClientWrapper('sparql');
         version = languageClientWrapper?.getLanguageClient()?.initializeResult?.serverInfo?.version;
         let editor = wrapper.getEditor()!;
+
+        initVimMode(editor, document.getElementById('status'));
 
         monaco.editor.onDidChangeMarkers(() => {
             markers = monaco.editor.getModelMarkers({});

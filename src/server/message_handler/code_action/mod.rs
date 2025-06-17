@@ -11,7 +11,7 @@ pub(crate) use quickfix::declare_prefix;
 pub(crate) use quickfix::remove_prefix_declaration;
 
 use crate::server::{
-    anaysis::{find_all_prefix_declarations, find_all_uncompacted_iris},
+    analysis::{find_all_prefix_declarations, find_all_uncompacted_iris},
     lsp::{
         diagnostic::Diagnostic,
         errors::{ErrorCode, LSPError},
@@ -28,27 +28,29 @@ pub(super) async fn handle_codeaction_request(
     let mut server = server_rc.lock().await;
     let mut code_action_response = CodeActionResponse::new(request.get_id());
     code_action_response.add_code_actions(generate_code_actions(&mut server, &request.params)?);
-    code_action_response.add_code_actions(
-        request
-            .params
-            .context
-            .diagnostics
-            .into_iter()
-            .filter_map(|diagnostic| {
-                match get_quickfix(&mut server, &request.params.text_document.uri, diagnostic) {
-                    Ok(code_action) => code_action,
-                    Err(err) => {
-                        log::error!(
-                            "Encountered Error while computing quickfix:\n{}\nDropping error!",
-                            err.message
-                        );
-                        None
-                    }
-                }
-            })
-            .collect(),
-    );
+    code_action_response.add_code_actions(generate_quickfixes(&mut server, request));
     server.send_message(code_action_response)
+}
+
+fn generate_quickfixes(server: &mut Server, request: CodeActionRequest) -> Vec<CodeAction> {
+    request
+        .params
+        .context
+        .diagnostics
+        .into_iter()
+        .filter_map(|diagnostic| {
+            match get_quickfix(server, &request.params.text_document.uri, diagnostic) {
+                Ok(code_action) => code_action,
+                Err(err) => {
+                    log::error!(
+                        "Encountered Error while computing quickfix:\n{}\nDropping error!",
+                        err.message
+                    );
+                    None
+                }
+            }
+        })
+        .collect()
 }
 
 fn generate_code_actions(

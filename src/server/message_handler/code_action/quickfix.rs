@@ -1,6 +1,6 @@
 use super::Diagnostic;
 use crate::server::{
-    anaysis::namespace_is_declared,
+    analysis::namespace_is_declared,
     common::{serde_parse, UncompactedUrisDiagnosticData},
     lsp::{
         base_types::LSPAny,

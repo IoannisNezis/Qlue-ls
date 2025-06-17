@@ -1,4 +1,4 @@
-mod anaysis;
+mod analysis;
 mod capabilities;
 mod common;
 mod configuration;

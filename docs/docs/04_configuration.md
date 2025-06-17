@@ -21,7 +21,7 @@ result_size_limit = 100
 
 [prefixes]
 add_missing = true
-remove_unused = true
+remove_unused = false
 ```
 
 ## Formatt settings
@@ -151,7 +151,7 @@ Define missing prefix declarations as soon as they are needed.
 
 | Type     | Default |
 | ---------| --------|
-| boolean  | true    |
+| boolean  | false   |
 
 Remove prefix declarations if they are not used.  
 

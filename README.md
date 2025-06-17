@@ -83,7 +83,7 @@ result_size_limit = 100
 
 [prefixes]
 add_missing = true
-remove_unused = true
+remove_unused = false
 ```
 
 # 🙏 Special Thanks

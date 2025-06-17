@@ -85,7 +85,7 @@ impl Default for PrefixesSettings {
     fn default() -> Self {
         Self {
             add_missing: Some(true),
-            remove_unused: Some(true),
+            remove_unused: Some(false),
         }
     }
 }

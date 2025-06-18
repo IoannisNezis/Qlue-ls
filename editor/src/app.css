@@ -19,3 +19,7 @@
     border-color: var(--color-gray-200, currentcolor);
   }
 }
+
+.action-widget {
+  min-width: 250px !important;
+}

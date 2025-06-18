@@ -18,7 +18,7 @@ pub(super) async fn handle_shutdown_request(
     request: RequestMessage,
 ) -> Result<(), LSPError> {
     let mut server = server_rc.lock().await;
-    log::info!("Recieved shutdown request, preparing to shut down");
+    log::info!("Received shutdown request, preparing to shut down");
     match server.state.status {
         ServerStatus::Initializing => Err(LSPError::new(
             ErrorCode::InvalidRequest,
@@ -151,7 +151,7 @@ pub(super) async fn handle_initialize_request(
                 let progress_report_1 = ProgressNotification::report_notification(
                     work_done_token.clone(),
                     Some(false),
-                    Some("testing availibility of endpoint"),
+                    Some("testing availability of endpoint"),
                     Some(30),
                 );
                 server.send_message(progress_report_1)?;
@@ -184,7 +184,7 @@ pub(super) async fn handle_initialize_request(
     }
 }
 
-pub(super) async fn handle_initialized_notifcation(
+pub(super) async fn handle_initialized_notification(
     server_rc: Rc<Mutex<Server>>,
     _initialized_notification: NotificationMessage,
 ) -> Result<(), LSPError> {
@@ -193,10 +193,10 @@ pub(super) async fn handle_initialized_notifcation(
     Ok(())
 }
 
-pub(super) async fn handle_exit_notifcation(
+pub(super) async fn handle_exit_notification(
     _server_rc: Rc<Mutex<Server>>,
     _initialized_notification: NotificationMessage,
 ) -> Result<(), LSPError> {
-    log::info!("Recieved exit notification, shutting down!");
+    log::info!("Received exit notification, shutting down!");
     exit(0);
 }

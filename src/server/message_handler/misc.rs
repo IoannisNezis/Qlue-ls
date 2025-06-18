@@ -7,7 +7,7 @@ use crate::server::{
     Server,
 };
 
-pub(super) async fn handle_set_trace_notifcation(
+pub(super) async fn handle_set_trace_notification(
     server: Rc<Mutex<Server>>,
     set_trace_notification: SetTraceNotification,
 ) -> Result<(), LSPError> {

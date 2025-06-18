@@ -9,7 +9,7 @@ mod jump;
 mod lifecycle;
 mod misc;
 mod settings;
-mod textdocument_syncronization;
+mod textdocument_synchronization;
 mod workspace;
 
 use std::rc::Rc;
@@ -25,11 +25,11 @@ use futures::lock::Mutex;
 use hover::handle_hover_request;
 use jump::handle_jump_request;
 use lifecycle::{
-    handle_exit_notifcation, handle_initialize_request, handle_initialized_notifcation,
+    handle_exit_notification, handle_initialize_request, handle_initialized_notification,
     handle_shutdown_request,
 };
-use misc::handle_set_trace_notifcation;
-use textdocument_syncronization::{
+use misc::handle_set_trace_notification;
+use textdocument_synchronization::{
     handle_did_change_notification, handle_did_open_notification, handle_did_save_notification,
 };
 use workspace::handle_workspace_edit_response;
@@ -101,15 +101,15 @@ pub(super) async fn dispatch(
         "qlueLs/identifyOperationType" => call!(handle_identify_request),
         "qlueLs/defaultSettings" => call!(handle_default_settings_request),
         // NOTE: Notifications
-        "initialized" => call!(handle_initialized_notifcation),
-        "exit" => call!(handle_exit_notifcation),
+        "initialized" => call!(handle_initialized_notification),
+        "exit" => call!(handle_exit_notification),
         "textDocument/didOpen" => call!(handle_did_open_notification),
         "textDocument/didChange" => call!(handle_did_change_notification),
         "textDocument/didSave" => call!(handle_did_save_notification),
-        "$/setTrace" => call!(handle_set_trace_notifcation),
+        "$/setTrace" => call!(handle_set_trace_notification),
         // NOTE: LSP extensions Notifications
         "qlueLs/changeSettings" => call!(handle_change_settings_notification),
-        // NOTE: Resonses
+        // NOTE: Responses
         "response" => {
             call!(handle_workspace_edit_response)
         }

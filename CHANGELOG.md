@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.2]
+
+### Added
+
+- New code-acitons: add aggreagtes to result
+
+## [0.12.1]
+
 ### changed
 
 - set default settings 'remove_unused' to false

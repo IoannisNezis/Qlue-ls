@@ -1,24 +1,21 @@
 mod context;
 mod query_graph;
-
-use std::{collections::HashSet, rc::Rc, vec};
-
+use super::{error::CompletionError, utils::get_prefix_declarations};
+use crate::server::{
+    lsp::{textdocument::Position, Backend, CompletionRequest, CompletionTriggerKind},
+    Server,
+};
 use context::{context, Context};
 use futures::lock::Mutex;
+use indoc::indoc;
 use ll_sparql_parser::{
     ast::{AstNode, BlankPropertyList, QueryUnit, SelectClause, ServiceGraphPattern, Triple},
     continuations_at, parse_query,
     syntax_kind::SyntaxKind,
     SyntaxNode, SyntaxToken, TokenAtOffset,
 };
+use std::{collections::HashSet, fmt::Display, rc::Rc, vec};
 use text_size::{TextRange, TextSize};
-
-use crate::server::{
-    lsp::{textdocument::Position, Backend, CompletionRequest, CompletionTriggerKind},
-    Server,
-};
-
-use super::{error::CompletionError, utils::get_prefix_declarations};
 
 #[derive(Debug, Clone)]
 pub(super) struct CompletionEnvironment {
@@ -32,6 +29,31 @@ pub(super) struct CompletionEnvironment {
     pub(super) search_term: Option<String>,
     pub(super) backend: Option<Backend>,
     pub(super) context: Option<Context>,
+}
+
+impl Display for CompletionEnvironment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            indoc! {
+                "location:                      {:?}
+                 trigger_textdocument_position: {}
+                 trigger_kind:                  {:?}
+                 continuations:                 {:?}
+                 anchor_token:                  {:?}
+                 search_term:                   {:?}
+                 backend:                       {:?}
+                "
+            },
+            self.location,
+            self.trigger_textdocument_position,
+            self.trigger_character,
+            self.continuations,
+            self.anchor_token,
+            self.search_term,
+            self.backend.as_ref().map(|backend| &backend.name)
+        )
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -181,7 +203,7 @@ pub(super) enum CompletionLocation {
     ///   SERVICE >here< {}
     /// }
     ServiceUrl,
-    /// Filter Contraint
+    /// Filter Constraint
     ///
     /// ---
     ///

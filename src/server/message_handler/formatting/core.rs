@@ -698,12 +698,10 @@ impl<'a> Walker<'a> {
         assert_eq!(comment_node.kind(), SyntaxKind::Comment);
         let mut maybe_attach = Some(comment_node.clone());
         while let Some(kind) = maybe_attach.as_ref().map(|node| node.kind()) {
-            match kind {
-                SyntaxKind::Comment | SyntaxKind::WHITESPACE => {
-                    maybe_attach = maybe_attach.and_then(|node| node.prev_sibling_or_token())
-                }
-                _ => break,
+            if !kind.is_trivia() {
+                break;
             }
+            maybe_attach = maybe_attach.and_then(|node| node.prev_sibling_or_token())
         }
         let attach = maybe_attach
             .or(comment_node.parent().map(SyntaxElement::Node))

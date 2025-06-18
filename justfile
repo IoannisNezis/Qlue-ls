@@ -22,7 +22,7 @@ build-wasm profile="release" target="web":
 	wasm-pack build --{{profile}} --target {{target}}
 
 watch-and-run recipe="test":
-	watchexec --restart --watch src  -- just {{recipe}}
+	watchexec --restart --watch src --watch Cargo.toml -- just {{recipe}}
 
 publish:
 	wasm-pack publish

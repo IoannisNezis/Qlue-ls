@@ -16,39 +16,35 @@ use crate::server::lsp::{
 
 pub(super) fn code_action(token: &SyntaxToken, document: &TextDocumentItem) -> Option<CodeAction> {
     assert!(matches!(token.kind(), SyntaxKind::VAR1 | SyntaxKind::VAR2));
-    let select_clause = match token
+    let select_query = match token
         .parent_ancestors()
         .nth(2)
         .map(|grand_parent| grand_parent.kind())?
     {
-        SyntaxKind::SubSelect => token
-            .parent_ancestors()
-            .skip(3)
-            .find(|ancestor| {
-                ancestor.kind() == SyntaxKind::SelectQuery
-                    || ancestor.kind() == SyntaxKind::SubSelect
-            })
-            .and_then(|node| SelectQuery::cast(node).and_then(|sq| sq.select_clause())),
-        _ => token
-            .parent_ancestors()
-            .find(|ancestor| {
-                ancestor.kind() == SyntaxKind::SelectQuery
-                    || ancestor.kind() == SyntaxKind::SubSelect
-            })
-            .and_then(|node| SelectQuery::cast(node).and_then(|sq| sq.select_clause())),
+        SyntaxKind::SubSelect => token.parent_ancestors().skip(3).find_map(SelectQuery::cast),
+        _ => token.parent_ancestors().find_map(SelectQuery::cast),
     }?;
     let result_vars: HashSet<String> = HashSet::from_iter(
-        select_clause
+        select_query
+            .select_clause()?
             .variables()
             .iter()
             .map(|var| var.syntax().text().to_string()),
     );
     if !result_vars.contains(&token.to_string()) {
         let end = Position::from_byte_index(
-            select_clause.syntax().text_range().end().into(),
+            select_query
+                .select_clause()?
+                .syntax()
+                .text_range()
+                .end()
+                .into(),
             &document.text,
         )?;
-        let last_child = select_clause.syntax().last_child_or_token()?;
+        let last_child = select_query
+            .select_clause()?
+            .syntax()
+            .last_child_or_token()?;
         let mut ca = CodeAction::new("Add to result", None);
         if last_child.kind() == SyntaxKind::Star {
             ca.add_edit(

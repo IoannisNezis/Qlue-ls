@@ -1,3 +1,4 @@
+mod add_aggregate_to_result;
 mod add_to_result;
 mod filter_var;
 mod filter_var_lang;
@@ -86,6 +87,13 @@ fn generate_code_actions(
             } else if [SyntaxKind::VAR1, SyntaxKind::VAR2].contains(&token.kind()) {
                 if let Some(code_action) = add_to_result::code_action(&token, document) {
                     code_actions.push(code_action)
+                }
+                if let Some(code_action_vec) =
+                    add_aggregate_to_result::code_actions(&token, document)
+                {
+                    for code_action in code_action_vec {
+                        code_actions.push(code_action)
+                    }
                 }
                 if let Some(code_action) = filter_var::code_action(&token, document) {
                     code_actions.push(code_action)

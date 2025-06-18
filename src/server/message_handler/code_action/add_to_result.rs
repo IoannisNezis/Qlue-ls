@@ -1,5 +1,5 @@
 //! Add to result code action
-//! Add variabel to `SelectClause`
+//! Add variable to `SelectClause`
 
 use std::collections::HashSet;
 

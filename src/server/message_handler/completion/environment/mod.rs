@@ -553,7 +553,8 @@ fn get_anchor_token(
             | SyntaxKind::RCurly
             | SyntaxKind::RParen
             | SyntaxKind::Slash
-            | SyntaxKind::Zirkumflex 
+            | SyntaxKind::Zirkumflex
+            | SyntaxKind::ANON
     ) &&
         // FIXME: This is also related to THE bug in the tokenizer
         // https://github.com/maciejhirsz/logos/issues/291

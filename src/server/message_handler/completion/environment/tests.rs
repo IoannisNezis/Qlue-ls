@@ -79,6 +79,16 @@ fn localize_select_binding() {
 }
 
 #[test]
+fn localize_blank_property() {
+    //           012345678901234567890123
+    let input = "Select * { ?s ?p [] }";
+    assert!(matches!(
+        location(input, 18),
+        CompletionLocation::BlankNodeProperty(_),
+    ));
+}
+
+#[test]
 fn localize_start_1() {
     let input = "\n";
     assert!(match_location_at_offset(
@@ -248,7 +258,7 @@ fn trigger_token_at(input: &str, offset: u32) -> Option<SyntaxToken> {
 }
 
 #[test]
-fn tigger_token_at_end() {
+fn trigger_token_at_end() {
     //           01234567890123456789012
     let input = "Select * { ?a ?a ?b }";
 

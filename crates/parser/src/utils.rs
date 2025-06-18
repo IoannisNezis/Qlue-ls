@@ -46,7 +46,7 @@ pub fn continuations_at(root: &SyntaxNode, mut offset: TextSize) -> Option<Vec<S
                         return Some(result);
                     }
                 }
-                if child.kind() == SyntaxKind::WHITESPACE {
+                if child.kind().is_trivia() {
                     children_stack.pop();
                 } else if child.kind() == SyntaxKind::Error {
                     return Some(result);
@@ -119,7 +119,7 @@ pub fn continuations_at(root: &SyntaxNode, mut offset: TextSize) -> Option<Vec<S
                 return Some(result);
             }
         } else {
-            // NOTE: The childrens stack is emtpy
+            // NOTE: The childrens stack is empty
             // -> Add remaining stack to solution
             // -> if the stack is nullable, move up in the tree
             while let Some(rule) = rule_stack.pop() {
@@ -258,6 +258,17 @@ mod test {
         assert_eq!(
             continuations_at(&root, 28.into()),
             vec![SyntaxKind::DataBlockValue, SyntaxKind::RCurly].into()
+        );
+    }
+
+    #[test]
+    fn continueations_solution_modifier() {
+        //           0123456789012345678901234567890
+        let input = "SELECT * WHERE {#c\n}      \n\n";
+        let root = parse_query(input);
+        assert_eq!(
+            continuations_at(&root, 20.into()),
+            vec![SyntaxKind::SolutionModifier,].into()
         );
     }
 }

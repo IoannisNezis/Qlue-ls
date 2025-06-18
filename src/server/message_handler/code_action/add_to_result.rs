@@ -31,7 +31,20 @@ pub(super) fn code_action(token: &SyntaxToken, document: &TextDocumentItem) -> O
             .iter()
             .map(|var| var.syntax().text().to_string()),
     );
-    if !result_vars.contains(&token.to_string()) {
+    let group_vars: Option<HashSet<String>> = select_query
+        .soulution_modifier()
+        .and_then(|solution_modifier| solution_modifier.group_clause())
+        .map(|group_clause| {
+            HashSet::from_iter(
+                group_clause
+                    .visible_variables()
+                    .iter()
+                    .map(|var| var.text()),
+            )
+        });
+    if !result_vars.contains(&token.to_string())
+        && group_vars.map_or(true, |vars| vars.contains(&token.to_string()))
+    {
         let end = Position::from_byte_index(
             select_query
                 .select_clause()?

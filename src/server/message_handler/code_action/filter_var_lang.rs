@@ -27,7 +27,7 @@ pub(super) fn code_action(token: &SyntaxToken, document: &TextDocumentItem) -> O
     let position =
         Position::from_byte_index(triple.syntax().text_range().end().into(), &document.text)?;
     Some(CodeAction {
-        title: "Lang-Filter".to_string(),
+        title: "Add Lang-Filter".to_string(),
         kind: None,
         diagnostics: vec![],
         edit: WorkspaceEdit {

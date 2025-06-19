@@ -20,7 +20,7 @@ pub(super) async fn completions(
     let mut template_context = environment.template_context().await;
     template_context.extend(local_template_context(&environment)?);
 
-    let (sender, reciever) = oneshot::channel::<CompletionList>();
+    let (sender, receiver) = oneshot::channel::<CompletionList>();
 
     let server_rc_1 = server_rc.clone();
     let template_context_1 = template_context.clone();
@@ -58,7 +58,7 @@ pub(super) async fn completions(
         Ok(res) => Ok(res),
         Err(err) => {
             log::error!("Context sensitive completion query failed:\n{:?}", err);
-            reciever.await.map_err(|_e| err)
+            receiver.await.map_err(|_e| err)
         }
     }
 }

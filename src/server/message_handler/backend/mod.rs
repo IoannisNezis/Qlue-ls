@@ -56,11 +56,11 @@ pub(super) async fn handle_ping_backend_request(
         }?
     };
     let health_check_url = &backend.health_check_url.as_ref().unwrap_or(&backend.url);
-    let availible = check_server_availability(health_check_url).await;
+    let available = check_server_availability(health_check_url).await;
     server_rc
         .lock()
         .await
-        .send_message(PingBackendResponse::new(request.get_id(), availible))
+        .send_message(PingBackendResponse::new(request.get_id(), available))
 }
 
 pub(super) async fn handle_add_backend_notification(
@@ -87,8 +87,8 @@ pub(super) async fn handle_add_backend_notification(
                 )
             })?;
     };
-    if let Some(completion_querys) = request.params.queries {
-        for (query_name, query) in completion_querys.iter() {
+    if let Some(completion_queries) = request.params.queries {
+        for (query_name, query) in completion_queries.iter() {
             server
                 .tools
                 .tera

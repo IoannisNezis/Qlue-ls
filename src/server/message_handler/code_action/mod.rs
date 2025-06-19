@@ -88,18 +88,18 @@ fn generate_code_actions(
                 if let Some(code_action) = add_to_result::code_action(&token, document) {
                     code_actions.push(code_action)
                 }
+                if let Some(code_action) = filter_var_lang::code_action(&token, document) {
+                    code_actions.push(code_action)
+                }
+                if let Some(code_action) = filter_var::code_action(&token, document) {
+                    code_actions.push(code_action)
+                }
                 if let Some(code_action_vec) =
                     add_aggregate_to_result::code_actions(&token, document)
                 {
                     for code_action in code_action_vec {
                         code_actions.push(code_action)
                     }
-                }
-                if let Some(code_action) = filter_var::code_action(&token, document) {
-                    code_actions.push(code_action)
-                }
-                if let Some(code_action) = filter_var_lang::code_action(&token, document) {
-                    code_actions.push(code_action)
                 }
             }
 

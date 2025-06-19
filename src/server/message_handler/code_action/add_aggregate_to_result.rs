@@ -38,7 +38,6 @@ pub(super) fn code_actions(
                     .map(|var| var.text()),
             )
         });
-    log::info!("group_vars {group_vars:?}");
     if group_vars.is_some_and(|vars| !vars.contains(&var.var_name())) {
         let end = Position::from_byte_index(
             select_query

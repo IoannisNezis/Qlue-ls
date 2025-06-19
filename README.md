@@ -18,7 +18,8 @@
 written in Rust 🦀, build for the web.
 
 📚 [Documentation](https://docs.qlue-ls.com)  
-📝 [Project Blog Post](https://ad-blog.cs.uni-freiburg.de/post/qlue-ls-a-sparql-language-server/)
+📝 [Project Blog Post](https://ad-blog.cs.uni-freiburg.de/post/qlue-ls-a-sparql-language-server/)  
+💻 [Live Demo](https://qlue-ls.com)
 
 # 🚀 Capabilities
 

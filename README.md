@@ -14,8 +14,8 @@
     </a>
 </div>
 
-⚡Qlue-ls (pronounced "clueless") is a *blazingly fast* [language server](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification) for [SPARQL](https://de.wikipedia.org/wiki/SPARQL),  
-written in Rust 🦀, build for the web.
+⚡Qlue-ls (pronounced "clueless") is a *blazingly fast* [language server](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification)
+for [SPARQL](https://de.wikipedia.org/wiki/SPARQL), written in Rust 🦀, build for the web.
 
 📚 [Documentation](https://docs.qlue-ls.com)  
 📝 [Project Blog Post](https://ad-blog.cs.uni-freiburg.de/post/qlue-ls-a-sparql-language-server/)  
@@ -23,7 +23,8 @@ written in Rust 🦀, build for the web.
 
 # 🚀 Capabilities
 
-Qlue-ls offers a wide range of LSP features tailored to SPARQL development. For a complete overview, see the [capabilities section](https://docs.qlue-ls.com/03_capabilities/).
+Qlue-ls offers a wide range of LSP features tailored to SPARQL development.  
+For a complete overview, see the [capabilities section](https://docs.qlue-ls.com/03_capabilities/).
 
 ## 📐 Formatting
 

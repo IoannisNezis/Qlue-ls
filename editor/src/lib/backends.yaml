@@ -9,9 +9,7 @@
   default: false
   queries:
     subjectCompletion: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       {% if not search_term %}
 
       PREFIX imdb: <https://www.imdb.com/>
@@ -52,9 +50,7 @@
       {% endif %}
       LIMIT {{ limit }} OFFSET {{ offset }}
     predicateCompletion: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       SELECT ?qlue_ls_entity WHERE {
         {{local_context}}
       }
@@ -62,9 +58,7 @@
       LIMIT {{ limit }}
       OFFSET {{ offset }}
     objectCompletion: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       SELECT ?qlue_ls_entity WHERE {
         {{local_context}}
         {% if search_term_uncompressed %}
@@ -75,9 +69,7 @@
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(COUNT(?qlue_ls_entity))
       LIMIT {{ limit }} OFFSET {{ offset }}
     predicateCompletionContextSensitive: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       {% if subject is not variable %}
 
       SELECT ?qlue_ls_entity
@@ -163,9 +155,7 @@
       {% endif %}
       LIMIT {{ limit }} OFFSET {{ offset }}
     objectCompletionContextSensitive: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       SELECT ?qlue_ls_entity
                     (SAMPLE(?_qlue_ls_entity) AS ?qlue_ls_label)
                     (MAX(?count_1) AS ?qlue_ls_count) WHERE {
@@ -179,7 +169,7 @@
                 GROUP BY ?qlue_ls_entity 
               }
               {
-                SELECT ?qlue_ls_entity ?name ?count WHERE {
+                SELECT ?qlue_ls_entity ?_qlue_ls_label ?count WHERE {
                   ?qlue_ls_entity imdb:numVotes ?count .
                   ?qlue_ls_entity imdb:title ?_qlue_ls_label .
                 }
@@ -240,9 +230,7 @@
   default: false
   queries:
     subjectCompletion: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
       PREFIX dblp: <https://dblp.org/rdf/schema#>
       SELECT ?qlue_ls_entity (?qlue_ls_alias AS ?qlue_ls_label) ?qlue_ls_alias ?qlue_ls_count WHERE {
@@ -260,9 +248,7 @@
       } ORDER BY DESC(?qlue_ls_count)
       LIMIT {{ limit }} OFFSET {{ offset }}
     predicateCompletion: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       SELECT ?qlue_ls_entity ?qlue_ls_score WHERE {
         { SELECT ?qlue_ls_entity (COUNT({% if local_context is containing("?qlue_ls_inner") %}DISTINCT ?qlue_ls_inner{%else%}?qlue_ls_entity{% endif %}) AS ?qlue_ls_score)
           WHERE {
@@ -278,9 +264,7 @@
       } ORDER BY DESC(?qlue_ls_score)
       LIMIT {{ limit }} OFFSET {{ offset }}
     objectCompletion: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
       SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_count WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_count) WHERE {
@@ -295,9 +279,7 @@
       } ORDER BY DESC(?qlue_ls_count)
       LIMIT {{ limit }} OFFSET {{ offset }}
     predicateCompletionContextSensitive: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       SELECT ?qlue_ls_entity ?qlue_ls_count WHERE {
         {% if subject is not variable %}
         { { SELECT ?qlue_ls_entity (COUNT(?qui_object) AS ?qlue_ls_count)
@@ -321,9 +303,7 @@
       } ORDER BY DESC(?qlue_ls_count)
       LIMIT {{ limit }} OFFSET {{ offset }}
     objectCompletionContextSensitive: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
       SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_count WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_count) WHERE {
@@ -398,9 +378,7 @@
   default: false
   queries:
     subjectCompletion: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
 
       PREFIX obo: <http://purl.obolibrary.org/obo/>
       PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -416,9 +394,7 @@
       } ORDER BY ASC(?qlue_ls_label)
       LIMIT {{ limit }} OFFSET {{ offset }}
     predicateCompletion: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
       SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_score WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_score)
@@ -435,9 +411,7 @@
       } ORDER BY DESC(?qlue_ls_score)
       LIMIT {{ limit }} OFFSET {{ offset }}
     objectCompletion: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       PREFIX obo: <http://purl.obolibrary.org/obo/>
       PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -457,9 +431,7 @@
       } ORDER BY DESC(?qlue_ls_count)
       LIMIT {{ limit }} OFFSET {{ offset }}
     predicateCompletionContextSensitive: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
       {% if subject is not variable %}
 
@@ -513,9 +485,7 @@
       {% endif %}
       LIMIT {{ limit }} OFFSET {{ offset }}
     objectCompletionContextSensitive: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       PREFIX obo: <http://purl.obolibrary.org/obo/>
       PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -591,9 +561,7 @@
   default: false
   queries:
     subjectCompletion: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
 
       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
       PREFIX up: <http://purl.uniprot.org/core/>
@@ -610,9 +578,7 @@
       ORDER BY DESC(COUNT(?qlue_ls_entity))
       LIMIT {{ limit }} OFFSET {{ offset }}
     predicateCompletion: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
 
       SELECT ?qlue_ls_entity ?qlue_ls_score WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?qlue_ls_score) WHERE
@@ -628,9 +594,7 @@
       } ORDER BY DESC(?qlue_ls_score)
       LIMIT {{ limit }} OFFSET {{ offset }}
     objectCompletion: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
       PREFIX up: <http://purl.uniprot.org/core/>
       SELECT ?qlue_ls_entity (MIN(?name) AS ?qlue_ls_label) (MIN(?alias) AS ?qlue_ls_alias) (MAX(?count) AS ?qlue_ls_count) WHERE {
@@ -675,9 +639,7 @@
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
       LIMIT {{ limit }} OFFSET {{ offset }}
     predicateCompletionContextSensitive: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
       {% if subject is not variable %}
 
@@ -731,9 +693,7 @@
       {% endif %}
       LIMIT {{ limit }} OFFSET {{ offset }}
     objectCompletionContextSensitive: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
       SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_count WHERE {
         {
@@ -790,9 +750,7 @@
   default: false
   queries:
     subjectCompletion: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       {% if search_term %}
       PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
       PREFIX osmrel: <https://www.openstreetmap.org/relation/>
@@ -852,9 +810,7 @@
       {% endif %}
       LIMIT {{ limit }} OFFSET {{ offset }}
     predicateCompletion: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       SELECT ?qlue_ls_entity (SAMPLE(?score) AS ?qlue_ls_score) WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?score)
           WHERE {
@@ -870,9 +826,7 @@
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_score)
       LIMIT {{ limit }} OFFSET {{ offset }}
     objectCompletion: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
       SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?alias) as ?qlue_ls_alias) (SAMPLE(?count) as ?qlue_ls_count) WHERE {
         { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
@@ -895,9 +849,7 @@
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
       LIMIT {{ limit }} OFFSET {{ offset }}
     predicateCompletionContextSensitive: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       {% if subject is not variable %}
       SELECT ?qlue_ls_entity  (SAMPLE(?count) as ?qlue_ls_count) {
         {
@@ -942,9 +894,7 @@
       {% endif %}
       LIMIT {{ limit }} OFFSET {{ offset }}
     objectCompletionContextSensitive: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
       SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?count) as ?qlue_ls_count) WHERE {
         {
@@ -1013,9 +963,7 @@
   default: true
   queries:
     subjectCompletion: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       {% if search_term %}
 
       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -1042,9 +990,7 @@
       {% endif %}
       LIMIT {{ limit }} OFFSET {{ offset }}
     predicateCompletion: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
       PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
       SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?count) as ?qlue_ls_count) WHERE {
@@ -1070,9 +1016,7 @@
       } GROUP BY ?qlue_ls_entity ORDER BY DESC(?qlue_ls_count)
       LIMIT {{ limit }} OFFSET {{ offset }}
     objectCompletion: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
       PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
       SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?alias) as ?qlue_ls_alias) (SAMPLE(?count) as ?qlue_ls_count) WHERE {
@@ -1095,9 +1039,7 @@
       ORDER BY DESC(?qlue_ls_count)
       LIMIT {{ limit }} OFFSET {{ offset }}
     predicateCompletionContextSensitive: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       {% if subject is not variable %}
 
       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -1167,9 +1109,7 @@
       {% endif %}
       LIMIT {{ limit }} OFFSET {{ offset }}
     objectCompletionContextSensitive: |-
-      {% for prefix in prefixes %}
-      PREFIX {{prefix.0}}: <{{prefix.1}}>
-      {% endfor %}
+      {% include "prefix_declarations" %}
       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
       PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
       SELECT ?qlue_ls_entity (SAMPLE(?name) as ?qlue_ls_label) (SAMPLE(?count) as ?qlue_ls_count) WHERE {

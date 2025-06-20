@@ -1,3 +1,4 @@
+use indoc::indoc;
 use tera::{
     helpers::tests::{number_args_allowed, value_defined},
     Result, Tera, Value,
@@ -5,6 +6,16 @@ use tera::{
 
 pub(super) fn init() -> Tera {
     let mut tera = Tera::default();
+    tera.add_raw_template(
+        "prefix_declarations",
+        indoc! {
+            "{% for prefix in prefixes %}
+             PREFIX {{prefix.0}}: <{{prefix.1}}>
+             {% endfor %}
+            "
+        },
+    )
+    .expect("This hardcoded template should be valid");
     tera.register_tester("variable", is_variable);
     tera
 }

@@ -104,7 +104,7 @@ fn declare_and_undeclare_prefixes(
         .flatten()
         .collect();
     if !edits.is_empty() {
-        let request_id = server.bumb_request_id();
+        let request_id = server.bump_request_id();
         if let Err(err) = server.send_message(WorkspaceEditRequest::new(
             request_id,
             HashMap::from_iter([(document_uri, edits)]),
@@ -122,12 +122,14 @@ fn client_support_workspace_edits(server: &Server) -> bool {
             client_capabilities
                 .workspace
                 .as_ref()
-                .and_then(|workspace_capablities| workspace_capablities.apply_edit)
+                .and_then(|workspace_capabilities| workspace_capabilities.apply_edit)
                 .is_some_and(|flag| flag)
                 && client_capabilities
                     .workspace
                     .as_ref()
-                    .and_then(|workspace_capablities| workspace_capablities.workspace_edit.as_ref())
+                    .and_then(|workspace_capabilities| {
+                        workspace_capabilities.workspace_edit.as_ref()
+                    })
                     .is_some_and(|capability| capability.document_changes.is_some_and(|flag| flag))
         })
 }

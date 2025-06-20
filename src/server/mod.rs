@@ -61,8 +61,8 @@ impl Server {
         }
     }
 
-    pub(crate) fn bumb_request_id(&mut self) -> u32 {
-        self.state.bumb_request_id()
+    pub(crate) fn bump_request_id(&mut self) -> u32 {
+        self.state.bump_request_id()
     }
 
     pub fn get_version(&self) -> String {

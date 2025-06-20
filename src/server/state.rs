@@ -23,6 +23,7 @@ pub struct ServerState {
     default_backend: Option<String>,
     parse_tree_cache: Option<(String, u32, SyntaxNode)>,
     request_id_counter: u32,
+    label_memory: HashMap<String, Backend>,
 }
 
 impl ServerState {
@@ -36,10 +37,11 @@ impl ServerState {
             default_backend: None,
             parse_tree_cache: None,
             request_id_counter: 0,
+            label_memory: HashMap::new(),
         }
     }
 
-    pub fn bumb_request_id(&mut self) -> u32 {
+    pub fn bump_request_id(&mut self) -> u32 {
         let current_id = self.request_id_counter;
         self.request_id_counter += 1;
         current_id

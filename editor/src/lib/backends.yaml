@@ -747,8 +747,14 @@
     osm2rdfgeom: https://osm2rdf.cs.uni-freiburg.de/rdf/geom#
     osm2rdfmember: https://osm2rdf.cs.uni-freiburg.de/rdf/member#
     qlss: https://qlever.cs.uni-freiburg.de/spatialSearch/
-  default: false
+  default: true
   queries:
+    hover: |-
+      {% include "prefix_declarations" %}
+      PREFIX osmkey: <https://www.openstreetmap.org/wiki/Key:>
+      SELECT * WHERE {
+        {{ entity }} osmkey:name ?qlue_ls_label
+      }
     subjectCompletion: |-
       {% include "prefix_declarations" %}
       {% if search_term %}
@@ -960,8 +966,14 @@
     qfn: http://qlever.cs.uni-freiburg.de/function#
     ql: http://qlever.cs.uni-freiburg.de/builtin-functions/
     math: http://www.w3.org/2005/xpath-functions/math#
-  default: true
+  default: false
   queries:
+    hover: |-
+      {% include "prefix_declarations" %}
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      SELECT ?qlue_ls_label WHERE {
+        {{ entity }} rdfs:label ?qlue_ls_label FILTER(LANG(?qlue_ls_label) = "en")
+      }
     subjectCompletion: |-
       {% include "prefix_declarations" %}
       {% if search_term %}

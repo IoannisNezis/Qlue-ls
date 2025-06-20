@@ -3,14 +3,15 @@ mod query_graph;
 use super::{error::CompletionError, utils::get_prefix_declarations};
 use crate::server::{
     lsp::{textdocument::Position, Backend, CompletionRequest, CompletionTriggerKind},
+    message_handler::misc::resolve_backend,
     Server,
 };
 use context::{context, Context};
 use futures::lock::Mutex;
 use indoc::indoc;
 use ll_sparql_parser::{
-    ast::{AstNode, BlankPropertyList, QueryUnit, SelectClause, ServiceGraphPattern, Triple},
-    continuations_at, parse_query,
+    ast::{AstNode, BlankPropertyList, QueryUnit, SelectClause, Triple},
+    continuations_at, parse, parse_query,
     syntax_kind::SyntaxKind,
     SyntaxNode, SyntaxToken, TokenAtOffset,
 };
@@ -296,38 +297,10 @@ impl CompletionEnvironment {
             .into();
         let trigger_kind = request.get_completion_context().trigger_kind.clone();
         let trigger_character = request.get_completion_context().trigger_character.clone();
-        let tree = parse_query(&document.text);
+        let tree = parse(&document.text);
         let trigger_token = get_trigger_token(&tree, offset);
         let backend = trigger_token.as_ref().and_then(|token| {
-            token
-                .parent_ancestors()
-                .find_map(ServiceGraphPattern::cast)
-                .and_then(|service| {
-                    service
-                        .iri()
-                        .and_then(|iri| iri.raw_iri())
-                        .or(service.iri().and_then(|iri| {
-                            iri.prefixed_name().and_then(|prefixed_name| {
-                                let query_unit = QueryUnit::cast(tree.clone()).unwrap();
-                                query_unit.prologue().and_then(|prologue| {
-                                    prologue.prefix_declarations().iter().find_map(
-                                        |prefix_declaration| {
-                                            prefix_declaration
-                                                .prefix()
-                                                .is_some_and(|prefix| {
-                                                    prefix == prefixed_name.prefix()
-                                                })
-                                                .then_some(prefix_declaration.raw_uri_prefix())
-                                                .flatten()
-                                        },
-                                    )
-                                })
-                            })
-                        }))
-                })
-                .and_then(|iri_string| server.state.get_backend_name_by_url(&iri_string))
-                .and_then(|backend_name| server.state.get_backend(&backend_name).cloned())
-                .or(server.state.get_default_backend().cloned())
+            resolve_backend(&server, &QueryUnit::cast(tree.clone()).unwrap(), &token)
         });
         let anchor_token = trigger_token.and_then(|token| get_anchor_token(token, offset));
         let search_term = get_search_term(&tree, &anchor_token, offset);

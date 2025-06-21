@@ -36,9 +36,8 @@ pub(super) async fn completions(
     .any(|kind| environment.continuations.contains(kind))
     {
         let template_context = environment.template_context().await;
-        log::info!("{template_context:?}");
         let completion_list = dispatch_completion_query(
-            server_rc,
+            server_rc.clone(),
             &environment,
             template_context,
             CompletionTemplate::SubjectCompletion,
@@ -48,7 +47,11 @@ pub(super) async fn completions(
         items.extend(completion_list.items);
         is_incomplete = completion_list.is_incomplete;
     }
-    items.extend(variable::completions_transformed(environment)?.items);
+    items.extend(
+        variable::completions_transformed(server_rc, environment)
+            .await?
+            .items,
+    );
     Ok(CompletionList {
         is_incomplete,
         item_defaults: None,

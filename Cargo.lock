@@ -1734,6 +1734,7 @@ dependencies = [
  "log",
  "log4rs",
  "notify",
+ "regex",
  "reqwest",
  "serde",
  "serde-wasm-bindgen",

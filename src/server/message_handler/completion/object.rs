@@ -87,7 +87,6 @@ fn local_template_context(environment: &CompletionEnvironment) -> Result<Context
             .split_last()
             .expect("There should be atleast one property, since this is a object completion");
 
-        log::info!("{:?}", last_prop.text());
         let mut context = environment.context.clone().unwrap_or_default();
         if !prev_prop.is_empty() {
             context.raw_inject = format!(
@@ -100,7 +99,6 @@ fn local_template_context(environment: &CompletionEnvironment) -> Result<Context
                     .join(" ; ")
             );
         }
-        log::info!("{:?}", context.raw_inject);
         template_context.insert(
             "local_context",
             &format!(

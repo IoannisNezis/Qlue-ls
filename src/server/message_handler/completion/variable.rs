@@ -1,12 +1,18 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, rc::Rc};
 
 use super::{error::CompletionError, CompletionEnvironment, CompletionLocation};
-use crate::server::lsp::{
-    Command, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
+use crate::server::{
+    lsp::{
+        Command, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
+    },
+    Server,
 };
+use futures::lock::Mutex;
 use ll_sparql_parser::ast::{AstNode, PrefixedName, Var};
+use regex::Regex;
 
-pub(super) fn completions(
+pub(super) async fn completions(
+    server_rc: Rc<Mutex<Server>>,
     context: CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
     let suffix = match context.location {
@@ -48,16 +54,34 @@ pub(super) fn completions(
         },
     })
     .collect();
+    // NOTE: predicate based object variable completions:
+    let replacements = [
+        (r"(\s)", "_"),
+        (r"^has([A-Z]\w*)", "$1"),
+        (r"^(\w+)edBy", "$1"),
+        (r"^(asWKT)", "geometry"),
+        (r"([^a-zA-Z0-9_])", ""),
+    ];
     if let Some(prefixed_name) = context
         .anchor_token
         .and_then(|token| token.parent())
         .and_then(PrefixedName::cast)
     {
-        let object_name = prefixed_name
-            .name()
-            .strip_prefix("has")
-            .map(|name| name.to_lowercase())
+        let mut object_name = server_rc
+            .lock()
+            .await
+            .state
+            .label_memory
+            .get(&prefixed_name.text())
+            .cloned()
             .unwrap_or(prefixed_name.name());
+
+        for (regex, replacement) in replacements {
+            object_name = Regex::new(regex)
+                .unwrap()
+                .replace_all(&object_name, replacement)
+                .to_string();
+        }
         suggestions.insert(
             0,
             CompletionItem::new(
@@ -82,10 +106,11 @@ pub(super) fn completions(
     })
 }
 
-pub(super) fn completions_transformed(
+pub(super) async fn completions_transformed(
+    server_rc: Rc<Mutex<Server>>,
     environment: CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
-    let mut variable_completions = completions(environment)?;
+    let mut variable_completions = completions(server_rc, environment).await?;
     for item in variable_completions.items.iter_mut() {
         item.insert_text = item.insert_text.as_ref().map(|text| format!("?{}", text));
         item.label = format!("?{}", item.label);

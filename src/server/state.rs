@@ -23,7 +23,7 @@ pub struct ServerState {
     default_backend: Option<String>,
     parse_tree_cache: Option<(String, u32, SyntaxNode)>,
     request_id_counter: u32,
-    label_memory: HashMap<String, Backend>,
+    pub label_memory: HashMap<String, String>,
 }
 
 impl ServerState {

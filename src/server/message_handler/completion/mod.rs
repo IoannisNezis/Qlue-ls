@@ -40,7 +40,11 @@ pub(super) async fn handle_completion_request(
             .as_ref()
             .is_some_and(|search_term| search_term.starts_with("?"))
     {
-        Some(variable::completions(env).map_err(to_lsp_error)?)
+        Some(
+            variable::completions(server_rc.clone(), env)
+                .await
+                .map_err(to_lsp_error)?,
+        )
     } else if env.location == CompletionLocation::Unknown {
         None
     } else {
@@ -65,7 +69,7 @@ pub(super) async fn handle_completion_request(
                     service_url::completions(server_rc.clone(), env).await
                 }
                 CompletionLocation::FilterConstraint | CompletionLocation::GroupCondition => {
-                    variable::completions_transformed(env)
+                    variable::completions_transformed(server_rc.clone(), env).await
                 }
                 location => Err(CompletionError::Localization(format!(
                     "Unknown location \"{:?}\"",

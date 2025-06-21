@@ -40,17 +40,13 @@ pub(super) async fn handle_jump_request(
         root,
         request.params.previous.is_some_and(|prev| prev),
     );
-    log::info!("cursor_offset: {:?}", cursor_offset);
     let jump_position = if request.params.previous.is_some_and(|prev| prev) {
         // NOTE: Jump to previous position
         let last = results.last().cloned();
         results
             .into_iter()
             .rev()
-            .find(|(offset, _, _)| {
-                log::info!("{:?} < {:?}", offset, cursor_offset);
-                offset < &cursor_offset
-            })
+            .find(|(offset, _, _)| offset < &cursor_offset)
             .or(last)
     } else {
         // NOTE: Jump to next position
@@ -106,7 +102,7 @@ fn relevant_positions(
                 })
             })
         {
-            // FIXME: Here i asume that the tab_size is 2 and insert_spaces is true
+            // FIXME: Here i assume that the tab_size is 2 and insert_spaces is true
             res.push((
                 offset,
                 has_children.then_some("  ").or(Some("\n  ")),
@@ -120,7 +116,6 @@ fn relevant_positions(
                 .last_token()
                 .map(|token| token.text_range().end())
             {
-                log::info!("end of sm: {:?}", offset);
                 res.push((offset, None, None));
             }
         } else {

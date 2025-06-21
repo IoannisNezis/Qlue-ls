@@ -129,7 +129,7 @@ pub(super) async fn fetch_online_completions(
         })?;
     log::info!("Result size: {}", result.results.bindings.len());
 
-    let server = server_rc.lock().await;
+    let mut server = server_rc.lock().await;
     Ok(result
         .results
         .bindings
@@ -150,6 +150,12 @@ pub(super) async fn fetch_online_completions(
                 .get("search_term_uncompressed")
                 .is_some()
                 .then_some(value.to_string());
+            if let Some(label) = label.as_ref() {
+                server
+                    .state
+                    .label_memory
+                    .insert(value.clone(), label.clone());
+            }
             InternalCompletionItem {
                 label,
                 detail,

@@ -17,7 +17,7 @@
 		"@sveltejs/adapter-node": "^5.2.11",
 		"@sveltejs/kit": "^2.16.0",
 		"@sveltejs/vite-plugin-svelte": "^5.0.0",
-		"@types/vscode": "^1.96.0",
+		"@types/vscode": "^1.101.0",
 		"autoprefixer": "^10.4.20",
 		"daisyui": "^5.0.19",
 		"prettier": "^3.3.2",
@@ -34,12 +34,12 @@
 	},
 	"dependencies": {
 		"@tailwindcss/vite": "^4.1.3",
-		"ll-sparql-parser": "^0.12.0",
-		"monaco-editor": "npm:@codingame/monaco-vscode-editor-api@17.1.2",
-		"monaco-editor-wrapper": "~6.8.0",
+		"ll-sparql-parser": "0.12.2",
+		"monaco-editor": "npm:@codingame/monaco-vscode-editor-api@17.2.1",
+		"monaco-editor-wrapper": "~6.8.1",
 		"monaco-vim": "^0.4.2",
 		"qlue-ls": "0.12.3",
-		"vscode": "npm:@codingame/monaco-vscode-extension-api@17.1.2",
+		"vscode": "npm:@codingame/monaco-vscode-extension-api@17.2.1",
 		"vscode-uri": "~3.1.0",
 		"yaml": "^2.7.1"
 	}

@@ -51,10 +51,6 @@ fn backend_prefix(
 ) -> (String, Option<Vec<TextEdit>>) {
     if let Some(query_unit) = query_unit {
         if let Some(prefix_declaration) = query_unit.prologue().and_then(|prologue| {
-            log::info!(
-                "{:?}",
-                prologue.prefix_declarations().first().unwrap().uri_prefix()
-            );
             prologue
                 .prefix_declarations()
                 .into_iter()

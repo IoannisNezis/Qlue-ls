@@ -1,4 +1,4 @@
-use std::{collections::HashSet, rc::Rc};
+use std::{collections::HashSet, fmt::format, rc::Rc};
 
 use super::{error::CompletionError, CompletionEnvironment, CompletionLocation};
 use crate::server::{
@@ -6,10 +6,13 @@ use crate::server::{
     lsp::{
         Command, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
     },
+    message_handler::completion::subject,
     Server,
 };
 use futures::lock::Mutex;
-use ll_sparql_parser::ast::{AstNode, PrefixedName, Var};
+use ll_sparql_parser::ast::{
+    AstNode, PrefixedName, PropertyListPath, PropertyPath, Var, VarOrTerm,
+};
 use regex::Regex;
 
 pub(super) async fn completions(
@@ -56,51 +59,79 @@ pub(super) async fn completions(
     })
     .collect();
     // NOTE: predicate based object variable completions:
-    if let Some(prefixed_name) = context
-        .anchor_token
-        .and_then(|token| token.parent())
-        .and_then(PrefixedName::cast)
-    {
-        let mut object_name = server_rc
-            .lock()
-            .await
-            .state
-            .label_memory
-            .get(&prefixed_name.text())
-            .cloned()
-            .unwrap_or(prefixed_name.name());
-
-        if let Some(replacements) = server_rc
-            .lock()
-            .await
-            .settings
-            .replacements
-            .as_ref()
-            .map(|replacements| &replacements.object_variable)
+    if matches!(
+        context.location,
+        CompletionLocation::Object(_) | CompletionLocation::BlankNodeObject(_)
+    ) {
+        if let Some(prefixed_name) = context
+            .anchor_token
+            .and_then(|token| token.parent())
+            .and_then(PrefixedName::cast)
         {
-            for Replacement {
-                pattern,
-                replacement,
-            } in replacements.iter()
+            let mut object_name = server_rc
+                .lock()
+                .await
+                .state
+                .label_memory
+                .get(&prefixed_name.text())
+                .cloned()
+                .unwrap_or(prefixed_name.name());
+
+            if let Some(replacements) = server_rc
+                .lock()
+                .await
+                .settings
+                .replacements
+                .as_ref()
+                .map(|replacements| &replacements.object_variable)
             {
-                object_name = Regex::new(pattern)
-                    .unwrap()
-                    .replace_all(&object_name, replacement)
-                    .to_string();
+                for Replacement {
+                    pattern,
+                    replacement,
+                } in replacements.iter()
+                {
+                    object_name = Regex::new(pattern)
+                        .unwrap()
+                        .replace_all(&object_name, replacement)
+                        .to_string();
+                }
+            }
+            object_name = object_name.to_lowercase();
+            suggestions.insert(
+                0,
+                CompletionItem::new(
+                    &object_name,
+                    None,
+                    Some(format!("{:0>5}", 0)),
+                    &format!("{}{}", object_name, suffix),
+                    CompletionItemKind::Variable,
+                    None,
+                ),
+            );
+            // NOTE: If subject is a variable:
+            // append ?[variable]_[object_name] as variable completion
+            if let CompletionLocation::Object(triple) = context.location {
+                if let Some(var) = triple
+                    .subject()
+                    .map(|subject| subject.syntax().clone())
+                    .and_then(VarOrTerm::cast)
+                    .and_then(|var_or_term| var_or_term.var())
+                {
+                    let var_name = var.var_name();
+                    suggestions.insert(
+                        0,
+                        CompletionItem::new(
+                            &format!("{}_{}", var_name, object_name),
+                            None,
+                            Some(format!("{:0>5}", 1)),
+                            &format!("{}_{}{}", var_name, object_name, suffix),
+                            CompletionItemKind::Variable,
+                            None,
+                        ),
+                    );
+                }
             }
         }
-        object_name = object_name.to_lowercase();
-        suggestions.insert(
-            0,
-            CompletionItem::new(
-                &object_name,
-                None,
-                Some(format!("{:0>5}", 0)),
-                &format!("{}{}", object_name, suffix),
-                CompletionItemKind::Variable,
-                None,
-            ),
-        );
     }
     Ok(CompletionList {
         is_incomplete: false,

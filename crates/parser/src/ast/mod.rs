@@ -679,6 +679,12 @@ impl Var {
     pub fn triple(&self) -> Option<Triple> {
         self.syntax.ancestors().find_map(Triple::cast)
     }
+
+    /// Variable name without `?`
+    ///
+    /// ---
+    ///
+    /// `?subject` -> `subject`
     pub fn var_name(&self) -> String {
         self.syntax.text().to_string()[1..].to_string()
     }

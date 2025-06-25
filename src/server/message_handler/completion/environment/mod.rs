@@ -11,7 +11,7 @@ use futures::lock::Mutex;
 use indoc::indoc;
 use ll_sparql_parser::{
     ast::{AstNode, BlankPropertyList, QueryUnit, SelectClause, Triple},
-    continuations_at, parse, parse_query,
+    continuations_at, parse,
     syntax_kind::SyntaxKind,
     SyntaxNode, SyntaxToken, TokenAtOffset,
 };

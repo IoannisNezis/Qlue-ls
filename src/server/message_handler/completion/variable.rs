@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fmt::format, rc::Rc};
+use std::{collections::HashSet, rc::Rc};
 
 use super::{error::CompletionError, CompletionEnvironment, CompletionLocation};
 use crate::server::{
@@ -6,13 +6,10 @@ use crate::server::{
     lsp::{
         Command, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
     },
-    message_handler::completion::subject,
     Server,
 };
 use futures::lock::Mutex;
-use ll_sparql_parser::ast::{
-    AstNode, PrefixedName, PropertyListPath, PropertyPath, Var, VarOrTerm,
-};
+use ll_sparql_parser::ast::{AstNode, PrefixedName, Var, VarOrTerm};
 use regex::Regex;
 
 pub(super) async fn completions(

@@ -89,6 +89,40 @@ impl Default for PrefixesSettings {
         }
     }
 }
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+pub struct Replacement {
+    pub pattern: String,
+    pub replacement: String,
+}
+
+impl Replacement {
+    pub fn new(pattern: &str, replacement: &str) -> Self {
+        Self {
+            pattern: pattern.to_string(),
+            replacement: replacement.to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct Replacements {
+    pub object_variable: Vec<Replacement>,
+}
+
+impl Default for Replacements {
+    fn default() -> Self {
+        Self {
+            object_variable: vec![
+                Replacement::new(r"^has (\w+)", "$1"),
+                Replacement::new(r"\s", "_"),
+                Replacement::new(r"^has([A-Z]\w*)", "$1"),
+                Replacement::new(r"^(\w+)edBy", "$1"),
+                Replacement::new(r"([^a-zA-Z0-9_])", ""),
+            ],
+        }
+    }
+}
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct Settings {
@@ -100,6 +134,8 @@ pub struct Settings {
     pub backends: Option<BackendsSettings>,
     /// Automatically add and remove prefix declarations
     pub prefixes: Option<PrefixesSettings>,
+    /// Automatically add and remove prefix declarations
+    pub replacements: Option<Replacements>,
 }
 
 impl Default for Settings {
@@ -109,6 +145,7 @@ impl Default for Settings {
             completion: CompletionSettings::default(),
             backends: None,
             prefixes: Some(PrefixesSettings::default()),
+            replacements: Some(Replacements::default()),
         }
     }
 }

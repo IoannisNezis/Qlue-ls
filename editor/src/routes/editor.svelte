@@ -10,6 +10,8 @@
     import { backends } from '$lib/backends';
     import Tree from './tree.svelte';
     import BackendPicker from './backendPicker.svelte';
+    import yaml from 'yaml';
+    import qlue_ls_config from '../../qlue-ls.yaml?raw';
 
     let { ready = $bindable(), version = $bindable() } = $props();
 
@@ -31,11 +33,18 @@
         let wrapperConfig = await buildWrapperConfig(editorContainer, '');
         await wrapper.initAndStart(wrapperConfig);
         ready = true;
-        languageClientWrapper = wrapper.getLanguageClientWrapper('sparql');
+        languageClientWrapper = wrapper.getLanguageClientWrapper('sparql')!;
         version = languageClientWrapper?.getLanguageClient()?.initializeResult?.serverInfo?.version;
         let editor = wrapper.getEditor()!;
 
         initVimMode(editor, document.getElementById('status'));
+
+        languageClientWrapper
+            .getLanguageClient()!
+            .sendNotification('qlueLs/changeSettings', yaml.parse(qlue_ls_config))
+            .catch((err) => {
+                console.error('Error during changeSettings: ', err);
+            });
 
         monaco.editor.onDidChangeMarkers(() => {
             markers = monaco.editor.getModelMarkers({});

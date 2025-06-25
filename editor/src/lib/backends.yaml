@@ -747,7 +747,7 @@
     osm2rdfgeom: https://osm2rdf.cs.uni-freiburg.de/rdf/geom#
     osm2rdfmember: https://osm2rdf.cs.uni-freiburg.de/rdf/member#
     qlss: https://qlever.cs.uni-freiburg.de/spatialSearch/
-  default: true
+  default: false
   queries:
     hover: |-
       {% include "prefix_declarations" %}
@@ -966,7 +966,7 @@
     qfn: http://qlever.cs.uni-freiburg.de/function#
     ql: http://qlever.cs.uni-freiburg.de/builtin-functions/
     math: http://www.w3.org/2005/xpath-functions/math#
-  default: false
+  default: true
   queries:
     hover: |-
       {% include "prefix_declarations" %}

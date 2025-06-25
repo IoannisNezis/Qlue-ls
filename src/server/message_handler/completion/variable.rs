@@ -2,6 +2,7 @@ use std::{collections::HashSet, rc::Rc};
 
 use super::{error::CompletionError, CompletionEnvironment, CompletionLocation};
 use crate::server::{
+    configuration::Replacement,
     lsp::{
         Command, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
     },
@@ -55,13 +56,6 @@ pub(super) async fn completions(
     })
     .collect();
     // NOTE: predicate based object variable completions:
-    let replacements = [
-        (r"(\s)", "_"),
-        (r"^has([A-Z]\w*)", "$1"),
-        (r"^(\w+)edBy", "$1"),
-        (r"^(asWKT)", "geometry"),
-        (r"([^a-zA-Z0-9_])", ""),
-    ];
     if let Some(prefixed_name) = context
         .anchor_token
         .and_then(|token| token.parent())
@@ -76,12 +70,26 @@ pub(super) async fn completions(
             .cloned()
             .unwrap_or(prefixed_name.name());
 
-        for (regex, replacement) in replacements {
-            object_name = Regex::new(regex)
-                .unwrap()
-                .replace_all(&object_name, replacement)
-                .to_string();
+        if let Some(replacements) = server_rc
+            .lock()
+            .await
+            .settings
+            .replacements
+            .as_ref()
+            .map(|replacements| &replacements.object_variable)
+        {
+            for Replacement {
+                pattern,
+                replacement,
+            } in replacements.iter()
+            {
+                object_name = Regex::new(pattern)
+                    .unwrap()
+                    .replace_all(&object_name, replacement)
+                    .to_string();
+            }
         }
+        object_name = object_name.to_lowercase();
         suggestions.insert(
             0,
             CompletionItem::new(

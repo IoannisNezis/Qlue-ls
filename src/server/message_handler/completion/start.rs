@@ -64,6 +64,14 @@ pub(super) async fn completions(
                 CompletionItemKind::Snippet,
                 None,
             ),
+            CompletionItem::new(
+                "Query Metadata",
+                Some("Target endpoint and query description".to_string()),
+                None,
+                "#+ summary: ${1}\n#+ endpoint: ${0}",
+                CompletionItemKind::Snippet,
+                None,
+            ),
         ],
     })
 }

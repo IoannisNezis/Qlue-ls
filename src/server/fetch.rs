@@ -42,6 +42,8 @@ pub(crate) async fn fetch_sparql_result(
             "Content-Type",
             "application/x-www-form-urlencoded;charset=UTF-8",
         )
+        .header("Accept", "application/sparql-results+json")
+        .header("User-Agent", "qlue-ls/1.0")
         .form(&form_data)
         .send();
 

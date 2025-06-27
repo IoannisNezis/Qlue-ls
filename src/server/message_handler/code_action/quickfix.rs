@@ -161,7 +161,7 @@ pub(crate) fn declare_prefix(
     } else {
         Err(LSPError::new(
             ErrorCode::InvalidParams,
-            "expected prefix in undeclared-prefix data... was disapointed",
+            "expected prefix in undeclared-prefix data... was disappointed",
         ))
     }
 }

@@ -100,14 +100,15 @@ For example if the user hovers `osmrel:62768` and a hover request is send, Qlue-
 Code action suggest complex changes to your input.
 Often in the form of a *quickfix*, to fix a diagnostic.
 
-| name              | description                             | diagnostic        |
-|:------------------|:----------------------------------------|:------------------|
-| shorten uri       | shorten uri into compacted form         | uncompacted uri   |
-| declare prefix    | declares undeclared prefix (if known)   | undeclared prefix |
-| shorten all uri's | shorten all uri's into compacted form   |                   |
-| add to result     | add variable to selected result         |                   |
-| filter variable   | add filter for this variable            |                   |
-| lang-filter       | add language filter for object variable |                   |
+| name                    | description                             | diagnostic        |
+|:-------------------------|:----------------------------------------|:------------------|
+| shorten uri              | shorten uri into compacted form         | uncompacted uri   |
+| declare prefix           | declares undeclared prefix (if known)   | undeclared prefix |
+| shorten all uri's        | shorten all uri's into compacted form   |                   |
+| add to result            | add variable to selected result         |                   |
+| filter variable          | add filter for this variable            |                   |
+| lang-filter              | add language filter for object variable |                   |
+| transform into subselect | make a select into a subselect          |                   |
 
 ## Custom Capabilities
 

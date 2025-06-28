@@ -9,10 +9,7 @@
 //!
 //! ?s rdfs:label ?label Filter(Lange(?label) = "en"
 
-use ll_sparql_parser::{
-    ast::{AstNode, ObjectList, Var},
-    SyntaxToken,
-};
+use ll_sparql_parser::ast::{AstNode, ObjectList, Var};
 use std::collections::HashMap;
 
 use crate::server::lsp::{
@@ -20,8 +17,7 @@ use crate::server::lsp::{
     CodeAction, WorkspaceEdit,
 };
 
-pub(super) fn code_action(token: &SyntaxToken, document: &TextDocumentItem) -> Option<CodeAction> {
-    let var = Var::cast(token.parent()?)?;
+pub(super) fn code_action(var: &Var, document: &TextDocumentItem) -> Option<CodeAction> {
     let triple = var.triple()?;
     let _object_list = var.syntax().ancestors().nth(4).and_then(ObjectList::cast)?;
     let position =

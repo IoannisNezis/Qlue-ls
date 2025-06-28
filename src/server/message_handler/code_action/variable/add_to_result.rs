@@ -4,9 +4,8 @@
 use std::collections::HashSet;
 
 use ll_sparql_parser::{
-    ast::{AstNode, SelectQuery},
+    ast::{AstNode, SelectQuery, Var},
     syntax_kind::SyntaxKind,
-    SyntaxToken,
 };
 
 use crate::server::lsp::{
@@ -14,22 +13,24 @@ use crate::server::lsp::{
     CodeAction,
 };
 
-pub(super) fn code_action(token: &SyntaxToken, document: &TextDocumentItem) -> Option<CodeAction> {
-    assert!(matches!(token.kind(), SyntaxKind::VAR1 | SyntaxKind::VAR2));
-    let select_query = match token
-        .parent_ancestors()
+pub(super) fn code_action(var: &Var, document: &TextDocumentItem) -> Option<CodeAction> {
+    log::info!("canary3");
+    let select_query = match var
+        .syntax()
+        .ancestors()
         .nth(2)
         .map(|grand_parent| grand_parent.kind())?
     {
-        SyntaxKind::SubSelect => token.parent_ancestors().skip(3).find_map(SelectQuery::cast),
-        _ => token.parent_ancestors().find_map(SelectQuery::cast),
+        SyntaxKind::SubSelect => var.syntax().ancestors().skip(3).find_map(SelectQuery::cast),
+        _ => var.syntax().ancestors().find_map(SelectQuery::cast),
     }?;
+
     let result_vars: HashSet<String> = HashSet::from_iter(
         select_query
             .select_clause()?
             .variables()
             .iter()
-            .map(|var| var.syntax().text().to_string()),
+            .map(|var| var.text()),
     );
     let group_vars: Option<HashSet<String>> = select_query
         .soulution_modifier()
@@ -42,8 +43,8 @@ pub(super) fn code_action(token: &SyntaxToken, document: &TextDocumentItem) -> O
                     .map(|var| var.text()),
             )
         });
-    if !result_vars.contains(&token.to_string())
-        && group_vars.map_or(true, |vars| vars.contains(&token.to_string()))
+    if !result_vars.contains(&var.text())
+        && group_vars.map_or(true, |vars| vars.contains(&var.text()))
     {
         let end = Position::from_byte_index(
             select_query
@@ -64,13 +65,13 @@ pub(super) fn code_action(token: &SyntaxToken, document: &TextDocumentItem) -> O
                 &document.uri,
                 TextEdit::new(
                     Range::new(end.line, end.character - 1, end.line, end.character),
-                    &token.to_string(),
+                    &var.text(),
                 ),
             );
         } else {
             ca.add_edit(
                 &document.uri,
-                TextEdit::new(Range { start: end, end }, &format!(" {}", token)),
+                TextEdit::new(Range { start: end, end }, &format!(" {}", var.text())),
             );
         }
         return Some(ca);

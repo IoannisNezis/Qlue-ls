@@ -13,8 +13,7 @@ use crate::server::lsp::{
     CodeAction, WorkspaceEdit,
 };
 
-pub(super) fn code_action(token: &SyntaxToken, document: &TextDocumentItem) -> Option<CodeAction> {
-    let var = Var::cast(token.parent()?)?;
+pub(super) fn code_action(var: &Var, document: &TextDocumentItem) -> Option<CodeAction> {
     let triple = var.triple()?;
     let position =
         Position::from_byte_index(triple.syntax().text_range().end().into(), &document.text)?;

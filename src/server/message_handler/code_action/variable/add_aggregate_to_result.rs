@@ -5,7 +5,6 @@ use std::collections::HashSet;
 use ll_sparql_parser::{
     ast::{AstNode, SelectQuery, Var},
     syntax_kind::SyntaxKind,
-    SyntaxToken,
 };
 
 use crate::server::lsp::{
@@ -13,19 +12,15 @@ use crate::server::lsp::{
     CodeAction,
 };
 
-pub(super) fn code_actions(
-    token: &SyntaxToken,
-    document: &TextDocumentItem,
-) -> Option<Vec<CodeAction>> {
-    assert!(matches!(token.kind(), SyntaxKind::VAR1 | SyntaxKind::VAR2));
-    let var = Var::cast(token.parent()?)?;
-    let select_query = match token
-        .parent_ancestors()
+pub(super) fn code_actions(var: &Var, document: &TextDocumentItem) -> Option<Vec<CodeAction>> {
+    let select_query = match var
+        .syntax()
+        .ancestors()
         .nth(2)
         .map(|grand_parent| grand_parent.kind())?
     {
-        SyntaxKind::SubSelect => token.parent_ancestors().skip(3).find_map(SelectQuery::cast),
-        _ => token.parent_ancestors().find_map(SelectQuery::cast),
+        SyntaxKind::SubSelect => var.syntax().ancestors().skip(3).find_map(SelectQuery::cast),
+        _ => var.syntax().ancestors().find_map(SelectQuery::cast),
     }?;
     let group_vars: Option<HashSet<String>> = select_query
         .soulution_modifier()

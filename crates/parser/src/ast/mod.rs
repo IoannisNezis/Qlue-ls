@@ -176,6 +176,12 @@ impl SelectClause {
         self.syntax.children().filter_map(Var::cast).collect()
     }
 
+    pub fn is_star_selection(&self) -> bool {
+        self.syntax()
+            .last_token()
+            .is_some_and(|last| last.kind() == SyntaxKind::Star)
+    }
+
     /// All assignments in the select clause.
     pub fn assignments(&self) -> Vec<Assignment> {
         self.syntax

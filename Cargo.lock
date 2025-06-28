@@ -1262,9 +1262,9 @@ checksum = "241eaef5fd12c88705a01fc1066c48c4b36e0dd4377dcdc7ec3942cea7a69956"
 
 [[package]]
 name = "ll-sparql-parser"
-version = "0.12.2"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7805baee8a8fb713bb2d6cc49e6442813fb098098e71b5b5a2e7a9a918c916f"
+checksum = "d261cf4000ffb216fb3c37e5d9224fc4dfb02685b34c044cba41e4cbd80287a2"
 dependencies = [
  "js-sys",
  "logos",

@@ -167,7 +167,7 @@ mod test {
 
     fn location_at(input: &str, cursor: Position) -> Context {
         let root = parse_query(input);
-        let offset = (cursor.byte_index(input).unwrap() as u32).into();
+        let offset = cursor.byte_index(input).unwrap();
         let trigger_token = get_trigger_token(&root, offset).unwrap();
         let anchor = get_anchor_token(trigger_token, offset);
         let continuations = get_continuations(&root, &anchor);

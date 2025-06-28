@@ -1,5 +1,6 @@
 mod iri;
 mod quickfix;
+mod select;
 mod variable;
 use crate::server::{
     lsp::{
@@ -10,8 +11,11 @@ use crate::server::{
     Server,
 };
 use futures::lock::Mutex;
-use ll_sparql_parser::ast::{Iri, Var};
-use ll_sparql_parser::{ast::AstNode, parse_query, TokenAtOffset};
+use ll_sparql_parser::{ast::AstNode, parse_query, SyntaxElement};
+use ll_sparql_parser::{
+    ast::{Iri, Var},
+    syntax_kind::SyntaxKind,
+};
 use quickfix::get_quickfix;
 use std::rc::Rc;
 
@@ -65,24 +69,26 @@ fn generate_code_actions(
             &format!("Range ({:?}) not inside document range", params.range),
         ))?;
 
-    if root.text_range().contains((range.end as u32).into()) {
-        if let Some(token) = match root.token_at_offset((range.end as u32).into()) {
-            TokenAtOffset::Single(token) | TokenAtOffset::Between(token, _) => Some(token),
-            TokenAtOffset::None => None,
-        } {
-            let mut code_actions = vec![];
-            if token
-                .parent()
-                .and_then(Iri::cast)
-                .is_some_and(|iri| iri.is_uncompressed())
-            {
-                code_actions.extend(iri::code_actions(server, document.uri.clone()));
-            } else if Var::can_cast(token.kind()) {
-                code_actions.extend(variable::code_actions(&token, document))
-            }
-
-            return Ok(code_actions);
-        }
+    let selected_element: SyntaxElement = root.covering_element(range);
+    let mut code_actions = vec![];
+    if selected_element
+        .parent()
+        .and_then(Iri::cast)
+        .is_some_and(|iri| iri.is_uncompressed())
+    {
+        code_actions.extend(iri::code_actions(server, document.uri.clone()));
+    } else if let Some(var) = selected_element.parent().and_then(Var::cast) {
+        code_actions.extend(variable::code_actions(var, document))
+    } else if matches!(
+        selected_element.kind(),
+        SyntaxKind::SelectQuery | SyntaxKind::SELECT
+    ) {
+        code_actions.extend(select::code_actions(
+            selected_element,
+            document,
+            server.settings.format.tab_size.unwrap_or(2),
+        ));
     }
-    Ok(vec![])
+
+    return Ok(code_actions);
 }

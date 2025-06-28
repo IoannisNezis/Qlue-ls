@@ -30,8 +30,8 @@ pub(super) async fn handle_hover_request(
                 ErrorCode::InvalidParams,
                 "The hover position is not inside the text document",
             )
-        })? as u32;
-    if let TokenAtOffset::Single(token) = root.token_at_offset(offset.into()) {
+        })?;
+    if let TokenAtOffset::Single(token) = root.token_at_offset(offset) {
         if let Some(content) = match token.kind() {
             SyntaxKind::PNAME_LN | SyntaxKind::PNAME_NS | SyntaxKind::IRIREF => {
                 iri::hover(&server, root, token).await?

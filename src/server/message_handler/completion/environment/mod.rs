@@ -287,14 +287,13 @@ impl CompletionEnvironment {
             .state
             .get_document(&document_position.text_document.uri)
             .map_err(|err| CompletionError::Localization(err.message))?;
-        let offset = (document_position
+        let offset = document_position
             .position
             .byte_index(&document.text)
             .ok_or(CompletionError::Localization(format!(
                 "Position ({}) not inside document range",
                 document_position.position
-            )))? as u32)
-            .into();
+            )))?;
         let trigger_kind = request.get_completion_context().trigger_kind.clone();
         let trigger_character = request.get_completion_context().trigger_character.clone();
         let tree = parse(&document.text);

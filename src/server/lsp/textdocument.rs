@@ -2,6 +2,7 @@ use super::TextDocumentContentChangeEvent;
 use log::error;
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display};
+use text_size::{TextRange, TextSize};
 
 pub type DocumentUri = String;
 
@@ -27,7 +28,10 @@ impl TextDocumentItem {
     fn apply_text_edit(&mut self, text_edit: TextEdit) {
         match text_edit.range.to_byte_index_range(&self.text) {
             Some(range) => {
-                self.text.replace_range(range, &text_edit.new_text);
+                self.text.replace_range(
+                    Into::<usize>::into(range.start())..range.end().into(),
+                    &text_edit.new_text,
+                );
             }
             None => {
                 error!("Received textdocument/didChange notification with a TextEdit thats out ouf bounds:\nedit: {}\ndocument range: {}",text_edit, self.get_full_range());
@@ -72,7 +76,9 @@ impl TextDocumentItem {
     }
 
     pub(crate) fn get_range(&self, range: &Range) -> Option<&str> {
-        self.text.get(range.to_byte_index_range(&self.text)?)
+        self.text.get(Into::<std::ops::Range<usize>>::into(
+            range.to_byte_index_range(&self.text)?,
+        ))
     }
 
     pub(crate) fn increase_version(&mut self) {
@@ -169,9 +175,9 @@ impl Position {
     ///   is undefined.
     /// * Ensure the provided UTF-16 position aligns with the logical structure of
     ///   the string.
-    pub fn byte_index(&self, text: &str) -> Option<usize> {
+    pub fn byte_index(&self, text: &str) -> Option<TextSize> {
         if self.line == 0 && self.character == 0 && text.is_empty() {
-            return Some(0);
+            return Some(TextSize::new(0));
         }
         let mut byte_index: usize = 0;
         let mut lines = text.lines();
@@ -186,7 +192,7 @@ impl Position {
             byte_index += char.len_utf8();
             utf16_index += char.len_utf16();
         }
-        Some(byte_index)
+        Some(TextSize::new(byte_index as u32))
     }
 }
 
@@ -230,9 +236,16 @@ impl Range {
         }
     }
 
-    pub fn to_byte_index_range(&self, text: &str) -> Option<std::ops::Range<usize>> {
+    pub fn empty(position: Position) -> Self {
+        Self {
+            start: position,
+            end: position,
+        }
+    }
+
+    pub fn to_byte_index_range(&self, text: &str) -> Option<TextRange> {
         match (self.start.byte_index(text), self.end.byte_index(text)) {
-            (Some(from), Some(to)) => Some(from..to),
+            (Some(from), Some(to)) => Some(TextRange::new(from, to)),
             _ => None,
         }
     }
@@ -309,6 +322,7 @@ impl Display for TextEdit {
 mod tests {
 
     use indoc::indoc;
+    use text_size::{TextRange, TextSize};
 
     use crate::server::lsp::textdocument::{Position, Range, TextEdit};
 
@@ -523,12 +537,30 @@ mod tests {
     #[test]
     fn position_to_byte_index() {
         let text = "aä�𐀀".to_string();
-        assert_eq!(Position::new(0, 0).byte_index(&text), Some(0));
-        assert_eq!(Position::new(0, 1).byte_index(&text), Some(1));
-        assert_eq!(Position::new(0, 2).byte_index(&text), Some(3));
-        assert_eq!(Position::new(0, 3).byte_index(&text), Some(6));
-        assert_eq!(Position::new(0, 5).byte_index(&text), Some(10));
-        assert_eq!(Position::new(1, 0).byte_index(&text), Some(11));
+        assert_eq!(
+            Position::new(0, 0).byte_index(&text),
+            Some(TextSize::new(0))
+        );
+        assert_eq!(
+            Position::new(0, 1).byte_index(&text),
+            Some(TextSize::new(1))
+        );
+        assert_eq!(
+            Position::new(0, 2).byte_index(&text),
+            Some(TextSize::new(3))
+        );
+        assert_eq!(
+            Position::new(0, 3).byte_index(&text),
+            Some(TextSize::new(6))
+        );
+        assert_eq!(
+            Position::new(0, 5).byte_index(&text),
+            Some(TextSize::new(10))
+        );
+        assert_eq!(
+            Position::new(1, 0).byte_index(&text),
+            Some(TextSize::new(11))
+        );
         assert_eq!(Position::new(0, 6).byte_index(&text), None);
         assert_eq!(Position::new(2, 0).byte_index(&text), None);
     }
@@ -544,18 +576,18 @@ mod tests {
         .to_string();
         assert_eq!(
             Range::new(0, 5, 1, 1).to_byte_index_range(&text),
-            Some(5..7)
+            Some(TextRange::new(TextSize::new(5), TextSize::new(7)))
         );
         let range = Range::new(1, 0, 2, 0);
         let pos = range.start;
-        assert_eq!(pos.byte_index(&text), Some(6));
+        assert_eq!(pos.byte_index(&text), Some(TextSize::new(6)));
         assert_eq!(
             Range::new(1, 0, 2, 0).to_byte_index_range(&text),
-            Some(6..12)
+            Some(TextRange::new(TextSize::new(6), TextSize::new(12)))
         );
         assert_eq!(
             Range::new(0, 0, 3, 0).to_byte_index_range(&text),
-            Some(0..18)
+            Some(TextRange::new(TextSize::new(0), TextSize::new(18)))
         );
 
         assert_eq!(Range::new(0, 0, 3, 1).to_byte_index_range(&text), None);

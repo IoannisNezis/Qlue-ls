@@ -24,17 +24,15 @@ pub(super) async fn handle_jump_request(
     let document_uri = &request.params.base.text_document.uri;
     let document = server.state.get_document(document_uri)?;
     let root = parse_query(&document.text);
-    let cursor_offset = TextSize::new(
-        request
-            .params
-            .base
-            .position
-            .byte_index(&document.text)
-            .ok_or(LSPError::new(
-                ErrorCode::InvalidRequest,
-                "given position is not inside document",
-            ))? as u32,
-    );
+    let cursor_offset = request
+        .params
+        .base
+        .position
+        .byte_index(&document.text)
+        .ok_or(LSPError::new(
+            ErrorCode::InvalidRequest,
+            "given position is not inside document",
+        ))?;
     let results = relevant_positions(
         document,
         root,

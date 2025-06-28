@@ -14,7 +14,7 @@ use crate::server::{
 use ll_sparql_parser::syntax_kind::SyntaxKind;
 use log::error;
 use std::collections::HashMap;
-use text_size::{TextRange, TextSize};
+use text_size::TextRange;
 
 pub(super) fn get_quickfix(
     server: &mut Server,
@@ -55,12 +55,6 @@ pub(crate) fn remove_prefix_declaration(
                     diagnostic
                         .range
                         .to_byte_index_range(&document.text)
-                        .map(|text_range| {
-                            TextRange::new(
-                                TextSize::new(text_range.start as u32),
-                                TextSize::new(text_range.end as u32),
-                            )
-                        })
                         .and_then(|text_range| {
                             let prefix_decl = tree.covering_element(text_range);
                             (prefix_decl.kind() == SyntaxKind::PrefixDecl)

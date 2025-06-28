@@ -14,7 +14,6 @@ use crate::server::lsp::{
 };
 
 pub(super) fn code_action(var: &Var, document: &TextDocumentItem) -> Option<CodeAction> {
-    log::info!("canary3");
     let select_query = match var
         .syntax()
         .ancestors()

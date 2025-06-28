@@ -1168,7 +1168,12 @@ fn merge_comments(
                         None => {
                             let indent = match next_edit.range.end.byte_index(text) {
                                 Some(start_next_token) => {
-                                    match text.get(start_next_token..start_next_token + 1) {
+                                    match text.get(
+                                        Into::<usize>::into(start_next_token)
+                                            ..Into::<usize>::into(
+                                                start_next_token + TextSize::new(1),
+                                            ),
+                                    ) {
                                         Some("}") => comment.indentation_level.saturating_sub(1),
                                         _ => comment.indentation_level,
                                     }

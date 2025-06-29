@@ -38,7 +38,7 @@ pub(super) async fn completions(
         label_details: None,
         detail: Some("Variable".to_string()),
         kind: CompletionItemKind::Variable,
-        sort_text: Some("00001".to_string()),
+        sort_text: None,
         filter_text: None,
         text_edit: None,
         insert_text_format: Some(InsertTextFormat::PlainText),
@@ -152,7 +152,7 @@ pub(super) async fn completions_transformed(
         item.insert_text = item.insert_text.as_ref().map(|text| format!("?{}", text));
         item.label = format!("?{}", item.label);
         if item.sort_text.is_none() {
-            item.sort_text = Some(format!("{:0>5}", 1));
+            item.sort_text = Some(format!("{:0>4}0", 1));
         }
     }
     Ok(variable_completions)

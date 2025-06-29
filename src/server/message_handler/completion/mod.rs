@@ -4,6 +4,7 @@ mod environment;
 mod error;
 mod graph;
 mod object;
+mod order_condition;
 mod predicate;
 mod select_binding;
 mod service_url;
@@ -34,7 +35,7 @@ pub(super) async fn handle_completion_request(
     let env = CompletionEnvironment::from_completion_request(server_rc.clone(), &request)
         .await
         .map_err(to_lsp_error)?;
-    // log::info!("Completion env:\n{}", env);
+    log::info!("Completion env:\n{}", env);
 
     let completion_list = if env.trigger_kind == CompletionTriggerKind::TriggerCharacter
         && env.trigger_character.as_ref().is_some_and(|tc| tc == "?")
@@ -56,6 +57,7 @@ pub(super) async fn handle_completion_request(
                 | CompletionLocation::Object(_)
                 | CompletionLocation::BlankNodeProperty(_)
                 | CompletionLocation::BlankNodeObject(_)
+                | CompletionLocation::OrderCondition
         )
         .then_some(
             variable::completions_transformed(server_rc.clone(), &env)
@@ -89,6 +91,7 @@ pub(super) async fn handle_completion_request(
                 CompletionLocation::FilterConstraint | CompletionLocation::GroupCondition => {
                     variable::completions_transformed(server_rc.clone(), &env).await
                 }
+                CompletionLocation::OrderCondition => order_condition::completions(env),
                 location => Err(CompletionError::Localization(format!(
                     "Unknown location \"{:?}\"",
                     location

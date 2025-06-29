@@ -226,6 +226,17 @@ pub(super) enum CompletionLocation {
     /// GROUP BY >here<
     /// ```
     GroupCondition,
+    /// Order Condition
+    ///
+    /// ---
+    ///
+    /// **Example**
+    /// ```sparql
+    /// SELECT * WHERE {
+    /// }
+    /// ORDER BY >here<
+    /// ```
+    OrderCondition,
 }
 
 impl CompletionEnvironment {
@@ -476,6 +487,11 @@ fn get_location(
         // NOTE: GroupCondition
         else if continues_with!([SyntaxKind::GroupCondition]) {
             CompletionLocation::GroupCondition
+        } else if continues_with!([SyntaxKind::OrderCondition])
+            | (continues_with!([SyntaxKind::BrackettedExpression])
+                && child_of!([SyntaxKind::OrderCondition]))
+        {
+            CompletionLocation::OrderCondition
         } else {
             CompletionLocation::Unknown
         }

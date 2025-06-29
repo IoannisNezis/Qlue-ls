@@ -23,14 +23,10 @@ pub(super) fn code_action(var: &Var, document: &TextDocumentItem) -> Option<Code
         SyntaxKind::SubSelect => var.syntax().ancestors().skip(3).find_map(SelectQuery::cast),
         _ => var.syntax().ancestors().find_map(SelectQuery::cast),
     }?;
+    let select_clause = select_query.select_clause()?;
 
-    let result_vars: HashSet<String> = HashSet::from_iter(
-        select_query
-            .select_clause()?
-            .variables()
-            .iter()
-            .map(|var| var.text()),
-    );
+    let result_vars: HashSet<String> =
+        HashSet::from_iter(select_clause.variables().iter().map(|var| var.text()));
     let group_vars: Option<HashSet<String>> = select_query
         .soulution_modifier()
         .and_then(|solution_modifier| solution_modifier.group_clause())
@@ -45,32 +41,43 @@ pub(super) fn code_action(var: &Var, document: &TextDocumentItem) -> Option<Code
     if !result_vars.contains(&var.text())
         && group_vars.map_or(true, |vars| vars.contains(&var.text()))
     {
-        let end = Position::from_byte_index(
-            select_query
-                .select_clause()?
-                .syntax()
-                .text_range()
-                .end()
-                .into(),
-            &document.text,
-        )?;
-        let last_child = select_query
-            .select_clause()?
+        let (offset, at_end) = select_clause
             .syntax()
-            .last_child_or_token()?;
+            .children_with_tokens()
+            .find_map(|child| {
+                (child.kind() == SyntaxKind::LParen).then_some((child.text_range().start(), false))
+            })
+            .unwrap_or((select_clause.syntax().text_range().end(), true));
+        let position = Position::from_byte_index(offset, &document.text)?;
+        let last_child = select_clause.syntax().last_child_or_token()?;
         let mut ca = CodeAction::new("Add to result", None);
         if last_child.kind() == SyntaxKind::Star {
             ca.add_edit(
                 &document.uri,
                 TextEdit::new(
-                    Range::new(end.line, end.character - 1, end.line, end.character),
+                    Range::new(
+                        position.line,
+                        position.character - 1,
+                        position.line,
+                        position.character,
+                    ),
                     &var.text(),
                 ),
             );
         } else {
             ca.add_edit(
                 &document.uri,
-                TextEdit::new(Range { start: end, end }, &format!(" {}", var.text())),
+                TextEdit::new(
+                    Range {
+                        start: position,
+                        end: position,
+                    },
+                    &if at_end {
+                        format!(" {}", var.text())
+                    } else {
+                        format!("{} ", var.text())
+                    },
+                ),
             );
         }
         return Some(ca);

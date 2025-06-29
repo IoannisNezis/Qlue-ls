@@ -14,9 +14,9 @@ use regex::Regex;
 
 pub(super) async fn completions(
     server_rc: Rc<Mutex<Server>>,
-    context: CompletionEnvironment,
+    environment: &CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
-    let suffix = match context.location {
+    let suffix = match environment.location {
         CompletionLocation::Object(_)
         | CompletionLocation::Subject
         | CompletionLocation::Predicate(_)
@@ -25,7 +25,7 @@ pub(super) async fn completions(
         _ => "",
     };
     let mut suggestions: Vec<CompletionItem> = HashSet::<String>::from_iter(
-        context
+        environment
             .tree
             .descendants()
             .filter_map(Var::cast)
@@ -38,12 +38,12 @@ pub(super) async fn completions(
         label_details: None,
         detail: Some("Variable".to_string()),
         kind: CompletionItemKind::Variable,
-        sort_text: None,
+        sort_text: Some("00001".to_string()),
         filter_text: None,
         text_edit: None,
         insert_text_format: Some(InsertTextFormat::PlainText),
         additional_text_edits: None,
-        command: match context.location {
+        command: match environment.location {
             CompletionLocation::Subject
             | CompletionLocation::Predicate(_)
             | CompletionLocation::BlankNodeProperty(_) => Some(Command {
@@ -57,11 +57,12 @@ pub(super) async fn completions(
     .collect();
     // NOTE: predicate based object variable completions:
     if matches!(
-        context.location,
+        environment.location,
         CompletionLocation::Object(_) | CompletionLocation::BlankNodeObject(_)
     ) {
-        if let Some(prefixed_name) = context
+        if let Some(prefixed_name) = environment
             .anchor_token
+            .clone()
             .and_then(|token| token.parent())
             .and_then(PrefixedName::cast)
         {
@@ -107,7 +108,7 @@ pub(super) async fn completions(
             );
             // NOTE: If subject is a variable:
             // append ?[variable]_[object_name] as variable completion
-            if let CompletionLocation::Object(triple) = context.location {
+            if let CompletionLocation::Object(triple) = environment.location.clone() {
                 if let Some(var) = triple
                     .subject()
                     .map(|subject| subject.syntax().clone())
@@ -144,7 +145,7 @@ pub(super) async fn completions(
 
 pub(super) async fn completions_transformed(
     server_rc: Rc<Mutex<Server>>,
-    environment: CompletionEnvironment,
+    environment: &CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
     let mut variable_completions = completions(server_rc, environment).await?;
     for item in variable_completions.items.iter_mut() {

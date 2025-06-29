@@ -1,5 +1,5 @@
 use crate::server::lsp::{textdocument::TextDocumentItem, CodeAction};
-use ll_sparql_parser::{ast::Var, SyntaxElement};
+use ll_sparql_parser::ast::Var;
 mod add_aggregate_to_result;
 mod add_to_result;
 mod filter_var;

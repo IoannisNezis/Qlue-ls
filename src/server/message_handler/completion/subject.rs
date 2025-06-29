@@ -48,7 +48,7 @@ pub(super) async fn completions(
         is_incomplete = completion_list.is_incomplete;
     }
     items.extend(
-        variable::completions_transformed(server_rc, environment)
+        variable::completions_transformed(server_rc, &environment)
             .await?
             .items,
     );

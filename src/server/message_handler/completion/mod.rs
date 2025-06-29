@@ -20,7 +20,10 @@ use error::{to_lsp_error, CompletionError};
 use futures::lock::Mutex;
 
 use crate::server::{
-    lsp::{errors::LSPError, CompletionRequest, CompletionResponse, CompletionTriggerKind},
+    lsp::{
+        errors::LSPError, CompletionList, CompletionRequest, CompletionResponse,
+        CompletionTriggerKind,
+    },
     Server,
 };
 
@@ -41,14 +44,29 @@ pub(super) async fn handle_completion_request(
             .is_some_and(|search_term| search_term.starts_with("?"))
     {
         Some(
-            variable::completions(server_rc.clone(), env)
+            variable::completions(server_rc.clone(), &env)
                 .await
                 .map_err(to_lsp_error)?,
         )
-    } else if env.location == CompletionLocation::Unknown {
-        None
     } else {
-        Some(
+        let variable_completions = matches!(
+            env.location,
+            CompletionLocation::Subject
+                | CompletionLocation::Predicate(_)
+                | CompletionLocation::Object(_)
+                | CompletionLocation::BlankNodeProperty(_)
+                | CompletionLocation::BlankNodeObject(_)
+        )
+        .then_some(
+            variable::completions_transformed(server_rc.clone(), &env)
+                .await
+                .ok(),
+        )
+        .flatten();
+
+        let completion_list = if env.location == CompletionLocation::Unknown {
+            None
+        } else {
             match env.location {
                 CompletionLocation::Start => start::completions(env).await,
                 CompletionLocation::SelectBinding(_) => select_binding::completions(env),
@@ -69,18 +87,33 @@ pub(super) async fn handle_completion_request(
                     service_url::completions(server_rc.clone(), env).await
                 }
                 CompletionLocation::FilterConstraint | CompletionLocation::GroupCondition => {
-                    variable::completions_transformed(server_rc.clone(), env).await
+                    variable::completions_transformed(server_rc.clone(), &env).await
                 }
                 location => Err(CompletionError::Localization(format!(
                     "Unknown location \"{:?}\"",
                     location
                 ))),
             }
-            .map_err(to_lsp_error)?,
-        )
+            .ok()
+        };
+        merge_completions(completion_list, variable_completions)
     };
     server_rc
         .lock()
         .await
         .send_message(CompletionResponse::new(request.get_id(), completion_list))
+}
+
+fn merge_completions(
+    completion_list: Option<CompletionList>,
+    variable_completions: Option<CompletionList>,
+) -> Option<CompletionList> {
+    match (completion_list, variable_completions) {
+        (None, None) => None,
+        (None, Some(list)) | (Some(list), None) => Some(list),
+        (Some(mut list1), Some(list2)) => {
+            list1.items.extend(list2.items);
+            Some(list1)
+        }
+    }
 }

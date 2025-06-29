@@ -1,17 +1,12 @@
 //! Filter variable code action
 //! Add Filter expression for variable
 
-use std::collections::HashMap;
-
-use ll_sparql_parser::{
-    ast::{AstNode, Var},
-    SyntaxToken,
-};
-
 use crate::server::lsp::{
     textdocument::{Position, Range, TextDocumentItem, TextEdit},
     CodeAction, WorkspaceEdit,
 };
+use ll_sparql_parser::ast::{AstNode, Var};
+use std::collections::HashMap;
 
 pub(super) fn code_action(var: &Var, document: &TextDocumentItem) -> Option<CodeAction> {
     let triple = var.triple()?;

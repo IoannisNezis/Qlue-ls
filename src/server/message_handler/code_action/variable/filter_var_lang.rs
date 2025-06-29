@@ -9,7 +9,10 @@
 //!
 //! ?s rdfs:label ?label Filter(Lange(?label) = "en"
 
-use ll_sparql_parser::ast::{AstNode, ObjectList, Var};
+use ll_sparql_parser::{
+    ast::{AstNode, Var},
+    syntax_kind::SyntaxKind,
+};
 use std::collections::HashMap;
 
 use crate::server::lsp::{
@@ -19,9 +22,14 @@ use crate::server::lsp::{
 
 pub(super) fn code_action(var: &Var, document: &TextDocumentItem) -> Option<CodeAction> {
     let triple = var.triple()?;
-    let _object_list = var.syntax().ancestors().nth(4).and_then(ObjectList::cast)?;
-    let position =
-        Position::from_byte_index(triple.syntax().text_range().end().into(), &document.text)?;
+    let position = Position::from_byte_index(
+        triple
+            .syntax()
+            .next_sibling_or_token_by_kind(&|kind| kind == SyntaxKind::Dot)
+            .map(|dot| dot.text_range().end())
+            .unwrap_or(triple.syntax().text_range().end()),
+        &document.text,
+    )?;
     Some(CodeAction {
         title: "Add Lang-Filter".to_string(),
         kind: None,

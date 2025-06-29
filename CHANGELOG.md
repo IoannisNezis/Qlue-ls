@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add order-condition completions
 - prepend variable completions to spo completions
 
+### changed
+
+- add to result code-action: insert before aggregates
+- filter & filter-lang code-action: insert after Dot
+
 ## [0.13.1]
 
 ### Added

@@ -137,7 +137,6 @@
                                             }
                                         ]);
                                     }
-                                    editor.trigger('editor', 'editor.action.triggerSuggest', {});
                                 }
                             });
                     });

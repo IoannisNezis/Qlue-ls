@@ -17,23 +17,11 @@ Qlue-ls provides different types of completions:
 
 When a user types a word beginning with `?`, all variables in scope will be returned.
 
-```sparql
-SELECT * WHERE {
-    {
-        SELECT ?a (?b as ?c) WHERE {
-            VALUES (?a ?b ?c) {(1 2 3)}
-        }
-    }
-    {
-        {
-          ?d <> <>
-        }
-    }
-    ?[cursor]
-}
-```
-
-A completion request at the [cursor] position will return `[?a, ?c, ?d]` but not `?b`.
+<figure class="video_container">
+  <video controls="true" allowfullscreen="true">
+    <source src="../assets/completion_var.mp4" type="video/mp4">
+  </video>
+</figure>
 
 !!! warning
 

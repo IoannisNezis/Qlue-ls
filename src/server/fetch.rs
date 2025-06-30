@@ -16,7 +16,7 @@ use web_sys::{AbortSignal, Request, RequestInit, RequestMode, Response};
 /// - `Timeout`: The request took to long
 /// - `Connection`: The Http connection could not be established
 /// - `Response`: The responst had a non 200 status code
-/// - `Deserialization`: The respnse could not be deserialized
+/// - `Deserialization`: The response could not be deserialized
 pub(super) enum SparqlRequestError {
     Timeout,
     Connection,
@@ -95,6 +95,10 @@ pub(crate) async fn fetch_sparql_result(
     let request = Request::new_with_str_and_init(url, &opts).unwrap();
     let headers = request.headers();
     headers
+        .set("Accept", "application/sparql-results+json")
+        .unwrap();
+    headers.set("User-Agent", "qlue-ls/1.0").unwrap();
+    headers
         .set("Content-Type", "application/sparql-query")
         .unwrap();
 
@@ -111,13 +115,7 @@ pub(crate) async fn fetch_sparql_result(
     // Perform the fetch request and await the response
     let resp_value = JsFuture::from(worker_global.fetch_with_request(&request))
         .await
-        .map_err(|err| {
-            SparqlRequestError::Timeout
-            // LSPError::new(
-            //     ErrorCode::InternalError,
-            //     &format!("SPARQL request failed:\n{:?}", err),
-            // )
-        })?;
+        .map_err(|err| SparqlRequestError::Timeout)?;
 
     let end = performance.now();
     log::debug!("Query took {:?}ms", (end - start) as i32,);

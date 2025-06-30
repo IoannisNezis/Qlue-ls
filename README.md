@@ -32,19 +32,36 @@ For a complete overview, see the [capabilities section](https://docs.qlue-ls.com
 - Backend-powered suggestions for subjects, predicates, and objects
 - **Note:** Completion queries must be configured for each knowledge graph
 
+<div align="left">
+   <p>https://github.com/user-attachments/assets/207c8265-27b9-4dde-a18c-d82f7c5db4c9</p>
+</div>
+
 ## 📐 Formatting
 
 - Auto-formats SPARQL queries for consistency and readability
 - Fully customizable to match your preferred coding style
+
+<div align="left">
+   <p>https://github.com/user-attachments/assets/9d80ae33-8ff0-4bdd-8a9d-fb95a632673e</p>
+</div>
 
 ## 🛠️ Code Actions
 
 - Provides smart quick-fixes for diagnostics
 - Offers suggested improvements and automated edits
 
+<div align="left">
+https   <p>://github.com/user-attachments/assets/53fe75b6-71d2-4fe9-91c8-82ebda420712</p>
+</div>
+
 ## ℹ️ Hover
 
 - View contextual information by hovering over tokens
+
+<div align="left">
+   <p>https://github.com/user-attachments/assets/425e6912-c9f0-49ca-9937-6cd536ab9bc4</p>
+</div>
+
 ## 🩺 Diagnostics
 
 - Real-time feedback with severity levels: error, warning, and info

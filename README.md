@@ -26,21 +26,16 @@ for [SPARQL](https://de.wikipedia.org/wiki/SPARQL), written in Rust 🦀, build 
 Qlue-ls offers a wide range of LSP features tailored to SPARQL development.  
 For a complete overview, see the [capabilities section](https://docs.qlue-ls.com/03_capabilities/).
 
-## 📐 Formatting
-
-- Auto-formats SPARQL queries for consistency and readability
-- Fully customizable to match your preferred coding style
-
-## 🩺 Diagnostics
-
-- Real-time feedback with severity levels: error, warning, and info
-- Helps catch syntax issues and common mistakes
-
 ## ✨ Completion
 
 - Suggests valid continuations while typing SPARQL queries
 - Backend-powered suggestions for subjects, predicates, and objects
 - **Note:** Completion queries must be configured for each knowledge graph
+
+## 📐 Formatting
+
+- Auto-formats SPARQL queries for consistency and readability
+- Fully customizable to match your preferred coding style
 
 ## 🛠️ Code Actions
 
@@ -50,6 +45,10 @@ For a complete overview, see the [capabilities section](https://docs.qlue-ls.com
 ## ℹ️ Hover
 
 - View contextual information by hovering over tokens
+## 🩺 Diagnostics
+
+- Real-time feedback with severity levels: error, warning, and info
+- Helps catch syntax issues and common mistakes
 
 ## 🕳 Jump
 

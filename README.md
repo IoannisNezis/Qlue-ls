@@ -51,7 +51,7 @@ For a complete overview, see the [capabilities section](https://docs.qlue-ls.com
 - Offers suggested improvements and automated edits
 
 <div align="left">
-https   <p>://github.com/user-attachments/assets/53fe75b6-71d2-4fe9-91c8-82ebda420712</p>
+   <p>https://github.com/user-attachments/assets/53fe75b6-71d2-4fe9-91c8-82ebda420712</p>
 </div>
 
 ## ℹ️ Hover

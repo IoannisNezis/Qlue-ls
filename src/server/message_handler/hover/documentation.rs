@@ -9,7 +9,7 @@ pub(super) fn get_docstring_for_kind(kind: SyntaxKind) -> Option<String> {
 
              ---
 
-             # **Example:**
+             #### Example:
 
              ```sparql
              SELECT ?name WHERE {
@@ -26,7 +26,7 @@ pub(super) fn get_docstring_for_kind(kind: SyntaxKind) -> Option<String> {
 
              ---
 
-             **Example:**
+             #### Example:
 
              ```sparql
              PREFIX foaf: <http://xmlns.com/foaf/0.1/>

@@ -15,9 +15,16 @@ pub struct BackendsSettings {
 #[serde(rename_all = "camelCase")]
 pub struct BackendConfiguration {
     pub backend: Backend,
+    pub request_method: Option<RequestMethod>,
     pub prefix_map: HashMap<String, String>,
     pub default: bool,
     pub queries: Queries,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum RequestMethod {
+    GET,
+    POST,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]

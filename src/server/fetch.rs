@@ -1,3 +1,4 @@
+use crate::server::configuration::RequestMethod;
 use crate::sparql::results::SparqlResult;
 #[cfg(target_arch = "wasm32")]
 use js_sys::JsString;
@@ -5,6 +6,7 @@ use js_sys::JsString;
 use reqwest::Client;
 #[cfg(target_arch = "wasm32")]
 use std::str::FromStr;
+use urlencoding::encode;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::JsCast;
 #[cfg(target_arch = "wasm32")]
@@ -29,23 +31,37 @@ pub(crate) async fn fetch_sparql_result(
     url: &str,
     query: &str,
     timeout_ms: u32,
+    method: RequestMethod,
 ) -> Result<SparqlResult, SparqlRequestError> {
     use std::{collections::HashMap, time::Duration};
 
     use tokio::time::timeout;
-    let mut form_data = HashMap::new();
-    form_data.insert("query", query);
 
-    let request = Client::new()
-        .post(url)
-        .header(
-            "Content-Type",
-            "application/x-www-form-urlencoded;charset=UTF-8",
-        )
-        .header("Accept", "application/sparql-results+json")
-        .header("User-Agent", "qlue-ls/1.0")
-        .form(&form_data)
-        .send();
+    let request = match method {
+        RequestMethod::GET => Client::new()
+            .get(format!("{}?query={}", url, encode(query)))
+            .header(
+                "Content-Type",
+                "application/x-www-form-urlencoded;charset=UTF-8",
+            )
+            .header("Accept", "application/sparql-results+json")
+            .header("User-Agent", "qlue-ls/1.0")
+            .send(),
+        RequestMethod::POST => {
+            let mut form_data = HashMap::new();
+            form_data.insert("query", query);
+            Client::new()
+                .post(url)
+                .header(
+                    "Content-Type",
+                    "application/x-www-form-urlencoded;charset=UTF-8",
+                )
+                .header("Accept", "application/sparql-results+json")
+                .header("User-Agent", "qlue-ls/1.0")
+                .form(&form_data)
+                .send()
+        }
+    };
 
     let duration = Duration::from_millis(timeout_ms as u64);
     let request = timeout(duration, request);
@@ -87,20 +103,35 @@ pub(crate) async fn fetch_sparql_result(
     url: &str,
     query: &str,
     timeout_ms: u32,
+    method: RequestMethod,
 ) -> Result<SparqlResult, SparqlRequestError> {
     let opts = RequestInit::new();
-    opts.set_method("POST");
-    opts.set_body(&JsString::from_str(query).unwrap());
     opts.set_signal(Some(&AbortSignal::timeout_with_u32(timeout_ms)));
-    let request = Request::new_with_str_and_init(url, &opts).unwrap();
+
+    let encoded = encode(query);
+    let request = match method {
+        RequestMethod::GET => {
+            opts.set_method("GET");
+            Request::new_with_str_and_init(&format!("{url}?query={}", encode(query)), &opts)
+                .unwrap()
+        }
+        RequestMethod::POST => {
+            use js_sys::JsString;
+            use wasm_bindgen::JsValue;
+
+            opts.set_method("POST");
+            opts.set_body(&JsString::from_str(query).unwrap());
+            Request::new_with_str_and_init(url, &opts).unwrap()
+        }
+    };
     let headers = request.headers();
     headers
         .set("Accept", "application/sparql-results+json")
         .unwrap();
-    headers.set("User-Agent", "qlue-ls/1.0").unwrap();
     headers
         .set("Content-Type", "application/sparql-query")
         .unwrap();
+    // headers.set("User-Agent", "qlue-ls/1.0").unwrap();
 
     // Get global worker scope
     let worker_global = js_sys::global().unchecked_into::<web_sys::WorkerGlobalScope>();
@@ -115,7 +146,10 @@ pub(crate) async fn fetch_sparql_result(
     // Perform the fetch request and await the response
     let resp_value = JsFuture::from(worker_global.fetch_with_request(&request))
         .await
-        .map_err(|err| SparqlRequestError::Timeout)?;
+        .map_err(|err| {
+            log::error!("{err:?}");
+            SparqlRequestError::Connection
+        })?;
 
     let end = performance.now();
     log::debug!("Query took {:?}ms", (end - start) as i32,);

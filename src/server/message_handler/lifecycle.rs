@@ -74,6 +74,7 @@ pub(super) async fn handle_initialize_request(
                 for config in backend_configs.into_iter() {
                     let BackendConfiguration {
                         backend,
+                        request_method,
                         prefix_map,
                         default,
                         queries,
@@ -90,6 +91,11 @@ pub(super) async fn handle_initialize_request(
                                 &format!("Could not load prefix map:\n\"{}\"", err),
                             )
                         })?;
+                    if let Some(method) = request_method {
+                        server
+                            .state
+                            .add_backend_request_method(&backend.name, method);
+                    };
                     server
                         .tools
                         .tera

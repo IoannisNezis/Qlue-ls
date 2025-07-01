@@ -9,9 +9,9 @@ pub(super) fn init() -> Tera {
     tera.add_raw_template(
         "prefix_declarations",
         indoc! {
-            "{% for prefix in prefixes %}
+            "{%- for prefix in prefixes -%}
              PREFIX {{prefix.0}}: <{{prefix.1}}>
-             {% endfor %}
+             {%- endfor -%}
             "
         },
     )

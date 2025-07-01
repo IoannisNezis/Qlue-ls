@@ -1,3 +1,5 @@
+use crate::server::configuration::RequestMethod;
+
 use super::lsp::{
     errors::{ErrorCode, LSPError},
     textdocument::{TextDocumentItem, TextEdit},
@@ -19,6 +21,7 @@ pub struct ServerState {
     pub trace_value: TraceValue,
     documents: HashMap<String, TextDocumentItem>,
     backends: HashMap<String, Backend>,
+    request_method: HashMap<String, RequestMethod>,
     uri_converter: HashMap<String, Converter>,
     default_backend: Option<String>,
     parse_tree_cache: Option<(String, u32, SyntaxNode)>,
@@ -33,6 +36,7 @@ impl ServerState {
             trace_value: TraceValue::Off,
             documents: HashMap::new(),
             backends: HashMap::new(),
+            request_method: HashMap::new(),
             uri_converter: HashMap::new(),
             default_backend: None,
             parse_tree_cache: None,
@@ -63,6 +67,19 @@ impl ServerState {
 
     pub fn add_backend(&mut self, backend: Backend) {
         self.backends.insert(backend.name.clone(), backend);
+    }
+
+    pub fn add_backend_request_method(&mut self, backend: &str, method: RequestMethod) {
+        self.request_method.insert(backend.to_string(), method);
+    }
+
+    /// Return the configured request method for given backend.
+    /// Defaults to `GET`.
+    pub fn get_backend_request_method(&self, backend: &str) -> RequestMethod {
+        self.request_method
+            .get(backend)
+            .cloned()
+            .unwrap_or(RequestMethod::GET)
     }
 
     pub async fn add_prefix_map(

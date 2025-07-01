@@ -87,6 +87,11 @@ pub(super) async fn handle_add_backend_notification(
                 )
             })?;
     };
+    if let Some(method) = request.params.request_method {
+        server
+            .state
+            .add_backend_request_method(&request.params.backend.name, method);
+    };
     if let Some(completion_queries) = request.params.queries {
         for (query_name, query) in completion_queries.iter() {
             server

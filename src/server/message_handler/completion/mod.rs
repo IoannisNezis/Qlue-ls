@@ -35,7 +35,7 @@ pub(super) async fn handle_completion_request(
     let env = CompletionEnvironment::from_completion_request(server_rc.clone(), &request)
         .await
         .map_err(to_lsp_error)?;
-    log::info!("Completion env:\n{}", env);
+    // log::info!("Completion env:\n{}", env);
 
     let completion_list = if env.trigger_kind == CompletionTriggerKind::TriggerCharacter
         && env.trigger_character.as_ref().is_some_and(|tc| tc == "?")

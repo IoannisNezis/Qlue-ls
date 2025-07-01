@@ -95,7 +95,7 @@ pub(super) async fn fetch_online_completions(
     query_template: &str,
     mut query_template_context: Context,
 ) -> Result<Vec<InternalCompletionItem>, CompletionError> {
-    let (url, query, timeout_ms) = {
+    let (url, query, timeout_ms, method) = {
         let server = server_rc.lock().await;
         query_template_context.insert("limit", &server.settings.completion.result_size_limit);
         query_template_context.insert("offset", &0);
@@ -107,11 +107,12 @@ pub(super) async fn fetch_online_completions(
 
         let url = backend.url.clone();
         let timeout_ms = server.settings.completion.timeout_ms;
-        (url, query, timeout_ms)
+        let method = server.state.get_backend_request_method(&backend.name);
+        (url, query, timeout_ms, method)
     };
 
     log::debug!("Query:\n{}", query);
-    let result = fetch_sparql_result(&url, &query, timeout_ms)
+    let result = fetch_sparql_result(&url, &query, timeout_ms, method)
         .await
         .map_err(|err| match err {
             crate::server::fetch::SparqlRequestError::Timeout => {

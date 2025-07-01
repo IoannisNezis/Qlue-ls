@@ -54,10 +54,15 @@ pub(super) async fn hover(
                 log::error!("{}", err);
                 LSPError::new(ErrorCode::InternalError, &err.to_string())
             })?;
-        let sparql_response =
-            fetch_sparql_result(&backend.url, &query, server.settings.completion.timeout_ms)
-                .await
-                .map_err(|_err| LSPError::new(ErrorCode::InternalError, "hover query failed"))?;
+        let method = server.state.get_backend_request_method(&backend.name);
+        let sparql_response = fetch_sparql_result(
+            &backend.url,
+            &query,
+            server.settings.completion.timeout_ms,
+            method,
+        )
+        .await
+        .map_err(|_err| LSPError::new(ErrorCode::InternalError, "hover query failed"))?;
         match sparql_response.results.bindings.first() {
             Some(binding) => binding
                 .get("qlue_ls_label")

@@ -47,18 +47,16 @@ pub(crate) async fn fetch_sparql_result(
             .header("Accept", "application/sparql-results+json")
             .header("User-Agent", "qlue-ls/1.0")
             .send(),
-        RequestMethod::POST => {
-            Client::new()
-                .post(url)
-                .header(
-                    "Content-Type",
-                    "application/x-www-form-urlencoded;charset=UTF-8",
-                )
-                .header("Accept", "application/sparql-results+json")
-                .header("User-Agent", "qlue-ls/1.0")
-                .form(&[("query", query)])
-                .send()
-        }
+        RequestMethod::POST => Client::new()
+            .post(url)
+            .header(
+                "Content-Type",
+                "application/x-www-form-urlencoded;charset=UTF-8",
+            )
+            .header("Accept", "application/sparql-results+json")
+            .header("User-Agent", "qlue-ls/1.0")
+            .form(&[("query", query)])
+            .send(),
     };
 
     let duration = Duration::from_millis(timeout_ms as u64);
@@ -106,8 +104,6 @@ pub(crate) async fn fetch_sparql_result(
     let opts = RequestInit::new();
     opts.set_signal(Some(&AbortSignal::timeout_with_u32(timeout_ms)));
 
-    let encoded = encode(query);
-    let headers = request.headers();
     let request = match method {
         RequestMethod::GET => {
             opts.set_method("GET");
@@ -116,16 +112,17 @@ pub(crate) async fn fetch_sparql_result(
         }
         RequestMethod::POST => {
             use js_sys::JsString;
-            use wasm_bindgen::JsValue;
-
             opts.set_method("POST");
             opts.set_body(&JsString::from_str(query).unwrap());
-            headers
-                .set("Content-Type", "application/sparql-query")
-                .unwrap();
             Request::new_with_str_and_init(url, &opts).unwrap()
         }
     };
+    let headers = request.headers();
+    if method == RequestMethod::POST {
+        headers
+            .set("Content-Type", "application/sparql-query")
+            .unwrap();
+    }
     headers
         .set("Accept", "application/sparql-results+json")
         .unwrap();

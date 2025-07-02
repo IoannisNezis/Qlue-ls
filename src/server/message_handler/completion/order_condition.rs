@@ -16,7 +16,6 @@ pub(super) async fn completions(
     environment: CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
     let variable_completions = variable::completions_transformed(server_rc, &environment).await?;
-    let mut counter = 0;
     Ok(
         if environment
             .anchor_token

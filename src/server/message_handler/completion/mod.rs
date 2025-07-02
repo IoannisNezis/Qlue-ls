@@ -57,7 +57,6 @@ pub(super) async fn handle_completion_request(
                 | CompletionLocation::Object(_)
                 | CompletionLocation::BlankNodeProperty(_)
                 | CompletionLocation::BlankNodeObject(_)
-                | CompletionLocation::OrderCondition
         )
         .then_some(
             variable::completions_transformed(server_rc.clone(), &env)
@@ -91,7 +90,9 @@ pub(super) async fn handle_completion_request(
                 CompletionLocation::FilterConstraint | CompletionLocation::GroupCondition => {
                     variable::completions_transformed(server_rc.clone(), &env).await
                 }
-                CompletionLocation::OrderCondition => order_condition::completions(env),
+                CompletionLocation::OrderCondition => {
+                    order_condition::completions(server_rc.clone(), env).await
+                }
                 location => Err(CompletionError::Localization(format!(
                     "Unknown location \"{:?}\"",
                     location

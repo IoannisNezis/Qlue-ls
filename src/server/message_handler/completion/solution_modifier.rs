@@ -50,15 +50,14 @@ pub(super) fn completions(
         items.push(CompletionItem {
             label: "ORDER BY".to_string(),
             label_details: None,
-            kind: CompletionItemKind::Snippet,
+            kind: CompletionItemKind::Keyword,
             detail: Some("Sort the results".to_string()),
             sort_text: None,
             filter_text: None,
-            insert_text: Some("ORDER BY ${1|ASC,DESC|}($0)".to_string()),
+            insert_text: Some("ORDER BY ".to_string()),
             text_edit: None,
             insert_text_format: None,
             additional_text_edits: None,
-
             command: Some(Command {
                 title: "triggerNewCompletion".to_string(),
                 command: "triggerNewCompletion".to_string(),

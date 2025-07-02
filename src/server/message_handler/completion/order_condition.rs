@@ -1,17 +1,24 @@
+use std::rc::Rc;
+
+use futures::lock::Mutex;
 use ll_sparql_parser::syntax_kind::SyntaxKind;
 
 use crate::server::{
     lsp::{
         Command, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
     },
-    message_handler::completion::{CompletionEnvironment, CompletionError},
+    message_handler::completion::{variable, CompletionEnvironment, CompletionError},
+    Server,
 };
 
-pub(super) fn completions(
-    context: CompletionEnvironment,
+pub(super) async fn completions(
+    server_rc: Rc<Mutex<Server>>,
+    environment: CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
+    let variable_completions = variable::completions_transformed(server_rc, &environment).await?;
+    let mut counter = 0;
     Ok(
-        if context
+        if environment
             .anchor_token
             .is_some_and(|anchor| anchor.kind() == SyntaxKind::BY)
         {
@@ -23,42 +30,30 @@ pub(super) fn completions(
                     commit_characters: None,
                     edit_range: None,
                 }),
-                items: vec![
-                    CompletionItem {
-                        label: "DESC".to_string(),
+                items: variable_completions
+                    .items
+                    .into_iter()
+                    .map(|variable_completion| {
+                        ["DESC", "ASC"]
+                            .into_iter()
+                            .map(move |order| (order, variable_completion.label.clone()))
+                    })
+                    .flatten()
+                    .enumerate()
+                    .map(|(idx, (order, var))| CompletionItem {
+                        label: format!("{order}({var})"),
                         label_details: None,
-                        kind: CompletionItemKind::Snippet,
-                        detail: Some("Order descending".to_string()),
-                        sort_text: Some("00000".to_string()),
+                        kind: CompletionItemKind::Method,
+                        detail: Some(format!("Order by descending {}", var)),
+                        sort_text: Some(format!("{idx:0>5}")),
                         filter_text: None,
-                        insert_text: Some("DESC($0)".to_string()),
+                        insert_text: Some(format!("{order}({var})")),
                         text_edit: None,
                         insert_text_format: None,
                         additional_text_edits: None,
-                        command: Some(Command {
-                            title: "triggerNewCompletion".to_string(),
-                            command: "triggerNewCompletion".to_string(),
-                            arguments: None,
-                        }),
-                    },
-                    CompletionItem {
-                        label: "ASC".to_string(),
-                        label_details: None,
-                        kind: CompletionItemKind::Snippet,
-                        detail: Some("Order Ascending".to_string()),
-                        sort_text: Some("00001".to_string()),
-                        filter_text: None,
-                        insert_text: Some("ASC($0)".to_string()),
-                        text_edit: None,
-                        insert_text_format: None,
-                        additional_text_edits: None,
-                        command: Some(Command {
-                            title: "triggerNewCompletion".to_string(),
-                            command: "triggerNewCompletion".to_string(),
-                            arguments: None,
-                        }),
-                    },
-                ],
+                        command: None,
+                    })
+                    .collect(),
             }
         } else {
             CompletionList {

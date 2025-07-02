@@ -33,7 +33,7 @@ pub(crate) async fn fetch_sparql_result(
     timeout_ms: u32,
     method: RequestMethod,
 ) -> Result<SparqlResult, SparqlRequestError> {
-    use std::{collections::HashMap, time::Duration};
+    use std::time::Duration;
 
     use tokio::time::timeout;
 
@@ -48,8 +48,6 @@ pub(crate) async fn fetch_sparql_result(
             .header("User-Agent", "qlue-ls/1.0")
             .send(),
         RequestMethod::POST => {
-            let mut form_data = HashMap::new();
-            form_data.insert("query", query);
             Client::new()
                 .post(url)
                 .header(
@@ -58,7 +56,7 @@ pub(crate) async fn fetch_sparql_result(
                 )
                 .header("Accept", "application/sparql-results+json")
                 .header("User-Agent", "qlue-ls/1.0")
-                .form(&form_data)
+                .form(&[("query", query)])
                 .send()
         }
     };
@@ -109,6 +107,7 @@ pub(crate) async fn fetch_sparql_result(
     opts.set_signal(Some(&AbortSignal::timeout_with_u32(timeout_ms)));
 
     let encoded = encode(query);
+    let headers = request.headers();
     let request = match method {
         RequestMethod::GET => {
             opts.set_method("GET");
@@ -121,15 +120,14 @@ pub(crate) async fn fetch_sparql_result(
 
             opts.set_method("POST");
             opts.set_body(&JsString::from_str(query).unwrap());
+            headers
+                .set("Content-Type", "application/sparql-query")
+                .unwrap();
             Request::new_with_str_and_init(url, &opts).unwrap()
         }
     };
-    let headers = request.headers();
     headers
         .set("Accept", "application/sparql-results+json")
-        .unwrap();
-    headers
-        .set("Content-Type", "application/sparql-query")
         .unwrap();
     // headers.set("User-Agent", "qlue-ls/1.0").unwrap();
 

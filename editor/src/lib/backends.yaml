@@ -22,7 +22,7 @@
           }
           ORDER BY ?qlue_ls_entity
         }
-      } 
+      }
       GROUP BY ?qlue_ls_entity
       ORDER BY DESC(?score)
 
@@ -166,7 +166,7 @@
                 SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count_1) WHERE {
                   {{ context }} {{ local_context }}
                 }
-                GROUP BY ?qlue_ls_entity 
+                GROUP BY ?qlue_ls_entity
               }
               {
                 SELECT ?qlue_ls_entity ?_qlue_ls_label ?count WHERE {
@@ -625,7 +625,7 @@
         } UNION {
           { SELECT ?qlue_ls_entity ?name ?alias ?count WHERE {
             { SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
-              
+
               {{local_context}}
             } GROUP BY ?qlue_ls_entity }
             BIND(?qlue_ls_entity AS ?name) BIND(?qlue_ls_entity AS ?alias)
@@ -703,11 +703,7 @@
           GROUP BY ?qlue_ls_entity
         }
         OPTIONAL {
-          ?qlue_ls_entity rdf:type
-            [
-              obo:IAO_0000412 obo:chebi.owl;
-              rdfs:label ?qlue_ls_label_or_null
-            ]
+          ?qlue_ls_entity rdf:type [ rdfs:label ?qlue_ls_label_or_null ] .
         }
         OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label_or_null }
         BIND (COALESCE(?qlue_ls_label_or_null, ?qlue_ls_entity) AS ?qlue_ls_label)
@@ -991,8 +987,8 @@
             {% if search_term_uncompressed %}
             FILTER (REGEX(STR(?qlue_ls_entity), "^{{ search_term_uncompressed }}"))
             {% elif search_term %}
-            FILTER (REGEX(STR(?name), "^{{ search_term }}") || REGEX(STR(?alias), "^{{ search_term }}")) 
-            
+            FILTER (REGEX(STR(?name), "^{{ search_term }}") || REGEX(STR(?alias), "^{{ search_term }}"))
+
             {% endif %}
           }
         }
@@ -1061,7 +1057,7 @@
           SELECT ?qlue_ls_entity (COUNT(?qlue_ls_entity) AS ?count) WHERE {
             {{ local_context }}
           }
-          GROUP BY ?qlue_ls_entity 
+          GROUP BY ?qlue_ls_entity
         }
         {% if not search_term %}
         ?qui_tmp_1 ?qui_tmp_2 ?qlue_ls_entity .

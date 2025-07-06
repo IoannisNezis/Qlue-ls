@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### added
+
+- diagnostic and code-action for same subject triples
+
 ### changed
 
 - prefill order completions

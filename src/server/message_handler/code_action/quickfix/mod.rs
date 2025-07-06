@@ -1,3 +1,5 @@
+mod same_subject;
+
 use super::Diagnostic;
 use crate::server::{
     analysis::namespace_is_declared,
@@ -8,7 +10,7 @@ use crate::server::{
         textdocument::{Range, TextEdit},
         CodeAction, CodeActionKind, WorkspaceEdit,
     },
-    message_handler::diagnostic,
+    message_handler::{code_action::quickfix::same_subject::contract_triples, diagnostic},
     Server,
 };
 use ll_sparql_parser::syntax_kind::SyntaxKind;
@@ -28,6 +30,8 @@ pub(super) fn get_quickfix(
             shorten_uri(server, document_uri, diagnostic)
         } else if code == &*diagnostic::unused_prefix_declaration::CODE {
             remove_prefix_declaration(server, document_uri, diagnostic)
+        } else if code == &*diagnostic::same_subject::CODE {
+            contract_triples(server, document_uri, diagnostic)
         } else {
             log::warn!("Unknown diagnostic code: {:?}", code);
             Ok(None)

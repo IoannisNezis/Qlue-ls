@@ -1,4 +1,5 @@
 pub mod invalid_projection_variable;
+pub mod same_subject;
 pub mod uncompacted_uri;
 pub mod undeclared_prefix;
 pub mod ungrouped_select_variable;
@@ -51,6 +52,7 @@ pub(super) async fn handle_diagnostic_request(
     add!(uncompacted_uri::diagnostics);
     add!(ungrouped_select_variable::diagnostics);
     add!(invalid_projection_variable::diagnostics);
+    add!(same_subject::diagnostics);
 
     if client_support_workspace_edits(&server) {
         declare_and_undeclare_prefixes(&mut server, &request, &diagnostic_accu);

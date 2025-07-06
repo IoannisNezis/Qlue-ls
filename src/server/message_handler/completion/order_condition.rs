@@ -4,9 +4,7 @@ use futures::lock::Mutex;
 use ll_sparql_parser::syntax_kind::SyntaxKind;
 
 use crate::server::{
-    lsp::{
-        Command, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
-    },
+    lsp::{CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults},
     message_handler::completion::{variable, CompletionEnvironment, CompletionError},
     Server,
 };

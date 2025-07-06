@@ -111,7 +111,6 @@ pub(crate) async fn fetch_sparql_result(
                 .unwrap()
         }
         RequestMethod::POST => {
-            use js_sys::JsString;
             opts.set_method("POST");
             opts.set_body(&JsString::from_str(query).unwrap());
             Request::new_with_str_and_init(url, &opts).unwrap()
@@ -154,7 +153,6 @@ pub(crate) async fn fetch_sparql_result(
 
     // Check if the response status is OK (200-299)
     if !resp.ok() {
-        let status = resp.status();
         let status_text = resp.status_text();
         return Err(SparqlRequestError::Response(status_text));
     }

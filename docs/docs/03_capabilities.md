@@ -68,6 +68,7 @@ Here is a complete list of diagnostics qlue-ls can provide:
 | ❌ error    | invalid projection variable | projection variable is already defined            |
 | ⚠️  warning | unused prefix               | a declared prefix is not used                     |
 | ℹ️  info    | uncompacted uri             | a raw uncompacted uri is used                     |
+| ℹ️  info    | same subject                | multiple triples have the same subject            |
 
 ## ℹ️ Hover
 
@@ -88,10 +89,11 @@ For example if the user hovers `osmrel:62768` and a hover request is send, Qlue-
 Code action suggest complex changes to your input.
 Often in the form of a *quickfix*, to fix a diagnostic.
 
-| name                    | description                             | diagnostic        |
+| name                     | description                             | diagnostic        |
 |:-------------------------|:----------------------------------------|:------------------|
 | shorten uri              | shorten uri into compacted form         | uncompacted uri   |
 | declare prefix           | declares undeclared prefix (if known)   | undeclared prefix |
+| contract triples         | contract triples with same subject      | same subject      |
 | shorten all uri's        | shorten all uri's into compacted form   |                   |
 | add to result            | add variable to selected result         |                   |
 | filter variable          | add filter for this variable            |                   |

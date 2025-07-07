@@ -1,20 +1,16 @@
-import languageServerWorkerUrl from "./languageServer.worker?worker&url";
 import { configureDefaultWorkerFactory } from 'monaco-editor-wrapper/workers/workerLoaders';
+import type { WrapperConfig } from 'monaco-editor-wrapper';
+import { LogLevel, Uri } from 'vscode';
+
 import sparqlTextmateGrammar from './sparql.tmLanguage.json?raw';
 import sparqlLanguageConfig from './sparql.configuration.json?raw';
 import sparqlTheme from './sparql.theme.json?raw';
-import type { WrapperConfig } from 'monaco-editor-wrapper';
-import { LogLevel, Uri } from 'vscode';
+import languageServerWorker from "./languageServer.worker?worker";
 
 
 export async function buildWrapperConfig(container: HTMLElement, initial: string): Promise<WrapperConfig> {
         const workerPromise: Promise<Worker> = new Promise((resolve) => {
-                const instance = new Worker(new URL(languageServerWorkerUrl, window.location.origin),
-                        {
-                                name: "Language Server",
-                                type: "module"
-                        }
-                );
+                const instance: Worker = new languageServerWorker({name: "Language Server"});
                 instance.onmessage = (event) => {
                         if (event.data.type === "ready") {
                                 resolve(instance);

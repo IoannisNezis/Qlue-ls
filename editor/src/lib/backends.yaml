@@ -508,7 +508,7 @@
     name: UniProt
     slug: uniprot
     url: https://sparql.uniprot.org/sparql/
-    healthCheckUrl: https://qlever.cs.uni-freiburg.de/api/uniprot/ping
+    healthCheckUrl: https://sparql.uniprot.org/sparql/
   prefixMap:
     annotation: http://purl.uniprot.org/annotation/
     bibo: http://purl.org/ontology/bibo/

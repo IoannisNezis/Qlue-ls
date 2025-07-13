@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::server::lsp::{
     rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
     textdocument::Position,
+    LspMessage, RequestMarker, ResponseMarker,
 };
 
 use super::utils::TextDocumentPositionParams;
@@ -12,6 +13,18 @@ pub struct HoverRequest {
     #[serde(flatten)]
     base: RequestMessageBase,
     params: HoverParams,
+}
+
+impl LspMessage for HoverRequest {
+    type Kind = RequestMarker;
+
+    fn method(&self) -> Option<&str> {
+        Some("textDocument/hover")
+    }
+
+    fn id(&self) -> Option<&RequestId> {
+        Some(&self.base.id)
+    }
 }
 
 impl HoverRequest {
@@ -39,6 +52,18 @@ pub struct HoverResponse {
     #[serde(flatten)]
     base: ResponseMessageBase,
     result: Option<Hover>,
+}
+
+impl LspMessage for HoverResponse {
+    type Kind = ResponseMarker;
+
+    fn method(&self) -> Option<&str> {
+        Some("textDocument/hover")
+    }
+
+    fn id(&self) -> Option<&RequestId> {
+        self.base.request_id()
+    }
 }
 
 impl HoverResponse {

@@ -1,18 +1,6 @@
 use crate::server::configuration::RequestMethod;
 use crate::sparql::results::SparqlResult;
-#[cfg(target_arch = "wasm32")]
-use js_sys::JsString;
-#[cfg(not(target_arch = "wasm32"))]
-use reqwest::Client;
-#[cfg(target_arch = "wasm32")]
-use std::str::FromStr;
 use urlencoding::encode;
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::JsCast;
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen_futures::JsFuture;
-#[cfg(target_arch = "wasm32")]
-use web_sys::{AbortSignal, Request, RequestInit, RequestMode, Response};
 
 /// Everything that can go wrong when sending a SPARQL request
 /// - `Timeout`: The request took to long
@@ -33,8 +21,8 @@ pub(crate) async fn fetch_sparql_result(
     timeout_ms: u32,
     method: RequestMethod,
 ) -> Result<SparqlResult, SparqlRequestError> {
+    use reqwest::Client;
     use std::time::Duration;
-
     use tokio::time::timeout;
 
     let request = match method {
@@ -80,6 +68,7 @@ pub(crate) async fn fetch_sparql_result(
 
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) async fn check_server_availability(url: &str) -> bool {
+    use reqwest::Client;
     let response = Client::new().get(url).send();
     response.await.is_ok_and(|res| res.status() == 200)
     // let opts = RequestInit::new();
@@ -101,6 +90,12 @@ pub(crate) async fn fetch_sparql_result(
     timeout_ms: u32,
     method: RequestMethod,
 ) -> Result<SparqlResult, SparqlRequestError> {
+    use js_sys::JsString;
+    use std::str::FromStr;
+    use wasm_bindgen::JsCast;
+    use wasm_bindgen_futures::JsFuture;
+    use web_sys::{AbortSignal, Request, RequestInit, RequestMode, Response, WorkerGlobalScope};
+
     let opts = RequestInit::new();
     opts.set_signal(Some(&AbortSignal::timeout_with_u32(timeout_ms)));
 
@@ -128,12 +123,11 @@ pub(crate) async fn fetch_sparql_result(
     // headers.set("User-Agent", "qlue-ls/1.0").unwrap();
 
     // Get global worker scope
-    let worker_global = js_sys::global().unchecked_into::<web_sys::WorkerGlobalScope>();
+    let worker_global: WorkerGlobalScope = js_sys::global().unchecked_into();
 
-    let performance = js_sys::global()
-        .unchecked_into::<web_sys::WorkerGlobalScope>()
+    let performance = worker_global
         .performance()
-        .unwrap();
+        .expect("performance should be available");
 
     let start = performance.now();
 
@@ -173,7 +167,11 @@ pub(crate) async fn fetch_sparql_result(
 
 #[cfg(target_arch = "wasm32")]
 pub(crate) async fn check_server_availability(url: &str) -> bool {
-    let worker_global = js_sys::global().unchecked_into::<web_sys::WorkerGlobalScope>();
+    use wasm_bindgen::JsCast;
+    use wasm_bindgen_futures::JsFuture;
+    use web_sys::{Request, RequestInit, RequestMode, Response, WorkerGlobalScope};
+
+    let worker_global: WorkerGlobalScope = js_sys::global().unchecked_into();
     let opts = RequestInit::new();
     opts.set_method("GET");
     opts.set_mode(RequestMode::Cors);

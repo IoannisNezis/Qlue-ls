@@ -1,7 +1,8 @@
 use crate::server::lsp::{
     capabilities::{ClientCapabilities, ServerCapabilities},
-    rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
+    rpc::{NotificationMessage, RequestId, RequestMessageBase, ResponseMessageBase},
     workdoneprogress::WorkDoneProgressParams,
+    LspMessage, RequestMarker, ResponseMarker,
 };
 use serde::{Deserialize, Serialize};
 
@@ -10,6 +11,18 @@ pub struct InitializeRequest {
     #[serde(flatten)]
     pub base: RequestMessageBase,
     pub params: InitializeParams,
+}
+
+impl LspMessage for InitializeRequest {
+    type Kind = RequestMarker;
+
+    fn method(&self) -> Option<&str> {
+        Some("initialize")
+    }
+
+    fn id(&self) -> Option<&RequestId> {
+        Some(&self.base.id)
+    }
 }
 
 impl InitializeRequest {
@@ -63,6 +76,18 @@ pub struct InitializeResponse {
     pub result: InitializeResult,
 }
 
+impl LspMessage for InitializeResponse {
+    type Kind = ResponseMarker;
+
+    fn method(&self) -> Option<&str> {
+        None
+    }
+
+    fn id(&self) -> Option<&RequestId> {
+        self.base.id.request_id()
+    }
+}
+
 impl InitializeResponse {
     pub fn new(
         id: &RequestId,
@@ -76,6 +101,24 @@ impl InitializeResponse {
                 server_info: Some(server_info.clone()),
             },
         }
+    }
+}
+
+#[derive(Debug, Deserialize, PartialEq)]
+pub struct InitializedNotification {
+    #[serde(flatten)]
+    pub base: NotificationMessage,
+}
+
+impl LspMessage for InitializedNotification {
+    type Kind = ResponseMarker;
+
+    fn method(&self) -> Option<&str> {
+        Some("initialized")
+    }
+
+    fn id(&self) -> Option<&RequestId> {
+        None
     }
 }
 

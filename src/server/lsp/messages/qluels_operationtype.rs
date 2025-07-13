@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::server::lsp::{
     rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
     textdocument::TextDocumentIdentifier,
+    LspMessage, RequestMarker, ResponseMarker,
 };
 
 #[derive(Debug, Deserialize, PartialEq)]
@@ -10,6 +11,18 @@ pub struct IdentifyOperationTypeRequest {
     #[serde(flatten)]
     pub base: RequestMessageBase,
     pub params: IdentifyOperationTypeParams,
+}
+
+impl LspMessage for IdentifyOperationTypeRequest {
+    type Kind = RequestMarker;
+
+    fn method(&self) -> Option<&str> {
+        Some("qlueLs/identifyOperationType")
+    }
+
+    fn id(&self) -> Option<&RequestId> {
+        Some(&self.base.id)
+    }
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
@@ -24,6 +37,18 @@ pub struct IdentifyOperationTypeResponse {
     #[serde(flatten)]
     base: ResponseMessageBase,
     result: DetermineOperationTypeResult,
+}
+
+impl LspMessage for IdentifyOperationTypeResponse {
+    type Kind = ResponseMarker;
+
+    fn method(&self) -> Option<&str> {
+        None
+    }
+
+    fn id(&self) -> Option<&RequestId> {
+        self.base.request_id()
+    }
 }
 
 impl IdentifyOperationTypeResponse {

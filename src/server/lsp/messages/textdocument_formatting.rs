@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::server::lsp::{
     rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
     textdocument::{TextDocumentIdentifier, TextEdit},
+    LspMessage, RequestMarker, ResponseMarker,
 };
 
 #[derive(Debug, Deserialize, PartialEq)]
@@ -11,6 +12,19 @@ pub struct FormattingRequest {
     base: RequestMessageBase,
     params: DocumentFormattingParams,
 }
+
+impl LspMessage for FormattingRequest {
+    type Kind = RequestMarker;
+
+    fn method(&self) -> Option<&str> {
+        Some("textDocument/formatting")
+    }
+
+    fn id(&self) -> Option<&RequestId> {
+        Some(&self.base.id)
+    }
+}
+
 impl FormattingRequest {
     pub(crate) fn get_id(&self) -> &RequestId {
         &self.base.id
@@ -45,6 +59,18 @@ pub struct FormattingResponse {
     #[serde(flatten)]
     base: ResponseMessageBase,
     result: Vec<TextEdit>,
+}
+
+impl LspMessage for FormattingResponse {
+    type Kind = ResponseMarker;
+
+    fn method(&self) -> Option<&str> {
+        Some("textDocument/formatting")
+    }
+
+    fn id(&self) -> Option<&RequestId> {
+        self.base.request_id()
+    }
 }
 
 impl FormattingResponse {

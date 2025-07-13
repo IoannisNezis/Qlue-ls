@@ -6,6 +6,7 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 use crate::server::lsp::{
     rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
     textdocument::{DocumentUri, Range, TextDocumentIdentifier, TextEdit},
+    LspMessage, RequestMarker, ResponseMarker,
 };
 
 use super::{diagnostic::Diagnostic, workspace::WorkspaceEdit};
@@ -19,6 +20,18 @@ pub struct CodeActionRequest {
 impl CodeActionRequest {
     pub(crate) fn get_id(&self) -> &RequestId {
         &self.base.id
+    }
+}
+
+impl LspMessage for CodeActionRequest {
+    type Kind = RequestMarker;
+
+    fn method(&self) -> Option<&str> {
+        Some("textDocument/codeAction")
+    }
+
+    fn id(&self) -> Option<&RequestId> {
+        Some(&self.base.id)
     }
 }
 
@@ -71,6 +84,18 @@ pub struct CodeActionResponse {
     #[serde(flatten)]
     base: ResponseMessageBase,
     result: Vec<CodeAction>,
+}
+
+impl LspMessage for CodeActionResponse {
+    type Kind = ResponseMarker;
+
+    fn method(&self) -> Option<&str> {
+        None
+    }
+
+    fn id(&self) -> Option<&RequestId> {
+        self.base.request_id()
+    }
 }
 
 impl CodeActionResponse {

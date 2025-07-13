@@ -3,6 +3,8 @@ use std::{any::type_name, collections::HashMap, fmt::Display};
 use log::error;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
+use crate::server::lsp::{LspMessage, ResponseMarker};
+
 use super::{
     base_types::LSPAny,
     errors::{ErrorCode, LSPError},
@@ -71,7 +73,7 @@ impl Message {
     }
 }
 
-// NOTE: The only purpouse of thi struct is to recover
+// NOTE: The only purpouse of this struct is to recover
 // the id of a message in case a error occurs
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct RecoverId {
@@ -162,6 +164,18 @@ pub struct ResponseMessage {
     pub error: Option<LSPError>,
 }
 
+impl LspMessage for ResponseMessage {
+    type Kind = ResponseMarker;
+
+    fn method(&self) -> Option<&str> {
+        None
+    }
+
+    fn id(&self) -> Option<&RequestId> {
+        self.id.request_id()
+    }
+}
+
 impl ResponseMessage {
     pub fn error(id: RequestIdOrNull, error: LSPError) -> Self {
         Self {
@@ -180,6 +194,15 @@ pub enum RequestIdOrNull {
     Null,
 }
 
+impl RequestIdOrNull {
+    pub fn request_id(&self) -> Option<&RequestId> {
+        match self {
+            RequestIdOrNull::RequestId(request_id) => Some(request_id),
+            RequestIdOrNull::Null => None,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct ResponseMessageBase {
     #[serde(flatten)]
@@ -190,7 +213,7 @@ pub struct ResponseMessageBase {
     pub id: RequestIdOrNull,
     //The result of a request. This member is REQUIRED on success.
     // This member MUST NOT exist if there was an error invoking the method.
-    // NOTE: This is omited due to the flatten serde mechanism
+    // NOTE: This is omitted due to the flatten serde mechanism
     // pub result: Option<LSPAny>,
     /**
      * The error object in case a request fails.
@@ -207,6 +230,9 @@ impl ResponseMessageBase {
             id: RequestIdOrNull::RequestId(id.clone()),
             error: None,
         }
+    }
+    pub fn request_id(&self) -> Option<&RequestId> {
+        self.id.request_id()
     }
 }
 

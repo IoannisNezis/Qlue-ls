@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crate::server::lsp::{
     rpc::{RequestMessageBase, ResponseMessageBase},
     textdocument::TextEdit,
+    LspMessage, RequestMarker, ResponseMarker,
 };
 use serde::{Deserialize, Serialize};
 
@@ -14,6 +15,18 @@ pub struct WorkspaceEditRequest {
     #[serde(flatten)]
     pub base: RequestMessageBase,
     pub params: ApplyWorkspaceEditParams,
+}
+
+impl LspMessage for WorkspaceEditRequest {
+    type Kind = RequestMarker;
+
+    fn method(&self) -> Option<&str> {
+        Some("workspace/applyEdit")
+    }
+
+    fn id(&self) -> Option<&crate::server::lsp::rpc::RequestId> {
+        Some(&self.base.id)
+    }
 }
 
 impl WorkspaceEditRequest {
@@ -42,6 +55,18 @@ pub struct WorkspaceEditResponse {
     #[serde(flatten)]
     base: ResponseMessageBase,
     pub result: Option<ApplyWorkspaceEditResult>,
+}
+
+impl LspMessage for WorkspaceEditResponse {
+    type Kind = ResponseMarker;
+
+    fn method(&self) -> Option<&str> {
+        Some("workspace/applyEdit")
+    }
+
+    fn id(&self) -> Option<&crate::server::lsp::rpc::RequestId> {
+        self.base.request_id()
+    }
 }
 
 #[derive(Debug, Deserialize, PartialEq)]

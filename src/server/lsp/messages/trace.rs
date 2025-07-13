@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::server::lsp::rpc::NotificationMessageBase;
+use crate::server::lsp::{rpc::NotificationMessageBase, LspMessage, NotificationMarker};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SetTraceNotification {
@@ -9,12 +9,24 @@ pub struct SetTraceNotification {
     pub params: SetTraceParams,
 }
 
+impl LspMessage for SetTraceNotification {
+    type Kind = NotificationMarker;
+
+    fn method(&self) -> Option<&str> {
+        Some("$/setTrace")
+    }
+
+    fn id(&self) -> Option<&crate::server::lsp::rpc::RequestId> {
+        None
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SetTraceParams {
     pub value: TraceValue,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum TraceValue {
     Off,

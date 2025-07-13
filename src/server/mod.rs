@@ -6,10 +6,11 @@ mod fetch;
 mod lsp;
 mod state;
 mod tools;
+mod tracing;
 
 mod message_handler;
 
-use std::{any::type_name, rc::Rc};
+use std::{any::type_name, fmt::Debug, rc::Rc};
 
 use capabilities::create_capabilities;
 use configuration::Settings;
@@ -31,6 +32,11 @@ use serde::Serialize;
 use state::ServerState;
 use tools::Tools;
 use wasm_bindgen::prelude::wasm_bindgen;
+
+use crate::server::{
+    lsp::{LspMessage, TraceValue},
+    tracing::log_trace,
+};
 
 #[wasm_bindgen]
 pub struct Server {
@@ -74,7 +80,7 @@ impl Server {
 
     fn send_message<T>(&self, message: T) -> Result<(), LSPError>
     where
-        T: Serialize,
+        T: Serialize + LspMessage + Debug,
     {
         let message_string = serde_json::to_string(&message).map_err(|error| {
             LSPError::new(
@@ -87,6 +93,10 @@ impl Server {
             )
         })?;
         (self.send_message_clusure)(message_string);
+        if self.state.trace_value != TraceValue::Off {
+            log_trace(self.state.trace_events.clone(), &message);
+        }
+
         Ok(())
     }
 
@@ -129,7 +139,7 @@ impl Server {
 
 async fn handle_error(server_rc: Rc<Mutex<Server>>, message: &str, error: LSPError) {
     log::error!(
-        "Error occured while handling message:\n\"{}\"\n\n{:?}\n{}",
+        "Error occurred while handling message:\n\"{}\"\n\n{:?}\n{}",
         message,
         error.code,
         error.message

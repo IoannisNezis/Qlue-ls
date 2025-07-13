@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::server::lsp::{
     rpc::NotificationMessage,
     textdocument::{Range, VersionedTextDocumentIdentifier},
+    LspMessage, NotificationMarker,
 };
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -12,6 +13,18 @@ pub struct DidChangeTextDocumentNotification {
     #[serde(flatten)]
     base: NotificationMessage,
     pub params: DidChangeTextDocumentParams,
+}
+
+impl LspMessage for DidChangeTextDocumentNotification {
+    type Kind = NotificationMarker;
+
+    fn method(&self) -> Option<&str> {
+        Some("textDocument/didChange")
+    }
+
+    fn id(&self) -> Option<&crate::server::lsp::rpc::RequestId> {
+        None
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]

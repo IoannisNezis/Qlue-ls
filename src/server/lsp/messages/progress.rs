@@ -6,6 +6,7 @@ use crate::server::lsp::{
         ProgressToken, ProgressValue, WorkDoneProgressBegin, WorkDoneProgressEnd,
         WorkDoneProgressReport,
     },
+    LspMessage, NotificationMarker,
 };
 
 #[derive(Debug, Serialize)]
@@ -13,6 +14,18 @@ pub struct ProgressNotification {
     #[serde(flatten)]
     pub base: NotificationMessageBase,
     pub params: ProgressParams<ProgressValue>,
+}
+
+impl LspMessage for ProgressNotification {
+    type Kind = NotificationMarker;
+
+    fn method(&self) -> Option<&str> {
+        Some("$/progress")
+    }
+
+    fn id(&self) -> Option<&crate::server::lsp::rpc::RequestId> {
+        None
+    }
 }
 
 impl ProgressNotification {

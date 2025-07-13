@@ -5,6 +5,7 @@ use crate::server::lsp::{
     base_types::LSPAny,
     rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
     textdocument::{Range, TextEdit},
+    LspMessage, RequestMarker, ResponseMarker,
 };
 
 use super::{command::Command, utils::TextDocumentPositionParams};
@@ -14,6 +15,18 @@ pub struct CompletionRequest {
     #[serde(flatten)]
     base: RequestMessageBase,
     pub params: CompletionParams,
+}
+
+impl LspMessage for CompletionRequest {
+    type Kind = RequestMarker;
+
+    fn method(&self) -> Option<&str> {
+        Some("textDocument/completion")
+    }
+
+    fn id(&self) -> Option<&RequestId> {
+        Some(&self.base.id)
+    }
 }
 
 impl CompletionRequest {
@@ -57,6 +70,18 @@ pub struct CompletionResponse {
     #[serde(flatten)]
     base: ResponseMessageBase,
     result: Option<CompletionList>,
+}
+
+impl LspMessage for CompletionResponse {
+    type Kind = ResponseMarker;
+
+    fn method(&self) -> Option<&str> {
+        None
+    }
+
+    fn id(&self) -> Option<&RequestId> {
+        self.base.request_id()
+    }
 }
 
 impl CompletionResponse {

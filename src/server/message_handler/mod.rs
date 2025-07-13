@@ -42,8 +42,8 @@ use tokio::task::spawn_local;
 use wasm_bindgen_futures::spawn_local;
 
 use crate::server::{
-    handle_error,
-    lsp::errors::ErrorCode,
+    handle_error, log_trace,
+    lsp::{errors::ErrorCode, TraceValue},
     message_handler::{
         identification::handle_identify_request,
         settings::{handle_change_settings_notification, handle_default_settings_request},
@@ -63,18 +63,32 @@ pub(super) async fn dispatch(
 ) -> Result<(), LSPError> {
     let message = deserialize_message(message_string)?;
     let method = message.get_method().unwrap_or("response");
-
     macro_rules! call {
-        ($handler:ident) => {
-            $handler(server_rc, message.parse()?).await
-        };
+        ($handler:ident) => {{
+            let message = message.parse()?;
+            {
+                let server = server_rc.lock().await;
+                if server.state.trace_value != TraceValue::Off {
+                    log_trace(server.state.trace_events.clone(), &message);
+                }
+            }
+            $handler(server_rc, message).await
+        }};
     }
 
     macro_rules! call_async {
         ($handler:ident) => {{
             let message_copy = message_string.to_string();
+
             let task = spawn_local(async move {
-                if let Err(err) = $handler(server_rc.clone(), message.parse().unwrap()).await {
+                let message = message.parse().unwrap();
+                {
+                    let server = server_rc.lock().await;
+                    if server.state.trace_value != TraceValue::Off {
+                        log_trace(server.state.trace_events.clone(), &message);
+                    }
+                }
+                if let Err(err) = $handler(server_rc.clone(), message).await {
                     handle_error(server_rc, &message_copy, err).await;
                 }
             });

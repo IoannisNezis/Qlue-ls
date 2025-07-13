@@ -1,13 +1,25 @@
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
-use crate::server::lsp::rpc::NotificationMessageBase;
+use crate::server::lsp::{rpc::NotificationMessageBase, LspMessage, NotificationMarker};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct ShowMessageNotification {
     #[serde(flatten)]
     base: NotificationMessageBase,
     params: ShowMessageParams,
+}
+
+impl LspMessage for ShowMessageNotification {
+    type Kind = NotificationMarker;
+
+    fn method(&self) -> Option<&str> {
+        Some("window/showMessage")
+    }
+
+    fn id(&self) -> Option<&crate::server::lsp::rpc::RequestId> {
+        None
+    }
 }
 
 #[allow(dead_code)]

@@ -6,8 +6,8 @@ use crate::server::{
     configuration::BackendConfiguration,
     lsp::{
         errors::{ErrorCode, LSPError},
-        rpc::{NotificationMessage, RequestMessage},
-        InitializeRequest, InitializeResponse, ProgressNotification, ShutdownResponse,
+        ExitNotification, InitializeRequest, InitializeResponse, InitializedNotification,
+        ProgressNotification, ShutdownRequest, ShutdownResponse,
     },
     state::ServerStatus,
     Server,
@@ -15,7 +15,7 @@ use crate::server::{
 
 pub(super) async fn handle_shutdown_request(
     server_rc: Rc<Mutex<Server>>,
-    request: RequestMessage,
+    request: ShutdownRequest,
 ) -> Result<(), LSPError> {
     let mut server = server_rc.lock().await;
     log::info!("Received shutdown request, preparing to shut down");
@@ -30,7 +30,7 @@ pub(super) async fn handle_shutdown_request(
         )),
         ServerStatus::Running => {
             server.state.status = ServerStatus::ShuttingDown;
-            server.send_message(ShutdownResponse::new(&request.id))
+            server.send_message(ShutdownResponse::new(&request.base.id))
         }
     }
 }
@@ -192,7 +192,7 @@ pub(super) async fn handle_initialize_request(
 
 pub(super) async fn handle_initialized_notification(
     server_rc: Rc<Mutex<Server>>,
-    _initialized_notification: NotificationMessage,
+    _initialized_notification: InitializedNotification,
 ) -> Result<(), LSPError> {
     log::info!("initialization completed");
     server_rc.lock().await.state.status = ServerStatus::Running;
@@ -201,7 +201,7 @@ pub(super) async fn handle_initialized_notification(
 
 pub(super) async fn handle_exit_notification(
     _server_rc: Rc<Mutex<Server>>,
-    _initialized_notification: NotificationMessage,
+    _initialized_notification: ExitNotification,
 ) -> Result<(), LSPError> {
     log::info!("Received exit notification, shutting down!");
     exit(0);

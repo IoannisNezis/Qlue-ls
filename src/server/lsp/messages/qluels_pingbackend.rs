@@ -1,12 +1,27 @@
 use serde::{Deserialize, Serialize};
 
-use crate::server::lsp::rpc::{RequestId, RequestMessageBase, ResponseMessageBase};
+use crate::server::lsp::{
+    rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
+    LspMessage, RequestMarker, ResponseMarker,
+};
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct PingBackendRequest {
     #[serde(flatten)]
     pub base: RequestMessageBase,
     pub params: PingBackendParams,
+}
+
+impl LspMessage for PingBackendRequest {
+    type Kind = RequestMarker;
+
+    fn method(&self) -> Option<&str> {
+        Some("qlueLs/pingBackend")
+    }
+
+    fn id(&self) -> Option<&RequestId> {
+        Some(&self.base.id)
+    }
 }
 
 impl PingBackendRequest {
@@ -28,16 +43,28 @@ pub struct PingBackendResponse {
     pub result: PingBackendResult,
 }
 
+impl LspMessage for PingBackendResponse {
+    type Kind = ResponseMarker;
+
+    fn method(&self) -> Option<&str> {
+        None
+    }
+
+    fn id(&self) -> Option<&RequestId> {
+        self.base.request_id()
+    }
+}
+
 impl PingBackendResponse {
-    pub fn new(id: &RequestId, availible: bool) -> Self {
+    pub fn new(id: &RequestId, available: bool) -> Self {
         PingBackendResponse {
             base: ResponseMessageBase::success(id),
-            result: PingBackendResult { availible },
+            result: PingBackendResult { available },
         }
     }
 }
 
 #[derive(Debug, Serialize, PartialEq)]
 pub struct PingBackendResult {
-    pub availible: bool,
+    pub available: bool,
 }

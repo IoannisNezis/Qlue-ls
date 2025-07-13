@@ -8,7 +8,7 @@ use crate::server::{
     },
     Server,
 };
-use ll_sparql_parser::ast::{AstNode, GroupGraphPattern, QueryUnit, Triple, TriplesBlock};
+use ll_sparql_parser::ast::{AstNode, GroupGraphPattern, QueryUnit, Triple};
 
 pub static CODE: LazyLock<DiagnosticCode> =
     LazyLock::new(|| DiagnosticCode::String("same-subject".to_string()));
@@ -16,7 +16,7 @@ pub static CODE: LazyLock<DiagnosticCode> =
 pub(super) fn diagnostics(
     document: &TextDocumentItem,
     query_unit: &QueryUnit,
-    server: &Server,
+    _server: &Server,
 ) -> Option<Vec<Diagnostic>> {
     Some(
         query_unit

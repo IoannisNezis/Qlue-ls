@@ -1,4 +1,4 @@
-use crate::server::configuration::RequestMethod;
+use crate::server::{configuration::RequestMethod, tracing::TraceFile};
 
 use super::lsp::{
     errors::{ErrorCode, LSPError},
@@ -6,8 +6,9 @@ use super::lsp::{
     Backend, TextDocumentContentChangeEvent, TraceValue,
 };
 use curies::{Converter, CuriesError};
+use futures::lock::Mutex;
 use ll_sparql_parser::{parse, SyntaxNode};
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 
 #[derive(Debug, PartialEq)]
 pub enum ServerStatus {
@@ -27,6 +28,7 @@ pub struct ServerState {
     parse_tree_cache: Option<(String, u32, SyntaxNode)>,
     request_id_counter: u32,
     pub label_memory: HashMap<String, String>,
+    pub(super) trace_events: Rc<Mutex<TraceFile>>,
 }
 
 impl ServerState {
@@ -42,6 +44,7 @@ impl ServerState {
             parse_tree_cache: None,
             request_id_counter: 0,
             label_memory: HashMap::new(),
+            trace_events: Rc::new(Mutex::new(TraceFile::default())),
         }
     }
 

@@ -1366,3 +1366,24 @@ fn format_a() {
     );
     format_and_compare(ugly_query, pretty_query, &FormatSettings::default());
 }
+
+#[test]
+fn format_emojis() {
+    let ugly_query = indoc! {
+    "PREFIX 🌌: <http://www.wikidata.org/entity/>
+     PREFIX 🌠: <http://www.wikidata.org/prop/direct/>
+     SELECT ?😀 ?🛰️ {
+       ?ä🛰️ 🌠:P31 🌌:Q1049294 ;
+       🌠:P487 ?😀 .
+     }
+    "};
+    let pretty_query = indoc! {
+    "PREFIX 🌌: <http://www.wikidata.org/entity/>
+     PREFIX 🌠: <http://www.wikidata.org/prop/direct/>
+     SELECT ?😀 ?🛰️ {
+       ?ä🛰️ 🌠:P31 🌌:Q1049294 ;
+            🌠:P487 ?😀 .
+     }
+    "};
+    format_and_compare(ugly_query, pretty_query, &FormatSettings::default());
+}

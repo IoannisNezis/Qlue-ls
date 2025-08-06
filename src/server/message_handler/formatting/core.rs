@@ -1,8 +1,8 @@
 use core::fmt;
 use std::vec;
 
-use ll_sparql_parser::{parse, syntax_kind::SyntaxKind, SyntaxElement, SyntaxNode};
-use text_size::{TextRange, TextSize};
+use ll_sparql_parser::{ast::Subject, parse, syntax_kind::SyntaxKind, SyntaxElement, SyntaxNode};
+use text_size::{TextLen, TextRange, TextSize};
 
 use crate::server::{
     configuration::FormatSettings,
@@ -308,7 +308,7 @@ impl<'a> Walker<'a> {
                 }
             }
             SyntaxKind::TriplesSameSubjectPath => {
-                let subject = children.first();
+                let subject = children.first().and_then(|element| element.as_node());
                 let prop_list = children.last().and_then(|node| node.as_node());
                 match (subject, prop_list) {
                     (Some(subject), Some(prop_list))
@@ -316,7 +316,7 @@ impl<'a> Walker<'a> {
                     {
                         let insert = match self.settings.align_predicates {
                             true => {
-                                &" ".repeat((subject.text_range().len() + TextSize::new(1)).into())
+                                &" ".repeat((dbg!(subject.to_string().chars().count()) + 1).into())
                             }
                             false => "  ",
                         };

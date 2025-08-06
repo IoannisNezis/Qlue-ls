@@ -49,7 +49,6 @@ pub(super) async fn handle_diagnostic_request(
     add!(unused_prefix_declaration::diagnostics);
     add!(undeclared_prefix::diagnostics);
     add!(uncompacted_uri::diagnostics);
-    add!(uncompacted_uri::diagnostics);
     add!(ungrouped_select_variable::diagnostics);
     add!(invalid_projection_variable::diagnostics);
     add!(same_subject::diagnostics);

@@ -42,16 +42,19 @@ pub(super) fn code_actions(
     let suffix = format!("\n{}}}\n}}", indent);
     let text = select_query.text();
     let indent_edits = text.char_indices().filter_map(|(idx, char)| {
-        (char == '\n').then_some(TextEdit::new(
-            Range::from_byte_offset_range(
-                TextRange::empty(
-                    select_clause.syntax().text_range().start() + TextSize::new((idx + 1) as u32),
-                ),
-                &document.text,
+        (char == '\n').then(|| {
+            TextEdit::new(
+                Range::from_byte_offset_range(
+                    TextRange::empty(
+                        select_clause.syntax().text_range().start()
+                            + TextSize::new((idx + 1) as u32),
+                    ),
+                    &document.text,
+                )
+                .unwrap(),
+                &indent.repeat(2),
             )
-            .unwrap(),
-            &indent.repeat(2),
-        ))
+        })
     });
     let mut edits = Vec::new();
     edits.push(TextEdit::new(
@@ -154,6 +157,43 @@ mod test {
                    {
                      SELECT * WHERE {
                        ?var1 <> ?var2
+                     }
+                   }
+                 }
+                 "
+            }
+        );
+    }
+
+    #[test]
+    fn transform_into_sub_select_star_emogi() {
+        let input = indoc! {
+            "SELECT ?😀 ?🛰️  {
+               ?🛰️ 🌠:P31 🌌:Q1049294 ;
+                   🌠:P487 ?😀 .
+             }"
+        };
+        let mut document = TextDocumentItem::new("query.rq", input);
+        let tree = parse(&document.text);
+        let token = tree.covering_element(TextRange::new(TextSize::new(0), TextSize::new(0)));
+        let action = code_actions(token, &document, 2).unwrap();
+        document.apply_text_edits(
+            action
+                .edit
+                .changes
+                .unwrap()
+                .into_values()
+                .flatten()
+                .collect(),
+        );
+        assert_eq!(
+            document.text,
+            indoc! {
+                "SELECT ?😀 ?🛰️ WHERE {
+                   {
+                     SELECT ?😀 ?🛰️  {
+                       ?🛰️ 🌠:P31 🌌:Q1049294 ;
+                           🌠:P487 ?😀 .
                      }
                    }
                  }

@@ -94,12 +94,15 @@ pub(crate) fn contract_triples(
     }
     if let Some(triple) = triples.first() {
         let verb_position = Position::from_byte_index(
-            triple
-                .properties_list_path()
-                .unwrap()
-                .syntax()
-                .text_range()
-                .start(),
+            TextSize::new(
+                triple
+                    .properties_list_path()
+                    .unwrap()
+                    .syntax()
+                    .to_string()
+                    .chars()
+                    .count() as u32,
+            ),
             &document.text,
         )
         .unwrap();

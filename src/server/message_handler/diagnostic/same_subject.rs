@@ -39,7 +39,6 @@ pub(super) fn diagnostics(
                             .or_insert(vec![triple]);
                     }
                 }
-                log::info!("{:?}", buckets);
                 buckets
                     .into_values()
                     .filter(|bucket| bucket.len() >= 2)

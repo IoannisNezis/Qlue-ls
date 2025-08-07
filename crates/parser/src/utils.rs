@@ -10,11 +10,7 @@ pub fn continuations_at(root: &SyntaxNode, mut offset: TextSize) -> Option<Vec<S
         offset = last_token.text_range().end();
         last_token
     } else {
-        match root.token_at_offset(offset) {
-            rowan::TokenAtOffset::Single(token) => Some(token),
-            rowan::TokenAtOffset::Between(token1, _) => Some(token1),
-            rowan::TokenAtOffset::None => None,
-        }?
+        root.token_at_offset(offset).left_biased()?
     };
     let mut parent = token.parent()?;
 
@@ -46,6 +42,7 @@ pub fn continuations_at(root: &SyntaxNode, mut offset: TextSize) -> Option<Vec<S
                         return Some(result);
                     }
                 }
+                // NOTE: Skip comments & whitespace.
                 if child.kind().is_trivia() {
                     children_stack.pop();
                 } else if child.kind() == SyntaxKind::Error {
@@ -110,17 +107,11 @@ pub fn continuations_at(root: &SyntaxNode, mut offset: TextSize) -> Option<Vec<S
                 }
             } else {
                 // NOTE: The rule stack is empty ->
-                for rule in rule_stack.iter().rev() {
-                    result.append(&mut rule.first());
-                    if !rule.is_nullable() {
-                        break;
-                    }
-                }
                 return Some(result);
             }
         } else {
             // NOTE: The childrens stack is empty
-            // -> Add remaining stack to solution
+            // -> Add remaining rule stack to solution
             // -> if the stack is nullable, move up in the tree
             while let Some(rule) = rule_stack.pop() {
                 result.append(&mut rule.first());
@@ -268,7 +259,7 @@ mod test {
         let root = parse_query(input);
         assert_eq!(
             continuations_at(&root, 20.into()),
-            vec![SyntaxKind::SolutionModifier,].into()
+            vec![SyntaxKind::SolutionModifier, SyntaxKind::ValuesClause].into()
         );
     }
 }

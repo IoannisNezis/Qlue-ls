@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### fixed
+
+- handle subject completion request gracefull
+- fix formatting for codepoints with with 2 (emojis)
+- fix subselect code action when emojis are present
+
 ### added
 
 - tracing capability

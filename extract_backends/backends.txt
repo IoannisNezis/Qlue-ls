@@ -1,6 +1,0 @@
-wikidata
-osm-planet
-uniprot
-pubchem
-dblp
-imdb

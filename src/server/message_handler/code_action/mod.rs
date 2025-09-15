@@ -81,7 +81,7 @@ fn generate_code_actions(
         code_actions.extend(variable::code_actions(var, document))
     } else if matches!(
         selected_element.kind(),
-        SyntaxKind::SelectQuery | SyntaxKind::SELECT
+        SyntaxKind::SelectQuery | SyntaxKind::SELECT | SyntaxKind::SubSelect
     ) {
         code_actions.extend(select::code_actions(
             selected_element,

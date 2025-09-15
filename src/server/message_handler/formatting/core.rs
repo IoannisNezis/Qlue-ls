@@ -1,8 +1,8 @@
 use core::fmt;
 use std::vec;
 
-use ll_sparql_parser::{ast::Subject, parse, syntax_kind::SyntaxKind, SyntaxElement, SyntaxNode};
-use text_size::{TextLen, TextRange, TextSize};
+use ll_sparql_parser::{parse, syntax_kind::SyntaxKind, SyntaxElement, SyntaxNode};
+use text_size::{TextRange, TextSize};
 
 use crate::server::{
     configuration::FormatSettings,

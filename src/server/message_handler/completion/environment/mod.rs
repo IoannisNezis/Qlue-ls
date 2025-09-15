@@ -310,7 +310,7 @@ impl CompletionEnvironment {
         let tree = parse(&document.text);
         let trigger_token = get_trigger_token(&tree, offset);
         let backend = trigger_token.as_ref().and_then(|token| {
-            resolve_backend(&server, &QueryUnit::cast(tree.clone()).unwrap(), &token)
+            resolve_backend(&server, &QueryUnit::cast(tree.clone())?, &token)
         });
         let anchor_token = trigger_token.and_then(|token| get_anchor_token(token, offset));
         let search_term = get_search_term(&tree, &anchor_token, offset);

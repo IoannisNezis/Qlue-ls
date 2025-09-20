@@ -1373,7 +1373,7 @@ fn format_emojis() {
     "PREFIX 🌌: <http://www.wikidata.org/entity/>
      PREFIX 🌠: <http://www.wikidata.org/prop/direct/>
      SELECT ?😀 ?🛰️ {
-       ?ä🛰️ 🌠:P31 🌌:Q1049294 ;
+       ?ä👨‍🌾 🌠:P31 🌌:Q1049294 ;
        🌠:P487 ?😀 .
      }
     "};
@@ -1381,8 +1381,8 @@ fn format_emojis() {
     "PREFIX 🌌: <http://www.wikidata.org/entity/>
      PREFIX 🌠: <http://www.wikidata.org/prop/direct/>
      SELECT ?😀 ?🛰️ {
-       ?ä🛰️ 🌠:P31 🌌:Q1049294 ;
-           🌠:P487 ?😀 .
+       ?ä👨‍🌾 🌠:P31 🌌:Q1049294 ;
+            🌠:P487 ?😀 .
      }
     "};
     format_and_compare(ugly_query, pretty_query, &FormatSettings::default());

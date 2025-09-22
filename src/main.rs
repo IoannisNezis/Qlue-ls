@@ -151,11 +151,14 @@ fn main() {
             };
             }else{
                 // No path was given -- read from stdin
-                let mut buffer = String::new();
-                    for line in io::stdin().lock().lines() {
-                        buffer += &line.unwrap();
-                    }
-                match format_raw(buffer){
+                let mut buffer= Vec::new();
+                io::stdin().read_to_end(&mut buffer).expect("Should read all bytes from stdin");
+                    // for line in io::stdin().lock().read_to_end(buffer).lines() {
+                    //     buffer += &line.unwrap();
+                    //     buffer += "\n";
+                    // }
+                let input = String::from_utf8(buffer).expect("input should be valid UTF8");
+                match format_raw(input){
                     Ok(res) => {
                         print!("{}",res);
                     },

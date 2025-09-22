@@ -315,9 +315,7 @@ impl<'a> Walker<'a> {
                         if prop_list.kind() == SyntaxKind::PropertyListPathNotEmpty =>
                     {
                         let insert = match self.settings.align_predicates {
-                            true => {
-                                &" ".repeat((dbg!(subject.to_string().chars().count()) + 1).into())
-                            }
+                            true => &" ".repeat((subject.to_string().chars().count() + 1).into()),
                             false => "  ",
                         };
                         prop_list

@@ -4,7 +4,7 @@ mod stdio_reader;
 
 use std::{
     fs::{File, OpenOptions},
-    io::{self, Read, Write},
+    io::{self,BufRead, Read, Write},
     path::PathBuf,
     process::exit,
     rc::Rc,
@@ -36,7 +36,7 @@ struct Cli {
 enum Command {
     /// Run the language server
     Server,
-    /// Run the formatter on a given file
+    /// Run the formatter on a given file OR stdin
     Format {
         /// overwrite given file
         #[arg(short, long)]
@@ -44,7 +44,8 @@ enum Command {
         /// Avoid writing formatted file back; instead, exit with a non-zero status code if any files would have been modified, and zero otherwise
         #[arg(short, long)]
         check: bool,
-        path: PathBuf,
+        /// Omit to read from stdin
+        path: Option<PathBuf>,
     },
     /// Watch the logs (linux users only)
     Logs,
@@ -101,10 +102,11 @@ fn main() {
             }));
         }
         Command::Format {
-            path,
+            path ,
             writeback,
             check,
         } => {
+            if let Some(path)= path {
             match File::open(path.clone()) {
                 Ok(mut file) => {
                     let mut contents = String::new();
@@ -147,6 +149,20 @@ fn main() {
                     panic!("Could not open file: {}", e)
                 }
             };
+            }else{
+                // No path was given -- read from stdin
+                let mut buffer = String::new();
+                    for line in io::stdin().lock().lines() {
+                        buffer += &line.unwrap();
+                    }
+                match format_raw(buffer){
+                    Ok(res) => {
+                        print!("{}",res);
+                    },
+                    Err(e) => panic!("Error during formatting:\n{}", e),
+                }
+                
+            }
         }
         Command::Logs => {
             let logfile_path = get_logfile_path();
@@ -161,5 +177,6 @@ fn main() {
                 println!("tail exited with non-zero status");
             }
         }
+
     };
 }

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0]
+
+### added
+
+- Snippets for SPARQL 1.1 Update
+
+### changed
+
+- cli format api: when path is omited, use stdin stdout
+
 ## [0.13.4]
 
 ### fixed

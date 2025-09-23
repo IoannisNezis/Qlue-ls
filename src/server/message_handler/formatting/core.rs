@@ -185,7 +185,7 @@ impl<'a> Walker<'a> {
                         ),
                         SimplifiedTextEdit::new(
                             TextRange::new(last.text_range().end(), node.text_range().end()),
-                            "\n",
+                            "",
                         ),
                     ],
                     _ => vec![SimplifiedTextEdit::new(

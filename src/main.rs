@@ -4,7 +4,7 @@ mod stdio_reader;
 
 use std::{
     fs::{File, OpenOptions},
-    io::{self,BufRead, Read, Write},
+    io::{self, Read, Write},
     path::PathBuf,
     process::exit,
     rc::Rc,
@@ -102,69 +102,70 @@ fn main() {
             }));
         }
         Command::Format {
-            path ,
+            path,
             writeback,
             check,
         } => {
-            if let Some(path)= path {
-            match File::open(path.clone()) {
-                Ok(mut file) => {
-                    let mut contents = String::new();
-                    file.read_to_string(&mut contents)
-                        .expect("Could not read file");
-                    match format_raw(contents.clone()) {
-                        Ok(formatted_contents) => {
-                            let unchanged = formatted_contents == contents;
-                            if check {
-                                if unchanged {
-                                    println!("{} is already formatted", path.to_string_lossy());
-                                    exit(0);
+            if let Some(path) = path {
+                match File::open(path.clone()) {
+                    Ok(mut file) => {
+                        let mut contents = String::new();
+                        file.read_to_string(&mut contents)
+                            .expect("Could not read file");
+                        match format_raw(contents.clone()) {
+                            Ok(formatted_contents) => {
+                                let unchanged = formatted_contents == contents;
+                                if check {
+                                    if unchanged {
+                                        println!("{} is already formatted", path.to_string_lossy());
+                                        exit(0);
+                                    } else {
+                                        println!("{} would be reformatted", path.to_string_lossy());
+                                        exit(1);
+                                    }
+                                }
+                                if writeback {
+                                    if unchanged {
+                                        println!("{} left unchanged", path.to_string_lossy());
+                                    } else {
+                                        let mut file = OpenOptions::new()
+                                            .write(true)
+                                            .truncate(true)
+                                            .append(false)
+                                            .open(path.clone())
+                                            .expect("Could not write to file");
+                                        file.write_all(formatted_contents.as_bytes())
+                                            .expect("Unable to write");
+                                        println!("{} reformatted", path.to_string_lossy());
+                                    }
                                 } else {
-                                    println!("{} would be reformatted", path.to_string_lossy());
-                                    exit(1);
+                                    println!("{}", formatted_contents);
                                 }
                             }
-                            if writeback {
-                                if unchanged {
-                                    println!("{} left unchanged", path.to_string_lossy());
-                                } else {
-                                    let mut file = OpenOptions::new()
-                                        .write(true)
-                                        .truncate(true)
-                                        .append(false)
-                                        .open(path.clone())
-                                        .expect("Could not write to file");
-                                    file.write_all(formatted_contents.as_bytes())
-                                        .expect("Unable to write");
-                                    println!("{} reformatted", path.to_string_lossy());
-                                }
-                            } else {
-                                println!("{}", formatted_contents);
-                            }
+                            Err(e) => panic!("Error during formatting:\n{}", e),
                         }
-                        Err(e) => panic!("Error during formatting:\n{}", e),
                     }
-                }
-                Err(e) => {
-                    panic!("Could not open file: {}", e)
-                }
-            };
-            }else{
+                    Err(e) => {
+                        panic!("Could not open file: {}", e)
+                    }
+                };
+            } else {
                 // No path was given -- read from stdin
-                let mut buffer= Vec::new();
-                io::stdin().read_to_end(&mut buffer).expect("Should read all bytes from stdin");
-                    // for line in io::stdin().lock().read_to_end(buffer).lines() {
-                    //     buffer += &line.unwrap();
-                    //     buffer += "\n";
-                    // }
+                let mut buffer = Vec::new();
+                io::stdin()
+                    .read_to_end(&mut buffer)
+                    .expect("Should read all bytes from stdin");
+                // for line in io::stdin().lock().read_to_end(buffer).lines() {
+                //     buffer += &line.unwrap();
+                //     buffer += "\n";
+                // }
                 let input = String::from_utf8(buffer).expect("input should be valid UTF8");
-                match format_raw(input){
+                match format_raw(input) {
                     Ok(res) => {
-                        print!("{}",res);
-                    },
+                        print!("{}", res);
+                    }
                     Err(e) => panic!("Error during formatting:\n{}", e),
                 }
-                
             }
         }
         Command::Logs => {
@@ -180,6 +181,5 @@ fn main() {
                 println!("tail exited with non-zero status");
             }
         }
-
     };
 }

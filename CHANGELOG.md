@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### fixed
+
+- prevent trailing newline for monaco based editors
+
 ## [0.14.1]
 
 ### fixed

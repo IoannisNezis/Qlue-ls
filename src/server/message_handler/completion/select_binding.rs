@@ -10,6 +10,7 @@ pub(super) fn completions(
 ) -> Result<CompletionList, CompletionError> {
     if let CompletionLocation::SelectBinding(select_clause) = &context.location {
         let mut items = Vec::new();
+        // NOTE: suggest keywords DISTINCT & REDUCED
         if context.continuations.contains(&SyntaxKind::DISTINCT) {
             items.append(&mut vec![
                 CompletionItem::new(
@@ -30,6 +31,7 @@ pub(super) fn completions(
                 ),
             ]);
         }
+        // NOTE: suggest availible variables (non duplicates).
         let result_vars: HashSet<String> = HashSet::from_iter(
             select_clause
                 .variables()
@@ -58,13 +60,57 @@ pub(super) fn completions(
                 None,
             )
         }));
+        // NOTE: suggest aggregates
+        if let Some(group_by) = select_clause
+            .select_query()
+            .and_then(|sq| sq.soulution_modifier())
+            .and_then(|sm| sm.group_clause())
+        {
+            let grouped_vars: HashSet<String> = HashSet::from_iter(
+                group_by
+                    .visible_variables()
+                    .iter()
+                    .map(|var| var.syntax().text().to_string()),
+            );
+            let vars = &availible_vars - &grouped_vars;
+
+            items.extend(
+                ["COUNT", "SUM", "MIN", "MAX", "AVG", "SAMPLE"]
+                    .into_iter()
+                    .map(|aggregate| {
+                        vars.iter().map(move |var| CompletionItem {
+                            label: format!(
+                                "({aggregate}({var}) AS ?{}_{})",
+                                aggregate.to_lowercase(),
+                                var.split_at(1).1
+                            ),
+                            label_details: None,
+                            kind: CompletionItemKind::Snippet,
+                            detail: None,
+                            sort_text: None,
+                            filter_text: None,
+                            insert_text: Some(format!(
+                                "({aggregate}(?s) AS ?${{0:{}_{}}})",
+                                aggregate.to_lowercase(),
+                                var.split_at(1).1
+                            )),
+                            text_edit: None,
+                            insert_text_format: Some(InsertTextFormat::Snippet),
+                            additional_text_edits: None,
+                            command: None,
+                        })
+                    })
+                    .flatten(),
+            );
+        }
+
         Ok(CompletionList {
             is_incomplete: false,
             item_defaults: Some(ItemDefaults {
                 edit_range: None,
                 commit_characters: None,
                 data: None,
-                insert_text_format: Some(InsertTextFormat::PlainText),
+                insert_text_format: None,
             }),
             items,
         })

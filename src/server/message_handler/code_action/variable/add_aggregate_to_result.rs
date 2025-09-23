@@ -50,27 +50,27 @@ pub(super) fn code_actions(var: &Var, document: &TextDocumentItem) -> Option<Vec
         let aggregates = [
             (
                 "Aggregate Count",
-                &format!("(COUNT({}) as ?count_{})", var.text(), var.var_name()),
+                &format!("(COUNT({}) AS ?count_{})", var.text(), var.var_name()),
             ),
             (
                 "Aggregate Sum",
-                &format!("(SUM({}) as ?sum_{})", var.text(), var.var_name()),
+                &format!("(SUM({}) AS ?sum_{})", var.text(), var.var_name()),
             ),
             (
                 "Aggregate Min",
-                &format!("(MIN({}) as ?min_{})", var.text(), var.var_name()),
+                &format!("(MIN({}) AS ?min_{})", var.text(), var.var_name()),
             ),
             (
                 "Aggregate Max",
-                &format!("(MAX({}) as ?max_{})", var.text(), var.var_name()),
+                &format!("(MAX({}) AS ?max_{})", var.text(), var.var_name()),
             ),
             (
                 "Aggregate Avg",
-                &format!("(AVG({}) as ?avg_{})", var.text(), var.var_name()),
+                &format!("(AVG({}) AS ?avg_{})", var.text(), var.var_name()),
             ),
             (
                 "Aggregate Sample",
-                &format!("(SAMPLE({}) as ?sample_{})", var.text(), var.var_name()),
+                &format!("(SAMPLE({}) AS ?sample_{})", var.text(), var.var_name()),
             ),
             (
                 "Aggregate Group Concat",

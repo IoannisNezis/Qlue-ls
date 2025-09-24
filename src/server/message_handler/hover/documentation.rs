@@ -214,11 +214,10 @@ pub(super) fn get_docstring_for_kind(kind: SyntaxKind) -> Option<String> {
             ---
             
             #### Example:
-            sparql
+            ```sparql
             SELECT (COUNT(?person) AS ?numPeople) WHERE {
               ?person a foaf:Person .
-            }
-            "
+            }```"
         }),
         SyntaxKind::SUM => Some(indoc! {
                 "### **SUM**

@@ -49,7 +49,20 @@ pub(super) fn completions(
                             .map(|var| var.syntax().text().to_string()),
                     )
                 });
-        let vars = &availible_vars - &result_vars;
+        let group_vars: HashSet<String> = HashSet::from_iter(
+            select_clause
+                .select_query()
+                .and_then(|sq| sq.soulution_modifier())
+                .and_then(|sm| sm.group_clause())
+                .map(move |gc| gc.visible_variables().into_iter().map(|var| var.text()))
+                .into_iter()
+                .flatten(),
+        );
+        let vars = if group_vars.len() == 0 {
+            &availible_vars
+        } else {
+            &group_vars
+        } - &result_vars;
         items.extend(vars.into_iter().map(|var| {
             CompletionItem::new(
                 &var,
@@ -61,17 +74,19 @@ pub(super) fn completions(
             )
         }));
         // NOTE: suggest aggregates
-        if let Some(group_by) = select_clause
+        let group_by = select_clause
             .select_query()
             .and_then(|sq| sq.soulution_modifier())
-            .and_then(|sm| sm.group_clause())
-        {
-            let grouped_vars: HashSet<String> = HashSet::from_iter(
-                group_by
-                    .visible_variables()
-                    .iter()
-                    .map(|var| var.syntax().text().to_string()),
-            );
+            .and_then(|sm| sm.group_clause());
+        // NOTE: If no variables are selected, implicit GROUP BY is allowed.
+        if group_by.is_some() || result_vars.len() == 0 {
+            let grouped_vars: HashSet<String> =
+                HashSet::from_iter(group_by.into_iter().flat_map(|group_by| {
+                    group_by
+                        .visible_variables()
+                        .into_iter()
+                        .map(|var| var.syntax().text().to_string())
+                }));
             let vars = &availible_vars - &grouped_vars;
 
             items.extend(
@@ -102,6 +117,20 @@ pub(super) fn completions(
                     })
                     .flatten(),
             );
+
+            items.push(CompletionItem {
+                label: "(COUNT(*) AS ?count)".to_string(),
+                label_details: None,
+                kind: CompletionItemKind::Snippet,
+                detail: None,
+                sort_text: None,
+                filter_text: None,
+                insert_text: Some("(COUNT(*) AS ?${0:count})".to_string()),
+                text_edit: None,
+                insert_text_format: Some(InsertTextFormat::Snippet),
+                additional_text_edits: None,
+                command: None,
+            });
         }
 
         Ok(CompletionList {

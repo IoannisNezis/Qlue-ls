@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - more hover documentation for keywords
 - aggregate completions for implicit GROUP BY
 
-## [0.14.2]
+## [0.14.2] - 2025-09-23
 
 ### added
 

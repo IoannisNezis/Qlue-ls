@@ -1,7 +1,10 @@
 use super::TextDocumentContentChangeEvent;
 use log::error;
 use serde::{Deserialize, Serialize};
-use std::fmt::{self, Display};
+use std::{
+    fmt::{self, Display},
+    ops::Sub,
+};
 use text_size::{TextRange, TextSize};
 
 pub type DocumentUri = String;
@@ -46,10 +49,60 @@ impl TextDocumentItem {
         };
     }
 
-    pub(crate) fn apply_text_edits(&mut self, text_edits: Vec<TextEdit>) {
-        text_edits
-            .into_iter()
-            .for_each(|text_edit| self.apply_text_edit(text_edit));
+    pub(crate) fn apply_text_edits(&mut self, mut text_edits: Vec<TextEdit>) {
+        text_edits.sort_by(|a, b| {
+            b.range
+                .start
+                .cmp(&a.range.start)
+                .then_with(|| b.range.end.cmp(&a.range.end))
+        });
+        let mut line_breaks: Vec<usize> = Vec::new();
+        let mut utf_16_counter = 0;
+        for char in self.text.chars() {
+            if char == '\n' {
+                line_breaks.push(utf_16_counter);
+                utf_16_counter = 0;
+            } else {
+                utf_16_counter += char.len_utf16();
+            }
+        }
+        let mut position = if !matches!(self.text.chars().last(), Some('\n')) {
+            Position::new((line_breaks.len()) as u32, utf_16_counter as u32)
+        } else {
+            Position::new(line_breaks.len() as u32, 0)
+        };
+
+        let mut edits = text_edits.into_iter().peekable();
+        let mut current_edit_end_byte_offset = self.text.len();
+        let mut byte_offset = self.text.len();
+        let mut chars: Vec<char> = self.text.chars().collect();
+        let mut char_offset = chars.len();
+        while let Some(edit) = edits.peek() {
+            assert!(edit.range.start <= position);
+            if edit.range.end == position {
+                current_edit_end_byte_offset = byte_offset;
+            }
+            if edit.range.start == position {
+                self.text
+                    .replace_range(byte_offset..current_edit_end_byte_offset, &edit.new_text);
+                edits.next();
+                continue;
+            }
+            if char_offset > 0 {
+                let char = chars[char_offset - 1];
+                if char == '\n' {
+                    position.line -= 1;
+                    position.character = line_breaks.pop().unwrap() as u32;
+                } else {
+                    position.character -= char.len_utf16() as u32;
+                }
+                byte_offset -= char.len_utf8();
+                char_offset -= 1;
+            }
+        }
+        if !matches!(self.text.chars().last(), Some('\n')) {
+            self.text.push('\n');
+        }
     }
 
     pub fn get_full_range(&self) -> Range {
@@ -439,33 +492,13 @@ mod tests {
         };
         assert_eq!(document.text, "");
         document.apply_text_edit(TextEdit {
-            new_text: "S".to_string(),
+            new_text: "SELECT ".to_string(),
             range: Range::new(0, 0, 0, 0),
         });
-        assert_eq!(document.text, "S\n");
+        assert_eq!(document.text, "SELECT \n");
         document.apply_text_edits(vec![
             TextEdit {
-                new_text: "E".to_string(),
-                range: Range::new(0, 1, 0, 1),
-            },
-            TextEdit {
-                new_text: "L".to_string(),
-                range: Range::new(0, 2, 0, 2),
-            },
-            TextEdit {
-                new_text: "E".to_string(),
-                range: Range::new(0, 3, 0, 3),
-            },
-            TextEdit {
-                new_text: "C".to_string(),
-                range: Range::new(0, 4, 0, 4),
-            },
-            TextEdit {
-                new_text: "T".to_string(),
-                range: Range::new(0, 5, 0, 5),
-            },
-            TextEdit {
-                new_text: " ".to_string(),
+                new_text: " DISTINCT".to_string(),
                 range: Range::new(0, 6, 0, 6),
             },
             TextEdit {
@@ -473,12 +506,12 @@ mod tests {
                 range: Range::new(0, 7, 0, 7),
             },
         ]);
-        assert_eq!(document.text, "SELECT * WHERE{\n  ?s ?p ?o\n}\n");
+        assert_eq!(document.text, "SELECT DISTINCT * WHERE{\n  ?s ?p ?o\n}\n");
         document.apply_text_edits(vec![TextEdit {
             new_text: "select".to_string(),
             range: Range::new(0, 0, 0, 6),
         }]);
-        assert_eq!(document.text, "select * WHERE{\n  ?s ?p ?o\n}\n");
+        assert_eq!(document.text, "select DISTINCT * WHERE{\n  ?s ?p ?o\n}\n");
         document.apply_text_edits(vec![
             TextEdit {
                 new_text: "".to_string(),
@@ -486,14 +519,14 @@ mod tests {
             },
             TextEdit {
                 new_text: "".to_string(),
-                range: Range::new(0, 15, 1, 1),
+                range: Range::new(0, 24, 1, 1),
             },
         ]);
-        assert_eq!(document.text, "select * WHERE{ ?s ?p ?o}\n");
+        assert_eq!(document.text, "select DISTINCT * WHERE{ ?s ?p ?o}\n");
         document.apply_text_edits(vec![
             TextEdit {
                 new_text: "ns1:dings".to_string(),
-                range: Range::new(0, 16, 0, 18),
+                range: Range::new(0, 25, 0, 27),
             },
             TextEdit {
                 new_text: "PREFIX ns1: <iri>\n".to_string(),
@@ -502,19 +535,18 @@ mod tests {
         ]);
         assert_eq!(
             document.text,
-            "PREFIX ns1: <iri>\nselect * WHERE{ ns1:dings ?p ?o}\n"
+            "PREFIX ns1: <iri>\nselect DISTINCT * WHERE{ ns1:dings ?p ?o}\n"
         );
         document.apply_text_edits(vec![
             TextEdit {
                 new_text: "".to_string(),
-                range: Range::new(1, 10, 1, 32),
+                range: Range::new(1, 10, 2, 0),
             },
             TextEdit {
                 new_text: "".to_string(),
                 range: Range::new(0, 0, 1, 10),
             },
         ]);
-        // Whats goning on here
         assert_eq!(document.text, "\n");
     }
 

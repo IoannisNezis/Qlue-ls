@@ -86,7 +86,7 @@ fn format_nesting_indentation() {
 }
 #[test]
 fn format_alternating_group_graph_pattern() {
-    let ugly_query = indoc!("SELECT  *  {  ?a  ?c  ?b  .    {   }  ?a  ?b   ?c   }");
+    let ugly_query = indoc!("SELECT  *  {  ?a  ?c  ?b  .    {   }  ?a  ?b   ?c   }\n");
     let pretty_query = indoc!(
         "SELECT * {
            ?a ?c ?b .
@@ -128,7 +128,6 @@ fn format_surouding_whitespace() {
           
             
            SELECT * WHERE {}
-    
             
                 "
     );
@@ -312,7 +311,7 @@ fn format_solution_modifier() {
            GROUP by ( 2 AS ?a )
           HAVING (2 > 2) (1 > 2)
             order BY ASC (?c)
-         OFfSET 3 LiMIT 3"
+         OFfSET 3 LiMIT 3\n"
     );
     let pretty_query = indoc!(
         "SELECT * WHERE {
@@ -441,10 +440,7 @@ fn format_graph_management() {
 
 #[test]
 fn format_insert_data() {
-    let ugly_query = indoc!(
-        "INSERT { ?v <a> <b> } WHERE { VALUES ?v { 1 2 } }
-         "
-    );
+    let ugly_query = indoc!("INSERT { ?v <a> <b> } WHERE { VALUES ?v { 1 2 } }\n");
     let pretty_query = indoc!(
         "INSERT {
            ?v <a> <b>
@@ -699,7 +695,7 @@ fn format_full_select_querry() {
          GROUP BY ?s
          HAVING (?p > 0)
          ORDER BY DESC(?o)
-         LIMIT 12 OFFSET 20"
+         LIMIT 12 OFFSET 20\n"
     );
     let pretty_query = indoc!(
         "PREFIX namespace: <iri>
@@ -828,7 +824,7 @@ fn format_comments_property_lists() {
            # of Padua Univerity
              pq:P580 ?starttime ;
            ]
-         }"
+         }\n"
     );
     let pretty_query = indoc!(
         "SELECT * WHERE {
@@ -991,10 +987,8 @@ fn format_comments_in_strange_positions() {
 
 #[test]
 fn format_group_concat() {
-    let ugly_query = indoc!(
-        r#"SELECT (  GROUP_CONCAT  (   ?a   ;   SEPARATOR  =  "bar"  )  AS ?x) WHERE {}
-          "#
-    );
+    let ugly_query =
+        indoc!("SELECT (  GROUP_CONCAT  (   ?a   ;   SEPARATOR  =  \"bar\"  )  AS ?x) WHERE {}\n");
     let pretty_query = "SELECT (GROUP_CONCAT(?a; SEPARATOR=\"bar\") AS ?x) WHERE {}\n";
     format_and_compare(ugly_query, pretty_query, &FormatSettings::default());
 }
@@ -1007,8 +1001,7 @@ fn format_setting_align_prefixes() {
     };
     let ugly_query = indoc!(
         "PREFIX namespace123: <iri> PREFIX namespace12: <iri> PREFIX namespace1: <iri>
-         SELECT * WHERE {}
-         "
+         SELECT * WHERE {}\n"
     );
     let pretty_query1 = indoc!(
         "PREFIX namespace123: <iri>
@@ -1021,8 +1014,7 @@ fn format_setting_align_prefixes() {
         "PREFIX namespace123: <iri>
          PREFIX namespace12: <iri>
          PREFIX namespace1: <iri>
-         SELECT * WHERE {}
-         "
+         SELECT * WHERE {}\n"
     );
     format_and_compare(ugly_query, pretty_query1, &format_settings);
     format_settings.align_prefixes = false;
@@ -1038,8 +1030,7 @@ fn format_setting_align_predicates() {
     let ugly_query = indoc!(
         "SELECT * WHERE {
            ?adlasjsalkdjaldasjd <> <> ; <> <>
-         }
-         "
+         }\n"
     );
     let pretty_query1 = indoc!(
         "SELECT * WHERE {
@@ -1069,8 +1060,7 @@ fn format_setting_separate_prolouge() {
     };
     let ugly_query = indoc!(
         "PREFIX namespace: <iri>
-         SELECT * WHERE {}
-         "
+         SELECT * WHERE {}\n"
     );
     let pretty_query1 = indoc!(
         "PREFIX namespace: <iri>
@@ -1097,8 +1087,7 @@ fn format_setting_capitalize_keywords() {
     };
     let ugly_query = indoc!(
         "prefix namespace: <iri>
-         select * where {}
-         "
+         select * where {}\n"
     );
     let pretty_query1 = indoc!(
         "PREFIX namespace: <iri>
@@ -1122,10 +1111,7 @@ fn format_setting_insert_spaces() {
         insert_spaces: Some(true),
         ..Default::default()
     };
-    let ugly_query = indoc!(
-        "SELECT * WHERE { ?a ?b ?c }
-         "
-    );
+    let ugly_query = indoc!("SELECT * WHERE { ?a ?b ?c }\n");
     let pretty_query1 = indoc!(
         "SELECT * WHERE {
            ?a ?b ?c
@@ -1151,10 +1137,7 @@ fn format_setting_tab_size() {
         insert_spaces: Some(true),
         ..Default::default()
     };
-    let ugly_query = indoc!(
-        "SELECT * WHERE { ?a ?b ?c }
-         "
-    );
+    let ugly_query = indoc!("SELECT * WHERE { ?a ?b ?c }\n");
     let pretty_query = indoc!(
         "SELECT * WHERE {
              ?a ?b ?c
@@ -1200,10 +1183,7 @@ fn format_setting_filter_same_line() {
         filter_same_line: true,
         ..Default::default()
     };
-    let ugly_query = indoc!(
-        "SELECT * WHERE { ?a ?b ?c FILTER (?a)}
-         "
-    );
+    let ugly_query = indoc!("SELECT * WHERE { ?a ?b ?c FILTER (?a)}\n");
     let pretty_query1 = indoc!(
         "SELECT * WHERE {
            ?a ?b ?c FILTER (?a)
@@ -1318,10 +1298,7 @@ fn format_comments_3() {
 
 #[test]
 fn format_construct_where() {
-    let ugly_query = indoc!(
-        r#"CONSTRUCT WHERE { ?s ?p ?o . ?s ?p ?o }
-          "#
-    );
+    let ugly_query = indoc!("CONSTRUCT WHERE { ?s ?p ?o . ?s ?p ?o }\n");
     let pretty_query = indoc!(
         r#"CONSTRUCT WHERE {
              ?s ?p ?o .
@@ -1354,10 +1331,7 @@ fn format_unreasonable_dots() {
 
 #[test]
 fn format_a() {
-    let ugly_query = indoc!(
-        "SELECT * WHERE { ?sub a ?ob }
-         "
-    );
+    let ugly_query = indoc!("SELECT * WHERE { ?sub a ?ob }\n");
     let pretty_query = indoc!(
         "SELECT * WHERE {
            ?sub a ?ob
@@ -1375,8 +1349,8 @@ fn format_emojis() {
      SELECT ?😀 ?🛰️ {
        ?ä👨‍🌾 🌠:P31 🌌:Q1049294 ;
        🌠:P487 ?😀 .
-     }
-    "};
+     }\n"
+    };
     let pretty_query = indoc! {
     "PREFIX 🌌: <http://www.wikidata.org/entity/>
      PREFIX 🌠: <http://www.wikidata.org/prop/direct/>

@@ -15,6 +15,58 @@ fn tokenize(input: &str) -> Vec<SyntaxKind> {
 }
 
 #[test]
+fn tokenize_strings() {
+    let tokens =
+        tokenize(r#""simple string" 'other' """long\n #comment boy""" '''long\n #comment boy'''"#);
+    assert_eq!(
+        tokens,
+        vec![
+            SyntaxKind::STRING_LITERAL2,
+            SyntaxKind::STRING_LITERAL1,
+            SyntaxKind::STRING_LITERAL_LONG2,
+            SyntaxKind::STRING_LITERAL_LONG1
+        ]
+    )
+}
+
+#[test]
+fn tokenize_insert_data() {
+    let tokens = tokenize(r#"INSERT DATA { <a> <b> "'." .}"#);
+    assert_eq!(
+        tokens,
+        vec![
+            SyntaxKind::INSERT_DATA,
+            SyntaxKind::LCurly,
+            SyntaxKind::IRIREF,
+            SyntaxKind::IRIREF,
+            SyntaxKind::STRING_LITERAL2,
+            SyntaxKind::Dot,
+            SyntaxKind::RCurly
+        ]
+    );
+}
+
+#[test]
+fn tokenize_insert() {
+    let input = "INSERT IN INSERT DATA DATA";
+    let tokens = tokenize(input);
+
+    let mut lexer = SyntaxKind::lexer(input);
+    while let Some(token) = lexer.next() {
+        println!("{:?} => {:?}", token, lexer.slice());
+    }
+    assert_eq!(
+        tokens,
+        vec![
+            SyntaxKind::INSERT,
+            SyntaxKind::IN,
+            SyntaxKind::INSERT_DATA,
+            SyntaxKind::DATA
+        ]
+    );
+}
+
+#[test]
 fn tokenize_blank_node_label() {
     let tokens = tokenize(r#"_:asdasdbc _:_-- _:123.345.abc"#);
     assert_eq!(

@@ -33,7 +33,6 @@ pub(super) fn format_document(
     );
 
     let (simplified_edits, simpified_comments) = walker.collect_edits_and_comments();
-
     let comments = transform_comments(simpified_comments, &document.text);
     let mut edits = transform_edits(simplified_edits, &document.text);
     edits.sort_by(|a, b| {
@@ -42,10 +41,8 @@ pub(super) fn format_document(
             .cmp(&a.range.start)
             .then_with(|| b.range.end.cmp(&a.range.end))
     });
-    edits.sort_by(|a, b| b.range.start.cmp(&a.range.start));
     let consolidated_edits = consolidate_edits(edits);
     edits = merge_comments(consolidated_edits, comments, &document.text, &indent_string)?;
-    edits = remove_redundent_edits(edits, document);
 
     Ok(edits)
 }
@@ -160,7 +157,13 @@ impl<'a> Walker<'a> {
         }
 
         // NOTE: Capitalize keywords
-        if KEYWORDS.contains(&node.kind()) && self.settings.capitalize_keywords {
+        if node.kind() == SyntaxKind::IN {
+            if self.settings.capitalize_keywords {
+                augmentations.push(SimplifiedTextEdit::new(node.text_range(), "IN"));
+            } else {
+                augmentations.push(SimplifiedTextEdit::new(node.text_range(), "in"));
+            }
+        } else if KEYWORDS.contains(&node.kind()) && self.settings.capitalize_keywords {
             augmentations.push(SimplifiedTextEdit::new(
                 node.text_range(),
                 &node.to_string().to_uppercase(),
@@ -1078,8 +1081,18 @@ impl ConsolidatedTextEdit {
 
     fn range(&self) -> Range {
         Range {
-            start: self.edits.first().unwrap().range.start,
-            end: self.edits.last().unwrap().range.end,
+            start: self
+                .edits
+                .first()
+                .expect("There should always be atleast one edit")
+                .range
+                .start,
+            end: self
+                .edits
+                .last()
+                .expect("There should always be atleast one edit")
+                .range
+                .end,
         }
     }
 
@@ -1090,17 +1103,19 @@ impl ConsolidatedTextEdit {
     fn split_at(self, position: Position) -> (ConsolidatedTextEdit, ConsolidatedTextEdit) {
         let before = ConsolidatedTextEdit { edits: Vec::new() };
         let after = ConsolidatedTextEdit { edits: Vec::new() };
-        self.edits
-            .into_iter()
-            .fold((before, after), |(mut before, mut after), edit| {
-                match (edit.range.start, edit.range.end, position) {
-                    (start, end, position) if start < position && position >= end => {
-                        before.edits.push(edit)
-                    }
-                    _ => after.edits.push(edit),
-                };
-                (before, after)
-            })
+        let (before, after) =
+            self.edits
+                .into_iter()
+                .fold((before, after), |(mut before, mut after), edit| {
+                    match (edit.range.start, edit.range.end, position) {
+                        (start, end, position) if start < position && position >= end => {
+                            before.edits.push(edit)
+                        }
+                        _ => after.edits.push(edit),
+                    };
+                    (before, after)
+                });
+        (before, after)
     }
 }
 
@@ -1115,19 +1130,14 @@ fn merge_comments(
         edits
             .into_iter()
             .fold(vec![], |mut acc: Vec<TextEdit>, mut consolidated_edit| {
-                let start_position = consolidated_edit
-                    .edits
-                    .first()
-                    .expect("Every consolidated edit should consist of at least one edit")
-                    .range
-                    .start;
+                let start_position = consolidated_edit.range().start;
 
                 while comment_iter
                     .peek()
                     .map(|comment| comment.position >= start_position)
                     .unwrap_or(false)
                 {
-                    let comment = comment_iter
+                    let mut comment = comment_iter
                         .next()
                         .expect("comment itterator should not be empty");
 

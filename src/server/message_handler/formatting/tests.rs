@@ -1344,7 +1344,7 @@ fn format_a() {
 #[test]
 fn format_emojis() {
     let ugly_query = indoc! {
-    "PREFIX 🌌: <http://www.wikidata.org/entity/>
+    "PREFIX a:  <http://www.wikidata.org/entity/>
      PREFIX 🌠: <http://www.wikidata.org/prop/direct/>
      SELECT ?😀 ?🛰️ {
        ?ä👨‍🌾 🌠:P31 🌌:Q1049294 ;
@@ -1352,12 +1352,15 @@ fn format_emojis() {
      }\n"
     };
     let pretty_query = indoc! {
-    "PREFIX 🌌: <http://www.wikidata.org/entity/>
+    "PREFIX a:  <http://www.wikidata.org/entity/>
      PREFIX 🌠: <http://www.wikidata.org/prop/direct/>
      SELECT ?😀 ?🛰️ {
        ?ä👨‍🌾 🌠:P31 🌌:Q1049294 ;
             🌠:P487 ?😀 .
      }
     "};
-    format_and_compare(ugly_query, pretty_query, &FormatSettings::default());
+    let mut settings = FormatSettings::default();
+    settings.align_prefixes = true;
+    settings.align_predicates = true;
+    format_and_compare(ugly_query, pretty_query, &settings);
 }

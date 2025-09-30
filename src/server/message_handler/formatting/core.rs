@@ -3,6 +3,7 @@ use std::vec;
 
 use ll_sparql_parser::{parse, syntax_kind::SyntaxKind, SyntaxElement, SyntaxNode};
 use text_size::{TextRange, TextSize};
+use unicode_width::UnicodeWidthStr;
 
 use crate::server::{
     configuration::FormatSettings,
@@ -198,7 +199,8 @@ impl<'a> Walker<'a> {
                 }
             }
             SyntaxKind::Prologue if self.settings.align_prefixes => {
-                let prefix_pos_and_length: Vec<(TextSize, TextSize)> = children
+                print!("Test");
+                let prefix_pos_and_length: Vec<(TextSize, usize)> = children
                     .iter()
                     .filter_map(|child| {
                         match (
@@ -213,7 +215,10 @@ impl<'a> Walker<'a> {
                             (SyntaxKind::PrefixDecl, Some(grandchild))
                                 if grandchild.kind() == SyntaxKind::PNAME_NS =>
                             {
-                                Some((grandchild.text_range().end(), grandchild.text_range().len()))
+                                Some((
+                                    grandchild.text_range().end(),
+                                    grandchild.to_string().width(),
+                                ))
                             }
                             _ => None,
                         }
@@ -223,7 +228,7 @@ impl<'a> Walker<'a> {
                     .iter()
                     .map(|(_pos, len)| *len)
                     .max()
-                    .unwrap_or(0.into());
+                    .unwrap_or(0);
                 prefix_pos_and_length
                     .into_iter()
                     .map(|(position, length)| {
@@ -318,7 +323,7 @@ impl<'a> Walker<'a> {
                         if prop_list.kind() == SyntaxKind::PropertyListPathNotEmpty =>
                     {
                         let insert = match self.settings.align_predicates {
-                            true => &" ".repeat((subject.to_string().chars().count() + 1).into()),
+                            true => &" ".repeat(subject.to_string().width() + 1),
                             false => "  ",
                         };
                         prop_list

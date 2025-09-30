@@ -1273,9 +1273,9 @@ checksum = "241eaef5fd12c88705a01fc1066c48c4b36e0dd4377dcdc7ec3942cea7a69956"
 
 [[package]]
 name = "ll-sparql-parser"
-version = "0.14.0"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa39feeba3a5b1cd26024f639cf691d2be30dc9b77301b4aa98565dcf1924f28"
+checksum = "c802dd662e988ff903d2979e4c5202d9ca0afa4923ba3b1881cbd80b811dfe5c"
 dependencies = [
  "js-sys",
  "logos",
@@ -1728,7 +1728,7 @@ checksum = "4debfffbf1669869b4bea1bab297f8e9ec11900a9ff2dcf659c2a1c4918c811a"
 
 [[package]]
 name = "qlue-ls"
-version = "0.15.0"
+version = "0.15.1"
 dependencies = [
  "camino",
  "clap",

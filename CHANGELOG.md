@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.1] - 2025-09-30
+
+### changed
+
+- core textedit apply algorithm
+
 ## added
 
 - more hover documentation for keywords

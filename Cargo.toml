@@ -28,7 +28,7 @@ dirs-next = "2.0.0"
 
 # json
 serde = "1.0.203"
-serde_json = "1.0.117"
+serde_json = "1.0.145"
 serde_repr = "0.1.19"
 
 # custom SPARQL parser

@@ -1,10 +1,7 @@
 use super::TextDocumentContentChangeEvent;
 use log::error;
 use serde::{Deserialize, Serialize};
-use std::{
-    fmt::{self, Display},
-    ops::Sub,
-};
+use std::fmt::{self, Display};
 use text_size::{TextRange, TextSize};
 
 pub type DocumentUri = String;
@@ -75,7 +72,7 @@ impl TextDocumentItem {
         let mut edits = text_edits.into_iter().peekable();
         let mut current_edit_end_byte_offset = self.text.len();
         let mut byte_offset = self.text.len();
-        let mut chars: Vec<char> = self.text.chars().collect();
+        let chars: Vec<char> = self.text.chars().collect();
         let mut char_offset = chars.len();
         while let Some(edit) = edits.peek() {
             assert!(edit.range.start <= position);

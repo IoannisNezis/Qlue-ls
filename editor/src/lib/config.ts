@@ -84,7 +84,9 @@ export async function buildWrapperConfig(
                 padding: {
                     top: 10,
                     bottom: 10
-                }
+                },
+                folding: true,
+                foldingImportsByDefault: true
             }
         },
         vscodeApiConfig: {

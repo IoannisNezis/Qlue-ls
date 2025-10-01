@@ -23,5 +23,6 @@ pub(super) fn create_capabilities() -> ServerCapabilities {
             trigger_characters: vec!["?".to_string(), " ".to_string()],
         },
         document_formatting_provider: DocumentFormattingOptions {},
+        folding_range_provider: true,
     }
 }

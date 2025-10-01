@@ -11,6 +11,7 @@ pub struct ServerCapabilities {
     pub diagnostic_provider: DiagnosticOptions,
     pub code_action_provider: bool,
     pub execute_command_provider: ExecuteCommandOptions,
+    pub folding_range_provider: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -108,13 +109,14 @@ mod tests {
                 },
                 commands: vec!["foo".to_string()],
             },
+            folding_range_provider: true,
         };
 
         let serialized = serde_json::to_string(&server_capabilities).unwrap();
 
         assert_eq!(
             serialized,
-            r#"{"textDocumentSync":1,"hoverProvider":true,"completionProvider":{"triggerCharacters":["?"]},"documentFormattingProvider":{},"diagnosticProvider":{"identifier":"my-ls","interFileDependencies":false,"workspaceDiagnostics":false},"codeActionProvider":true,"executeCommandProvider":{"workDoneProgress":true,"commands":["foo"]}}"#
+            r#"{"textDocumentSync":1,"hoverProvider":true,"completionProvider":{"triggerCharacters":["?"]},"documentFormattingProvider":{},"diagnosticProvider":{"identifier":"my-ls","interFileDependencies":false,"workspaceDiagnostics":false},"codeActionProvider":true,"executeCommandProvider":{"workDoneProgress":true,"commands":["foo"]},"foldingRangeProvider":true}"#
         );
     }
 }

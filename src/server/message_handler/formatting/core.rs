@@ -199,7 +199,6 @@ impl<'a> Walker<'a> {
                 }
             }
             SyntaxKind::Prologue if self.settings.align_prefixes => {
-                print!("Test");
                 let prefix_pos_and_length: Vec<(TextSize, usize)> = children
                     .iter()
                     .filter_map(|child| {

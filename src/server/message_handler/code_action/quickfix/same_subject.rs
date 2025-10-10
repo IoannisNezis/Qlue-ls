@@ -4,6 +4,7 @@ use ll_sparql_parser::{
     syntax_kind::SyntaxKind,
 };
 use text_size::{TextRange, TextSize};
+use unicode_width::UnicodeWidthChar;
 
 use crate::server::{
     lsp::{
@@ -93,26 +94,27 @@ pub(crate) fn contract_triples(
         );
     }
     if let Some(triple) = triples.first() {
-        let verb_position = Position::from_byte_index(
-            TextSize::new(
-                triple
-                    .properties_list_path()
-                    .unwrap()
-                    .syntax()
-                    .to_string()
-                    .chars()
-                    .count() as u32,
-            ),
-            &document.text,
-        )
-        .unwrap();
-        let indent_string = " ".repeat(verb_position.character as usize);
+        // NOTE: here the indentation is computed.
+        let offset = triple
+            .properties_list_path()
+            .unwrap()
+            .syntax()
+            .text_range()
+            .start();
+
+        let indentation = document.text[..offset.into()]
+            .chars()
+            .rev()
+            .take_while(|char| char != &'\n')
+            .fold(0, |acc, char| acc + char.width().unwrap_or(0));
+
+        let indent_string = " ".repeat(indentation);
         code_action.add_edit(
             document_uri,
             TextEdit::new(
                 Range::empty(
                     Position::from_byte_index(triple.syntax().text_range().end(), &document.text)
-                        .unwrap(),
+                        .expect("The text rang of a node should be within the text"),
                 ),
                 &format!(
                     " ;\n{}{}",

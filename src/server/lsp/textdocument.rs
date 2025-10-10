@@ -167,7 +167,7 @@ impl Position {
         Self { line, character }
     }
 
-    /// Convert UTF-8 byte offset in a text into UTF-16 based Position
+    /// Convert UTF-8 byte offset in a text into UTF-16 based line/column Position
     ///
     /// Returns None if:
     /// - offset is outside the given str

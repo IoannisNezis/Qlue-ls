@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### fixed
 
 - formatting emojis
+- indentation after contract same subject triples
 
 ## [0.15.1] - 2025-09-30
 

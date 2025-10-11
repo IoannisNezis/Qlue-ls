@@ -2,8 +2,10 @@ use std::rc::Rc;
 
 use futures::lock::Mutex;
 use ll_sparql_parser::{
-    ast::{AstNode, QueryUnit},
-    parse_query, SyntaxNode,
+    ast::{AstNode, GroupGraphPattern, QueryUnit},
+    parse_query,
+    syntax_kind::SyntaxKind,
+    SyntaxNode,
 };
 use text_size::TextSize;
 
@@ -86,12 +88,12 @@ fn relevant_positions(
                 jump_to_previous.then_some(" "),
             ));
         }
-        // NOTE: End of group graph pattern
-        if let Some((offset, has_children)) = query_unit
-            .select_query()
-            .and_then(|sq| sq.where_clause())
-            .and_then(|sq| sq.group_graph_pattern())
-            .and_then(|ggp| {
+
+        for (offset, has_children) in query_unit
+            .syntax()
+            .descendants()
+            .filter_map(GroupGraphPattern::cast)
+            .filter_map(|ggp| {
                 ggp.syntax().last_child_or_token().map(|token| {
                     (
                         token.text_range().start(),
@@ -100,7 +102,6 @@ fn relevant_positions(
                 })
             })
         {
-            // FIXME: Here i assume that the tab_size is 2 and insert_spaces is true
             res.push((
                 offset,
                 has_children.then_some("  ").or(Some("\n  ")),
@@ -127,5 +128,6 @@ fn relevant_positions(
             }
         }
     }
+    res.sort_by(|a, b| a.0.cmp(&b.0));
     res
 }

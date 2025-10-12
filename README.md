@@ -17,9 +17,10 @@
 ⚡Qlue-ls (pronounced "clueless") is a *blazingly fast* [language server](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification)
 for [SPARQL](https://de.wikipedia.org/wiki/SPARQL), written in Rust 🦀, build for the web.
 
+💻 [Live Demo](https://qlue-ls.com)
 📚 [Documentation](https://docs.qlue-ls.com)  
 📝 [Project Blog Post](https://ad-blog.cs.uni-freiburg.de/post/qlue-ls-a-sparql-language-server/)  
-💻 [Live Demo](https://qlue-ls.com)
+🎓 [Thesis](https://ad-publications.cs.uni-freiburg.de/theses/Bachelor_Ioannis_Nezis_2025.pdf)  
 
 # 🚀 Capabilities
 

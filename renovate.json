@@ -2,5 +2,63 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "matchDatasources": [
+        "crate"
+      ],
+      "prPriority": 10
+    },
+    {
+      "matchFileNames": [
+        "crates/parser/Cargo.toml"
+      ],
+      "labels": [
+        "parser"
+      ]
+    },
+    {
+      "matchDatasources": [
+        "npm"
+      ],
+      "labels": [
+        "demo",
+        "frontend"
+      ],
+      "prPriority": -1
+    },
+    {
+      "matchDatasources": [
+        "npm"
+      ],
+      "matchPackageNames": [
+        "qlue-ls"
+      ],
+      "automerge": true
+    },
+    {
+      "matchFileNames": [
+        "editor/Containerfile"
+      ],
+      "labels": [
+        "demo"
+      ],
+      "automerge": true
+    },
+    {
+      "matchDatasources": [
+        "crate"
+      ],
+      "matchPackageNames": [
+        "log4rs",
+        "serde"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "automerge": true
+    }
   ]
 }

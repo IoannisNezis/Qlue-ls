@@ -1,8 +1,8 @@
 - backend:
       name: IMDb
       slug: imdb
-      url: https://qlever.cs.uni-freiburg.de/api/imdb
-      healthCheckUrl: https://qlever.cs.uni-freiburg.de/api/imdb/ping
+      url: https://qlever.dev/api/imdb
+      healthCheckUrl: https://qlever.dev/api/imdb/ping
   prefixMap:
       imdb: https://www.imdb.com/
       xsd: http://www.w3.org/2001/XMLSchema#
@@ -207,8 +207,8 @@
 - backend:
       name: DBLP
       slug: dblp
-      url: https://qlever.cs.uni-freiburg.de/api/dblp
-      healthCheckUrl: https://qlever.cs.uni-freiburg.de/api/dblp/ping
+      url: https://qlever.dev/api/dblp
+      healthCheckUrl: https://qlever.dev/api/dblp/ping
   prefixMap:
       dblps: https://dblp.org/rdf/schema-2020-07-01#
       rdfs: http://www.w3.org/2000/01/rdf-schema#
@@ -320,8 +320,8 @@
 - backend:
       name: PubChem
       slug: pubchem
-      url: https://qlever.cs.uni-freiburg.de/api/pubchem
-      healthCheckUrl: https://qlever.cs.uni-freiburg.de/api/pubchem/ping
+      url: https://qlever.dev/api/pubchem
+      healthCheckUrl: https://qlever.dev/api/pubchem/ping
   prefixMap:
       bao: http://www.bioassayontology.org/bao#
       bioassay: http://rdf.ncbi.nlm.nih.gov/pubchem/bioassay/
@@ -718,8 +718,8 @@
 - backend:
       name: OSM Planet
       slug: osm-planet
-      url: https://qlever.cs.uni-freiburg.de/api/osm-planet
-      healthCheckUrl: https://qlever.cs.uni-freiburg.de/api/osm-planet/ping
+      url: https://qlever.dev/api/osm-planet
+      healthCheckUrl: https://qlever.dev/api/osm-planet/ping
   prefixMap:
       osmmeta: https://www.openstreetmap.org/meta/
       osmway: https://www.openstreetmap.org/way/
@@ -738,11 +738,11 @@
       pq: http://www.wikidata.org/prop/qualifier/
       geo: http://www.opengis.net/ont/geosparql#
       geof: http://www.opengis.net/def/function/geosparql/
-      osm2rdf: https://osm2rdf.cs.uni-freiburg.de/rdf#
-      osm2rdfkey: https://osm2rdf.cs.uni-freiburg.de/rdf/key#
-      osm2rdfgeom: https://osm2rdf.cs.uni-freiburg.de/rdf/geom#
-      osm2rdfmember: https://osm2rdf.cs.uni-freiburg.de/rdf/member#
-      qlss: https://qlever.cs.uni-freiburg.de/spatialSearch/
+      osm2rdf: https://osm2rdf.dev/rdf#
+      osm2rdfkey: https://osm2rdf.dev/rdf/key#
+      osm2rdfgeom: https://osm2rdf.dev/rdf/geom#
+      osm2rdfmember: https://osm2rdf.dev/rdf/member#
+      qlss: https://qlever.dev/spatialSearch/
   default: false
   queries:
       hover: |-
@@ -758,7 +758,7 @@
           PREFIX osmrel: <https://www.openstreetmap.org/relation/>
           PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
           PREFIX osm: <https://www.openstreetmap.org/>
-          PREFIX osm2rdf: <https://osm2rdf.cs.uni-freiburg.de/rdf#>
+          PREFIX osm2rdf: <https://osm2rdf.dev/rdf#>
           SELECT ?qlue_ls_entity (SAMPLE(?name) AS ?qlue_ls_label) (SAMPLE(?alias) AS ?qlue_ls_alias) (SAMPLE(?count) AS ?qlue_ls_count) WHERE {
             {
               {
@@ -924,8 +924,8 @@
 - backend:
       name: Wikidata
       slug: wikidata
-      url: https://qlever.cs.uni-freiburg.de/api/wikidata
-      healthCheckUrl: https://qlever.cs.uni-freiburg.de/api/wikidata/ping
+      url: https://qlever.dev/api/wikidata
+      healthCheckUrl: https://qlever.dev/api/wikidata/ping
   prefixMap:
       rdf: http://www.w3.org/1999/02/22-rdf-syntax-ns#
       xsd: http://www.w3.org/2001/XMLSchema#
@@ -959,8 +959,8 @@
       prn: http://www.wikidata.org/prop/reference/value-normalized/
       wdno: http://www.wikidata.org/prop/novalue/
       imdb: https://www.imdb.com/
-      qfn: http://qlever.cs.uni-freiburg.de/function#
-      ql: http://qlever.cs.uni-freiburg.de/builtin-functions/
+      qfn: http://qlever.dev/function#
+      ql: http://qlever.dev/builtin-functions/
       math: http://www.w3.org/2005/xpath-functions/math#
   default: true
   queries:

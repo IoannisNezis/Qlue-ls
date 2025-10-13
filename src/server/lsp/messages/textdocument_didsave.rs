@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::server::lsp::{
-    rpc::NotificationMessage, textdocument::TextDocumentItem, LspMessage, NotificationMarker,
+    rpc::NotificationMessage, textdocument::TextDocumentIdentifier, LspMessage, NotificationMarker,
 };
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -26,7 +26,7 @@ impl LspMessage for DidSaveTextDocumentNotification {
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct DidSaveTextDocumentParams {
-    pub text_document: TextDocumentItem,
+    pub text_document: TextDocumentIdentifier,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub text: Option<String>,
 }

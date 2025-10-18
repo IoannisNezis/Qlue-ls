@@ -25,23 +25,27 @@ use super::{environment::CompletionEnvironment, error::CompletionError};
 
 pub(super) enum CompletionTemplate {
     SubjectCompletion,
-    PredicateCompletion,
-    ObjectCompletion,
     PredicateCompletionContextSensitive,
+    PredicateCompletionContextInsensitive,
     ObjectCompletionContextSensitive,
+    ObjectCompletionContextInsensitive,
 }
 
 impl Display for CompletionTemplate {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             CompletionTemplate::SubjectCompletion => write!(f, "subjectCompletion"),
-            CompletionTemplate::PredicateCompletion => write!(f, "predicateCompletion"),
-            CompletionTemplate::ObjectCompletion => write!(f, "objectCompletion"),
             CompletionTemplate::PredicateCompletionContextSensitive => {
-                write!(f, "predicateCompletionContextSensitive")
+                write!(f, "predicateCompletionQueryContextSensitive")
+            }
+            CompletionTemplate::PredicateCompletionContextInsensitive => {
+                write!(f, "predicateCompletionQueryContextInsensitive")
             }
             CompletionTemplate::ObjectCompletionContextSensitive => {
-                write!(f, "objectCompletionContextSensitive")
+                write!(f, "predicateCompletionQueryContextSensitive")
+            }
+            CompletionTemplate::ObjectCompletionContextInsensitive => {
+                write!(f, "predicateCompletionQueryContextInsensitive")
             }
         }
     }

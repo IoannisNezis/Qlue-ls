@@ -18,7 +18,7 @@ pub(super) async fn completions(
         server_rc,
         &environment,
         template_context,
-        CompletionTemplate::ObjectCompletion,
+        CompletionTemplate::ObjectCompletionContextInsensitive,
         false,
     )
     .await

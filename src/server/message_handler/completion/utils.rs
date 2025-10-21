@@ -42,10 +42,10 @@ impl Display for CompletionTemplate {
                 write!(f, "predicateCompletionQueryContextInsensitive")
             }
             CompletionTemplate::ObjectCompletionContextSensitive => {
-                write!(f, "predicateCompletionQueryContextSensitive")
+                write!(f, "objectCompletionQueryContextSensitive")
             }
             CompletionTemplate::ObjectCompletionContextInsensitive => {
-                write!(f, "predicateCompletionQueryContextInsensitive")
+                write!(f, "objectCompletionQueryContextInsensitive")
             }
         }
     }

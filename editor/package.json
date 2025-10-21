@@ -35,7 +35,7 @@
         "@tailwindcss/vite": "^4.1.3",
         "ll-sparql-parser": "0.13.0",
         "monaco-editor": "npm:@codingame/monaco-vscode-editor-api@17.2.1",
-        "monaco-editor-wrapper": "~6.8.1",
+        "monaco-editor-wrapper": "~6.12.0",
         "monaco-vim": "^0.4.2",
         "qlue-ls": "0.16.0",
         "vscode": "npm:@codingame/monaco-vscode-extension-api@17.2.1",

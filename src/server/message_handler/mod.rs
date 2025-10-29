@@ -2,6 +2,7 @@ mod backend;
 mod code_action;
 mod completion;
 mod diagnostic;
+mod execute;
 mod folding_range;
 mod formatting;
 mod hover;
@@ -46,6 +47,7 @@ use crate::server::{
     handle_error, log_trace,
     lsp::{errors::ErrorCode, TraceValue},
     message_handler::{
+        execute::handle_execute_query_request,
         folding_range::handle_folding_range_request,
         identification::handle_identify_request,
         settings::{handle_change_settings_notification, handle_default_settings_request},
@@ -117,6 +119,7 @@ pub(super) async fn dispatch(
         "qlueLs/jump" => call!(handle_jump_request),
         "qlueLs/identifyOperationType" => call!(handle_identify_request),
         "qlueLs/defaultSettings" => call!(handle_default_settings_request),
+        "qlueLs/executeQuery" => call_async!(handle_execute_query_request),
         // NOTE: Notifications
         "initialized" => call!(handle_initialized_notification),
         "exit" => call!(handle_exit_notification),

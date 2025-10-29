@@ -3,31 +3,35 @@ use std::{
     fmt::{self, Display},
 };
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct SparqlResult {
     #[allow(dead_code)]
     pub head: SparqlResultsVars,
     pub results: SparqlResultsBindings,
+    #[serde(skip_deserializing)]
+    pub prefixes: HashMap<String, String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct SparqlResultsVars {
     #[allow(dead_code)]
     pub vars: Vec<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct SparqlResultsBindings {
     pub bindings: Vec<HashMap<String, RDFTerm>>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum RDFTerm {
     Uri {
         value: String,
+        #[serde(skip_deserializing)]
+        curie: Option<String>,
     },
     Literal {
         value: String,
@@ -50,7 +54,7 @@ impl RDFTerm {
                 lang: _,
                 datatype: _,
             }
-            | RDFTerm::Uri { value } => value,
+            | RDFTerm::Uri { value, curie: _ } => value,
         }
     }
 }
@@ -58,7 +62,7 @@ impl RDFTerm {
 impl Display for RDFTerm {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RDFTerm::Uri { value } => write!(f, "<{}>", value),
+            RDFTerm::Uri { value, curie } => write!(f, "<{}>", value),
             RDFTerm::Literal {
                 value,
                 lang,
@@ -96,6 +100,7 @@ mod test {
         // Test rendering of Uri variant
         let uri = RDFTerm::Uri {
             value: "http://example.org/resource".to_string(),
+            curie: None,
         };
         assert_eq!(uri.to_string(), "<http://example.org/resource>");
 
@@ -155,7 +160,7 @@ mod test {
         assert_eq!(results.head.vars, vec!["first", "second"]);
         assert!(matches!(
             results.results.bindings[0].get("first").unwrap(),
-            RDFTerm::Uri { value: _ }
+            RDFTerm::Uri { value: _, curie: _ }
         ));
         assert!(matches!(
             results.results.bindings[0].get("second").unwrap(),

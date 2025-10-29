@@ -22,6 +22,14 @@
       ]
     },
     {
+      "matchFileNames": [
+        "Cargo.toml"
+      ],
+      "labels": [
+        "core"
+      ]
+    },
+    {
       "matchDatasources": [
         "npm"
       ],

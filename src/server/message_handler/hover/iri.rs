@@ -60,6 +60,7 @@ pub(super) async fn hover(
             &query,
             server.settings.completion.timeout_ms,
             method,
+            None,
         )
         .await
         .map_err(|_err| LSPError::new(ErrorCode::InternalError, "hover query failed"))?;

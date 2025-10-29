@@ -1,5 +1,7 @@
 use crate::server::configuration::RequestMethod;
 use crate::sparql::results::SparqlResult;
+use ll_sparql_parser::ast::{AstNode, QueryUnit};
+use ll_sparql_parser::parse_query;
 use urlencoding::encode;
 
 /// Everything that can go wrong when sending a SPARQL request
@@ -7,11 +9,40 @@ use urlencoding::encode;
 /// - `Connection`: The Http connection could not be established
 /// - `Response`: The responst had a non 200 status code
 /// - `Deserialization`: The response could not be deserialized
+#[derive(Debug)]
 pub(super) enum SparqlRequestError {
     Timeout,
     Connection,
     Response(String),
     Deserialization(String),
+}
+
+#[derive(Debug)]
+pub struct Pagination {
+    page: u32,
+    page_size: u32,
+}
+
+impl Pagination {
+    pub fn new(page: u32, page_size: u32) -> Self {
+        Self { page, page_size }
+    }
+
+    fn paginate(&self, query: &str) -> Option<String> {
+        let syntax_tree = QueryUnit::cast(parse_query(query))?;
+        let select_query = syntax_tree.select_query()?;
+        Some(format!(
+            "{}{}{}",
+            &query[0..select_query.syntax().text_range().start().into()],
+            format!(
+                "SELECT * WHERE {{\n{}\n}}\nLIMIT {}\nOFFSET {}",
+                select_query.text(),
+                self.page_size,
+                self.page
+            ),
+            &query[select_query.syntax().text_range().end().into()..]
+        ))
+    }
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -20,14 +51,19 @@ pub(crate) async fn fetch_sparql_result(
     query: &str,
     timeout_ms: u32,
     method: RequestMethod,
+    pagination: Option<Pagination>,
 ) -> Result<SparqlResult, SparqlRequestError> {
     use reqwest::Client;
     use std::time::Duration;
     use tokio::time::timeout;
 
+    let query = pagination
+        .and_then(|pagination| pagination.paginate(query))
+        .unwrap_or(query.to_string());
+
     let request = match method {
         RequestMethod::GET => Client::new()
-            .get(format!("{}?query={}", url, encode(query)))
+            .get(format!("{}?query={}", url, encode(&query)))
             .header(
                 "Content-Type",
                 "application/x-www-form-urlencoded;charset=UTF-8",
@@ -89,6 +125,7 @@ pub(crate) async fn fetch_sparql_result(
     query: &str,
     timeout_ms: u32,
     method: RequestMethod,
+    pagination: Option<Pagination>,
 ) -> Result<SparqlResult, SparqlRequestError> {
     use js_sys::JsString;
     use std::str::FromStr;
@@ -96,18 +133,22 @@ pub(crate) async fn fetch_sparql_result(
     use wasm_bindgen_futures::JsFuture;
     use web_sys::{AbortSignal, Request, RequestInit, RequestMode, Response, WorkerGlobalScope};
 
+    let query = pagination
+        .and_then(|pagination| pagination.paginate(query))
+        .unwrap_or(query.to_string());
+
     let opts = RequestInit::new();
     opts.set_signal(Some(&AbortSignal::timeout_with_u32(timeout_ms)));
 
     let request = match method {
         RequestMethod::GET => {
             opts.set_method("GET");
-            Request::new_with_str_and_init(&format!("{url}?query={}", encode(query)), &opts)
+            Request::new_with_str_and_init(&format!("{url}?query={}", encode(&query)), &opts)
                 .unwrap()
         }
         RequestMethod::POST => {
             opts.set_method("POST");
-            opts.set_body(&JsString::from_str(query).unwrap());
+            opts.set_body(&JsString::from_str(&query).unwrap());
             Request::new_with_str_and_init(url, &opts).unwrap()
         }
     };
@@ -182,4 +223,44 @@ pub(crate) async fn check_server_availability(url: &str) -> bool {
     };
     let resp: Response = resp_value.dyn_into().unwrap();
     resp.ok()
+}
+
+#[cfg(test)]
+mod test {
+    use indoc::indoc;
+
+    use crate::server::fetch::Pagination;
+
+    #[test]
+    fn paginate_query() {
+        let pagination = Pagination {
+            page_size: 100,
+            page: 20,
+        };
+        let query = indoc! {
+            "Prefix ab: <ab>
+             Select * WHERE {
+               ?a ?b ?c
+             }
+             Limit 1000
+             VALUES ?x {42}
+            "
+        };
+        assert_eq!(
+            pagination.paginate(&query).expect("Should add pagination"),
+            indoc! {
+            "Prefix ab: <ab>
+             SELECT * WHERE {
+             Select * WHERE {
+               ?a ?b ?c
+             }
+             Limit 1000
+             }
+             LIMIT 100
+             OFFSET 20
+             VALUES ?x {42}
+            "
+            }
+        );
+    }
 }

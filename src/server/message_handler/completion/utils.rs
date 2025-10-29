@@ -116,7 +116,7 @@ pub(super) async fn fetch_online_completions(
     };
 
     log::debug!("Query:\n{}", query);
-    let result = fetch_sparql_result(&url, &query, timeout_ms, method)
+    let result = fetch_sparql_result(&url, &query, timeout_ms, method, None)
         .await
         .map_err(|err| match err {
             crate::server::fetch::SparqlRequestError::Timeout => {
@@ -179,7 +179,7 @@ fn render_rdf_term(
     backend_name: &str,
 ) -> (String, Option<TextEdit>) {
     match rdf_term {
-        RDFTerm::Uri { value } => match server.shorten_uri(value, Some(backend_name)) {
+        RDFTerm::Uri { value, curie: _ } => match server.shorten_uri(value, Some(backend_name)) {
             Some((prefix, uri, curie)) => {
                 let prefix_decl_edit = if query_unit.prologue().as_ref().is_none_or(|prologue| {
                     prologue

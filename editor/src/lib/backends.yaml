@@ -248,6 +248,7 @@
           } ORDER BY DESC(?qlue_ls_count)
           LIMIT {{ limit }} OFFSET {{ offset }}
       predicateCompletion: |-
+          # predicate completion insensitive
           {% include "prefix_declarations" %}
           SELECT ?qlue_ls_entity ?qlue_ls_score WHERE {
             { SELECT ?qlue_ls_entity (COUNT({% if local_context is containing("?qlue_ls_inner") %}DISTINCT ?qlue_ls_inner{%else%}?qlue_ls_entity{% endif %}) AS ?qlue_ls_score)
@@ -264,6 +265,7 @@
           } ORDER BY DESC(?qlue_ls_score)
           LIMIT {{ limit }} OFFSET {{ offset }}
       objectCompletion: |-
+          # object completion insensitive
           {% include "prefix_declarations" %}
           PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
           SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_count WHERE {
@@ -738,11 +740,11 @@
       pq: http://www.wikidata.org/prop/qualifier/
       geo: http://www.opengis.net/ont/geosparql#
       geof: http://www.opengis.net/def/function/geosparql/
-      osm2rdf: https://osm2rdf.dev/rdf#
-      osm2rdfkey: https://osm2rdf.dev/rdf/key#
-      osm2rdfgeom: https://osm2rdf.dev/rdf/geom#
-      osm2rdfmember: https://osm2rdf.dev/rdf/member#
-      qlss: https://qlever.dev/spatialSearch/
+      osm2rdf: https://osm2rdf.cs.uni-freiburg.de/rdf#
+      osm2rdfkey: https://osm2rdf.cs.uni-freiburg.de/rdf/key#
+      osm2rdfgeom: https://osm2rdf.cs.uni-freiburg.de/rdf/geom#
+      osm2rdfmember: https://osm2rdf.cs.uni-freiburg.de/rdf/member#
+      qlss: https://qlever.cs.uni-freiburg.de/spatialSearch/
   default: false
   queries:
       hover: |-
@@ -758,7 +760,7 @@
           PREFIX osmrel: <https://www.openstreetmap.org/relation/>
           PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
           PREFIX osm: <https://www.openstreetmap.org/>
-          PREFIX osm2rdf: <https://osm2rdf.dev/rdf#>
+          PREFIX osm2rdf: <https://osm2rdf.cs.uni-freiburg.de/rdf#>
           SELECT ?qlue_ls_entity (SAMPLE(?name) AS ?qlue_ls_label) (SAMPLE(?alias) AS ?qlue_ls_alias) (SAMPLE(?count) AS ?qlue_ls_count) WHERE {
             {
               {
@@ -959,8 +961,8 @@
       prn: http://www.wikidata.org/prop/reference/value-normalized/
       wdno: http://www.wikidata.org/prop/novalue/
       imdb: https://www.imdb.com/
-      qfn: http://qlever.dev/function#
-      ql: http://qlever.dev/builtin-functions/
+      qfn: http://qlever.cs.uni-freiburg.de/function#
+      ql: http://qlever.cs.uni-freiburg.de/builtin-functions/
       math: http://www.w3.org/2005/xpath-functions/math#
   default: true
   queries:

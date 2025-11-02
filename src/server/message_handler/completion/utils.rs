@@ -131,6 +131,9 @@ pub(super) async fn fetch_online_completions(
             crate::server::fetch::SparqlRequestError::Deserialization(msg) => {
                 CompletionError::Request(msg)
             }
+            crate::server::fetch::SparqlRequestError::QLeverException(exception) => {
+                CompletionError::Request(exception.exception)
+            }
         })?;
     log::info!("Result size: {}", result.results.bindings.len());
 

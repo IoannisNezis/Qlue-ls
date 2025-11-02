@@ -5,10 +5,10 @@ use futures::lock::Mutex;
 use crate::{
     server::{
         configuration::RequestMethod,
-        fetch::{fetch_sparql_result, Pagination},
+        fetch::{fetch_sparql_result, Pagination, SparqlRequestError},
         lsp::{
             errors::{ErrorCode, LSPError},
-            ExectuteQueryResponse, ExecuteQueryRequest,
+            ExecuteQueryRequest, ExecuteQueryResponse,
         },
         Server,
     },
@@ -38,7 +38,7 @@ pub(super) async fn handle_execute_query_request(
         (text, url)
     };
 
-    let mut query_result = fetch_sparql_result(
+    let mut query_result = match fetch_sparql_result(
         &url,
         &query,
         1000000,
@@ -49,14 +49,25 @@ pub(super) async fn handle_execute_query_request(
         )),
     )
     .await
-    .map_err(|_err| {
-        LSPError::new(
-            ErrorCode::InternalError,
-            &format!("Executing query failed during execution."),
-        )
-    })?;
+    {
+        Ok(res) => res,
+        Err(SparqlRequestError::QLeverException(exception)) => {
+            return server_rc
+                .lock()
+                .await
+                .send_message(ExecuteQueryResponse::error(request.get_id(), exception));
+        }
+        Err(err) => {
+            return Err(LSPError::new(
+                ErrorCode::InternalError,
+                &format!("Query failed during execution:\n{err:?}"),
+            ));
+        }
+    };
 
     let server = server_rc.lock().await;
+
+    // NOTE: compress IRIs when possible.
     for binding in query_result.results.bindings.iter_mut() {
         for (_, rdf_term) in binding.iter_mut() {
             if let RDFTerm::Uri { value, curie } = rdf_term {
@@ -68,7 +79,7 @@ pub(super) async fn handle_execute_query_request(
         }
     }
 
-    server.send_message(ExectuteQueryResponse::success(
+    server.send_message(ExecuteQueryResponse::success(
         request.get_id(),
         query_result,
     ))

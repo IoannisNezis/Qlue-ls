@@ -1,4 +1,5 @@
 use crate::server::configuration::RequestMethod;
+use crate::server::lsp::QLeverException;
 use crate::sparql::results::SparqlResult;
 use ll_sparql_parser::ast::{AstNode, QueryUnit};
 use ll_sparql_parser::parse_query;
@@ -15,6 +16,7 @@ pub(super) enum SparqlRequestError {
     Connection,
     Response(String),
     Deserialization(String),
+    QLeverException(QLeverException),
 }
 
 #[derive(Debug)]
@@ -45,81 +47,80 @@ impl Pagination {
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-pub(crate) async fn fetch_sparql_result(
-    url: &str,
-    query: &str,
-    timeout_ms: u32,
-    method: RequestMethod,
-    pagination: Option<Pagination>,
-) -> Result<SparqlResult, SparqlRequestError> {
-    use reqwest::Client;
-    use std::time::Duration;
-    use tokio::time::timeout;
+// #[cfg(not(target_arch = "wasm32"))]
+// pub(crate) async fn fetch_sparql_result(
+//     url: &str,
+//     query: &str,
+//     timeout_ms: u32,
+//     method: RequestMethod,
+//     pagination: Option<Pagination>,
+// ) -> Result<SparqlResult, SparqlRequestError> {
+//     use reqwest::Client;
+//     use std::time::Duration;
+//     use tokio::time::timeout;
+//
+//     let query = pagination
+//         .and_then(|pagination| pagination.paginate(query))
+//         .unwrap_or(query.to_string());
+//
+//     let request = match method {
+//         RequestMethod::GET => Client::new()
+//             .get(format!("{}?query={}", url, encode(&query)))
+//             .header(
+//                 "Content-Type",
+//                 "application/x-www-form-urlencoded;charset=UTF-8",
+//             )
+//             .header("Accept", "application/sparql-results+json")
+//             .header("User-Agent", "qlue-ls/1.0")
+//             .send(),
+//         RequestMethod::POST => Client::new()
+//             .post(url)
+//             .header(
+//                 "Content-Type",
+//                 "application/x-www-form-urlencoded;charset=UTF-8",
+//             )
+//             .header("Accept", "application/sparql-results+json")
+//             .header("User-Agent", "qlue-ls/1.0")
+//             .form(&[("query", query)])
+//             .send(),
+//     };
+//
+//     let duration = Duration::from_millis(timeout_ms as u64);
+//     let request = timeout(duration, request);
+//
+//     let response = request
+//         .await
+//         .map_err(|_| SparqlRequestError::Timeout)?
+//         .map_err(|_| SparqlRequestError::Connection)?
+//         .error_for_status()
+//         .map_err(|err| {
+//             log::debug!("Error: {:?}", err.status());
+//             SparqlRequestError::Response("failed".to_string())
+//         })?;
+//
+//     response
+//         .json::<SparqlResult>()
+//         .await
+//         .map_err(|err| SparqlRequestError::Deserialization(err.to_string()))
+// }
+//
+// #[cfg(not(target_arch = "wasm32"))]
+// pub(crate) async fn check_server_availability(url: &str) -> bool {
+//     use reqwest::Client;
+//     let response = Client::new().get(url).send();
+//     response.await.is_ok_and(|res| res.status() == 200)
+//     // let opts = RequestInit::new();
+//     // opts.set_method("GET");
+//     // opts.set_mode(RequestMode::Cors);
+//     // let request = Request::new_with_str_and_init(url, &opts).expect("Failed to create request");
+//     // let resp_value = match JsFuture::from(worker_global.fetch_with_request(&request)).await {
+//     //     Ok(resp) => resp,
+//     //     Err(_) => return false,
+//     // };
+//     // let resp: Response = resp_value.dyn_into().unwrap();
+//     // resp.ok()
+// }
 
-    let query = pagination
-        .and_then(|pagination| pagination.paginate(query))
-        .unwrap_or(query.to_string());
-
-    let request = match method {
-        RequestMethod::GET => Client::new()
-            .get(format!("{}?query={}", url, encode(&query)))
-            .header(
-                "Content-Type",
-                "application/x-www-form-urlencoded;charset=UTF-8",
-            )
-            .header("Accept", "application/sparql-results+json")
-            .header("User-Agent", "qlue-ls/1.0")
-            .send(),
-        RequestMethod::POST => Client::new()
-            .post(url)
-            .header(
-                "Content-Type",
-                "application/x-www-form-urlencoded;charset=UTF-8",
-            )
-            .header("Accept", "application/sparql-results+json")
-            .header("User-Agent", "qlue-ls/1.0")
-            .form(&[("query", query)])
-            .send(),
-    };
-
-    let duration = Duration::from_millis(timeout_ms as u64);
-    let request = timeout(duration, request);
-
-    let response = request
-        .await
-        .map_err(|_| SparqlRequestError::Timeout)?
-        .map_err(|_| SparqlRequestError::Connection)?
-        .error_for_status()
-        .map_err(|err| {
-            log::debug!("Error: {:?}", err.status());
-            SparqlRequestError::Response("failed".to_string())
-        })?;
-
-    response
-        .json::<SparqlResult>()
-        .await
-        .map_err(|err| SparqlRequestError::Deserialization(err.to_string()))
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub(crate) async fn check_server_availability(url: &str) -> bool {
-    use reqwest::Client;
-    let response = Client::new().get(url).send();
-    response.await.is_ok_and(|res| res.status() == 200)
-    // let opts = RequestInit::new();
-    // opts.set_method("GET");
-    // opts.set_mode(RequestMode::Cors);
-    // let request = Request::new_with_str_and_init(url, &opts).expect("Failed to create request");
-    // let resp_value = match JsFuture::from(worker_global.fetch_with_request(&request)).await {
-    //     Ok(resp) => resp,
-    //     Err(_) => return false,
-    // };
-    // let resp: Response = resp_value.dyn_into().unwrap();
-    // resp.ok()
-}
-
-#[cfg(target_arch = "wasm32")]
 pub(crate) async fn fetch_sparql_result(
     url: &str,
     query: &str,
@@ -188,8 +189,29 @@ pub(crate) async fn fetch_sparql_result(
 
     // Check if the response status is OK (200-299)
     if !resp.ok() {
-        let status_text = resp.status_text();
-        return Err(SparqlRequestError::Response(status_text));
+        return match resp.json() {
+            Ok(json) => {
+                match JsFuture::from(json).await {
+                    Ok(js_value) => match serde_wasm_bindgen::from_value(js_value) {
+                        Ok(err) =>  Err(SparqlRequestError::QLeverException(err)),
+                        Err(err) => {
+                            Err(SparqlRequestError::Deserialization(format!(
+                                "Could not deserialize error message: {}",
+                                err
+                            )))
+                        }
+                    },
+                    Err(err) => {
+                        Err(SparqlRequestError::Deserialization(
+                            format!("Query failed! Response did not provide a json body but this could not be cast to rust JsValue.\n{:?}", err),
+                        ))
+                    }
+                }
+            }
+            Err(err) => Err(SparqlRequestError::Deserialization(format!(
+                "Query failed! Response did not provide a json body.\n{err:?}"
+            ))),
+        };
     }
 
     // Get the response body as text and await it

@@ -215,12 +215,6 @@ pub struct ResponseMessageBase {
     // This member MUST NOT exist if there was an error invoking the method.
     // NOTE: This is omitted due to the flatten serde mechanism
     // pub result: Option<LSPAny>,
-    /**
-     * The error object in case a request fails.
-     */
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<LSPError>,
 }
 
 impl ResponseMessageBase {
@@ -228,7 +222,6 @@ impl ResponseMessageBase {
         Self {
             base: Message::new(),
             id: RequestIdOrNull::RequestId(id.clone()),
-            error: None,
         }
     }
     pub fn request_id(&self) -> Option<&RequestId> {

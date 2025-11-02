@@ -3,6 +3,19 @@ use serde::{Deserialize, Serialize};
 use super::base_types::LSPAny;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub struct LSPErrorBase {
+    /**
+     * A number indicating the error type that occurred.
+     */
+    pub code: ErrorCode,
+
+    /**
+     * A string providing a short description of the error.
+     */
+    pub message: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct LSPError {
     /**
      * A number indicating the error type that occurred.

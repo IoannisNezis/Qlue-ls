@@ -105,6 +105,7 @@ struct SimplifiedCommentMarker {
 fn inc_indent(node: &SyntaxNode) -> u8 {
     match node.kind() {
         SyntaxKind::BlankNodePropertyListPath
+        | SyntaxKind::BlankNodePropertyList
         | SyntaxKind::GroupGraphPattern
         | SyntaxKind::BrackettedExpression
         | SyntaxKind::ConstructTemplate
@@ -284,7 +285,7 @@ impl<'a> Walker<'a> {
                 })
                 .collect(),
 
-            SyntaxKind::PropertyListPathNotEmpty => children
+            SyntaxKind::PropertyListPathNotEmpty | SyntaxKind::PropertyListNotEmpty => children
                 .iter()
                 .filter_map(|child| match child.kind() {
                     SyntaxKind::Semicolon | SyntaxKind::ObjectListPath | SyntaxKind::ObjectList => {
@@ -297,7 +298,7 @@ impl<'a> Walker<'a> {
                 })
                 .collect(),
 
-            SyntaxKind::BlankNodePropertyListPath => {
+            SyntaxKind::BlankNodePropertyListPath | SyntaxKind::BlankNodePropertyList => {
                 match children.get(1).and_then(|child| child.as_node()) {
                     Some(prop_list) => prop_list
                         .children_with_tokens()
@@ -314,12 +315,15 @@ impl<'a> Walker<'a> {
                     None => Vec::new(),
                 }
             }
-            SyntaxKind::TriplesSameSubjectPath => {
+            SyntaxKind::TriplesSameSubjectPath | SyntaxKind::TriplesSameSubject => {
                 let subject = children.first().and_then(|element| element.as_node());
                 let prop_list = children.last().and_then(|node| node.as_node());
                 match (subject, prop_list) {
                     (Some(subject), Some(prop_list))
-                        if prop_list.kind() == SyntaxKind::PropertyListPathNotEmpty =>
+                        if matches!(
+                            prop_list.kind(),
+                            SyntaxKind::PropertyListPathNotEmpty | SyntaxKind::PropertyListNotEmpty
+                        ) =>
                     {
                         let insert = match self.settings.align_predicates {
                             true => &" ".repeat(subject.to_string().width() + 1),
@@ -593,25 +597,28 @@ impl<'a> Walker<'a> {
             {
                 Some(self.get_linebreak(indentation))
             }
-            SyntaxKind::PropertyListPathNotEmpty => match node.parent().map(|parent| parent.kind())
-            {
-                Some(SyntaxKind::BlankNodePropertyListPath)
-                    if node
-                        .as_node()
-                        .map(|node| node.children_with_tokens().count() > 3)
-                        .unwrap_or(false) =>
-                {
-                    Some(self.get_linebreak(indentation))
+            SyntaxKind::PropertyListPathNotEmpty | SyntaxKind::PropertyListNotEmpty => {
+                match node.parent().map(|parent| parent.kind()) {
+                    Some(SyntaxKind::BlankNodePropertyListPath)
+                    | Some(SyntaxKind::BlankNodePropertyList)
+                        if node
+                            .as_node()
+                            .map(|node| node.children_with_tokens().count() > 3)
+                            .unwrap_or(false) =>
+                    {
+                        Some(self.get_linebreak(indentation))
+                    }
+                    Some(SyntaxKind::BlankNodePropertyListPath)
+                    | Some(SyntaxKind::BlankNodePropertyList)
+                        if node
+                            .as_node()
+                            .is_some_and(|node| node.children_with_tokens().count() <= 3) =>
+                    {
+                        Some(" ".to_string())
+                    }
+                    _ => None,
                 }
-                Some(SyntaxKind::BlankNodePropertyListPath)
-                    if node
-                        .as_node()
-                        .is_some_and(|node| node.children_with_tokens().count() <= 3) =>
-                {
-                    Some(" ".to_string())
-                }
-                _ => None,
-            },
+            }
             SyntaxKind::WhereClause => {
                 match self.settings.where_new_line
                     || node
@@ -655,24 +662,27 @@ impl<'a> Walker<'a> {
             {
                 Some(self.get_linebreak(indentation))
             }
-            SyntaxKind::PropertyListPathNotEmpty => match node.parent().map(|parent| parent.kind())
-            {
-                Some(SyntaxKind::BlankNodePropertyListPath)
-                    if node
-                        .as_node()
-                        .is_some_and(|node| node.children().count() > 3) =>
-                {
-                    Some(self.get_linebreak(indentation.saturating_sub(1)))
+            SyntaxKind::PropertyListPathNotEmpty | SyntaxKind::PropertyListNotEmpty => {
+                match node.parent().map(|parent| parent.kind()) {
+                    Some(SyntaxKind::BlankNodePropertyListPath)
+                    | Some(SyntaxKind::BlankNodePropertyList)
+                        if node
+                            .as_node()
+                            .is_some_and(|node| node.children().count() > 3) =>
+                    {
+                        Some(self.get_linebreak(indentation.saturating_sub(1)))
+                    }
+                    Some(SyntaxKind::BlankNodePropertyListPath)
+                    | Some(SyntaxKind::BlankNodePropertyList)
+                        if node
+                            .as_node()
+                            .is_some_and(|node| node.children().count() <= 3) =>
+                    {
+                        Some(" ".to_string())
+                    }
+                    _ => None,
                 }
-                Some(SyntaxKind::BlankNodePropertyListPath)
-                    if node
-                        .as_node()
-                        .is_some_and(|node| node.children().count() <= 3) =>
-                {
-                    Some(" ".to_string())
-                }
-                _ => None,
-            },
+            }
             // SyntaxKind::TriplesTemplate => match node.parent().map(|parent| parent.kind()) {
             //     Some(SyntaxKind::TriplesTemplateBlock) => {
             //         Some(get_linebreak(&indentation.saturating_sub(1), indent_base))
@@ -848,6 +858,7 @@ fn get_separator(kind: SyntaxKind) -> Seperator {
         | SyntaxKind::PathPrimary
         | SyntaxKind::PNAME_NS
         | SyntaxKind::BlankNodePropertyListPath
+        | SyntaxKind::BlankNodePropertyList
         | SyntaxKind::TriplesBlock
         | SyntaxKind::Quads
         | SyntaxKind::ConstructTriples
@@ -862,6 +873,7 @@ fn get_separator(kind: SyntaxKind) -> Seperator {
         | SyntaxKind::SelectClause
         | SyntaxKind::GroupCondition
         | SyntaxKind::PropertyListPathNotEmpty
+        | SyntaxKind::PropertyListNotEmpty
         | SyntaxKind::QuadPattern
         | SyntaxKind::QuadsNotTriples
         | SyntaxKind::Bind => Seperator::Empty,
@@ -902,7 +914,6 @@ fn get_separator(kind: SyntaxKind) -> Seperator {
         | SyntaxKind::DeleteClause
         | SyntaxKind::InsertClause
         | SyntaxKind::UsingClause
-        | SyntaxKind::PropertyListNotEmpty
         | SyntaxKind::Path
         | SyntaxKind::TriplesSameSubjectPath
         | SyntaxKind::PathAlternative

@@ -716,15 +716,15 @@ fn format_full_select_querry() {
 }
 
 #[test]
-fn format_blank_node_property_list_path() {
-    let ugly_query_1 = indoc!(
+fn format_blank_node_property_list_path_1() {
+    let ugly_query = indoc!(
         "SELECT * WHERE {
             wd:Q11571 p:P166 [ps:P166 ?entity ;
                       pq:P585 ?date ]
          }
          "
     );
-    let pretty_query_1 = indoc!(
+    let pretty_query = indoc!(
         "SELECT * WHERE {
            wd:Q11571 p:P166 [
              ps:P166 ?entity ;
@@ -733,21 +733,47 @@ fn format_blank_node_property_list_path() {
          }
          "
     );
-    format_and_compare(ugly_query_1, pretty_query_1, &FormatSettings::default());
-    let ugly_query_2 = indoc!(
+    format_and_compare(ugly_query, pretty_query, &FormatSettings::default());
+}
+
+#[test]
+fn format_blank_node_property_list_path_2() {
+    let ugly_query = indoc!(
         "SELECT * WHERE {
             wd:Q11571 p:P166 [
                       pq:P585 ?date ]
          }
          "
     );
-    let pretty_query_2 = indoc!(
+    let pretty_query = indoc!(
         "SELECT * WHERE {
            wd:Q11571 p:P166 [ pq:P585 ?date ]
          }
          "
     );
-    format_and_compare(ugly_query_2, pretty_query_2, &FormatSettings::default());
+    format_and_compare(ugly_query, pretty_query, &FormatSettings::default());
+}
+
+#[test]
+fn format_blank_node_property_list() {
+    let ugly_query = indoc!(
+        "SELECT * WHERE {
+            <> <> <> ;
+            <> [<> <> ; <> <> ]
+         }
+         "
+    );
+    let pretty_query = indoc!(
+        "SELECT * WHERE {
+           <> <> <> ;
+              <> [
+             <> <> ;
+             <> <>
+           ]
+         }
+         "
+    );
+    format_and_compare(ugly_query, pretty_query, &FormatSettings::default());
 }
 
 #[test]

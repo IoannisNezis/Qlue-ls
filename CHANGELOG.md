@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### added
+
+- forward SPARQL endpoint error for executeQuery requests
+
 ### fixed
 
 - formatting blank-node-property-list

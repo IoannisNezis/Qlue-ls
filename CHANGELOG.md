@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.19.1] - 2025-11-03
+
 ### added
 
+- forward connection error for executeQuery requests
 - forward SPARQL endpoint error for executeQuery requests
 
 ### fixed

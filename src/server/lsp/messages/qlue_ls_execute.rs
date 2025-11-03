@@ -1,11 +1,14 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    server::lsp::{
-        errors::{ErrorCode, LSPErrorBase},
-        rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
-        textdocument::TextDocumentIdentifier,
-        LspMessage, RequestMarker, ResponseMarker,
+    server::{
+        fetch::ConnectionError,
+        lsp::{
+            errors::{ErrorCode, LSPErrorBase},
+            rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
+            textdocument::TextDocumentIdentifier,
+            LspMessage, RequestMarker, ResponseMarker,
+        },
     },
     sparql::results::SparqlResult,
 };
@@ -38,8 +41,8 @@ impl LspMessage for ExecuteQueryRequest {
 #[serde(rename_all = "camelCase")]
 pub struct ExecuteQueryParams {
     pub text_document: TextDocumentIdentifier,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub max_result_size: Option<u32>,
+    pub result_offset: Option<u32>,
 }
 
 #[derive(Debug, Serialize)]
@@ -60,7 +63,7 @@ impl ExecuteQueryResponse {
         }
     }
 
-    pub(crate) fn error(id: &RequestId, exception: QLeverException) -> Self {
+    pub(crate) fn error(id: &RequestId, error: ExecuteQueryErrorData) -> Self {
         Self {
             base: ResponseMessageBase::success(id),
             result: None,
@@ -69,7 +72,7 @@ impl ExecuteQueryResponse {
                     code: ErrorCode::RequestFailed,
                     message: "The Query was rejected by the SPARQL endpoint".to_string(),
                 },
-                data: exception,
+                data: error,
             }),
         }
     }
@@ -91,7 +94,15 @@ impl LspMessage for ExecuteQueryResponse {
 pub struct ExecuteQueryError {
     #[serde(flatten)]
     base: LSPErrorBase,
-    data: QLeverException,
+    data: ExecuteQueryErrorData,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum ExecuteQueryErrorData {
+    QLeverException(QLeverException),
+    Connection(ConnectionError),
+    Unknown,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -115,4 +126,29 @@ pub struct Metadata {
 pub enum QLeverStatus {
     #[serde(rename = "ERROR")]
     Error,
+}
+
+#[cfg(test)]
+mod test {
+    use crate::server::lsp::{ExecuteQueryErrorData, Metadata, QLeverException, QLeverStatus};
+
+    #[test]
+    fn serialize_execute_query_error() {
+        let error = ExecuteQueryErrorData::QLeverException(QLeverException {
+            exception: "foo".to_string(),
+            query: "bar".to_string(),
+            metadata: Metadata {
+                line: 0,
+                position_in_line: 0,
+                start_index: 0,
+                stop_index: 0,
+            },
+            status: QLeverStatus::Error,
+        });
+        let serialized = serde_json::to_string(&error).unwrap();
+        assert_eq!(
+            serialized,
+            r#"{"type":"QLeverException","exception":"foo","query":"bar","status":"ERROR","metadata":{"line":0,"positionInLine":0,"startIndex":0,"stopIndex":0}}"#
+        )
+    }
 }

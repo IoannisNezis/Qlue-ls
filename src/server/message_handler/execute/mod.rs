@@ -5,10 +5,10 @@ use futures::lock::Mutex;
 use crate::{
     server::{
         configuration::RequestMethod,
-        fetch::{fetch_sparql_result, Pagination, SparqlRequestError},
+        fetch::{fetch_sparql_result, SparqlRequestError, Window},
         lsp::{
             errors::{ErrorCode, LSPError},
-            ExecuteQueryRequest, ExecuteQueryResponse,
+            ExecuteQueryErrorData, ExecuteQueryRequest, ExecuteQueryResponse,
         },
         Server,
     },
@@ -43,9 +43,9 @@ pub(super) async fn handle_execute_query_request(
         &query,
         1000000,
         RequestMethod::POST,
-        Some(Pagination::new(
-            0,
+        Some(Window::new(
             request.params.max_result_size.unwrap_or(100),
+            request.params.result_offset.unwrap_or(0),
         )),
     )
     .await
@@ -55,13 +55,28 @@ pub(super) async fn handle_execute_query_request(
             return server_rc
                 .lock()
                 .await
-                .send_message(ExecuteQueryResponse::error(request.get_id(), exception));
+                .send_message(ExecuteQueryResponse::error(
+                    request.get_id(),
+                    ExecuteQueryErrorData::QLeverException(exception),
+                ));
         }
-        Err(err) => {
-            return Err(LSPError::new(
-                ErrorCode::InternalError,
-                &format!("Query failed during execution:\n{err:?}"),
-            ));
+        Err(SparqlRequestError::Connection(error)) => {
+            return server_rc
+                .lock()
+                .await
+                .send_message(ExecuteQueryResponse::error(
+                    request.get_id(),
+                    ExecuteQueryErrorData::Connection(error),
+                ));
+        }
+        Err(_err) => {
+            return server_rc
+                .lock()
+                .await
+                .send_message(ExecuteQueryResponse::error(
+                    request.get_id(),
+                    ExecuteQueryErrorData::Unknown,
+                ));
         }
     };
 

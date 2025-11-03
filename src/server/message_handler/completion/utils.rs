@@ -122,7 +122,7 @@ pub(super) async fn fetch_online_completions(
             crate::server::fetch::SparqlRequestError::Timeout => {
                 CompletionError::Request("Completion query timed out".to_string())
             }
-            crate::server::fetch::SparqlRequestError::Connection => {
+            crate::server::fetch::SparqlRequestError::Connection(_err) => {
                 CompletionError::Request("Completion query failed, connection errored".to_string())
             }
             crate::server::fetch::SparqlRequestError::Response(msg) => {

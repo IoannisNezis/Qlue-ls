@@ -1,6 +1,8 @@
 mod server;
 mod sparql;
 
+#[cfg(target_arch = "wasm32")]
+use std::panic;
 use std::rc::Rc;
 
 use futures::lock::Mutex;
@@ -21,7 +23,15 @@ pub fn init_language_server(writer: web_sys::WritableStreamDefaultWriter) -> Ser
     #[cfg(target_arch = "wasm32")]
     wasm_logger::init(wasm_logger::Config::default());
     #[cfg(target_arch = "wasm32")]
-    console_error_panic_hook::set_once();
+    panic::set_hook(Box::new(|info| {
+        let msg = info.to_string();
+        web_sys::console::error_1(&msg.into());
+        let _ = js_sys::Function::new_with_args(
+            "msg",
+            "self.postMessage({type:'crash', error: 'asaasdasldahsd'});",
+        )
+        .call0(&JsValue::NULL);
+    }));
     Server::new(move |message| send_message(&writer, message))
 }
 
@@ -59,20 +69,3 @@ pub async fn listen(server: Server, reader: web_sys::ReadableStreamDefaultReader
         }
     }
 }
-
-// #[wasm_bindgen]
-// impl Server {
-//     pub async fn listen(&mut self, reader: web_sys::ReadableStreamDefaultReader) {
-//         loop {
-//             match read_message(&reader).await {
-//                 Ok((value, done)) => {
-//                     handle_message(rc_server.clone(), value).await;
-//                     if done {
-//                         break;
-//                     }
-//                 }
-//                 Err(e) => error!("{}", e),
-//             }
-//         }
-//     }
-// }

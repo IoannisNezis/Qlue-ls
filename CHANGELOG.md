@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.19.2] - 2025-11-06
+
+### added
+
+- post message if wasm-target crashes
+
 ## [0.19.1] - 2025-11-03
 
 ### added

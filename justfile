@@ -8,10 +8,6 @@ init_dev:
 	wasm-pack build --release --target web
 	echo "building ll-sparql-parser wasm binary"
 	cd ./crates/parser/ && wasm-pack build --release --target web
-	echo "linking against local packages"
-	cd ./pkg/ && npm link
-	cd ./crates/parser/pkg/ && npm link
-	cd editor && npm link ll-sparql-parser qlue-ls
 	echo "starting dev server"
 	cd editor && npm run dev
 

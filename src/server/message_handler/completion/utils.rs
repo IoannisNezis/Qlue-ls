@@ -13,8 +13,8 @@ use crate::{
         fetch::fetch_sparql_result,
         lsp::{
             textdocument::{Position, Range, TextEdit},
-            Backend, Command, CompletionItem, CompletionItemKind, CompletionItemLabelDetails,
-            CompletionList,
+            BackendService, Command, CompletionItem, CompletionItemKind,
+            CompletionItemLabelDetails, CompletionList,
         },
         Server,
     },
@@ -69,7 +69,7 @@ pub(super) struct InternalCompletionItem {
 pub(super) async fn fetch_online_completions(
     server_rc: Rc<Mutex<Server>>,
     query_unit: &QueryUnit,
-    backend: &Backend,
+    backend: &BackendService,
     query_template: &str,
     mut query_template_context: Context,
 ) -> Result<Vec<InternalCompletionItem>, CompletionError> {

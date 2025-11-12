@@ -3,7 +3,7 @@ use std::{collections::HashMap, fmt::Display};
 use config::{Config, ConfigError};
 use serde::{Deserialize, Serialize};
 
-use super::lsp::Backend;
+use super::lsp::BackendService;
 
 #[derive(Debug, Serialize, Deserialize, Default, PartialEq)]
 #[serde(default)]
@@ -14,7 +14,7 @@ pub struct BackendsSettings {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct BackendConfiguration {
-    pub backend: Backend,
+    pub service: BackendService,
     pub request_method: Option<RequestMethod>,
     pub prefix_map: HashMap<String, String>,
     pub default: bool,

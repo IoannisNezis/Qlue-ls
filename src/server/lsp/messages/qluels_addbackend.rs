@@ -29,7 +29,7 @@ impl LspMessage for AddBackendNotification {
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SetBackendParams {
-    pub backend: Backend,
+    pub backend: BackendService,
     pub request_method: Option<RequestMethod>,
     pub default: bool,
     pub prefix_map: Option<HashMap<String, String>>,
@@ -38,7 +38,7 @@ pub struct SetBackendParams {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct Backend {
+pub struct BackendService {
     pub name: String,
     pub url: String,
     pub health_check_url: Option<String>,

@@ -1,6 +1,6 @@
 [
     {
-        "backend": {
+        "service": {
             "name": "IMDb",
             "slug": "imdb",
             "url": "https://qlever.cs.uni-freiburg.de/api/imdb",
@@ -17,7 +17,7 @@
         }
     },
     {
-        "backend": {
+        "service": {
             "name": "DBLP",
             "slug": "dblp",
             "url": "https://qlever.cs.uni-freiburg.de/api/dblp",
@@ -48,7 +48,7 @@
         }
     },
     {
-        "backend": {
+        "service": {
             "name": "PubChem",
             "slug": "pubchem",
             "url": "https://qlever.cs.uni-freiburg.de/api/pubchem",
@@ -116,7 +116,7 @@
         }
     },
     {
-        "backend": {
+        "service": {
             "name": "UniProt",
             "slug": "uniprot",
             "url": "https://qlever.cs.uni-freiburg.de/api/uniprot",
@@ -180,7 +180,7 @@
         }
     },
     {
-        "backend": {
+        "service": {
             "name": "OSM Planet",
             "slug": "osm-planet",
             "url": "https://qlever.cs.uni-freiburg.de/api/osm-planet",
@@ -218,7 +218,7 @@
         }
     },
     {
-        "backend": {
+        "service": {
             "name": "Wikidata",
             "slug": "wikidata",
             "url": "https://qlever.cs.uni-freiburg.de/api/wikidata",

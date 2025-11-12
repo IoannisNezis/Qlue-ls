@@ -73,7 +73,7 @@ pub(super) async fn handle_initialize_request(
                 }
                 for config in backend_configs.into_iter() {
                     let BackendConfiguration {
-                        backend,
+                        service: backend,
                         request_method,
                         prefix_map,
                         default,

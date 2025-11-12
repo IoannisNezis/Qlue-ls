@@ -38,7 +38,7 @@
         "monaco-editor-wrapper": "~6.8.1",
         "monaco-vim": "^0.4.2",
         "qlue-ls": "0.16.0",
-        "vscode": "npm:@codingame/monaco-vscode-extension-api@17.2.1",
+        "vscode": "npm:@codingame/monaco-vscode-extension-api@22.1.9",
         "vscode-uri": "~3.1.0",
         "yaml": "^2.7.1"
     }

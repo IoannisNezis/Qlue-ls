@@ -96,57 +96,23 @@ pub(super) async fn handle_initialize_request(
                             .state
                             .add_backend_request_method(&backend.name, method);
                     };
-                    server
-                        .tools
-                        .tera
-                        .add_raw_template(
-                            &format!("{}-subjectCompletion", &backend.name),
-                            &queries.subject_completion,
-                        )
-                        .map_err(|err| {
-                            log::error!("{}", err);
-                            LSPError::new(
-                                ErrorCode::InvalidParams,
-                                &format!(
-                                    "Could not load template: subjectCompletion of backend {}",
-                                    &backend.name
-                                ),
-                            )
-                        })?;
-                    server
-                        .tools
-                        .tera
-                        .add_raw_template(
-                            &format!("{}-predicateCompletion", &backend.name),
-                            &queries.predicate_completion,
-                        )
-                        .map_err(|err| {
-                            log::error!("{}", err);
-                            LSPError::new(
-                                ErrorCode::InvalidParams,
-                                &format!(
-                                    "Could not load template: predicateCompletion of backend {}",
-                                    &backend.name
-                                ),
-                            )
-                        })?;
-                    server
-                        .tools
-                        .tera
-                        .add_raw_template(
-                            &format!("{}-objectCompletion", &backend.name),
-                            &queries.object_completion,
-                        )
-                        .map_err(|err| {
-                            log::error!("{}", err);
-                            LSPError::new(
-                                ErrorCode::InvalidParams,
-                                &format!(
-                                    "Could not load template: objectCompletion of backend {}",
-                                    &backend.name
-                                ),
-                            )
-                        })?;
+
+                    for (key, value) in queries {
+                        server
+                            .tools
+                            .tera
+                            .add_raw_template(&format!("{}-{}", &backend.name, &key), &value)
+                            .map_err(|err| {
+                                log::error!("{}", err);
+                                LSPError::new(
+                                    ErrorCode::InvalidParams,
+                                    &format!(
+                                        "Could not load template: {} of backend {}",
+                                        &key, &backend.name
+                                    ),
+                                )
+                            })?;
+                    }
                     if default {
                         server.state.set_default_backend(backend.name.clone());
                     }

@@ -4,7 +4,7 @@ use ll_sparql_parser::{
     syntax_kind::SyntaxKind,
     SyntaxNode,
 };
-use std::{fmt::Display, rc::Rc};
+use std::rc::Rc;
 use tera::Context;
 use text_size::TextSize;
 
@@ -23,33 +23,7 @@ use crate::{
 
 use super::{environment::CompletionEnvironment, error::CompletionError};
 
-pub(super) enum CompletionTemplate {
-    SubjectCompletion,
-    PredicateCompletionContextSensitive,
-    PredicateCompletionContextInsensitive,
-    ObjectCompletionContextSensitive,
-    ObjectCompletionContextInsensitive,
-}
-
-impl Display for CompletionTemplate {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            CompletionTemplate::SubjectCompletion => write!(f, "subjectCompletion"),
-            CompletionTemplate::PredicateCompletionContextSensitive => {
-                write!(f, "predicateCompletionQueryContextSensitive")
-            }
-            CompletionTemplate::PredicateCompletionContextInsensitive => {
-                write!(f, "predicateCompletionQueryContextInsensitive")
-            }
-            CompletionTemplate::ObjectCompletionContextSensitive => {
-                write!(f, "objectCompletionQueryContextSensitive")
-            }
-            CompletionTemplate::ObjectCompletionContextInsensitive => {
-                write!(f, "objectCompletionQueryContextInsensitive")
-            }
-        }
-    }
-}
+pub(super) type CompletionTemplate = crate::server::configuration::CompletionTemplate;
 
 pub(super) async fn dispatch_completion_query(
     server_rc: Rc<Mutex<Server>>,

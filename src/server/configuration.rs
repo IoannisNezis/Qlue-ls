@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 use config::{Config, ConfigError};
 use serde::{Deserialize, Serialize};
@@ -18,21 +18,43 @@ pub struct BackendConfiguration {
     pub request_method: Option<RequestMethod>,
     pub prefix_map: HashMap<String, String>,
     pub default: bool,
-    pub queries: Queries,
+    pub queries: HashMap<CompletionTemplate, String>,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum CompletionTemplate {
+    SubjectCompletion,
+    PredicateCompletionContextSensitive,
+    PredicateCompletionContextInsensitive,
+    ObjectCompletionContextSensitive,
+    ObjectCompletionContextInsensitive,
+}
+
+impl Display for CompletionTemplate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CompletionTemplate::SubjectCompletion => write!(f, "subjectCompletion"),
+            CompletionTemplate::PredicateCompletionContextSensitive => {
+                write!(f, "predicateCompletionContextSensitive")
+            }
+            CompletionTemplate::PredicateCompletionContextInsensitive => {
+                write!(f, "predicateCompletionContextInsensitive")
+            }
+            CompletionTemplate::ObjectCompletionContextSensitive => {
+                write!(f, "objectCompletionContextSensitive")
+            }
+            CompletionTemplate::ObjectCompletionContextInsensitive => {
+                write!(f, "objectCompletionContextInsensitive")
+            }
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum RequestMethod {
     GET,
     POST,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct Queries {
-    pub subject_completion: String,
-    pub predicate_completion: String,
-    pub object_completion: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]

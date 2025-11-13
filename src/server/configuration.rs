@@ -204,3 +204,240 @@ impl Settings {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use config::{Config, FileFormat};
+
+    fn parse_yaml<T: serde::de::DeserializeOwned>(yaml: &str) -> T {
+        Config::builder()
+            .add_source(config::File::from_str(yaml, FileFormat::Yaml))
+            .build()
+            .unwrap()
+            .try_deserialize()
+            .unwrap()
+    }
+
+    #[test]
+    fn test_backend_configuration_valid_queries_all_variants() {
+        let yaml = r#"
+            service:
+              name: TestBackend
+              url: https://example.com/sparql
+              healthCheckUrl: https://example.com/health
+            requestMethod: GET
+            prefixMap:
+              rdf: http://www.w3.org/1999/02/22-rdf-syntax-ns#
+              rdfs: http://www.w3.org/2000/01/rdf-schema#
+            default: false
+            queries:
+              subjectCompletion: SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail WHERE { ?qlue_ls_entity a ?type }
+              predicateCompletionContextSensitive: SELECT ?qlue_ls_entity WHERE { ?s ?qlue_ls_entity ?o }
+              predicateCompletionContextInsensitive: SELECT ?qlue_ls_entity WHERE { [] ?qlue_ls_entity [] }
+              objectCompletionContextSensitive: SELECT ?qlue_ls_entity WHERE { ?s ?p ?qlue_ls_entity }
+              objectCompletionContextInsensitive: SELECT ?qlue_ls_entity WHERE { [] [] ?qlue_ls_entity }
+        "#;
+
+        let config: BackendConfiguration = parse_yaml(yaml);
+
+        assert_eq!(config.service.name, "TestBackend");
+        assert_eq!(config.service.url, "https://example.com/sparql");
+        assert_eq!(config.default, false);
+        assert_eq!(config.queries.len(), 5);
+        assert!(config
+            .queries
+            .contains_key(&CompletionTemplate::SubjectCompletion));
+        assert!(config
+            .queries
+            .contains_key(&CompletionTemplate::PredicateCompletionContextSensitive));
+        assert!(config
+            .queries
+            .contains_key(&CompletionTemplate::PredicateCompletionContextInsensitive));
+        assert!(config
+            .queries
+            .contains_key(&CompletionTemplate::ObjectCompletionContextSensitive));
+        assert!(config
+            .queries
+            .contains_key(&CompletionTemplate::ObjectCompletionContextInsensitive));
+    }
+
+    #[test]
+    fn test_backend_configuration_queries_subset() {
+        let yaml = r#"
+            service:
+              name: MinimalBackend
+              url: https://example.com/sparql
+            prefixMap: {}
+            queries:
+              subjectCompletion: SELECT ?qlue_ls_entity WHERE { ?qlue_ls_entity ?p ?o }
+              objectCompletionContextInsensitive: SELECT ?qlue_ls_entity WHERE { ?s ?p ?qlue_ls_entity }
+        "#;
+
+        let config: BackendConfiguration = parse_yaml(yaml);
+
+        assert_eq!(config.queries.len(), 2);
+        assert!(config
+            .queries
+            .contains_key(&CompletionTemplate::SubjectCompletion));
+        assert!(config
+            .queries
+            .contains_key(&CompletionTemplate::ObjectCompletionContextInsensitive));
+        assert!(!config
+            .queries
+            .contains_key(&CompletionTemplate::PredicateCompletionContextSensitive));
+    }
+
+    #[test]
+    fn test_backend_configuration_rejects_invalid_query_key() {
+        // This test ensures that invalid query keys are rejected
+        let yaml = r#"
+            service:
+              name: TestBackend
+              url: https://example.com/sparql
+            prefixMap: {}
+            queries:
+              invalidQueryType: SELECT ?qlue_ls_entity WHERE { ?s ?p ?o }
+              subjectCompletion: SELECT ?qlue_ls_entity WHERE { ?qlue_ls_entity ?p ?o }
+        "#;
+
+        let result = Config::builder()
+            .add_source(config::File::from_str(yaml, FileFormat::Yaml))
+            .build()
+            .unwrap()
+            .try_deserialize::<BackendConfiguration>();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_backend_configuration_with_multiline_queries() {
+        let yaml = r#"
+            service:
+              name: WikidataBackend
+              url: https://query.wikidata.org/sparql
+              healthCheckUrl: https://query.wikidata.org/
+            prefixMap:
+              wd: http://www.wikidata.org/entity/
+              wdt: http://www.wikidata.org/prop/direct/
+              rdfs: http://www.w3.org/2000/01/rdf-schema#
+            default: false
+            queries:
+              subjectCompletion: |
+                SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail
+                WHERE {
+                  ?qlue_ls_entity rdfs:label ?qlue_ls_label .
+                  OPTIONAL { ?qlue_ls_entity schema:description ?qlue_ls_detail }
+                  FILTER(LANG(?qlue_ls_label) = "en")
+                }
+                LIMIT 100
+              predicateCompletionContextSensitive: |
+                SELECT ?qlue_ls_entity WHERE {
+                  ?s ?qlue_ls_entity ?o
+                }
+              objectCompletionContextInsensitive: SELECT ?qlue_ls_entity WHERE { [] [] ?qlue_ls_entity }
+        "#;
+
+        let config: BackendConfiguration = parse_yaml(yaml);
+
+        assert_eq!(config.service.name, "WikidataBackend");
+        assert_eq!(config.service.url, "https://query.wikidata.org/sparql");
+        assert_eq!(config.default, false);
+        assert_eq!(config.prefix_map.len(), 3);
+        assert_eq!(config.queries.len(), 3);
+
+        // Verify multiline query was parsed correctly
+        let subject_query = config
+            .queries
+            .get(&CompletionTemplate::SubjectCompletion)
+            .unwrap();
+        assert!(subject_query.contains("SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail"));
+        assert!(subject_query.contains("FILTER(LANG(?qlue_ls_label) = \"en\")"));
+    }
+
+    #[test]
+    fn test_backends_settings_multiple_backends() {
+        let yaml = r#"
+            backends:
+              wikidata:
+                service:
+                  name: Wikidata
+                  url: https://query.wikidata.org/sparql
+                prefixMap:
+                  wd: http://www.wikidata.org/entity/
+                queries:
+                  subjectCompletion: SELECT ?qlue_ls_entity WHERE { ?qlue_ls_entity ?p ?o }
+              dbpedia:
+                service:
+                  name: DBpedia
+                  url: https://dbpedia.org/sparql
+                prefixMap:
+                  dbo: http://dbpedia.org/ontology/
+                default: true
+                queries:
+                  objectCompletionContextSensitive: SELECT ?qlue_ls_entity WHERE { ?s ?p ?qlue_ls_entity }
+        "#;
+
+        let settings: BackendsSettings = parse_yaml(yaml);
+
+        assert_eq!(settings.backends.len(), 2);
+        assert!(settings.backends.contains_key("wikidata"));
+        assert!(settings.backends.contains_key("dbpedia"));
+
+        let wikidata = settings.backends.get("wikidata").unwrap();
+        assert_eq!(wikidata.service.name, "Wikidata");
+        assert_eq!(wikidata.queries.len(), 1);
+
+        let dbpedia = settings.backends.get("dbpedia").unwrap();
+        assert_eq!(dbpedia.service.name, "DBpedia");
+        assert_eq!(dbpedia.default, true);
+    }
+
+    #[test]
+    fn test_full_settings_deserialization() {
+        let yaml = r#"
+            format:
+              alignPredicates: true
+              alignPrefixes: false
+              separatePrologue: false
+              capitalizeKeywords: true
+              insertSpaces: true
+              tabSize: 2
+              whereNewLine: false
+              filterSameLine: true
+            completion:
+              timeoutMs: 5000
+              resultSizeLimit: 100
+            backends:
+              backends:
+                wikidata:
+                  service:
+                    name: Wikidata
+                    url: https://query.wikidata.org/sparql
+                    healthCheckUrl: https://query.wikidata.org/
+                  prefixMap:
+                    wd: http://www.wikidata.org/entity/
+                    wdt: http://www.wikidata.org/prop/direct/
+                  default: true
+                  queries:
+                    subjectCompletion: SELECT ?qlue_ls_entity WHERE { ?qlue_ls_entity ?p ?o }
+                    predicateCompletionContextSensitive: SELECT ?qlue_ls_entity WHERE { ?s ?qlue_ls_entity ?o }
+            prefixes:
+              addMissing: true
+              removeUnused: false
+        "#;
+
+        let settings: Settings = parse_yaml(yaml);
+
+        assert_eq!(settings.format.align_predicates, true);
+        assert_eq!(settings.completion.timeout_ms, 5000);
+        assert!(settings.backends.is_some());
+
+        let backends = settings.backends.unwrap();
+        assert_eq!(backends.backends.len(), 1);
+
+        let wikidata = backends.backends.get("wikidata").unwrap();
+        assert_eq!(wikidata.service.name, "Wikidata");
+        assert_eq!(wikidata.default, true);
+        assert_eq!(wikidata.queries.len(), 2);
+    }
+}

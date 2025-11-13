@@ -68,16 +68,16 @@ pub(super) async fn handle_add_backend_notification(
     request: AddBackendNotification,
 ) -> Result<(), LSPError> {
     let mut server = server_rc.lock().await;
-    server.state.add_backend(request.params.backend.clone());
+    server.state.add_backend(request.params.service.clone());
     if request.params.default {
         server
             .state
-            .set_default_backend(request.params.backend.name.clone());
+            .set_default_backend(request.params.service.name.clone());
     }
     if let Some(prefix_map) = request.params.prefix_map {
         server
             .state
-            .add_prefix_map(request.params.backend.name.clone(), prefix_map)
+            .add_prefix_map(request.params.service.name.clone(), prefix_map)
             .await
             .map_err(|err| {
                 log::error!("{}", err);
@@ -90,7 +90,7 @@ pub(super) async fn handle_add_backend_notification(
     if let Some(method) = request.params.request_method {
         server
             .state
-            .add_backend_request_method(&request.params.backend.name, method);
+            .add_backend_request_method(&request.params.service.name, method);
     };
     if let Some(completion_queries) = request.params.queries {
         for (query_name, query) in completion_queries.iter() {
@@ -98,7 +98,7 @@ pub(super) async fn handle_add_backend_notification(
                 .tools
                 .tera
                 .add_raw_template(
-                    &format!("{}-{}", request.params.backend.name, query_name),
+                    &format!("{}-{}", request.params.service.name, query_name),
                     query,
                 )
                 .map_err(|err| {

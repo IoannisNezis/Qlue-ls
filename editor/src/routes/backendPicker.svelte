@@ -49,8 +49,8 @@
 
 <select bind:value={backend} class="select">
     {#each backends as backendConf}
-        <option value={backendConf.backend}>
-            {backendConf.backend.name}
+        <option value={backendConf.service}>
+            {backendConf.service.name}
         </option>
     {/each}
 </select>

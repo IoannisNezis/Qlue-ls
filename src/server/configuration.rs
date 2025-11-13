@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display};
+use std::{collections::HashMap, fmt};
 
 use config::{Config, ConfigError};
 use serde::{Deserialize, Serialize};
@@ -23,8 +23,9 @@ pub struct BackendConfiguration {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", try_from = "&str")]
 pub(crate) enum CompletionTemplate {
+    Hover,
     SubjectCompletion,
     PredicateCompletionContextSensitive,
     PredicateCompletionContextInsensitive,
@@ -32,9 +33,43 @@ pub(crate) enum CompletionTemplate {
     ObjectCompletionContextInsensitive,
 }
 
-impl Display for CompletionTemplate {
+#[derive(Debug)]
+pub struct UnknownTemplateError(String);
+
+impl fmt::Display for UnknownTemplateError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "unknown completion query template {}", &self.0)
+    }
+}
+
+impl TryFrom<&str> for CompletionTemplate {
+    type Error = UnknownTemplateError;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        match s {
+            "hover" => Ok(CompletionTemplate::Hover),
+            "subjectCompletion" => Ok(CompletionTemplate::SubjectCompletion),
+            "predicateCompletion" | "predicateCompletionContextInsensitive" => {
+                Ok(CompletionTemplate::PredicateCompletionContextInsensitive)
+            }
+            "predicateCompletionContextSensitive" => {
+                Ok(CompletionTemplate::PredicateCompletionContextSensitive)
+            }
+            "objectCompletion" | "objectCompletionContextInsensitive" => {
+                Ok(CompletionTemplate::ObjectCompletionContextInsensitive)
+            }
+            "objectCompletionContextSensitive" => {
+                Ok(CompletionTemplate::ObjectCompletionContextSensitive)
+            }
+            _ => Err(UnknownTemplateError(s.to_string())),
+        }
+    }
+}
+
+impl fmt::Display for CompletionTemplate {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            CompletionTemplate::Hover => write!(f, "hover"),
             CompletionTemplate::SubjectCompletion => write!(f, "subjectCompletion"),
             CompletionTemplate::PredicateCompletionContextSensitive => {
                 write!(f, "predicateCompletionContextSensitive")

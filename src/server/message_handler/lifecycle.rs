@@ -73,7 +73,7 @@ pub(super) async fn handle_initialize_request(
                 }
                 for config in backend_configs.into_iter() {
                     let BackendConfiguration {
-                        service: backend,
+                        service,
                         request_method,
                         prefix_map,
                         default,
@@ -82,7 +82,7 @@ pub(super) async fn handle_initialize_request(
 
                     server
                         .state
-                        .add_prefix_map(backend.name.clone(), prefix_map)
+                        .add_prefix_map(service.name.clone(), prefix_map)
                         .await
                         .map_err(|err| {
                             log::error!("{}", err);
@@ -94,30 +94,30 @@ pub(super) async fn handle_initialize_request(
                     if let Some(method) = request_method {
                         server
                             .state
-                            .add_backend_request_method(&backend.name, method);
+                            .add_backend_request_method(&service.name, method);
                     };
 
                     for (key, value) in queries {
                         server
                             .tools
                             .tera
-                            .add_raw_template(&format!("{}-{}", &backend.name, &key), &value)
+                            .add_raw_template(&format!("{}-{}", &service.name, &key), &value)
                             .map_err(|err| {
                                 log::error!("{}", err);
                                 LSPError::new(
                                     ErrorCode::InvalidParams,
                                     &format!(
                                         "Could not load template: {} of backend {}",
-                                        &key, &backend.name
+                                        &key, &service.name
                                     ),
                                 )
                             })?;
                     }
                     if default {
-                        server.state.set_default_backend(backend.name.clone());
+                        server.state.set_default_backend(service.name.clone());
                     }
 
-                    server.state.add_backend(backend);
+                    server.state.add_backend(service);
                 }
 
                 let progress_report_1 = ProgressNotification::report_notification(

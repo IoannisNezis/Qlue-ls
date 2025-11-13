@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::server::{
-    configuration::RequestMethod,
+    configuration::{CompletionTemplate, RequestMethod},
     lsp::{rpc::NotificationMessageBase, LspMessage, NotificationMarker},
 };
 
@@ -33,7 +33,7 @@ pub struct SetBackendParams {
     pub request_method: Option<RequestMethod>,
     pub default: bool,
     pub prefix_map: Option<HashMap<String, String>>,
-    pub queries: Option<HashMap<String, String>>,
+    pub queries: Option<HashMap<CompletionTemplate, String>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]

@@ -17,6 +17,7 @@ pub struct BackendConfiguration {
     pub service: BackendService,
     pub request_method: Option<RequestMethod>,
     pub prefix_map: HashMap<String, String>,
+    #[serde(default)]
     pub default: bool,
     pub queries: HashMap<CompletionTemplate, String>,
 }

@@ -43,6 +43,7 @@ pub struct ExecuteQueryParams {
     pub text_document: TextDocumentIdentifier,
     pub max_result_size: Option<u32>,
     pub result_offset: Option<u32>,
+    pub query_id: Option<String>,
 }
 
 #[derive(Debug, Serialize)]

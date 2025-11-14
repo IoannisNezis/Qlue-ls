@@ -116,7 +116,7 @@ pub(super) async fn fetch_online_completions(
     };
 
     log::debug!("Query:\n{}", query);
-    let result = fetch_sparql_result(&url, &query, timeout_ms, method, None)
+    let result = fetch_sparql_result(&url, &query, None, timeout_ms, method, None)
         .await
         .map_err(|err| match err {
             crate::server::fetch::SparqlRequestError::Timeout => {

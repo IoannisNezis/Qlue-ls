@@ -62,6 +62,7 @@ impl Window {
 pub(crate) async fn fetch_sparql_result(
     url: &str,
     query: &str,
+    query_id: Option<&str>,
     timeout_ms: u32,
     method: RequestMethod,
     window: Option<Window>,
@@ -141,11 +142,13 @@ pub(crate) async fn check_server_availability(url: &str) -> bool {
 pub(crate) async fn fetch_sparql_result(
     url: &str,
     query: &str,
+    query_id: Option<&str>,
     timeout_ms: u32,
     method: RequestMethod,
     window: Option<Window>,
 ) -> Result<SparqlResult, SparqlRequestError> {
     use js_sys::JsString;
+    use reqwest::header;
     use std::str::FromStr;
     use wasm_bindgen::JsCast;
     use wasm_bindgen_futures::JsFuture;
@@ -179,6 +182,9 @@ pub(crate) async fn fetch_sparql_result(
     headers
         .set("Accept", "application/sparql-results+json")
         .unwrap();
+    if let Some(id) = query_id {
+        headers.set("Query-Id", id).unwrap();
+    }
     // headers.set("User-Agent", "qlue-ls/1.0").unwrap();
 
     // Get global worker scope

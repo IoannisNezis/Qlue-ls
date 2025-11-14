@@ -8,7 +8,7 @@ use crate::{
         fetch::{fetch_sparql_result, SparqlRequestError, Window},
         lsp::{
             errors::{ErrorCode, LSPError},
-            ExecuteQueryErrorData, ExecuteQueryRequest, ExecuteQueryResponse,
+            ExecuteQueryErrorData, ExecuteQueryRequest, ExecuteQueryResponse, LspMessage,
         },
         Server,
     },
@@ -41,6 +41,7 @@ pub(super) async fn handle_execute_query_request(
     let mut query_result = match fetch_sparql_result(
         &url,
         &query,
+        request.params.query_id.as_ref().map(|s| s.as_ref()),
         1000000,
         RequestMethod::POST,
         Some(Window::new(

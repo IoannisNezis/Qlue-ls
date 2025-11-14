@@ -58,6 +58,7 @@ pub(super) async fn hover(
         let sparql_response = fetch_sparql_result(
             &backend.url,
             &query,
+            None,
             server.settings.completion.timeout_ms,
             method,
             None,

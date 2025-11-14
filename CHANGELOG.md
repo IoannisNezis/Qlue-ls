@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### added
+
+- set Query-Id for executeQuery requests
+- qlueLs/getBackend request to get current default backend
+
 ## [0.19.2] - 2025-11-06
 
 ### added

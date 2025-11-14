@@ -47,6 +47,7 @@ use crate::server::{
     handle_error, log_trace,
     lsp::{errors::ErrorCode, TraceValue},
     message_handler::{
+        backend::handle_get_backend_request,
         execute::handle_execute_query_request,
         folding_range::handle_folding_range_request,
         identification::handle_identify_request,
@@ -114,6 +115,7 @@ pub(super) async fn dispatch(
         "textDocument/foldingRange" => call!(handle_folding_range_request),
         // NOTE: LSP extensions Requests
         "qlueLs/addBackend" => call!(handle_add_backend_notification),
+        "qlueLs/getBackend" => call!(handle_get_backend_request),
         "qlueLs/updateDefaultBackend" => call!(handle_update_backend_default_notification),
         "qlueLs/pingBackend" => call_async!(handle_ping_backend_request),
         "qlueLs/jump" => call!(handle_jump_request),

@@ -6,8 +6,8 @@ use crate::server::{
     fetch::check_server_availability,
     lsp::{
         errors::{ErrorCode, LSPError},
-        AddBackendNotification, PingBackendRequest, PingBackendResponse,
-        UpdateDefaultBackendNotification,
+        AddBackendNotification, GetBackendRequest, GetBackendResponse, LspMessage,
+        PingBackendRequest, PingBackendResponse, UpdateDefaultBackendNotification,
     },
     Server,
 };
@@ -111,4 +111,15 @@ pub(super) async fn handle_add_backend_notification(
         }
     }
     Ok(())
+}
+
+pub(super) async fn handle_get_backend_request(
+    server_rc: Rc<Mutex<Server>>,
+    request: GetBackendRequest,
+) -> Result<(), LSPError> {
+    let mut server = server_rc.lock().await;
+    server.send_message(GetBackendResponse::new(
+        request.get_id(),
+        server.state.get_default_backend().cloned(),
+    ))
 }

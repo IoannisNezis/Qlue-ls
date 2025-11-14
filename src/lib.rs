@@ -26,11 +26,8 @@ pub fn init_language_server(writer: web_sys::WritableStreamDefaultWriter) -> Ser
     panic::set_hook(Box::new(|info| {
         let msg = info.to_string();
         web_sys::console::error_1(&msg.into());
-        let _ = js_sys::Function::new_with_args(
-            "msg",
-            "self.postMessage({type:'crash', error: 'asaasdasldahsd'});",
-        )
-        .call0(&JsValue::NULL);
+        let _ = js_sys::Function::new_with_args("msg", "self.postMessage({type:'crash'});")
+            .call0(&JsValue::NULL);
     }));
     Server::new(move |message| send_message(&writer, message))
 }

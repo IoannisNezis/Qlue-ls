@@ -1,0 +1,56 @@
+use crate::server::lsp::{
+    rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
+    Backend, LspMessage, RequestMarker, ResponseMarker,
+};
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Deserialize, PartialEq)]
+pub struct GetBackendRequest {
+    #[serde(flatten)]
+    pub base: RequestMessageBase,
+}
+
+impl GetBackendRequest {
+    pub fn get_id(&self) -> &RequestId {
+        &self.base.id
+    }
+}
+
+impl LspMessage for GetBackendRequest {
+    type Kind = RequestMarker;
+
+    fn method(&self) -> Option<&str> {
+        Some("qlueLs/getBackend")
+    }
+
+    fn id(&self) -> Option<&crate::server::lsp::rpc::RequestId> {
+        Some(&self.base.id)
+    }
+}
+
+#[derive(Debug, Serialize, PartialEq)]
+pub struct GetBackendResponse {
+    #[serde(flatten)]
+    pub base: ResponseMessageBase,
+    pub result: Option<Backend>,
+}
+impl GetBackendResponse {
+    pub(crate) fn new(id: &RequestId, backend: Option<Backend>) -> Self {
+        Self {
+            base: ResponseMessageBase::success(id),
+            result: backend,
+        }
+    }
+}
+
+impl LspMessage for GetBackendResponse {
+    type Kind = ResponseMarker;
+
+    fn method(&self) -> Option<&str> {
+        None
+    }
+
+    fn id(&self) -> Option<&crate::server::lsp::rpc::RequestId> {
+        None
+    }
+}

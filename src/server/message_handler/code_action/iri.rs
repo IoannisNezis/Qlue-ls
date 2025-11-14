@@ -66,7 +66,7 @@ mod test {
     use crate::server::{
         lsp::{
             textdocument::{Range, TextDocumentItem, TextEdit},
-            Backend,
+            BackendService,
         },
         message_handler::code_action::iri::shorten_all_uris,
         state::ServerState,
@@ -76,7 +76,7 @@ mod test {
 
     fn setup_state(text: &str) -> ServerState {
         let mut state = ServerState::new();
-        state.add_backend(Backend {
+        state.add_backend(BackendService {
             name: "test".to_string(),
             url: "".to_string(),
             health_check_url: None,

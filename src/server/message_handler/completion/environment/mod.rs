@@ -2,7 +2,7 @@ mod context;
 mod query_graph;
 use super::{error::CompletionError, utils::get_prefix_declarations};
 use crate::server::{
-    lsp::{textdocument::Position, Backend, CompletionRequest, CompletionTriggerKind},
+    lsp::{textdocument::Position, BackendService, CompletionRequest, CompletionTriggerKind},
     message_handler::misc::resolve_backend,
     Server,
 };
@@ -28,7 +28,7 @@ pub(super) struct CompletionEnvironment {
     pub(super) trigger_character: Option<String>,
     pub(super) anchor_token: Option<SyntaxToken>,
     pub(super) search_term: Option<String>,
-    pub(super) backend: Option<Backend>,
+    pub(super) backend: Option<BackendService>,
     pub(super) context: Option<Context>,
 }
 
@@ -309,9 +309,9 @@ impl CompletionEnvironment {
         let trigger_character = request.get_completion_context().trigger_character.clone();
         let tree = parse(&document.text);
         let trigger_token = get_trigger_token(&tree, offset);
-        let backend = trigger_token.as_ref().and_then(|token| {
-            resolve_backend(&server, &QueryUnit::cast(tree.clone())?, &token)
-        });
+        let backend = trigger_token
+            .as_ref()
+            .and_then(|token| resolve_backend(&server, &QueryUnit::cast(tree.clone())?, &token));
         let anchor_token = trigger_token.and_then(|token| get_anchor_token(token, offset));
         let search_term = get_search_term(&tree, &anchor_token, offset);
         let continuations = get_continuations(&tree, &anchor_token);

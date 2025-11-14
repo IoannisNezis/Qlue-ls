@@ -7,7 +7,7 @@ use ll_sparql_parser::{
 };
 
 use crate::server::{
-    lsp::{errors::LSPError, Backend, SetTraceNotification},
+    lsp::{errors::LSPError, BackendService, SetTraceNotification},
     Server,
 };
 
@@ -26,7 +26,7 @@ pub(super) fn resolve_backend(
     server: &Server,
     query_unit: &QueryUnit,
     token: &SyntaxToken,
-) -> Option<Backend> {
+) -> Option<BackendService> {
     token
         .parent_ancestors()
         .find_map(ServiceGraphPattern::cast)

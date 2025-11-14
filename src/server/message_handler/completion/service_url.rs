@@ -2,7 +2,7 @@ use super::{error::CompletionError, CompletionEnvironment};
 use crate::server::{
     lsp::{
         textdocument::{Range, TextEdit},
-        Backend, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat,
+        BackendService, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat,
     },
     Server,
 };
@@ -47,7 +47,7 @@ pub(super) async fn completions(
 
 fn backend_prefix(
     query_unit: Option<&QueryUnit>,
-    backend: &Backend,
+    backend: &BackendService,
 ) -> (String, Option<Vec<TextEdit>>) {
     if let Some(query_unit) = query_unit {
         if let Some(prefix_declaration) = query_unit.prologue().and_then(|prologue| {

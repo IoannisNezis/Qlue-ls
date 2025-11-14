@@ -1,4 +1,4 @@
-- backend:
+- service:
       name: IMDb
       slug: imdb
       url: https://qlever.dev/api/imdb
@@ -204,7 +204,7 @@
           GROUP BY ?qlue_ls_entity
           ORDER BY DESC(?qlue_ls_count)
           LIMIT {{ limit }} OFFSET {{ offset }}
-- backend:
+- service:
       name: DBLP
       slug: dblp
       url: https://qlever.dev/api/dblp
@@ -319,7 +319,7 @@
             {% endif %}
           } ORDER BY DESC(?qlue_ls_count)
           LIMIT {{ limit }} OFFSET {{ offset }}
-- backend:
+- service:
       name: PubChem
       slug: pubchem
       url: https://qlever.dev/api/pubchem
@@ -506,7 +506,7 @@
             {% endif %}
           } ORDER BY DESC(?qlue_ls_count)
           LIMIT {{ limit }} OFFSET {{ offset }}
-- backend:
+- service:
       name: UniProt
       slug: uniprot
       url: https://sparql.uniprot.org/sparql/
@@ -717,7 +717,7 @@
           }
           ORDER BY DESC(?qlue_ls_count)
           LIMIT {{ limit }} OFFSET {{ offset }}
-- backend:
+- service:
       name: OSM Planet
       slug: osm-planet
       url: https://qlever.dev/api/osm-planet
@@ -923,7 +923,7 @@
           GROUP BY ?qlue_ls_entity
           ORDER BY DESC(?qlue_ls_count)
           LIMIT {{ limit }} OFFSET {{ offset }}
-- backend:
+- service:
       name: Wikidata
       slug: wikidata
       url: https://qlever.dev/api/wikidata

@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt};
 
 use config::{Config, ConfigError};
-use serde::{Deserialize, Serialize};
+use serde::{de, Deserialize, Serialize};
 
 use super::lsp::BackendService;
 
@@ -23,7 +23,7 @@ pub struct BackendConfiguration {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", try_from = "&str")]
+#[serde(rename_all = "camelCase", try_from = "String")]
 pub(crate) enum CompletionTemplate {
     Hover,
     SubjectCompletion,
@@ -42,11 +42,11 @@ impl fmt::Display for UnknownTemplateError {
     }
 }
 
-impl TryFrom<&str> for CompletionTemplate {
+impl TryFrom<String> for CompletionTemplate {
     type Error = UnknownTemplateError;
 
-    fn try_from(s: &str) -> Result<Self, Self::Error> {
-        match s {
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        match s.as_str() {
             "hover" => Ok(CompletionTemplate::Hover),
             "subjectCompletion" => Ok(CompletionTemplate::SubjectCompletion),
             "predicateCompletion" | "predicateCompletionContextInsensitive" => {

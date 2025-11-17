@@ -309,9 +309,9 @@ impl CompletionEnvironment {
         let trigger_character = request.get_completion_context().trigger_character.clone();
         let tree = parse(&document.text);
         let trigger_token = get_trigger_token(&tree, offset);
-        let backend = trigger_token.as_ref().and_then(|token| {
-            resolve_backend(&server, &QueryUnit::cast(tree.clone())?, &token)
-        });
+        let backend = trigger_token
+            .as_ref()
+            .and_then(|token| resolve_backend(&server, &QueryUnit::cast(tree.clone())?, &token));
         let anchor_token = trigger_token.and_then(|token| get_anchor_token(token, offset));
         let search_term = get_search_term(&tree, &anchor_token, offset);
         let continuations = get_continuations(&tree, &anchor_token);
@@ -338,10 +338,31 @@ fn get_search_term(
     trigger_pos: TextSize,
 ) -> Option<String> {
     anchor_token.as_ref().and_then(|anchor| {
-        let range = if anchor.text_range().end() > trigger_pos {
-            TextRange::new(trigger_pos, trigger_pos)
+        // Walk forward from anchor to collect all consecutive Error tokens
+        let mut end_pos = trigger_pos;
+        let mut current_token = anchor.clone();
+
+        // Find the last Error token that overlaps with trigger_pos
+        // A token "overlaps" if its range contains trigger_pos or ends at trigger_pos
+        while let Some(next) = current_token.next_token() {
+            // Stop if this token starts after the trigger position
+            if next.text_range().start() > trigger_pos {
+                break;
+            }
+            // Include Error tokens and their siblings under the same Error parent
+            if matches!(next.kind(), SyntaxKind::Error)
+                || next.parent().is_some_and(|p| p.kind() == SyntaxKind::Error)
+            {
+                // Extend end_pos to include this Error token
+                end_pos = end_pos.max(next.text_range().end());
+            }
+            current_token = next;
+        }
+
+        let range = if anchor.text_range().end() > end_pos {
+            TextRange::new(end_pos, end_pos)
         } else {
-            TextRange::new(anchor.text_range().end(), trigger_pos)
+            TextRange::new(anchor.text_range().end(), end_pos)
         };
         root.text_range()
             .contains_range(range)

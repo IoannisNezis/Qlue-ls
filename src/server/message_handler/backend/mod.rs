@@ -6,8 +6,8 @@ use crate::server::{
     fetch::check_server_availability,
     lsp::{
         errors::{ErrorCode, LSPError},
-        AddBackendNotification, GetBackendRequest, GetBackendResponse, LspMessage,
-        PingBackendRequest, PingBackendResponse, UpdateDefaultBackendNotification,
+        AddBackendNotification, GetBackendRequest, GetBackendResponse, PingBackendRequest,
+        PingBackendResponse, UpdateDefaultBackendNotification,
     },
     Server,
 };

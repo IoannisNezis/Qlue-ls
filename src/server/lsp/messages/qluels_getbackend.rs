@@ -1,6 +1,6 @@
 use crate::server::lsp::{
     rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
-    Backend, LspMessage, RequestMarker, ResponseMarker,
+    BackendService, LspMessage, RequestMarker, ResponseMarker,
 };
 use serde::{Deserialize, Serialize};
 
@@ -32,10 +32,10 @@ impl LspMessage for GetBackendRequest {
 pub struct GetBackendResponse {
     #[serde(flatten)]
     pub base: ResponseMessageBase,
-    pub result: Option<Backend>,
+    pub result: Option<BackendService>,
 }
 impl GetBackendResponse {
-    pub(crate) fn new(id: &RequestId, backend: Option<Backend>) -> Self {
+    pub(crate) fn new(id: &RequestId, backend: Option<BackendService>) -> Self {
         Self {
             base: ResponseMessageBase::success(id),
             result: backend,

@@ -12,6 +12,11 @@ use ll_sparql_parser::{ast::AstNode, syntax_kind::SyntaxKind};
 use std::rc::Rc;
 use tera::Context;
 
+#[cfg(not(target_arch = "wasm32"))]
+use tokio::task::spawn_local;
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen_futures::spawn_local;
+
 pub(super) async fn completions(
     server_rc: Rc<Mutex<Server>>,
     environment: CompletionEnvironment,
@@ -25,7 +30,7 @@ pub(super) async fn completions(
     let server_rc_1 = server_rc.clone();
     let template_context_1 = template_context.clone();
     let environment_1 = environment.clone();
-    wasm_bindgen_futures::spawn_local(async move {
+    spawn_local(async move {
         match dispatch_completion_query(
             server_rc_1,
             &environment_1,

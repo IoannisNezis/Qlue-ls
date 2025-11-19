@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt};
 
 use config::{Config, ConfigError};
-use serde::{de, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 use super::lsp::BackendService;
 
@@ -38,7 +38,7 @@ pub struct UnknownTemplateError(String);
 
 impl fmt::Display for UnknownTemplateError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "unknown completion query template {}", &self.0)
+        write!(f, "unknown completion query template \"{}\"", &self.0)
     }
 }
 

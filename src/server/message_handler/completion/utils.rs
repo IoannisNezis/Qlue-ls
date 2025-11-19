@@ -4,7 +4,7 @@ use ll_sparql_parser::{
     syntax_kind::SyntaxKind,
     SyntaxNode,
 };
-use std::{fmt::Display, rc::Rc};
+use std::rc::Rc;
 use tera::Context;
 use text_size::TextSize;
 
@@ -13,8 +13,8 @@ use crate::{
         fetch::fetch_sparql_result,
         lsp::{
             textdocument::{Position, Range, TextEdit},
-            Backend, Command, CompletionItem, CompletionItemKind, CompletionItemLabelDetails,
-            CompletionList,
+            BackendService, Command, CompletionItem, CompletionItemKind,
+            CompletionItemLabelDetails, CompletionList,
         },
         Server,
     },
@@ -23,33 +23,7 @@ use crate::{
 
 use super::{environment::CompletionEnvironment, error::CompletionError};
 
-pub(super) enum CompletionTemplate {
-    SubjectCompletion,
-    PredicateCompletionContextSensitive,
-    PredicateCompletionContextInsensitive,
-    ObjectCompletionContextSensitive,
-    ObjectCompletionContextInsensitive,
-}
-
-impl Display for CompletionTemplate {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            CompletionTemplate::SubjectCompletion => write!(f, "subjectCompletion"),
-            CompletionTemplate::PredicateCompletionContextSensitive => {
-                write!(f, "predicateCompletionQueryContextSensitive")
-            }
-            CompletionTemplate::PredicateCompletionContextInsensitive => {
-                write!(f, "predicateCompletionQueryContextInsensitive")
-            }
-            CompletionTemplate::ObjectCompletionContextSensitive => {
-                write!(f, "objectCompletionQueryContextSensitive")
-            }
-            CompletionTemplate::ObjectCompletionContextInsensitive => {
-                write!(f, "objectCompletionQueryContextInsensitive")
-            }
-        }
-    }
-}
+pub(super) type CompletionTemplate = crate::server::configuration::CompletionTemplate;
 
 pub(super) async fn dispatch_completion_query(
     server_rc: Rc<Mutex<Server>>,
@@ -95,7 +69,7 @@ pub(super) struct InternalCompletionItem {
 pub(super) async fn fetch_online_completions(
     server_rc: Rc<Mutex<Server>>,
     query_unit: &QueryUnit,
-    backend: &Backend,
+    backend: &BackendService,
     query_template: &str,
     mut query_template_context: Context,
 ) -> Result<Vec<InternalCompletionItem>, CompletionError> {

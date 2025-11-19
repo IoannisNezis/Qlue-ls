@@ -45,26 +45,27 @@ Here are a few common editors:
 After you installed the language server, add this to your `init.lua`:
 
 ```lua
-vim.api.nvim_create_autocmd({ 'FileType' }, {
-  desc = 'Connect to Qlue-ls',
-  pattern = { 'sparql' },
-  callback = function()
-    vim.lsp.start {
-      name = 'qlue-ls',
-      cmd = { 'qlue-ls', 'server' },
-      root_dir = vim.fn.getcwd(),
-      on_attach = function(client, bufnr)
-        vim.keymap.set('n', '<leader>f', vim.lsp.buf.format, { buffer = bufnr, desc = 'LSP: ' .. '[F]ormat' })
-      end,
-    }
+vim.api.config('qlue-ls',
+  filetypes = {'sparql'},
+  cmd = { 'qlue-ls', 'server' },
+  -- Be sure to set capabilities if you use blink as completion engine
+  -- capabilities = require('blink.cmp').get_lsp_capabilities(), 
+  -- Use the directory neovim was launched from as root (instead of relying on root_markers)
+  root_dir = vim.fn.getcwd(),
+  -- Set any keymaps you want to use with Qlue-ls
+  on_attach = function(client, bufnr)
+    vim.keymap.set('n', '<leader>f', vim.lsp.buf.format, { buffer = bufnr, desc = 'LSP: ' .. '[F]ormat' })
   end,
-})
+)
+
+vim.lsp.enable({'qlue-ls'})
 ```
+
+With the above setup, Qlue-ls will load [configuration](/04_configuration) from a file called `qlue-ls.{yml, toml}` in the working
+directory neovim is launched from.  All file formats supported by the config create are valid.
 
 Open a `.rq` file and check that the buffer is attached to the server:
 
 ```
 :checkhealth lsp
 ```
-
-Configure keymaps in `on_attach` function.

@@ -159,3 +159,69 @@ Remove prefix declarations if they are not used.
 
     Turn off if you plan to define custom prefixes!!
 
+
+## Backend settings
+
+Backends represent knowledge bases that the LSP can connect to in order to provide smart completions.
+
+### backend.service.name 
+
+| Type     | Default  |
+| ---------| ---------|
+| string   | REQUIRED |
+
+The name of the backend
+
+### backend.service.slug
+
+| Type     | Default  |
+| ---------| ---------|
+| string   | REQUIRED |
+
+A short form display name for the backend, akin to a RDF prefix in length
+
+### backend.service.url
+
+| Type     | Default  |
+| ---------| ---------|
+| string   | REQUIRED |
+
+The URL for the SPARQL service to query for completions
+
+### backend.service.healthCheckUrl
+
+| Type     | Default  |
+| ---------| ---------|
+| string   | REQUIRED |
+
+A URL to probe to test availability of the backend for completions
+
+### backend.prefixMap
+
+| Type                  | Default  |
+| ----------------------| ---------|
+| map<string, string>   | REQUIRED |
+
+A mapping of RDF prefixes to IRIs that will be predefined for use with this backend
+
+### backend.requestMethod
+
+| Type    | Default  |
+| --------| ---------|
+| string  | GET      |
+
+The HTTP method to use for requests to this backend service
+
+### backend.default
+
+| Type    | Default  |
+| --------| ---------|
+| boolean | false    |
+
+Whether to activate this backend by default at server start.  Inactive backends can be activated via an LSP
+request to 'qlueLs/updateDefaultBackend'.
+
+### backend.queries
+
+This key defines the SPARQL queries used for completions by the LSP.  See the [Completion Queries](/06_completion_queries)
+guide for details.

@@ -3,7 +3,7 @@ use crate::server::{configuration::RequestMethod, tracing::TraceFile};
 use super::lsp::{
     errors::{ErrorCode, LSPError},
     textdocument::{TextDocumentItem, TextEdit},
-    Backend, TextDocumentContentChangeEvent, TraceValue,
+    BackendService, TextDocumentContentChangeEvent, TraceValue,
 };
 use curies::{Converter, CuriesError};
 use futures::lock::Mutex;
@@ -21,7 +21,7 @@ pub struct ServerState {
     pub status: ServerStatus,
     pub trace_value: TraceValue,
     documents: HashMap<String, TextDocumentItem>,
-    backends: HashMap<String, Backend>,
+    backends: HashMap<String, BackendService>,
     request_method: HashMap<String, RequestMethod>,
     uri_converter: HashMap<String, Converter>,
     default_backend: Option<String>,
@@ -64,11 +64,11 @@ impl ServerState {
         self.default_backend = Some(name)
     }
 
-    pub(super) fn get_default_backend(&self) -> Option<&Backend> {
+    pub(super) fn get_default_backend(&self) -> Option<&BackendService> {
         self.backends.get(self.default_backend.as_ref()?)
     }
 
-    pub fn add_backend(&mut self, backend: Backend) {
+    pub fn add_backend(&mut self, backend: BackendService) {
         self.backends.insert(backend.name.clone(), backend);
     }
 
@@ -109,7 +109,7 @@ impl ServerState {
         Ok(())
     }
 
-    pub fn get_backend(&self, backend_name: &str) -> Option<&Backend> {
+    pub fn get_backend(&self, backend_name: &str) -> Option<&BackendService> {
         self.backends.get(backend_name)
     }
 
@@ -167,7 +167,7 @@ impl ServerState {
         self.uri_converter.get(backend_name)
     }
 
-    pub(crate) fn get_all_backends(&self) -> Vec<&Backend> {
+    pub(crate) fn get_all_backends(&self) -> Vec<&BackendService> {
         self.backends.values().collect()
     }
 }

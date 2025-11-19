@@ -46,7 +46,7 @@ If the context-sensitive query failed, the context-free one is used as a fallbac
 Note that the quality of the result depends on the query, while the speed depends on the
 triple store.
 
-To get really good SPO completions, [custom completion queries](/completion_queries) are required.
+To get really good SPO completions, [custom completion queries](/06_completion_queries) are required.
 
 ## 📐 Formatting
 

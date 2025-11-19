@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::server::{
-    configuration::RequestMethod,
+    configuration::{CompletionTemplate, RequestMethod},
     lsp::{rpc::NotificationMessageBase, LspMessage, NotificationMarker},
 };
 
@@ -29,16 +29,16 @@ impl LspMessage for AddBackendNotification {
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SetBackendParams {
-    pub backend: Backend,
+    pub service: BackendService,
     pub request_method: Option<RequestMethod>,
     pub default: bool,
     pub prefix_map: Option<HashMap<String, String>>,
-    pub queries: Option<HashMap<String, String>>,
+    pub queries: Option<HashMap<CompletionTemplate, String>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct Backend {
+pub struct BackendService {
     pub name: String,
     pub url: String,
     pub health_check_url: Option<String>,

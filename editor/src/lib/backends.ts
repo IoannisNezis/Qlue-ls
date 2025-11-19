@@ -17,7 +17,7 @@ export interface Queries {
 }
 
 export interface BackendConf {
-    backend: Backend;
+    service: Backend;
     prefixMap: PrefixMap;
     queries: Queries;
     default: boolean;

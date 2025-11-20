@@ -80,6 +80,41 @@ impl TextDocumentItem {
                 current_edit_end_byte_offset = byte_offset;
             }
             if edit.range.start == position {
+                // If we haven't reached the edit's end position yet, we need to calculate it
+                // This can happen when multiple edits have the same start position
+                if edit.range.end > position {
+                    match edit.range.end.byte_index(&self.text) {
+                        Some(end_offset) => {
+                            current_edit_end_byte_offset = end_offset.into();
+                        }
+                        None => {
+                            error!(
+                                "Failed to calculate byte offset for edit.range.end = {}",
+                                edit.range.end
+                            );
+                            edits.next();
+                            continue;
+                        }
+                    }
+                }
+                // Validate byte offsets are on character boundaries before applying edit
+                if !self.text.is_char_boundary(byte_offset) {
+                    error!(
+                        "Invalid byte_offset {} (not on char boundary). Edit: {}, Position: {}, Text len: {}, current_edit_end: {}",
+                        byte_offset, edit, position, self.text.len(), current_edit_end_byte_offset
+                    );
+                    edits.next();
+                    continue;
+                }
+                if !self.text.is_char_boundary(current_edit_end_byte_offset) {
+                    error!(
+                        "Invalid current_edit_end_byte_offset {} (not on char boundary). Edit: {}, Position: {}, Text len: {}, byte_offset: {}",
+                        current_edit_end_byte_offset, edit, position, self.text.len(), byte_offset
+                    );
+                    edits.next();
+                    continue;
+                }
+
                 self.text
                     .replace_range(byte_offset..current_edit_end_byte_offset, &edit.new_text);
                 edits.next();
@@ -229,20 +264,55 @@ impl Position {
         if self.line == 0 && self.character == 0 && text.is_empty() {
             return Some(TextSize::new(0));
         }
+
         let mut byte_index: usize = 0;
-        let mut lines = text.lines();
-        for _i in 0..self.line {
-            byte_index += lines.next()?.len() + 1;
+        let mut current_line: u32 = 0;
+
+        // Find the start of the target line by counting actual '\n' characters
+        // This correctly handles both LF (\n) and CRLF (\r\n) line endings
+        for char in text.chars() {
+            if current_line >= self.line {
+                break;
+            }
+            byte_index += char.len_utf8();
+            if char == '\n' {
+                current_line += 1;
+            }
         }
+
+        // If we didn't find the target line, check if we're requesting the line
+        // immediately after the last line (which would be valid if the text doesn't
+        // end with a newline, as per POSIX convention)
+        if current_line < self.line {
+            // Allow Position(N+1, 0) for text with N lines (no trailing newline)
+            if current_line + 1 == self.line && self.character == 0 {
+                // Return the position right after an implicit newline
+                // (byte_index is at end of text, +1 for where the newline would be)
+                return Some(TextSize::new((byte_index + 1) as u32));
+            }
+            return None;
+        }
+
+        // Now advance by the UTF-16 character offset on the target line
         let mut utf16_index: usize = 0;
-        let last_line = lines.next().unwrap_or("");
-        let mut chars = last_line.chars();
-        while utf16_index < self.character as usize {
-            let char = chars.next()?;
+        for char in text[byte_index..].chars() {
+            if utf16_index >= self.character as usize {
+                break;
+            }
+            if char == '\n' {
+                // We've hit the end of the line before reaching the character offset
+                return None;
+            }
             byte_index += char.len_utf8();
             utf16_index += char.len_utf16();
         }
-        Some(TextSize::new(byte_index as u32))
+
+        // Verify we reached the exact character position
+        if utf16_index == self.character as usize {
+            Some(TextSize::new(byte_index as u32))
+        } else {
+            None
+        }
     }
 }
 
@@ -668,5 +738,95 @@ mod tests {
         assert!(!e.overlaps(&b));
         assert!(!e.overlaps(&c));
         assert!(!e.overlaps(&d));
+    }
+
+    #[test]
+    fn multiline_delete_edit() {
+        // Reproduces the bug where deleting multiple lines causes panic
+        let initial_text = indoc!(
+            "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+             PREFIX rml: <http://w3id.org/rml/>
+
+             SELECT
+               *
+             WHERE {
+               ?c a ex:TesterCluster;
+                  tester:hasQuestionEdit ?qe ;
+                  ex:usesDataFrom ?endpoint .
+
+             }
+             "
+        );
+
+        let mut document = TextDocumentItem::new("file:///test.rq", initial_text);
+
+        // Delete multiple lines to leave just: "?c  \n}"
+        let edit = TextEdit {
+            range: Range::new(6, 5, 8, 31), // Delete from middle of line 6 to end of line 8
+            new_text: "".to_string(),
+        };
+
+        document.apply_text_edits(vec![edit]);
+
+        // Should not panic
+        assert!(document.text.contains("?c"));
+        assert!(document.text.contains("}"));
+    }
+
+    #[test]
+    fn byte_index_with_crlf() {
+        // Test that byte_index handles CRLF line endings correctly
+        let text = "foo\r\nbar\r\nbaz\r\n";
+
+        // Line 0, char 0 should be at byte 0
+        assert_eq!(Position::new(0, 0).byte_index(text), Some(TextSize::new(0)));
+
+        // Line 0, char 3 should be at byte 3 (end of "foo")
+        assert_eq!(Position::new(0, 3).byte_index(text), Some(TextSize::new(3)));
+
+        // Line 1, char 0 should be at byte 5 (after "foo\r\n")
+        // But current implementation returns byte 4 (incorrect!)
+        assert_eq!(Position::new(1, 0).byte_index(text), Some(TextSize::new(5)));
+
+        // Line 2, char 0 should be at byte 10 (after "foo\r\nbar\r\n")
+        assert_eq!(
+            Position::new(2, 0).byte_index(text),
+            Some(TextSize::new(10))
+        );
+    }
+
+    #[test]
+    fn overlapping_edits_same_start() {
+        // Reproduces bug where multiple edits with the same start position
+        // but different end positions cause invalid byte offsets
+        let initial_text = indoc!(
+            "line 0
+             line 1
+             line 2
+             line 3
+             line 4
+             line 5
+             "
+        );
+
+        let mut document = TextDocumentItem::new("file:///test.txt", initial_text);
+
+        // Two overlapping edits that both start at line 2:0
+        let edits = vec![
+            TextEdit {
+                range: Range::new(2, 0, 4, 0), // Delete lines 2-3
+                new_text: "".to_string(),
+            },
+            TextEdit {
+                range: Range::new(2, 0, 3, 0), // Delete line 2 (overlaps with above)
+                new_text: "".to_string(),
+            },
+        ];
+
+        // Should not panic
+        document.apply_text_edits(edits);
+
+        // Document should have some content left
+        assert!(document.text.len() > 0);
     }
 }

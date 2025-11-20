@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### fixed
 
 - predicate and object completion for non-wasm targets. (thanks to @DeaconDesperado)
+- completion replacement for neovim (thanks to @DeaconDesperado)
 
 ### added
 

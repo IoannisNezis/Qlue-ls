@@ -187,8 +187,7 @@ fn render_rdf_term(
 /// The context.search_term MUST be not None!
 pub(super) fn get_replace_range(context: &CompletionEnvironment) -> Range {
     Range {
-        start: context.trigger_textdocument_position,
-        end: Position::new(
+        start: Position::new(
             context.trigger_textdocument_position.line,
             context.trigger_textdocument_position.character
                 - context
@@ -202,6 +201,7 @@ pub(super) fn get_replace_range(context: &CompletionEnvironment) -> Range {
                     })
                     .unwrap_or(0),
         ),
+        end: context.trigger_textdocument_position,
     }
 }
 

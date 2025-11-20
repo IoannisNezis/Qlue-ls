@@ -36,18 +36,16 @@ pub(super) async fn completions(
     .any(|kind| environment.continuations.contains(kind))
     {
         let template_context = environment.template_context().await;
-        if let Ok(online_completions) = dispatch_completion_query(
+        let online_completions = dispatch_completion_query(
             server_rc.clone(),
             &environment,
             template_context,
             CompletionTemplate::SubjectCompletion,
             true,
         )
-        .await
-        {
-            items.extend(online_completions.items);
-            is_incomplete = online_completions.is_incomplete;
-        }
+        .await?;
+        items.extend(online_completions.items);
+        is_incomplete = online_completions.is_incomplete;
     }
     items.extend(
         variable::completions_transformed(server_rc, &environment)

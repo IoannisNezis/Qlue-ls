@@ -68,37 +68,43 @@ pub(super) async fn handle_completion_request(
         let completion_list = if env.location == CompletionLocation::Unknown {
             None
         } else {
-            match env.location {
-                CompletionLocation::Start => start::completions(env).await,
-                CompletionLocation::SelectBinding(_) => select_binding::completions(env),
-                CompletionLocation::Subject => subject::completions(server_rc.clone(), env).await,
-                CompletionLocation::Predicate(_) => {
-                    predicate::completions(server_rc.clone(), env).await
+            Some(
+                match env.location {
+                    CompletionLocation::Start => start::completions(env).await,
+                    CompletionLocation::SelectBinding(_) => select_binding::completions(env),
+                    CompletionLocation::Subject => {
+                        subject::completions(server_rc.clone(), env).await
+                    }
+                    CompletionLocation::Predicate(_) => {
+                        predicate::completions(server_rc.clone(), env).await
+                    }
+                    CompletionLocation::Object(_) => {
+                        object::completions(server_rc.clone(), env).await
+                    }
+                    CompletionLocation::SolutionModifier => solution_modifier::completions(env),
+                    CompletionLocation::Graph => graph::completions(env),
+                    CompletionLocation::BlankNodeProperty(_) => {
+                        blank_node_property::completions(server_rc.clone(), env).await
+                    }
+                    CompletionLocation::BlankNodeObject(_) => {
+                        blank_node_object::completions(server_rc.clone(), env).await
+                    }
+                    CompletionLocation::ServiceUrl => {
+                        service_url::completions(server_rc.clone(), env).await
+                    }
+                    CompletionLocation::FilterConstraint | CompletionLocation::GroupCondition => {
+                        variable::completions_transformed(server_rc.clone(), &env).await
+                    }
+                    CompletionLocation::OrderCondition => {
+                        order_condition::completions(server_rc.clone(), env).await
+                    }
+                    location => Err(CompletionError::Localization(format!(
+                        "Unknown location \"{:?}\"",
+                        location
+                    ))),
                 }
-                CompletionLocation::Object(_) => object::completions(server_rc.clone(), env).await,
-                CompletionLocation::SolutionModifier => solution_modifier::completions(env),
-                CompletionLocation::Graph => graph::completions(env),
-                CompletionLocation::BlankNodeProperty(_) => {
-                    blank_node_property::completions(server_rc.clone(), env).await
-                }
-                CompletionLocation::BlankNodeObject(_) => {
-                    blank_node_object::completions(server_rc.clone(), env).await
-                }
-                CompletionLocation::ServiceUrl => {
-                    service_url::completions(server_rc.clone(), env).await
-                }
-                CompletionLocation::FilterConstraint | CompletionLocation::GroupCondition => {
-                    variable::completions_transformed(server_rc.clone(), &env).await
-                }
-                CompletionLocation::OrderCondition => {
-                    order_condition::completions(server_rc.clone(), env).await
-                }
-                location => Err(CompletionError::Localization(format!(
-                    "Unknown location \"{:?}\"",
-                    location
-                ))),
-            }
-            .ok()
+                .map_err(to_lsp_error)?,
+            )
         };
         merge_completions(completion_list, variable_completions)
     };

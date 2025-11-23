@@ -127,12 +127,7 @@ impl ServerState {
             ErrorCode::InvalidParams,
             &format!("Could not change unknown document {}", uri),
         ))?;
-        document.apply_text_edits(
-            content_changes
-                .into_iter()
-                .map(TextEdit::from_text_document_content_change_event)
-                .collect::<Vec<TextEdit>>(),
-        );
+        document.apply_content_changes(content_changes);
         document.increase_version();
         Ok(())
     }

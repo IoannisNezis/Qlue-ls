@@ -3,9 +3,7 @@ use std::rc::Rc;
 use futures::lock::Mutex;
 use ll_sparql_parser::{
     ast::{AstNode, GroupGraphPattern, QueryUnit},
-    parse_query,
-    syntax_kind::SyntaxKind,
-    SyntaxNode,
+    parse_query, SyntaxNode,
 };
 use text_size::TextSize;
 

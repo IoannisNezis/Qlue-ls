@@ -117,7 +117,7 @@ pub(super) async fn handle_get_backend_request(
     server_rc: Rc<Mutex<Server>>,
     request: GetBackendRequest,
 ) -> Result<(), LSPError> {
-    let mut server = server_rc.lock().await;
+    let server = server_rc.lock().await;
     server.send_message(GetBackendResponse::new(
         request.get_id(),
         server.state.get_default_backend().cloned(),

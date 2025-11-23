@@ -46,15 +46,15 @@ impl TraceFile {
         self.method_map.remove(id).unwrap()
     }
 
-    pub(crate) fn dump(&self) {
-        let json_string = self
-            .trace_events
-            .iter()
-            .map(|event| serde_json::to_string(event).unwrap())
-            .collect::<Vec<_>>()
-            .join(",");
-        log::debug!(r#"{{"traceEvents":[{json_string}],"displayTimeUnit":"ms"}}"#);
-    }
+    // pub(crate) fn dump(&self) {
+    //     let json_string = self
+    //         .trace_events
+    //         .iter()
+    //         .map(|event| serde_json::to_string(event).unwrap())
+    //         .collect::<Vec<_>>()
+    //         .join(",");
+    //     log::debug!(r#"{{"traceEvents":[{json_string}],"displayTimeUnit":"ms"}}"#);
+    // }
 }
 
 #[cfg(not(target_arch = "wasm32"))]

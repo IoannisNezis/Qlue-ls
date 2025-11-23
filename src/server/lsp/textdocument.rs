@@ -1,5 +1,4 @@
 use super::TextDocumentContentChangeEvent;
-use log::error;
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display};
 use text_size::{TextRange, TextSize};
@@ -25,6 +24,7 @@ impl TextDocumentItem {
         }
     }
 
+    #[cfg(test)]
     fn apply_text_edit(&mut self, text_edit: TextEdit) {
         match text_edit.range.to_byte_index_range(&self.text) {
             Some(range) => {
@@ -34,7 +34,7 @@ impl TextDocumentItem {
                 );
             }
             None => {
-                error!("Received textdocument/didChange notification with a TextEdit thats out ouf bounds:\nedit: {}\ndocument range: {}",text_edit, self.get_full_range());
+                log::error!("Received textdocument/didChange notification with a TextEdit thats out ouf bounds:\nedit: {}\ndocument range: {}",text_edit, self.get_full_range());
             }
         };
 
@@ -117,6 +117,7 @@ impl TextDocumentItem {
         }
     }
 
+    #[cfg(test)]
     pub fn get_full_range(&self) -> Range {
         if self.text.is_empty() {
             return Range::new(0, 0, 0, 0);
@@ -138,12 +139,6 @@ impl TextDocumentItem {
                 Range::new(0, 0, (line_count - 1) as u32, last_line.len() as u32)
             }
         }
-    }
-
-    pub(crate) fn get_range(&self, range: &Range) -> Option<&str> {
-        self.text.get(Into::<std::ops::Range<usize>>::into(
-            range.to_byte_index_range(&self.text)?,
-        ))
     }
 
     pub(crate) fn increase_version(&mut self) {
@@ -434,16 +429,6 @@ impl TextEdit {
     #[cfg(test)]
     pub fn overlaps(&self, other: &TextEdit) -> bool {
         self.range.overlaps(&other.range)
-    }
-
-    pub fn from_text_document_content_change_event(
-        change_event: TextDocumentContentChangeEvent,
-    ) -> Self {
-        // TODO: handle option: change events has no range (whole document got send)
-        Self {
-            range: change_event.range,
-            new_text: change_event.text,
-        }
     }
 
     pub(crate) fn is_empty(&self) -> bool {

@@ -62,7 +62,7 @@ impl Window {
 pub(crate) async fn fetch_sparql_result(
     url: &str,
     query: &str,
-    query_id: Option<&str>,
+    _query_id: Option<&str>,
     timeout_ms: u32,
     method: RequestMethod,
     window: Option<Window>,

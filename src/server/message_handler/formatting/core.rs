@@ -1051,20 +1051,6 @@ fn consolidate_edits(edits: Vec<TextEdit>) -> Vec<ConsolidatedTextEdit> {
     })
 }
 
-fn remove_redundent_edits(edits: Vec<TextEdit>, document: &TextDocumentItem) -> Vec<TextEdit> {
-    edits
-        .into_iter()
-        .filter(|edit| {
-            if let Some(slice) = document.get_range(&edit.range) {
-                if edit.new_text == slice {
-                    return false;
-                }
-            }
-            true
-        })
-        .collect()
-}
-
 #[derive(Debug)]
 struct ConsolidatedTextEdit {
     edits: Vec<TextEdit>,
@@ -1152,7 +1138,7 @@ fn merge_comments(
                     .map(|comment| comment.position >= start_position)
                     .unwrap_or(false)
                 {
-                    let mut comment = comment_iter
+                    let comment = comment_iter
                         .next()
                         .expect("comment itterator should not be empty");
 

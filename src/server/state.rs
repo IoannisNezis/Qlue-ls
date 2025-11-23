@@ -2,7 +2,7 @@ use crate::server::{configuration::RequestMethod, tracing::TraceFile};
 
 use super::lsp::{
     errors::{ErrorCode, LSPError},
-    textdocument::{TextDocumentItem, TextEdit},
+    textdocument::TextDocumentItem,
     BackendService, TextDocumentContentChangeEvent, TraceValue,
 };
 use curies::{Converter, CuriesError};

@@ -124,20 +124,12 @@ pub struct FoldingRange {
 #[derive(Debug, Serialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum FoldingRangeKind {
-    /**
-     * Folding range for a comment
-     */
-    Comment,
-
+    //Comment,
     /**
      * Folding range for imports or includes
      */
     Imports,
-
-    /**
-     * Folding range for a region (e.g. `#region`)
-     */
-    Region,
+    //Region,
 }
 
 #[cfg(test)]
@@ -146,7 +138,7 @@ mod tests {
     use crate::server::lsp::{
         messages::textdocument_folding_range::{FoldingRange, FoldingRangeParams},
         rpc::{Message, RequestId, RequestMessageBase},
-        textdocument::{Position, TextDocumentIdentifier},
+        textdocument::TextDocumentIdentifier,
         FoldingRangeKind, FoldingRangeRequest, FoldingRangeResponse,
     };
 

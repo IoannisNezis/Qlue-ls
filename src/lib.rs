@@ -1,29 +1,21 @@
 mod server;
 mod sparql;
 
-#[cfg(target_arch = "wasm32")]
-use std::panic;
-use std::rc::Rc;
-
 use futures::lock::Mutex;
 use log::error;
 use server::{handle_message, Server};
-
-#[cfg(target_arch = "wasm32")]
+use std::panic;
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
-#[cfg(target_arch = "wasm32")]
 use wasm_bindgen_futures::JsFuture;
-#[cfg(target_arch = "wasm32")]
 use web_sys::js_sys;
 
 pub use server::format_raw;
 
-#[cfg(target_arch = "wasm32")]
 fn send_message(writer: &web_sys::WritableStreamDefaultWriter, message: String) {
     let _future = JsFuture::from(writer.write_with_chunk(&message.into()));
 }
 
-#[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 pub fn init_language_server(writer: web_sys::WritableStreamDefaultWriter) -> Server {
     wasm_logger::init(wasm_logger::Config::default());
@@ -36,7 +28,6 @@ pub fn init_language_server(writer: web_sys::WritableStreamDefaultWriter) -> Ser
     Server::new(move |message| send_message(&writer, message))
 }
 
-#[cfg(target_arch = "wasm32")]
 async fn read_message(
     reader: &web_sys::ReadableStreamDefaultReader,
 ) -> Result<(String, bool), String> {
@@ -56,7 +47,6 @@ async fn read_message(
     }
 }
 
-#[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 pub async fn listen(server: Server, reader: web_sys::ReadableStreamDefaultReader) {
     let server_rc = Rc::new(Mutex::new(server));

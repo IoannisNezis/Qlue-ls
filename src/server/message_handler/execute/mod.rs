@@ -8,7 +8,7 @@ use crate::{
         fetch::{fetch_sparql_result, SparqlRequestError, Window},
         lsp::{
             errors::{ErrorCode, LSPError},
-            ExecuteQueryErrorData, ExecuteQueryRequest, ExecuteQueryResponse, LspMessage,
+            ExecuteQueryErrorData, ExecuteQueryRequest, ExecuteQueryResponse,
         },
         Server,
     },

@@ -20,7 +20,6 @@ mod textdocument_didsave;
 mod textdocument_folding_range;
 mod textdocument_formatting;
 mod textdocument_hover;
-mod textdocument_publishdiagnostics;
 mod trace;
 mod utils;
 mod window_showmessage;

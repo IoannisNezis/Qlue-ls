@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
-use serde_repr::{Deserialize_repr, Serialize_repr};
 
 use crate::server::lsp::{
     rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
@@ -70,13 +69,6 @@ pub struct CodeActionContext {
     pub diagnostics: Vec<Diagnostic>,
     // pub only: Option<Vec<CodeActionKind>>,
     // trigger_kind: Option<CodeActionTriggerKind>,
-}
-
-#[derive(Debug, Serialize_repr, Deserialize_repr)]
-#[repr(u8)]
-pub enum CodeActionTriggerKind {
-    Invoked = 1,
-    Automatic = 2,
 }
 
 #[derive(Debug, Serialize)]

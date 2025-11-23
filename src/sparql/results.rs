@@ -62,7 +62,10 @@ impl RDFTerm {
 impl Display for RDFTerm {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RDFTerm::Uri { value, curie } => write!(f, "<{}>", value),
+            RDFTerm::Uri {
+                value,
+                curie: _curie,
+            } => write!(f, "<{}>", value),
             RDFTerm::Literal {
                 value,
                 lang,

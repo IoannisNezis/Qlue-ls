@@ -170,13 +170,14 @@ impl TextDocumentItem {
         // NOTE: This is refering to a utf-8 byte offset in the text.
         let mut current_change_start_byte_offset: usize = 0;
         while let Some(change) = changes.peek() {
-            dbg!(cursor);
-            dbg!(self.text[byte_offset..].chars().next());
             assert!(
                 change.range.start <= change.range.end,
-                "received a invalid edit: {change:?}"
+                "received a invalid change: {change:?}"
             );
-            assert!(change.range.end >= cursor, "A change was missed when applying changes. The next change end position: {}, cursor position: {cursor}", change.range.end);
+            if change.range.end < cursor {
+                cursor = Position::new(0, 0);
+                byte_offset = 0;
+            }
             if change.range.start == cursor {
                 current_change_start_byte_offset = byte_offset;
             }
@@ -839,10 +840,8 @@ mod tests {
         assert!(document.text.len() > 0);
     }
 
-    // NOTE: This edit sequence is send by neovim when hiting abc really fast.
-    // The second batch looks like an invalid lsp edit sequence.
     #[test]
-    fn content_change_event() {
+    fn content_change_event_1() {
         let initial_text = "\n";
         let mut document = TextDocumentItem::new("file:///test.txt", initial_text);
         document.apply_content_changes(vec![TextDocumentContentChangeEvent {
@@ -860,5 +859,33 @@ mod tests {
             },
         ]);
         assert_eq!(document.text, "abc\n");
+    }
+
+    // [TextDocumentContentChangeEvent { range: Range { start: Position { line: 0, character: 10 }, end: Position { line: 0, character: 11 } }, text: "" }, TextDocumentContentChangeEvent { range: Range { start: Position { line: 0, character: 7 }, end: Position { line: 0, character: 8 } }, text: "" }]
+    #[test]
+    fn content_change_event_2() {
+        let initial_text = indoc!(
+            "SELECT  *  WHERE {
+               ?s ?p ?o
+            "
+        );
+        let mut document = TextDocumentItem::new("file:///test.txt", initial_text);
+        document.apply_content_changes(vec![
+            TextDocumentContentChangeEvent {
+                range: Range::new(0, 10, 0, 11),
+                text: "".to_string(),
+            },
+            TextDocumentContentChangeEvent {
+                range: Range::new(0, 7, 0, 8),
+                text: "".to_string(),
+            },
+        ]);
+        assert_eq!(
+            document.text,
+            indoc! {
+            "SELECT * WHERE {
+               ?s ?p ?o
+            "}
+        );
     }
 }

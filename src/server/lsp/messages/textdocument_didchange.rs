@@ -45,7 +45,7 @@ impl fmt::Display for TextDocumentContentChangeEvent {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "\"{}\"; [{}-{}]",
+            "{:?}; [{}-{}]",
             self.text, self.range.start, self.range.end
         )
     }

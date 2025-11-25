@@ -174,17 +174,27 @@ impl TextDocumentItem {
                 change.range.start <= change.range.end,
                 "received a invalid change: {change:?}"
             );
-            if change.range.end < cursor {
-                cursor = Position::new(0, 0);
-                byte_offset = 0;
-            }
+            assert!(change.range.end >= cursor, "A change was missed when applying changes. The next change end position: {}, cursor position: {cursor}", change.range.end);
             if change.range.start == cursor {
                 current_change_start_byte_offset = byte_offset;
             }
             if change.range.end == cursor {
                 self.text
                     .replace_range(current_change_start_byte_offset..byte_offset, &change.text);
+                // NOTE: The cursor is now at the end of the edit.
+                // Therefor its position in the document needs to be corrected.
+                cursor = change.range.start;
+                byte_offset = current_change_start_byte_offset;
                 changes.next();
+                // NOTE: The changes don't have to be ordered.
+                // If the next change is infront of the cursor, the cursor has to be reset.
+                if changes
+                    .peek()
+                    .is_some_and(|change| change.range.start < cursor)
+                {
+                    cursor = Position::new(0, 0);
+                    byte_offset = 0;
+                }
                 continue;
             }
             let chr = self.text[byte_offset..]
@@ -861,7 +871,6 @@ mod tests {
         assert_eq!(document.text, "abc\n");
     }
 
-    // [TextDocumentContentChangeEvent { range: Range { start: Position { line: 0, character: 10 }, end: Position { line: 0, character: 11 } }, text: "" }, TextDocumentContentChangeEvent { range: Range { start: Position { line: 0, character: 7 }, end: Position { line: 0, character: 8 } }, text: "" }]
     #[test]
     fn content_change_event_2() {
         let initial_text = indoc!(
@@ -887,5 +896,55 @@ mod tests {
                ?s ?p ?o
             "}
         );
+    }
+
+    #[test]
+    fn content_change_event_3() {
+        //                  01234567890123456789
+        let initial_text = "SELECT * WHERE { r\n";
+
+        let mut document = TextDocumentItem::new("file:///test.txt", initial_text);
+        document.apply_content_changes(vec![
+            TextDocumentContentChangeEvent {
+                range: Range::new(0, 16, 0, 18),
+                text: "\n\n\n\n\nr".to_string(),
+            },
+            TextDocumentContentChangeEvent {
+                range: Range::new(5, 1, 5, 1),
+                text: "".to_string(),
+            },
+        ]);
+    }
+    #[test]
+    fn content_change_event_4() {
+        let initial_text = indoc! {"
+            SELECT * WHERE {
+
+
+
+
+            r
+            "
+        };
+
+        let mut document = TextDocumentItem::new("file:///test.txt", initial_text);
+        document.apply_content_changes(vec![
+            TextDocumentContentChangeEvent {
+                range: Range::new(5, 1, 5, 1),
+                text: "".to_string(),
+            },
+            TextDocumentContentChangeEvent {
+                range: Range::new(0, 16, 5, 1),
+                text: " r".to_string(),
+            },
+            TextDocumentContentChangeEvent {
+                range: Range::new(0, 18, 0, 18),
+                text: "".to_string(),
+            },
+            TextDocumentContentChangeEvent {
+                range: Range::new(0, 18, 0, 18),
+                text: "".to_string(),
+            },
+        ]);
     }
 }

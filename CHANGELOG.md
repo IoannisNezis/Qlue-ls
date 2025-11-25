@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.20.2] - 2025-11-25
+
+### fixed
+
+- apply changes from textDocument/didChange correctly, again
+
 ## [0.20.1] - 2025-11-24
 
 ### fixed

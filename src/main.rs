@@ -82,7 +82,7 @@ fn configure_logging() {
 
     let config = Config::builder()
         .appender(Appender::builder().build("file", Box::new(logfile)))
-        .build(Root::builder().appender("file").build(LevelFilter::Info))
+        .build(Root::builder().appender("file").build(level_filter))
         .unwrap();
 
     log4rs::init_config(config).expect("Failed to configure logger");

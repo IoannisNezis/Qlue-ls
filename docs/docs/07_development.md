@@ -12,8 +12,6 @@ Here is a quick guide to set this project up for development.
 
 ## Initial Setup
 
-You will only have to do this once.
-
 In the `justfile` and `Makefile` you will find the target `init_dev`, run it:
 
 ```bash
@@ -29,13 +27,10 @@ make init_dev
 It will:
 
 - install node dependencies
-- build wasm binaries
-- link against local packages
+- build wasm binaries (qlue-ls and ll-sparql-parser)
 - run the vite dev server
 
-If you don't have [just](https://github.com/casey/just) or [make](https://wiki.ubuntuusers.de/Makefile/) installed:
-
-**Install [just](https://github.com/casey/just)**
+The development setup uses Vite path aliases to automatically resolve local WASM packages from the `pkg/` directories during development, while production builds use the npm package versions specified in `package.json`. 
 
 
 ## Automatically rebuild on change

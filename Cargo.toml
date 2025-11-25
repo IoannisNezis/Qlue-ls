@@ -23,7 +23,6 @@ console_error_panic_hook = ["dep:console_error_panic_hook"]
 [dependencies]
 # logging
 log = "0.4.21"
-env_logger = "0.11.3"
 dirs-next = "2.0.0"
 
 # json

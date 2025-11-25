@@ -3,6 +3,7 @@ mod sparql;
 mod stdio_reader;
 
 use std::{
+    env,
     fs::{File, OpenOptions},
     io::{self, Read, Write},
     path::PathBuf,
@@ -61,6 +62,18 @@ fn get_logfile_path() -> PathBuf {
 }
 
 fn configure_logging() {
+    let level = env::var("LOG_LEVEL")
+        .unwrap_or_else(|_| "info".to_string())
+        .to_lowercase();
+
+    let level_filter = match level.as_str() {
+        "trace" => LevelFilter::Trace,
+        "debug" => LevelFilter::Debug,
+        "info" => LevelFilter::Info,
+        "warn" => LevelFilter::Warn,
+        "error" => LevelFilter::Error,
+        _ => LevelFilter::Info,
+    };
     let logfile_path = get_logfile_path();
     let logfile = FileAppender::builder()
         .encoder(Box::new(PatternEncoder::new("{l} - {m}{n}")))

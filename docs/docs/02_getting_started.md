@@ -45,17 +45,15 @@ Here are a few common editors:
 After you installed the language server, add this to your `init.lua`:
 
 ```lua
-vim.api.config('qlue-ls',
+vim.lsp.config('qlue-ls',{
   filetypes = {'sparql'},
   cmd = { 'qlue-ls', 'server' },
-  -- Be sure to set capabilities if you use blink as completion engine
-  -- capabilities = require('blink.cmp').get_lsp_capabilities(), 
-  -- Use the directory neovim was launched from as root (instead of relying on root_markers)
   root_dir = vim.fn.getcwd(),
   -- Set any keymaps you want to use with Qlue-ls
   on_attach = function(client, bufnr)
     vim.keymap.set('n', '<leader>f', vim.lsp.buf.format, { buffer = bufnr, desc = 'LSP: ' .. '[F]ormat' })
   end,
+}
 )
 
 vim.lsp.enable({'qlue-ls'})

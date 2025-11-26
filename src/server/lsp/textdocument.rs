@@ -24,32 +24,6 @@ impl TextDocumentItem {
         }
     }
 
-    #[cfg(test)]
-    fn apply_text_edit(&mut self, text_edit: TextEdit) {
-        match text_edit.range.to_byte_index_range(&self.text) {
-            Some(range) => {
-                self.text.replace_range(
-                    Into::<usize>::into(range.start())..range.end().into(),
-                    &text_edit.new_text,
-                );
-            }
-            None => {
-                log::error!(
-                    "Received textdocument/didChange notification with a TextEdit thats out ouf bounds:\nedit: {}\ndocument range: {}",
-                    text_edit,
-                    self.get_full_range()
-                );
-            }
-        };
-
-        // WARNING: Always keep one newline at the end of a document to stay POSIX conform!
-        // https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_206
-        match self.text.chars().next_back() {
-            Some('\n') => {}
-            _ => self.text.push('\n'),
-        };
-    }
-
     pub(crate) fn apply_text_edits(&mut self, mut text_edits: Vec<TextEdit>) {
         // NOTE: Sort text edit in "reverse" order.
         // When a text edit is applied all text behind the edit is shifted.
@@ -122,30 +96,6 @@ impl TextDocumentItem {
         }
         if !matches!(self.text.chars().last(), Some('\n')) {
             self.text.push('\n');
-        }
-    }
-
-    #[cfg(test)]
-    pub fn get_full_range(&self) -> Range {
-        if self.text.is_empty() {
-            return Range::new(0, 0, 0, 0);
-        }
-        let line_count = self.text.lines().count();
-        let last_char = self
-            .text
-            .chars()
-            .next_back()
-            .expect("At least one character has to be in the text");
-        match last_char {
-            '\n' => Range::new(0, 0, line_count as u32, 0),
-            _ => {
-                let last_line = self
-                    .text
-                    .lines()
-                    .next_back()
-                    .expect("At least one line hat to be in the text");
-                Range::new(0, 0, (line_count - 1) as u32, last_line.len() as u32)
-            }
         }
     }
 
@@ -270,13 +220,11 @@ impl Position {
         let mut offset_count = 0;
         let mut position = Self::new(0, 0);
         let mut chars = text.chars().peekable();
-        while let Some(chr) = chars.next() && offset_count >= offset_usize {
+        while let Some(chr) = chars.next()
+            && offset_count < offset_usize
+        {
             match chr {
                 '\n' => {
-                    position.line += 1;
-                    position.character = 0;
-                }
-                '\r' if chars.peek().is_some_and(|chr| chr == &'\n') => {
                     position.line += 1;
                     position.character = 0;
                 }
@@ -552,40 +500,6 @@ mod tests {
     //     let mut p4 = Position::new(1, 0);
     //     p4.translate_to_utf16_encoding(&s).unwrap();
     //     assert_eq!(p4, Position::new(1, 0));
-    // }
-
-    #[test]
-    fn full_range_empty() {
-        let document: TextDocumentItem = TextDocumentItem {
-            uri: "file:///dings".to_string(),
-            language_id: "foo".to_string(),
-            version: 1,
-            text: "".to_string(),
-        };
-        assert_eq!(document.get_full_range(), Range::new(0, 0, 0, 0));
-    }
-
-    #[test]
-    fn full_range_trailing_newline() {
-        let document: TextDocumentItem = TextDocumentItem {
-            uri: "file:///dings".to_string(),
-            language_id: "foo".to_string(),
-            version: 1,
-            text: "abc\nde\n".to_string(),
-        };
-        assert_eq!(document.get_full_range(), Range::new(0, 0, 2, 0));
-    }
-
-    #[test]
-    fn full_range_no_trailing_newline() {
-        let document: TextDocumentItem = TextDocumentItem {
-            uri: "file:///dings".to_string(),
-            language_id: "foo".to_string(),
-            version: 1,
-            text: "abc\nde".to_string(),
-        };
-        assert_eq!(document.get_full_range(), Range::new(0, 0, 1, 2));
-    }
 
     #[test]
     fn changes() {
@@ -596,10 +510,10 @@ mod tests {
             text: "".to_string(),
         };
         assert_eq!(document.text, "");
-        document.apply_text_edit(TextEdit {
+        document.apply_text_edits(vec![TextEdit {
             new_text: "SELECT ".to_string(),
             range: Range::new(0, 0, 0, 0),
-        });
+        }]);
         assert_eq!(document.text, "SELECT \n");
         document.apply_text_edits(vec![
             TextEdit {
@@ -667,7 +581,7 @@ mod tests {
             new_text: "dings".to_string(),
             range: Range::new(0, 0, 0, 0),
         };
-        document.apply_text_edit(change);
+        document.apply_text_edits(vec![change]);
         assert_eq!(document.text, "dings\n");
     }
 

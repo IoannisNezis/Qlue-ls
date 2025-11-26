@@ -77,9 +77,9 @@ fn generate_code_actions(
         .is_some_and(|iri| iri.is_uncompressed())
     {
         code_actions.extend(iri::code_actions(server, document.uri.clone()));
-    } else if let Some(var) = selected_element.parent().and_then(Var::cast) {
+    } else { match selected_element.parent().and_then(Var::cast) { Some(var) => {
         code_actions.extend(variable::code_actions(var, document))
-    } else if matches!(
+    } _ => if matches!(
         selected_element.kind(),
         SyntaxKind::SelectQuery | SyntaxKind::SELECT | SyntaxKind::SubSelect
     ) {
@@ -88,7 +88,7 @@ fn generate_code_actions(
             document,
             server.settings.format.tab_size.unwrap_or(2),
         ));
-    }
+    }}}
 
     return Ok(code_actions);
 }

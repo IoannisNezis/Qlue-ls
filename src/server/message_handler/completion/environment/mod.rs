@@ -386,13 +386,13 @@ fn get_location(
 ) -> CompletionLocation {
     if let Some(anchor) = anchor_token {
         macro_rules! continues_with {
-                    ([$($kind:expr),*]) => {
+                    ([$($kind:expr_2021),*]) => {
                         [$($kind,)*].iter().any(|kind| continuations.contains(kind))
                     };
                 }
 
         macro_rules! child_of {
-                    ([$($kind:expr),*]) => {
+                    ([$($kind:expr_2021),*]) => {
                         [$($kind,)*].iter().any(|kind| anchor.parent().map_or(false, |parent| parent.kind() == *kind))
                     };
                 }
@@ -425,15 +425,14 @@ fn get_location(
                 .parent()
                 .is_some_and(|parent| parent.kind() == SyntaxKind::PathOneInPropertySet)
         {
-            if let Some(blank_node_property) =
-                anchor.parent_ancestors().find_map(BlankPropertyList::cast)
-            {
+            match anchor.parent_ancestors().find_map(BlankPropertyList::cast)
+            { Some(blank_node_property) => {
                 CompletionLocation::BlankNodeProperty(blank_node_property)
-            } else if let Some(triple) = anchor.parent_ancestors().find_map(Triple::cast) {
+            } _ => { match anchor.parent_ancestors().find_map(Triple::cast) { Some(triple) => {
                 CompletionLocation::Predicate(triple)
-            } else {
+            } _ => {
                 CompletionLocation::Unknown
-            }
+            }}}}
         }
         // NOTE: Subject
         else if continues_with!([
@@ -452,15 +451,14 @@ fn get_location(
             SyntaxKind::ObjectList,
             SyntaxKind::Object
         ]) {
-            if let Some(blank_node_property) =
-                anchor.parent_ancestors().find_map(BlankPropertyList::cast)
-            {
+            match anchor.parent_ancestors().find_map(BlankPropertyList::cast)
+            { Some(blank_node_property) => {
                 CompletionLocation::BlankNodeObject(blank_node_property)
-            } else if let Some(triple) = anchor.parent_ancestors().find_map(Triple::cast) {
+            } _ => { match anchor.parent_ancestors().find_map(Triple::cast) { Some(triple) => {
                 CompletionLocation::Object(triple)
-            } else {
+            } _ => {
                 CompletionLocation::Unknown
-            }
+            }}}}
         }
         // NOTE: SolutionModifier
         else if continues_with!([
@@ -490,16 +488,16 @@ fn get_location(
                 .parent_ancestors()
                 .any(|ancestor| ancestor.kind() == SyntaxKind::SelectClause)
         {
-            if let Some(select_clause) = anchor
+            match anchor
                 .parent_ancestors()
                 .find(|ancestor| ancestor.kind() == SyntaxKind::SelectClause)
-            {
+            { Some(select_clause) => {
                 CompletionLocation::SelectBinding(SelectClause::cast(select_clause).expect(
                     "node of kind SelectClause should be castable to SelectClause ast node",
                 ))
-            } else {
+            } _ => {
                 CompletionLocation::Unknown
-            }
+            }}
         }
         // NOTE: FilterConstraint
         else if continues_with!([SyntaxKind::Constraint]) && child_of!([SyntaxKind::Filter]) {
@@ -575,11 +573,11 @@ fn get_anchor_token(
     while trigger_token.kind() == SyntaxKind::WHITESPACE
         || trigger_token.parent().unwrap().kind() == SyntaxKind::Error
     {
-        if let Some(prev) = trigger_token.prev_token() {
+        match trigger_token.prev_token() { Some(prev) => {
             trigger_token = prev
-        } else {
+        } _ => {
             return None;
-        }
+        }}
     }
     Some(trigger_token)
 }

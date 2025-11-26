@@ -284,11 +284,11 @@ pub(super) fn reduce_path(
             }
         }
         SyntaxKind::PathNegatedPropertySet => {
-            if let Some(last_child) = path.syntax().last_child() {
+            match path.syntax().last_child() { Some(last_child) => {
                 reduce_path(subject, &Path::cast(last_child)?, object, offset)
-            } else {
+            } _ => {
                 Some(format!("{} ?qlue_ls_entity {}", subject, object))
-            }
+            }}
         }
         SyntaxKind::PathOneInPropertySet => {
             let first_child = path.syntax().first_child_or_token()?;

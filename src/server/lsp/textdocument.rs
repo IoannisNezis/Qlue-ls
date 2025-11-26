@@ -257,18 +257,22 @@ impl Position {
         let offset_usize: usize = offset.into();
         let mut offset_count = 0;
         let mut position = Self::new(0, 0);
-        for char in text.chars() {
-            if offset_count >= offset_usize {
-                break;
+        let mut chars = text.chars().peekable();
+        while let Some(chr) = chars.next() && offset_count >= offset_usize {
+            match chr {
+                '\n' => {
+                    position.line += 1;
+                    position.character = 0;
+                }
+                '\r' if chars.peek().is_some_and(|chr| chr == &'\n') => {
+                    position.line += 1;
+                    position.character = 0;
+                }
+                _ => {
+                    position.character += chr.len_utf16() as u32;
+                }
             }
-            // NOTE:This assumes that the line break is always '\n' and never '\r\n'
-            if char == '\n' {
-                position.line += 1;
-                position.character = 0;
-            } else {
-                position.character += char.len_utf16() as u32;
-            }
-            offset_count += char.len_utf8();
+            offset_count += chr.len_utf8();
         }
         // NOTE: the byte offset MUST be at the start or end of a UTF-8 char.
         // https://datatracker.ietf.org/doc/html/rfc2119
@@ -335,7 +339,7 @@ impl Position {
         let mut utf16_index = 0;
         while utf16_index < self.character as usize {
             let char = chars.next()?;
-            if char == '\n' || (char == '\n' && chars.next().is_some_and(|chr| chr == '\n')) {
+            if char == '\n' || (char == '\r' && chars.next().is_some_and(|chr| chr == '\n')) {
                 return None;
             }
             byte_index += char.len_utf8();

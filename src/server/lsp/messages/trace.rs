@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::server::lsp::{rpc::NotificationMessageBase, LspMessage, NotificationMarker};
+use crate::server::lsp::{LspMessage, NotificationMarker, rpc::NotificationMessageBase};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SetTraceNotification {

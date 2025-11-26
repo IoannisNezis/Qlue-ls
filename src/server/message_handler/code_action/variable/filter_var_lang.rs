@@ -16,8 +16,8 @@ use ll_sparql_parser::{
 use std::collections::HashMap;
 
 use crate::server::lsp::{
-    textdocument::{Position, Range, TextDocumentItem, TextEdit},
     CodeAction, WorkspaceEdit,
+    textdocument::{Position, Range, TextDocumentItem, TextEdit},
 };
 
 pub(super) fn code_action(var: &Var, document: &TextDocumentItem) -> Option<CodeAction> {

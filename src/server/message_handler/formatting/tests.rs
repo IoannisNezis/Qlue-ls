@@ -3,8 +3,8 @@ use indoc::indoc;
 use crate::server::{
     configuration::FormatSettings,
     lsp::{
-        textdocument::{TextDocumentItem, TextEdit},
         FormattingOptions,
+        textdocument::{TextDocumentItem, TextEdit},
     },
     message_handler::formatting::format_document,
 };

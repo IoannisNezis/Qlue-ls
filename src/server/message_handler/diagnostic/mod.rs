@@ -6,12 +6,12 @@ pub mod ungrouped_select_variable;
 pub mod unused_prefix_declaration;
 
 use crate::server::{
+    Server,
     lsp::{
-        base_types::LSPAny, diagnostic::Diagnostic, errors::LSPError, DiagnosticRequest,
-        DiagnosticResponse, WorkspaceEditRequest,
+        DiagnosticRequest, DiagnosticResponse, WorkspaceEditRequest, base_types::LSPAny,
+        diagnostic::Diagnostic, errors::LSPError,
     },
     message_handler::code_action::declare_prefix,
-    Server,
 };
 use futures::lock::Mutex;
 use ll_sparql_parser::{

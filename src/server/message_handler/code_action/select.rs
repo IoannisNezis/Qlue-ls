@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
 use ll_sparql_parser::{
-    ast::{AstNode, SelectQuery},
     SyntaxElement,
+    ast::{AstNode, SelectQuery},
 };
 use text_size::{TextRange, TextSize};
 
 use crate::server::lsp::{
-    textdocument::{Position, Range, TextDocumentItem, TextEdit},
     CodeAction, WorkspaceEdit,
+    textdocument::{Position, Range, TextDocumentItem, TextEdit},
 };
 
 pub(super) fn code_actions(

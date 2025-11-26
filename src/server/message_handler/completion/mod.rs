@@ -17,15 +17,15 @@ mod variable;
 use std::rc::Rc;
 
 use environment::{CompletionEnvironment, CompletionLocation};
-use error::{to_lsp_error, CompletionError};
+use error::{CompletionError, to_lsp_error};
 use futures::lock::Mutex;
 
 use crate::server::{
-    lsp::{
-        errors::LSPError, CompletionList, CompletionRequest, CompletionResponse,
-        CompletionTriggerKind,
-    },
     Server,
+    lsp::{
+        CompletionList, CompletionRequest, CompletionResponse, CompletionTriggerKind,
+        errors::LSPError,
+    },
 };
 
 pub(super) async fn handle_completion_request(

@@ -1,8 +1,8 @@
 use crate::server::lsp::{
+    LspMessage, RequestMarker, ResponseMarker,
     capabilities::{ClientCapabilities, ServerCapabilities},
     rpc::{NotificationMessage, RequestId, RequestMessageBase, ResponseMessageBase},
     workdoneprogress::WorkDoneProgressParams,
-    LspMessage, RequestMarker, ResponseMarker,
 };
 use serde::{Deserialize, Serialize};
 
@@ -125,10 +125,10 @@ impl LspMessage for InitializedNotification {
 #[cfg(test)]
 mod tests {
     use crate::server::lsp::{
+        ClientInfo, ProcessId,
         capabilities::ClientCapabilities,
         rpc::{Message, RequestId, RequestMessageBase},
         workdoneprogress::{ProgressToken, WorkDoneProgressParams},
-        ClientInfo, ProcessId,
     };
 
     use super::{InitializeParams, InitializeRequest};

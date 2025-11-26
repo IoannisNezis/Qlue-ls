@@ -3,9 +3,9 @@ use core::fmt;
 use serde::{Deserialize, Serialize};
 
 use crate::server::lsp::{
+    LspMessage, NotificationMarker,
     rpc::NotificationMessage,
     textdocument::{Range, VersionedTextDocumentIdentifier},
-    LspMessage, NotificationMarker,
 };
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]

@@ -45,7 +45,7 @@ use wasm_bindgen_futures::spawn_local;
 
 use crate::server::{
     handle_error, log_trace,
-    lsp::{errors::ErrorCode, TraceValue},
+    lsp::{TraceValue, errors::ErrorCode},
     message_handler::{
         backend::handle_get_backend_request,
         execute::handle_execute_query_request,
@@ -58,8 +58,8 @@ use crate::server::{
 use self::formatting::handle_format_request;
 
 use super::{
-    lsp::{errors::LSPError, rpc::deserialize_message},
     Server,
+    lsp::{errors::LSPError, rpc::deserialize_message},
 };
 
 pub(super) async fn dispatch(

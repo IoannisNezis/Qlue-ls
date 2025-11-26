@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::server::lsp::{
-    rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
     LspMessage, RequestMarker, ResponseMarker,
+    rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
 };
 
 #[derive(Debug, Deserialize, PartialEq)]

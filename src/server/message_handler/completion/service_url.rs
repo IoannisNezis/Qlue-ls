@@ -1,10 +1,10 @@
-use super::{error::CompletionError, CompletionEnvironment};
+use super::{CompletionEnvironment, error::CompletionError};
 use crate::server::{
-    lsp::{
-        textdocument::{Range, TextEdit},
-        BackendService, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat,
-    },
     Server,
+    lsp::{
+        BackendService, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat,
+        textdocument::{Range, TextEdit},
+    },
 };
 use futures::lock::Mutex;
 use ll_sparql_parser::ast::{AstNode, QueryUnit};

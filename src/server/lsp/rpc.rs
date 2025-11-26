@@ -1,7 +1,7 @@
 use std::{any::type_name, collections::HashMap, fmt::Display};
 
 use log::error;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::server::lsp::{LspMessage, ResponseMarker};
 
@@ -285,8 +285,8 @@ mod tests {
     use crate::server::lsp::{
         base_types::LSPAny,
         rpc::{
-            deserialize_message, Message, NotificationMessage, Params, RequestId, RequestIdOrNull,
-            RequestMessage, ResponseMessage,
+            Message, NotificationMessage, Params, RequestId, RequestIdOrNull, RequestMessage,
+            ResponseMessage, deserialize_message,
         },
     };
 

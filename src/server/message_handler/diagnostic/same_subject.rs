@@ -1,12 +1,12 @@
 use std::{collections::HashMap, sync::LazyLock};
 
 use crate::server::{
+    Server,
     lsp::{
         base_types::LSPAny,
         diagnostic::{Diagnostic, DiagnosticCode, DiagnosticSeverity},
         textdocument::{Range, TextDocumentItem},
     },
-    Server,
 };
 use ll_sparql_parser::ast::{AstNode, GroupGraphPattern, QueryUnit, Triple};
 

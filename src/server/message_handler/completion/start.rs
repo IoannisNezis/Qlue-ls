@@ -2,7 +2,7 @@ use crate::server::lsp::{
     CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
 };
 
-use super::{error::CompletionError, CompletionEnvironment};
+use super::{CompletionEnvironment, error::CompletionError};
 
 pub(super) async fn completions(
     _context: CompletionEnvironment,

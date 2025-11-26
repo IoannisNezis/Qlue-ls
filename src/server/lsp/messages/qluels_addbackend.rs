@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::server::{
     configuration::{CompletionTemplate, RequestMethod},
-    lsp::{rpc::NotificationMessageBase, LspMessage, NotificationMarker},
+    lsp::{LspMessage, NotificationMarker, rpc::NotificationMessageBase},
 };
 
 #[derive(Debug, Deserialize, PartialEq)]

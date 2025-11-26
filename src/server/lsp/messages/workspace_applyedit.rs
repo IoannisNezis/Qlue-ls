@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 use crate::server::lsp::{
+    LspMessage, RequestMarker, ResponseMarker,
     rpc::{RequestMessageBase, ResponseMessageBase},
     textdocument::TextEdit,
-    LspMessage, RequestMarker, ResponseMarker,
 };
 use serde::{Deserialize, Serialize};
 

@@ -4,9 +4,9 @@ use futures::lock::Mutex;
 use ll_sparql_parser::syntax_kind::SyntaxKind;
 
 use crate::server::{
-    lsp::{CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults},
-    message_handler::completion::{variable, CompletionEnvironment, CompletionError},
     Server,
+    lsp::{CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults},
+    message_handler::completion::{CompletionEnvironment, CompletionError, variable},
 };
 
 pub(super) async fn completions(

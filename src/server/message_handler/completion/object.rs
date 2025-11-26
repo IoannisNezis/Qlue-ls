@@ -1,10 +1,10 @@
 use super::{
-    error::CompletionError,
-    utils::{dispatch_completion_query, CompletionTemplate},
     CompletionEnvironment,
+    error::CompletionError,
+    utils::{CompletionTemplate, dispatch_completion_query},
 };
 use crate::server::{
-    lsp::CompletionList, message_handler::completion::environment::CompletionLocation, Server,
+    Server, lsp::CompletionList, message_handler::completion::environment::CompletionLocation,
 };
 use futures::{channel::oneshot, lock::Mutex};
 use ll_sparql_parser::ast::AstNode;

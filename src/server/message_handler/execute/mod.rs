@@ -4,13 +4,13 @@ use futures::lock::Mutex;
 
 use crate::{
     server::{
-        configuration::RequestMethod,
-        fetch::{fetch_sparql_result, SparqlRequestError, Window},
-        lsp::{
-            errors::{ErrorCode, LSPError},
-            ExecuteQueryErrorData, ExecuteQueryRequest, ExecuteQueryResponse,
-        },
         Server,
+        configuration::RequestMethod,
+        fetch::{SparqlRequestError, Window, fetch_sparql_result},
+        lsp::{
+            ExecuteQueryErrorData, ExecuteQueryRequest, ExecuteQueryResponse,
+            errors::{ErrorCode, LSPError},
+        },
     },
     sparql::results::RDFTerm,
 };

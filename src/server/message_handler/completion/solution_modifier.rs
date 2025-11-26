@@ -1,4 +1,4 @@
-use super::{error::CompletionError, CompletionEnvironment};
+use super::{CompletionEnvironment, error::CompletionError};
 use crate::server::lsp::{
     Command, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
 };

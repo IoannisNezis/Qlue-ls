@@ -7,11 +7,11 @@ use ll_sparql_parser::{
 };
 
 use crate::server::{
-    lsp::{
-        errors::LSPError, textdocument::Range, FoldingRange, FoldingRangeKind, FoldingRangeRequest,
-        FoldingRangeResponse,
-    },
     Server,
+    lsp::{
+        FoldingRange, FoldingRangeKind, FoldingRangeRequest, FoldingRangeResponse,
+        errors::LSPError, textdocument::Range,
+    },
 };
 
 pub(super) async fn handle_folding_range_request(

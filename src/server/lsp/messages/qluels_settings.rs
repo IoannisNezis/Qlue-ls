@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 use crate::server::{
     configuration::Settings,
     lsp::{
-        rpc::{NotificationMessageBase, RequestMessageBase, ResponseMessageBase},
         LspMessage, NotificationMarker, RequestMarker, ResponseMarker,
+        rpc::{NotificationMessageBase, RequestMessageBase, ResponseMessageBase},
     },
 };
 

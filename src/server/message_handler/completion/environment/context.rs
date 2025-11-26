@@ -1,13 +1,13 @@
 use std::collections::HashSet;
 
 use ll_sparql_parser::{
-    ast::{AstNode, GraphPatternNotTriples, GroupGraphPattern, PrefixedName, Triple},
     SyntaxNode,
+    ast::{AstNode, GraphPatternNotTriples, GroupGraphPattern, PrefixedName, Triple},
 };
 use serde::Serialize;
 use text_size::TextSize;
 
-use super::{query_graph::QueryGraph, CompletionLocation};
+use super::{CompletionLocation, query_graph::QueryGraph};
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct Context {
@@ -163,7 +163,7 @@ mod test {
         },
     };
 
-    use super::{context, Context};
+    use super::{Context, context};
 
     fn location_at(input: &str, cursor: Position) -> Context {
         let root = parse_query(input);

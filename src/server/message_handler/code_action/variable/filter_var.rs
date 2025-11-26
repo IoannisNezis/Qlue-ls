@@ -2,8 +2,8 @@
 //! Add Filter expression for variable
 
 use crate::server::lsp::{
-    textdocument::{Position, Range, TextDocumentItem, TextEdit},
     CodeAction, WorkspaceEdit,
+    textdocument::{Position, Range, TextDocumentItem, TextEdit},
 };
 use ll_sparql_parser::{
     ast::{AstNode, Var},

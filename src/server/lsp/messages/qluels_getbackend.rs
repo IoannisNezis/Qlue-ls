@@ -1,6 +1,6 @@
 use crate::server::lsp::{
-    rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
     BackendService, LspMessage, RequestMarker, ResponseMarker,
+    rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
 };
 use serde::{Deserialize, Serialize};
 

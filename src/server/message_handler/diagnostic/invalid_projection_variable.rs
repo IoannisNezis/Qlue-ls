@@ -1,9 +1,9 @@
 use crate::server::{
+    Server,
     lsp::{
         diagnostic::{Diagnostic, DiagnosticCode, DiagnosticSeverity},
         textdocument::{Range, TextDocumentItem},
     },
-    Server,
 };
 use ll_sparql_parser::ast::{AstNode, QueryUnit};
 use std::{collections::HashSet, sync::LazyLock};

@@ -1,13 +1,14 @@
 use std::rc::Rc;
 
 use super::{
+    CompletionEnvironment,
     error::CompletionError,
-    utils::{dispatch_completion_query, CompletionTemplate},
-    variable, CompletionEnvironment,
+    utils::{CompletionTemplate, dispatch_completion_query},
+    variable,
 };
 use crate::server::{
-    lsp::{Command, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat},
     Server,
+    lsp::{Command, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat},
 };
 use futures::lock::Mutex;
 use ll_sparql_parser::syntax_kind::SyntaxKind;

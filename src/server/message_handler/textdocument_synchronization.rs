@@ -3,11 +3,11 @@ use std::rc::Rc;
 use futures::lock::Mutex;
 
 use crate::server::{
-    lsp::{
-        errors::LSPError, DidChangeTextDocumentNotification, DidOpenTextDocumentNotification,
-        DidSaveTextDocumentNotification,
-    },
     Server,
+    lsp::{
+        DidChangeTextDocumentNotification, DidOpenTextDocumentNotification,
+        DidSaveTextDocumentNotification, errors::LSPError,
+    },
 };
 
 pub(super) async fn handle_did_open_notification(

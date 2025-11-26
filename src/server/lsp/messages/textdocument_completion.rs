@@ -2,10 +2,10 @@ use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
 use crate::server::lsp::{
+    LspMessage, RequestMarker, ResponseMarker,
     base_types::LSPAny,
     rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
     textdocument::{Range, TextEdit},
-    LspMessage, RequestMarker, ResponseMarker,
 };
 
 use super::{command::Command, utils::TextDocumentPositionParams};
@@ -218,11 +218,11 @@ pub enum InsertTextFormat {
 #[cfg(test)]
 mod tests {
     use crate::server::lsp::{
+        CompletionContext, CompletionItem, CompletionItemKind, CompletionList, CompletionParams,
+        CompletionTriggerKind, InsertTextFormat,
         messages::utils::TextDocumentPositionParams,
         rpc::{Message, RequestId, RequestMessageBase},
         textdocument::{Position, TextDocumentIdentifier},
-        CompletionContext, CompletionItem, CompletionItemKind, CompletionList, CompletionParams,
-        CompletionTriggerKind, InsertTextFormat,
     };
 
     use super::{CompletionRequest, CompletionResponse};

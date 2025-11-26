@@ -17,9 +17,9 @@ use configuration::Settings;
 use futures::lock::Mutex;
 use log::{error, info};
 use lsp::{
+    ServerInfo,
     errors::{ErrorCode, LSPError},
     rpc::{RecoverId, RequestIdOrNull, ResponseMessage},
-    ServerInfo,
 };
 use message_handler::dispatch;
 

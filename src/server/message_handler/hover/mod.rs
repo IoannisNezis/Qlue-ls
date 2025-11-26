@@ -4,14 +4,14 @@ mod iri;
 use std::rc::Rc;
 
 use futures::lock::Mutex;
-use ll_sparql_parser::{parse_query, syntax_kind::SyntaxKind, TokenAtOffset};
+use ll_sparql_parser::{TokenAtOffset, parse_query, syntax_kind::SyntaxKind};
 
 use crate::server::{
-    lsp::{
-        errors::{ErrorCode, LSPError},
-        HoverRequest, HoverResponse,
-    },
     Server,
+    lsp::{
+        HoverRequest, HoverResponse,
+        errors::{ErrorCode, LSPError},
+    },
 };
 
 pub(super) async fn handle_hover_request(

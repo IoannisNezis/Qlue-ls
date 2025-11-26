@@ -1,14 +1,14 @@
 use std::rc::Rc;
 
 use futures::lock::Mutex;
-use ll_sparql_parser::{guess_operation_type, TopEntryPoint};
+use ll_sparql_parser::{TopEntryPoint, guess_operation_type};
 
 use crate::server::{
-    lsp::{
-        errors::LSPError, IdentifyOperationTypeRequest, IdentifyOperationTypeResponse,
-        OperationType,
-    },
     Server,
+    lsp::{
+        IdentifyOperationTypeRequest, IdentifyOperationTypeResponse, OperationType,
+        errors::LSPError,
+    },
 };
 
 pub(super) async fn handle_identify_request(

@@ -3,12 +3,12 @@ use std::rc::Rc;
 use futures::lock::Mutex;
 
 use crate::server::{
+    Server,
     configuration::Settings,
     lsp::{
-        errors::LSPError, ChangeSettingsNotification, DefaultSettingsRequest,
-        DefaultSettingsResponse,
+        ChangeSettingsNotification, DefaultSettingsRequest, DefaultSettingsResponse,
+        errors::LSPError,
     },
-    Server,
 };
 
 pub(super) async fn handle_default_settings_request(

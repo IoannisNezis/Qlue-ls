@@ -3,7 +3,7 @@ mod sparql;
 
 use futures::lock::Mutex;
 use log::error;
-use server::{handle_message, Server};
+use server::{Server, handle_message};
 use std::panic;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;

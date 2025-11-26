@@ -2,13 +2,13 @@ use std::rc::Rc;
 
 use futures::lock::Mutex;
 use ll_sparql_parser::{
-    ast::{AstNode, QueryUnit, ServiceGraphPattern},
     SyntaxToken,
+    ast::{AstNode, QueryUnit, ServiceGraphPattern},
 };
 
 use crate::server::{
-    lsp::{errors::LSPError, BackendService, SetTraceNotification},
     Server,
+    lsp::{BackendService, SetTraceNotification, errors::LSPError},
 };
 
 pub(super) async fn handle_set_trace_notification(

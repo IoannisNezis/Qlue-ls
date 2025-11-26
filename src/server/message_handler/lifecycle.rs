@@ -3,14 +3,14 @@ use std::{process::exit, rc::Rc};
 use futures::lock::Mutex;
 
 use crate::server::{
+    Server,
     configuration::BackendConfiguration,
     lsp::{
-        errors::{ErrorCode, LSPError},
         ExitNotification, InitializeRequest, InitializeResponse, InitializedNotification,
         ProgressNotification, ShutdownRequest, ShutdownResponse,
+        errors::{ErrorCode, LSPError},
     },
     state::ServerStatus,
-    Server,
 };
 
 pub(super) async fn handle_shutdown_request(

@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::server::lsp::{
+    LspMessage, RequestMarker, ResponseMarker,
     rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
     textdocument::Position,
-    LspMessage, RequestMarker, ResponseMarker,
 };
 
 use super::utils::TextDocumentPositionParams;

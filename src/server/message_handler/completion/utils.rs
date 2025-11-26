@@ -1,8 +1,8 @@
 use futures::lock::Mutex;
 use ll_sparql_parser::{
+    SyntaxNode,
     ast::{AstNode, Path, Prologue, QueryUnit},
     syntax_kind::SyntaxKind,
-    SyntaxNode,
 };
 use std::rc::Rc;
 use tera::Context;
@@ -10,13 +10,13 @@ use text_size::TextSize;
 
 use crate::{
     server::{
+        Server,
         fetch::fetch_sparql_result,
         lsp::{
-            textdocument::{Position, Range, TextEdit},
             BackendService, Command, CompletionItem, CompletionItemKind,
             CompletionItemLabelDetails, CompletionList,
+            textdocument::{Position, Range, TextEdit},
         },
-        Server,
     },
     sparql::results::RDFTerm,
 };
@@ -283,13 +283,10 @@ pub(super) fn reduce_path(
                 )
             }
         }
-        SyntaxKind::PathNegatedPropertySet => {
-            match path.syntax().last_child() { Some(last_child) => {
-                reduce_path(subject, &Path::cast(last_child)?, object, offset)
-            } _ => {
-                Some(format!("{} ?qlue_ls_entity {}", subject, object))
-            }}
-        }
+        SyntaxKind::PathNegatedPropertySet => match path.syntax().last_child() {
+            Some(last_child) => reduce_path(subject, &Path::cast(last_child)?, object, offset),
+            _ => Some(format!("{} ?qlue_ls_entity {}", subject, object)),
+        },
         SyntaxKind::PathOneInPropertySet => {
             let first_child = path.syntax().first_child_or_token()?;
             if first_child.kind() == SyntaxKind::Zirkumflex {

@@ -2,18 +2,19 @@ use std::rc::Rc;
 
 use futures::lock::Mutex;
 use ll_sparql_parser::{
+    SyntaxNode,
     ast::{AstNode, GroupGraphPattern, QueryUnit},
-    parse_query, SyntaxNode,
+    parse_query,
 };
 use text_size::TextSize;
 
 use crate::server::{
+    Server,
     lsp::{
+        JumpRequest, JumpResponse, JumpResult,
         errors::{ErrorCode, LSPError},
         textdocument::{Position, TextDocumentItem},
-        JumpRequest, JumpResponse, JumpResult,
     },
-    Server,
 };
 
 pub(super) async fn handle_jump_request(

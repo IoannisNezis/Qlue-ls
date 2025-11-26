@@ -2,16 +2,16 @@ mod same_subject;
 
 use super::Diagnostic;
 use crate::server::{
+    Server,
     analysis::namespace_is_declared,
-    common::{serde_parse, UncompactedUrisDiagnosticData},
+    common::{UncompactedUrisDiagnosticData, serde_parse},
     lsp::{
+        CodeAction, CodeActionKind, WorkspaceEdit,
         base_types::LSPAny,
         errors::{ErrorCode, LSPError},
         textdocument::{Range, TextEdit},
-        CodeAction, CodeActionKind, WorkspaceEdit,
     },
     message_handler::{code_action::quickfix::same_subject::contract_triples, diagnostic},
-    Server,
 };
 use ll_sparql_parser::syntax_kind::SyntaxKind;
 use log::error;
@@ -168,6 +168,7 @@ pub(crate) fn declare_prefix(
 mod test {
 
     use crate::server::{
+        Server,
         lsp::{
             base_types::LSPAny,
             diagnostic::{self, Diagnostic},
@@ -175,7 +176,6 @@ mod test {
         },
         message_handler::code_action::quickfix::shorten_uri,
         state::ServerState,
-        Server,
     };
     use indoc::indoc;
 

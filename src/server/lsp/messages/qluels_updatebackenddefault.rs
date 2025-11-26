@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::server::lsp::{rpc::NotificationMessageBase, LspMessage, NotificationMarker};
+use crate::server::lsp::{LspMessage, NotificationMarker, rpc::NotificationMessageBase};
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct UpdateDefaultBackendNotification {

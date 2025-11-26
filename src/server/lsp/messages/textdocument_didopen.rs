@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::server::lsp::{
-    rpc::NotificationMessage, textdocument::TextDocumentItem, LspMessage, NotificationMarker,
+    LspMessage, NotificationMarker, rpc::NotificationMessage, textdocument::TextDocumentItem,
 };
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]

@@ -1,12 +1,12 @@
 mod core;
 mod utils;
 use crate::server::{
+    Server,
     configuration::Settings,
     lsp::{
-        errors::LSPError, textdocument::TextDocumentItem, FormattingOptions, FormattingRequest,
-        FormattingResponse,
+        FormattingOptions, FormattingRequest, FormattingResponse, errors::LSPError,
+        textdocument::TextDocumentItem,
     },
-    Server,
 };
 use core::*;
 use futures::lock::Mutex;

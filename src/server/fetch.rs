@@ -216,24 +216,19 @@ pub(crate) async fn fetch_sparql_result(
     // Check if the response status is OK (200-299)
     if !resp.ok() {
         return match resp.json() {
-            Ok(json) => {
-                match JsFuture::from(json).await {
-                    Ok(js_value) => match serde_wasm_bindgen::from_value(js_value) {
-                        Ok(err) =>  Err(SparqlRequestError::QLeverException(err)),
-                        Err(err) => {
-                            Err(SparqlRequestError::Deserialization(format!(
-                                "Could not deserialize error message: {}",
-                                err
-                            )))
-                        }
-                    },
-                    Err(err) => {
-                        Err(SparqlRequestError::Deserialization(
-                            format!("Query failed! Response did not provide a json body but this could not be cast to rust JsValue.\n{:?}", err),
-                        ))
-                    }
-                }
-            }
+            Ok(json) => match JsFuture::from(json).await {
+                Ok(js_value) => match serde_wasm_bindgen::from_value(js_value) {
+                    Ok(err) => Err(SparqlRequestError::QLeverException(err)),
+                    Err(err) => Err(SparqlRequestError::Deserialization(format!(
+                        "Could not deserialize error message: {}",
+                        err
+                    ))),
+                },
+                Err(err) => Err(SparqlRequestError::Deserialization(format!(
+                    "Query failed! Response did not provide a json body but this could not be cast to rust JsValue.\n{:?}",
+                    err
+                ))),
+            },
             Err(err) => Err(SparqlRequestError::Deserialization(format!(
                 "Query failed! Response did not provide a json body.\n{err:?}"
             ))),

@@ -8,8 +8,8 @@ use ll_sparql_parser::{
 };
 
 use crate::server::lsp::{
-    textdocument::{Position, Range, TextDocumentItem, TextEdit},
     CodeAction,
+    textdocument::{Position, Range, TextDocumentItem, TextEdit},
 };
 
 pub(super) fn code_actions(var: &Var, document: &TextDocumentItem) -> Option<Vec<CodeAction>> {

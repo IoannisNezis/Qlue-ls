@@ -1,16 +1,16 @@
 use core::fmt;
 use std::vec;
 
-use ll_sparql_parser::{parse, syntax_kind::SyntaxKind, SyntaxElement, SyntaxNode};
+use ll_sparql_parser::{SyntaxElement, SyntaxNode, parse, syntax_kind::SyntaxKind};
 use text_size::{TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use crate::server::{
     configuration::FormatSettings,
     lsp::{
+        FormattingOptions,
         errors::LSPError,
         textdocument::{Position, Range, TextDocumentItem, TextEdit},
-        FormattingOptions,
     },
 };
 

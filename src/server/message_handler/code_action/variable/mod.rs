@@ -1,4 +1,4 @@
-use crate::server::lsp::{textdocument::TextDocumentItem, CodeAction};
+use crate::server::lsp::{CodeAction, textdocument::TextDocumentItem};
 use ll_sparql_parser::ast::Var;
 mod add_aggregate_to_result;
 mod add_to_result;

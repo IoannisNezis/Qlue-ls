@@ -3,12 +3,12 @@ use std::collections::HashSet;
 use ll_sparql_parser::ast::AstNode;
 
 use crate::server::{
+    Server,
     analysis::{find_all_prefix_declarations, find_all_uncompacted_iris},
     lsp::{
-        textdocument::{Range, TextEdit},
         CodeAction, CodeActionKind,
+        textdocument::{Range, TextEdit},
     },
-    Server,
 };
 
 pub(super) fn code_actions(server: &mut Server, document_uri: String) -> Vec<CodeAction> {
@@ -64,13 +64,13 @@ mod test {
     use std::collections::HashMap;
 
     use crate::server::{
+        Server,
         lsp::{
-            textdocument::{Range, TextDocumentItem, TextEdit},
             BackendService,
+            textdocument::{Range, TextDocumentItem, TextEdit},
         },
         message_handler::code_action::iri::shorten_all_uris,
         state::ServerState,
-        Server,
     };
     use indoc::indoc;
 

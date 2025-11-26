@@ -1,10 +1,10 @@
 use crate::server::{
+    Server,
     lsp::{
         base_types::LSPAny,
         diagnostic::{Diagnostic, DiagnosticCode, DiagnosticSeverity},
         textdocument::{Range, TextDocumentItem},
     },
-    Server,
 };
 use ll_sparql_parser::ast::{AstNode, PrefixedName, QueryUnit};
 use std::{collections::HashSet, sync::LazyLock};

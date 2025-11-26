@@ -3,13 +3,13 @@ use std::rc::Rc;
 use futures::lock::Mutex;
 
 use crate::server::{
+    Server,
     fetch::check_server_availability,
     lsp::{
-        errors::{ErrorCode, LSPError},
         AddBackendNotification, GetBackendRequest, GetBackendResponse, PingBackendRequest,
         PingBackendResponse, UpdateDefaultBackendNotification,
+        errors::{ErrorCode, LSPError},
     },
-    Server,
 };
 
 pub(super) async fn handle_update_backend_default_notification(

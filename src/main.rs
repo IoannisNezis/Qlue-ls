@@ -14,12 +14,12 @@ use std::{
 use futures::lock::Mutex;
 use log::LevelFilter;
 use log4rs::{
+    Config,
     append::file::FileAppender,
     config::{Appender, Root},
     encode::pattern::PatternEncoder,
-    Config,
 };
-use server::{format_raw, handle_message, Server};
+use server::{Server, format_raw, handle_message};
 
 use clap::{Parser, Subcommand};
 use stdio_reader::StdioMessages;

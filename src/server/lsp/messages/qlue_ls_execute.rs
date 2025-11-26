@@ -4,10 +4,10 @@ use crate::{
     server::{
         fetch::ConnectionError,
         lsp::{
+            LspMessage, RequestMarker, ResponseMarker,
             errors::{ErrorCode, LSPErrorBase},
             rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
             textdocument::TextDocumentIdentifier,
-            LspMessage, RequestMarker, ResponseMarker,
         },
     },
     sparql::results::SparqlResult,

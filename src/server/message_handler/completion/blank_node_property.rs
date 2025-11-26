@@ -3,9 +3,9 @@ use std::rc::Rc;
 use super::{
     environment::{CompletionEnvironment, CompletionLocation},
     error::CompletionError,
-    utils::{dispatch_completion_query, CompletionTemplate},
+    utils::{CompletionTemplate, dispatch_completion_query},
 };
-use crate::server::{lsp::CompletionList, message_handler::completion::utils::reduce_path, Server};
+use crate::server::{Server, lsp::CompletionList, message_handler::completion::utils::reduce_path};
 use futures::lock::Mutex;
 use ll_sparql_parser::syntax_kind::SyntaxKind;
 

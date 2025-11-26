@@ -1,12 +1,12 @@
 use std::{collections::HashSet, rc::Rc};
 
-use super::{error::CompletionError, CompletionEnvironment, CompletionLocation};
+use super::{CompletionEnvironment, CompletionLocation, error::CompletionError};
 use crate::server::{
+    Server,
     configuration::Replacement,
     lsp::{
         Command, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
     },
-    Server,
 };
 use futures::lock::Mutex;
 use ll_sparql_parser::ast::{AstNode, PrefixedName, Var, VarOrTerm};

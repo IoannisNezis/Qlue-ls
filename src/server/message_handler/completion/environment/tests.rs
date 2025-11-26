@@ -1,4 +1,4 @@
-use ll_sparql_parser::{parse_query, syntax_kind::SyntaxKind, SyntaxToken};
+use ll_sparql_parser::{SyntaxToken, parse_query, syntax_kind::SyntaxKind};
 
 use crate::server::message_handler::completion::environment::CompletionLocation;
 

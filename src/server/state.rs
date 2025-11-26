@@ -1,13 +1,13 @@
 use crate::server::{configuration::RequestMethod, tracing::TraceFile};
 
 use super::lsp::{
+    BackendService, TextDocumentContentChangeEvent, TraceValue,
     errors::{ErrorCode, LSPError},
     textdocument::TextDocumentItem,
-    BackendService, TextDocumentContentChangeEvent, TraceValue,
 };
 use curies::{Converter, CuriesError};
 use futures::lock::Mutex;
-use ll_sparql_parser::{parse, SyntaxNode};
+use ll_sparql_parser::{SyntaxNode, parse};
 use std::{collections::HashMap, rc::Rc};
 
 #[derive(Debug, PartialEq)]

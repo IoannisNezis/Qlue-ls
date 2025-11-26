@@ -3,15 +3,15 @@ mod quickfix;
 mod select;
 mod variable;
 use crate::server::{
+    Server,
     lsp::{
+        CodeAction, CodeActionParams, CodeActionRequest, CodeActionResponse,
         diagnostic::Diagnostic,
         errors::{ErrorCode, LSPError},
-        CodeAction, CodeActionParams, CodeActionRequest, CodeActionResponse,
     },
-    Server,
 };
 use futures::lock::Mutex;
-use ll_sparql_parser::{ast::AstNode, parse_query, SyntaxElement};
+use ll_sparql_parser::{SyntaxElement, ast::AstNode, parse_query};
 use ll_sparql_parser::{
     ast::{Iri, Var},
     syntax_kind::SyntaxKind,
@@ -77,18 +77,23 @@ fn generate_code_actions(
         .is_some_and(|iri| iri.is_uncompressed())
     {
         code_actions.extend(iri::code_actions(server, document.uri.clone()));
-    } else { match selected_element.parent().and_then(Var::cast) { Some(var) => {
-        code_actions.extend(variable::code_actions(var, document))
-    } _ => if matches!(
-        selected_element.kind(),
-        SyntaxKind::SelectQuery | SyntaxKind::SELECT | SyntaxKind::SubSelect
-    ) {
-        code_actions.extend(select::code_actions(
-            selected_element,
-            document,
-            server.settings.format.tab_size.unwrap_or(2),
-        ));
-    }}}
+    } else {
+        match selected_element.parent().and_then(Var::cast) {
+            Some(var) => code_actions.extend(variable::code_actions(var, document)),
+            _ => {
+                if matches!(
+                    selected_element.kind(),
+                    SyntaxKind::SelectQuery | SyntaxKind::SELECT | SyntaxKind::SubSelect
+                ) {
+                    code_actions.extend(select::code_actions(
+                        selected_element,
+                        document,
+                        server.settings.format.tab_size.unwrap_or(2),
+                    ));
+                }
+            }
+        }
+    }
 
     return Ok(code_actions);
 }

@@ -1,9 +1,9 @@
 use super::{
     environment::{CompletionEnvironment, CompletionLocation},
     error::CompletionError,
-    utils::{dispatch_completion_query, CompletionTemplate},
+    utils::{CompletionTemplate, dispatch_completion_query},
 };
-use crate::server::{lsp::CompletionList, Server};
+use crate::server::{Server, lsp::CompletionList};
 use futures::lock::Mutex;
 use ll_sparql_parser::ast::AstNode;
 use std::rc::Rc;

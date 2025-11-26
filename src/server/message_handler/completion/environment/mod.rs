@@ -2,18 +2,18 @@ mod context;
 mod query_graph;
 use super::{error::CompletionError, utils::get_prefix_declarations};
 use crate::server::{
-    lsp::{textdocument::Position, BackendService, CompletionRequest, CompletionTriggerKind},
-    message_handler::misc::resolve_backend,
     Server,
+    lsp::{BackendService, CompletionRequest, CompletionTriggerKind, textdocument::Position},
+    message_handler::misc::resolve_backend,
 };
-use context::{context, Context};
+use context::{Context, context};
 use futures::lock::Mutex;
 use indoc::indoc;
 use ll_sparql_parser::{
+    SyntaxNode, SyntaxToken, TokenAtOffset,
     ast::{AstNode, BlankPropertyList, QueryUnit, SelectClause, Triple},
     continuations_at, parse,
     syntax_kind::SyntaxKind,
-    SyntaxNode, SyntaxToken, TokenAtOffset,
 };
 use std::{collections::HashSet, fmt::Display, rc::Rc, vec};
 use text_size::{TextRange, TextSize};
@@ -425,14 +425,15 @@ fn get_location(
                 .parent()
                 .is_some_and(|parent| parent.kind() == SyntaxKind::PathOneInPropertySet)
         {
-            match anchor.parent_ancestors().find_map(BlankPropertyList::cast)
-            { Some(blank_node_property) => {
-                CompletionLocation::BlankNodeProperty(blank_node_property)
-            } _ => { match anchor.parent_ancestors().find_map(Triple::cast) { Some(triple) => {
-                CompletionLocation::Predicate(triple)
-            } _ => {
-                CompletionLocation::Unknown
-            }}}}
+            match anchor.parent_ancestors().find_map(BlankPropertyList::cast) {
+                Some(blank_node_property) => {
+                    CompletionLocation::BlankNodeProperty(blank_node_property)
+                }
+                _ => match anchor.parent_ancestors().find_map(Triple::cast) {
+                    Some(triple) => CompletionLocation::Predicate(triple),
+                    _ => CompletionLocation::Unknown,
+                },
+            }
         }
         // NOTE: Subject
         else if continues_with!([
@@ -451,14 +452,15 @@ fn get_location(
             SyntaxKind::ObjectList,
             SyntaxKind::Object
         ]) {
-            match anchor.parent_ancestors().find_map(BlankPropertyList::cast)
-            { Some(blank_node_property) => {
-                CompletionLocation::BlankNodeObject(blank_node_property)
-            } _ => { match anchor.parent_ancestors().find_map(Triple::cast) { Some(triple) => {
-                CompletionLocation::Object(triple)
-            } _ => {
-                CompletionLocation::Unknown
-            }}}}
+            match anchor.parent_ancestors().find_map(BlankPropertyList::cast) {
+                Some(blank_node_property) => {
+                    CompletionLocation::BlankNodeObject(blank_node_property)
+                }
+                _ => match anchor.parent_ancestors().find_map(Triple::cast) {
+                    Some(triple) => CompletionLocation::Object(triple),
+                    _ => CompletionLocation::Unknown,
+                },
+            }
         }
         // NOTE: SolutionModifier
         else if continues_with!([
@@ -491,13 +493,14 @@ fn get_location(
             match anchor
                 .parent_ancestors()
                 .find(|ancestor| ancestor.kind() == SyntaxKind::SelectClause)
-            { Some(select_clause) => {
-                CompletionLocation::SelectBinding(SelectClause::cast(select_clause).expect(
-                    "node of kind SelectClause should be castable to SelectClause ast node",
-                ))
-            } _ => {
-                CompletionLocation::Unknown
-            }}
+            {
+                Some(select_clause) => {
+                    CompletionLocation::SelectBinding(SelectClause::cast(select_clause).expect(
+                        "node of kind SelectClause should be castable to SelectClause ast node",
+                    ))
+                }
+                _ => CompletionLocation::Unknown,
+            }
         }
         // NOTE: FilterConstraint
         else if continues_with!([SyntaxKind::Constraint]) && child_of!([SyntaxKind::Filter]) {
@@ -573,11 +576,12 @@ fn get_anchor_token(
     while trigger_token.kind() == SyntaxKind::WHITESPACE
         || trigger_token.parent().unwrap().kind() == SyntaxKind::Error
     {
-        match trigger_token.prev_token() { Some(prev) => {
-            trigger_token = prev
-        } _ => {
-            return None;
-        }}
+        match trigger_token.prev_token() {
+            Some(prev) => trigger_token = prev,
+            _ => {
+                return None;
+            }
+        }
     }
     Some(trigger_token)
 }

@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::server::lsp::{
+    LspMessage, RequestMarker, ResponseMarker,
     rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
     textdocument::TextDocumentIdentifier,
-    LspMessage, RequestMarker, ResponseMarker,
 };
 
 #[derive(Debug, Deserialize, PartialEq)]
@@ -136,10 +136,10 @@ pub enum FoldingRangeKind {
 mod tests {
 
     use crate::server::lsp::{
+        FoldingRangeKind, FoldingRangeRequest, FoldingRangeResponse,
         messages::textdocument_folding_range::{FoldingRange, FoldingRangeParams},
         rpc::{Message, RequestId, RequestMessageBase},
         textdocument::TextDocumentIdentifier,
-        FoldingRangeKind, FoldingRangeRequest, FoldingRangeResponse,
     };
 
     #[test]

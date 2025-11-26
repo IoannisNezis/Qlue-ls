@@ -7,14 +7,14 @@ use text_size::{TextRange, TextSize};
 use unicode_width::UnicodeWidthChar;
 
 use crate::server::{
+    Server,
     lsp::{
+        CodeAction,
         base_types::LSPAny,
         diagnostic::Diagnostic,
         errors::{ErrorCode, LSPError},
         textdocument::{Position, Range, TextEdit},
-        CodeAction,
     },
-    Server,
 };
 
 type SameSubjectData = Vec<TextRange>;

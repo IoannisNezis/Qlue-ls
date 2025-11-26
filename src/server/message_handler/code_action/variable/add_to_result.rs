@@ -9,8 +9,8 @@ use ll_sparql_parser::{
 };
 
 use crate::server::lsp::{
-    textdocument::{Position, Range, TextDocumentItem, TextEdit},
     CodeAction,
+    textdocument::{Position, Range, TextDocumentItem, TextEdit},
 };
 
 pub(super) fn code_action(var: &Var, document: &TextDocumentItem) -> Option<CodeAction> {

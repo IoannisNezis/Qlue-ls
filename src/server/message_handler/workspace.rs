@@ -3,8 +3,8 @@ use std::rc::Rc;
 use futures::lock::Mutex;
 
 use crate::server::{
-    lsp::{errors::LSPError, WorkspaceEditResponse},
     Server,
+    lsp::{WorkspaceEditResponse, errors::LSPError},
 };
 
 pub(super) async fn handle_workspace_edit_response(

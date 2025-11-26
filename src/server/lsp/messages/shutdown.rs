@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::server::lsp::{
+    LspMessage, NotificationMarker, RequestMarker, ResponseMarker,
     base_types::LSPAny,
     rpc::{NotificationMessage, RequestId, RequestMessageBase, ResponseMessageBase},
-    LspMessage, NotificationMarker, RequestMarker, ResponseMarker,
 };
 
 #[derive(Debug, Deserialize, PartialEq)]

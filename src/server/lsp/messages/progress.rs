@@ -1,12 +1,12 @@
 use serde::Serialize;
 
 use crate::server::lsp::{
+    LspMessage, NotificationMarker,
     rpc::NotificationMessageBase,
     workdoneprogress::{
         ProgressToken, ProgressValue, WorkDoneProgressBegin, WorkDoneProgressEnd,
         WorkDoneProgressReport,
     },
-    LspMessage, NotificationMarker,
 };
 
 #[derive(Debug, Serialize)]
@@ -89,11 +89,11 @@ pub struct ProgressParams<T> {
 #[cfg(test)]
 mod tests {
     use crate::server::lsp::{
+        ProgressNotification, ProgressParams,
         rpc::NotificationMessageBase,
         workdoneprogress::{
             ProgressValue, WorkDoneProgressBegin, WorkDoneProgressEnd, WorkDoneProgressReport,
         },
-        ProgressNotification, ProgressParams,
     };
 
     use super::ProgressToken;

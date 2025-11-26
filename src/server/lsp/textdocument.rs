@@ -34,7 +34,11 @@ impl TextDocumentItem {
                 );
             }
             None => {
-                log::error!("Received textdocument/didChange notification with a TextEdit thats out ouf bounds:\nedit: {}\ndocument range: {}",text_edit, self.get_full_range());
+                log::error!(
+                    "Received textdocument/didChange notification with a TextEdit thats out ouf bounds:\nedit: {}\ndocument range: {}",
+                    text_edit,
+                    self.get_full_range()
+                );
             }
         };
 
@@ -90,7 +94,11 @@ impl TextDocumentItem {
         let chars: Vec<char> = self.text.chars().collect();
         let mut char_offset = chars.len();
         while let Some(edit) = edits.peek() {
-            assert!(edit.range.start <= cursor, "A edit was missed when appying edits. The next edit start position: {}, cursor position: {cursor}", edit.range.start);
+            assert!(
+                edit.range.start <= cursor,
+                "A edit was missed when appying edits. The next edit start position: {}, cursor position: {cursor}",
+                edit.range.start
+            );
             if edit.range.end == cursor {
                 current_edit_end_byte_offset = byte_offset;
             }
@@ -174,7 +182,11 @@ impl TextDocumentItem {
                 change.range.start <= change.range.end,
                 "received a invalid change: {change:?}"
             );
-            assert!(change.range.end >= cursor, "A change was missed when applying changes. The next change end position: {}, cursor position: {cursor}", change.range.end);
+            assert!(
+                change.range.end >= cursor,
+                "A change was missed when applying changes. The next change end position: {}, cursor position: {cursor}",
+                change.range.end
+            );
             if change.range.start == cursor {
                 current_change_start_byte_offset = byte_offset;
             }
@@ -468,8 +480,8 @@ mod tests {
     use text_size::{TextRange, TextSize};
 
     use crate::server::lsp::{
-        textdocument::{Position, Range, TextEdit},
         TextDocumentContentChangeEvent,
+        textdocument::{Position, Range, TextEdit},
     };
 
     use super::TextDocumentItem;

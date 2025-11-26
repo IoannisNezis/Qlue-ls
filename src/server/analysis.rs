@@ -1,9 +1,9 @@
 use ll_sparql_parser::ast::{AstNode, Iri, PrefixDeclaration, Prologue, QueryUnit};
 
 use super::{
+    Server,
     lsp::errors::{ErrorCode, LSPError},
     state::ServerState,
-    Server,
 };
 
 pub fn namespace_is_declared(
@@ -76,10 +76,10 @@ mod tests {
     use indoc::indoc;
 
     use crate::server::{
+        Server,
         analysis::{find_all_prefix_declarations, find_all_uncompacted_iris},
         lsp::textdocument::TextDocumentItem,
         state::ServerState,
-        Server,
     };
 
     fn setup_state(text: &str) -> ServerState {

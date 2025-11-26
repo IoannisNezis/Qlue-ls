@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::server::lsp::{
+    LspMessage, RequestMarker, ResponseMarker,
     rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
     textdocument::{DocumentUri, Range, TextDocumentIdentifier, TextEdit},
-    LspMessage, RequestMarker, ResponseMarker,
 };
 
 use super::{diagnostic::Diagnostic, workspace::WorkspaceEdit};
@@ -148,9 +148,9 @@ impl CodeAction {
 #[cfg(test)]
 mod test {
     use crate::server::lsp::{
+        CodeAction, CodeActionResponse, WorkspaceEdit,
         rpc::RequestId,
         textdocument::{Range, TextEdit},
-        CodeAction, CodeActionResponse, WorkspaceEdit,
     };
     use std::collections::HashMap;
 

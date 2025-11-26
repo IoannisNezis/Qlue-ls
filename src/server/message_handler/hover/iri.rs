@@ -1,12 +1,12 @@
 use crate::server::{
+    Server,
     fetch::fetch_sparql_result,
     lsp::errors::{ErrorCode, LSPError},
     message_handler::misc::resolve_backend,
-    Server,
 };
 use ll_sparql_parser::{
-    ast::{AstNode, Iri, QueryUnit},
     SyntaxNode, SyntaxToken,
+    ast::{AstNode, Iri, QueryUnit},
 };
 use tera::Context;
 

@@ -11,7 +11,7 @@ use crate::server::{
 pub struct AddBackendNotification {
     #[serde(flatten)]
     pub base: NotificationMessageBase,
-    pub params: SetBackendParams,
+    pub params: AddBackendParams,
 }
 
 impl LspMessage for AddBackendNotification {
@@ -28,7 +28,7 @@ impl LspMessage for AddBackendNotification {
 
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub struct SetBackendParams {
+pub struct AddBackendParams {
     pub service: BackendService,
     pub request_method: Option<RequestMethod>,
     pub default: bool,
@@ -42,4 +42,11 @@ pub struct BackendService {
     pub name: String,
     pub url: String,
     pub health_check_url: Option<String>,
+    pub engine: Option<SparqlEngine>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub enum SparqlEngine {
+    QLever,
+    GraphDB,
 }

@@ -1,6 +1,16 @@
+use std::rc::Rc;
+
+#[cfg(not(target_arch = "wasm32"))]
+use crate::server::Server;
+#[cfg(target_arch = "wasm32")]
+use crate::server::Server;
 use crate::server::configuration::RequestMethod;
 use crate::server::lsp::QLeverException;
 use crate::sparql::results::SparqlResult;
+#[cfg(not(target_arch = "wasm32"))]
+use futures::lock::Mutex;
+#[cfg(target_arch = "wasm32")]
+use futures::lock::Mutex;
 use ll_sparql_parser::ast::{AstNode, QueryUnit};
 use ll_sparql_parser::parse_query;
 use serde::{Deserialize, Serialize};
@@ -60,13 +70,18 @@ impl Window {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) async fn fetch_sparql_result(
+    _server_rc: Rc<Mutex<Server>>,
     url: &str,
     query: &str,
     _query_id: Option<&str>,
     timeout_ms: u32,
     method: RequestMethod,
     window: Option<Window>,
-) -> Result<SparqlResult, SparqlRequestError> {
+    lazy: bool,
+) -> Result<Option<SparqlResult>, SparqlRequestError> {
+    if lazy {
+        log::warn!("Lazy Query execution is not implemented for non wasm targets");
+    }
     use reqwest::Client;
     use std::time::Duration;
     use tokio::time::timeout;
@@ -115,10 +130,11 @@ pub(crate) async fn fetch_sparql_result(
             SparqlRequestError::Response("failed".to_string())
         })?;
 
-    response
+    let result = response
         .json::<SparqlResult>()
         .await
-        .map_err(|err| SparqlRequestError::Deserialization(err.to_string()))
+        .map_err(|err| SparqlRequestError::Deserialization(err.to_string()))?;
+    Ok(Some(result))
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -140,19 +156,22 @@ pub(crate) async fn check_server_availability(url: &str) -> bool {
 
 #[cfg(target_arch = "wasm32")]
 pub(crate) async fn fetch_sparql_result(
+    server_rc: Rc<Mutex<Server>>,
     url: &str,
     query: &str,
     query_id: Option<&str>,
     timeout_ms: u32,
     method: RequestMethod,
     window: Option<Window>,
-) -> Result<SparqlResult, SparqlRequestError> {
+    lazy: bool,
+) -> Result<Option<SparqlResult>, SparqlRequestError> {
     use js_sys::JsString;
-    use reqwest::header;
     use std::str::FromStr;
     use wasm_bindgen::JsCast;
     use wasm_bindgen_futures::JsFuture;
-    use web_sys::{AbortSignal, Request, RequestInit, RequestMode, Response, WorkerGlobalScope};
+    use web_sys::{AbortSignal, Request, RequestInit, Response, WorkerGlobalScope};
+
+    use lazy_sparql_result_reader::parser::PartialResult;
 
     let query = window
         .and_then(|window| window.rewrite(query))
@@ -190,12 +209,6 @@ pub(crate) async fn fetch_sparql_result(
     // Get global worker scope
     let worker_global: WorkerGlobalScope = js_sys::global().unchecked_into();
 
-    let performance = worker_global
-        .performance()
-        .expect("performance should be available");
-
-    let start = performance.now();
-
     // Perform the fetch request and await the response
     let resp_value = JsFuture::from(worker_global.fetch_with_request(&request))
         .await
@@ -206,9 +219,6 @@ pub(crate) async fn fetch_sparql_result(
                 query,
             })
         })?;
-
-    let end = performance.now();
-    log::debug!("Query took {:?}ms", (end - start) as i32,);
 
     // Cast the response value to a Response object
     let resp: Response = resp_value.dyn_into().unwrap();
@@ -234,19 +244,40 @@ pub(crate) async fn fetch_sparql_result(
             ))),
         };
     }
-
-    // Get the response body as text and await it
-    let text = JsFuture::from(resp.text().map_err(|err| {
-        SparqlRequestError::Response(format!("Response has no text:\n{:?}", err))
-    })?)
-    .await
-    .map_err(|err| {
-        SparqlRequestError::Response(format!("Could not read Response text:\n{:?}", err))
-    })?
-    .as_string()
-    .unwrap();
-    // Return the text as a JsValue
-    serde_json::from_str(&text).map_err(|err| SparqlRequestError::Deserialization(err.to_string()))
+    if lazy {
+        let callback = async |partial_result: PartialResult| {
+            use crate::server::lsp::PartialSparqlResultNotification;
+            if let Err(err) = server_rc
+                .lock()
+                .await
+                .send_message(PartialSparqlResultNotification::new(partial_result))
+            {
+                log::error!(
+                    "Could not send Partial-Sparql-Result-Notification:\n{:?}",
+                    err
+                );
+            }
+        };
+        lazy_sparql_result_reader::read(resp.body().unwrap(), 100, callback)
+            .await
+            .unwrap();
+        Ok(None)
+    } else {
+        // Get the response body as text and await it
+        let text = JsFuture::from(resp.text().map_err(|err| {
+            SparqlRequestError::Response(format!("Response has no text:\n{:?}", err))
+        })?)
+        .await
+        .map_err(|err| {
+            SparqlRequestError::Response(format!("Could not read Response text:\n{:?}", err))
+        })?
+        .as_string()
+        .unwrap();
+        // Return the text as a JsValue
+        let result = serde_json::from_str(&text)
+            .map_err(|err| SparqlRequestError::Deserialization(err.to_string()))?;
+        Ok(Some(result))
+    }
 }
 
 #[cfg(target_arch = "wasm32")]

@@ -90,25 +90,33 @@ pub(super) async fn fetch_online_completions(
     };
 
     log::debug!("Query:\n{}", query);
-    let result = fetch_sparql_result(&url, &query, None, timeout_ms, method, None)
-        .await
-        .map_err(|err| match err {
-            crate::server::fetch::SparqlRequestError::Timeout => {
-                CompletionError::Request("Completion query timed out".to_string())
-            }
-            crate::server::fetch::SparqlRequestError::Connection(_err) => {
-                CompletionError::Request("Completion query failed, connection errored".to_string())
-            }
-            crate::server::fetch::SparqlRequestError::Response(msg) => {
-                CompletionError::Request(msg)
-            }
-            crate::server::fetch::SparqlRequestError::Deserialization(msg) => {
-                CompletionError::Request(msg)
-            }
-            crate::server::fetch::SparqlRequestError::QLeverException(exception) => {
-                CompletionError::Request(exception.exception)
-            }
-        })?;
+    let result = fetch_sparql_result(
+        server_rc.clone(),
+        &url,
+        &query,
+        None,
+        timeout_ms,
+        method,
+        None,
+        false,
+    )
+    .await
+    .map_err(|err| match err {
+        crate::server::fetch::SparqlRequestError::Timeout => {
+            CompletionError::Request("Completion query timed out".to_string())
+        }
+        crate::server::fetch::SparqlRequestError::Connection(_err) => {
+            CompletionError::Request("Completion query failed, connection errored".to_string())
+        }
+        crate::server::fetch::SparqlRequestError::Response(msg) => CompletionError::Request(msg),
+        crate::server::fetch::SparqlRequestError::Deserialization(msg) => {
+            CompletionError::Request(msg)
+        }
+        crate::server::fetch::SparqlRequestError::QLeverException(exception) => {
+            CompletionError::Request(exception.exception)
+        }
+    })?
+    .expect("Non-lazy request should always return a result.");
     log::info!("Result size: {}", result.results.bindings.len());
 
     let mut server = server_rc.lock().await;

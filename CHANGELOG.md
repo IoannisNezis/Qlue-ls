@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.21.0] - 2025-12-09
+
+- rename backend to service in qlueLs/addBackend
+
 ## [0.20.3] - 2025-11-26
 
 ### added

@@ -48,7 +48,7 @@ fn build_tree(tokens: Vec<Token>, events: Vec<Event>) -> GreenNode {
     for event in &events[..events.len() - 1] {
         match event {
             Event::Open { kind } => {
-                while *kind != SyntaxKind::QueryUnit
+                while !matches!(kind, SyntaxKind::QueryUnit | SyntaxKind::UpdateUnit)
                     && tokens.peek().map_or(false, |next| next.is_trivia())
                 {
                     let token = tokens.next().unwrap();

@@ -1,9 +1,12 @@
+use std::rc::Rc;
+
 use crate::server::{
     Server,
     fetch::fetch_sparql_result,
     lsp::errors::{ErrorCode, LSPError},
     message_handler::misc::resolve_backend,
 };
+use futures::lock::Mutex;
 use ll_sparql_parser::{
     SyntaxNode, SyntaxToken,
     ast::{AstNode, Iri, QueryUnit},
@@ -11,10 +14,11 @@ use ll_sparql_parser::{
 use tera::Context;
 
 pub(super) async fn hover(
-    server: &Server,
+    server_rc: Rc<Mutex<Server>>,
     root: SyntaxNode,
     hovered_token: SyntaxToken,
 ) -> Result<Option<String>, LSPError> {
+    let server = server_rc.lock().await;
     let iri = match hovered_token.parent_ancestors().find_map(Iri::cast) {
         Some(value) => value,
         None => return Ok(None),
@@ -25,7 +29,7 @@ pub(super) async fn hover(
         ErrorCode::InternalError,
         "Hover is currently only supported for Query operations",
     ))?;
-    let backend = resolve_backend(server, &query_unit, &hovered_token).ok_or(LSPError::new(
+    let backend = resolve_backend(&server, &query_unit, &hovered_token).ok_or(LSPError::new(
         ErrorCode::InternalError,
         "Could not determine backend for hover location",
     ))?;
@@ -56,16 +60,23 @@ pub(super) async fn hover(
             })?;
         let method = server.state.get_backend_request_method(&backend.name);
         let sparql_response = fetch_sparql_result(
+            server_rc.clone(),
             &backend.url,
             &query,
             None,
             server.settings.completion.timeout_ms,
             method,
             None,
+            false,
         )
         .await
         .map_err(|_err| LSPError::new(ErrorCode::InternalError, "hover query failed"))?;
-        match sparql_response.results.bindings.first() {
+        match sparql_response
+            .expect("Non-lazy request should always return a result.")
+            .results
+            .bindings
+            .first()
+        {
             Some(binding) => binding
                 .get("qlue_ls_label")
                 .ok_or(LSPError::new(

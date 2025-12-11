@@ -1,16 +1,20 @@
+use lazy_sparql_result_reader::{
+    parser::PartialResult,
+    sparql::{Bindings, Header},
+};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     server::{
         fetch::ConnectionError,
         lsp::{
-            LspMessage, RequestMarker, ResponseMarker,
+            LspMessage, NotificationMarker, RequestMarker, ResponseMarker,
             errors::{ErrorCode, LSPErrorBase},
-            rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
+            rpc::{NotificationMessageBase, RequestId, RequestMessageBase, ResponseMessageBase},
             textdocument::TextDocumentIdentifier,
         },
     },
-    sparql::results::SparqlResult,
+    sparql::results::{SparqlResult, SparqlResultsBindings, SparqlResultsVars},
 };
 
 #[derive(Debug, Deserialize)]
@@ -44,6 +48,7 @@ pub struct ExecuteQueryParams {
     pub max_result_size: Option<u32>,
     pub result_offset: Option<u32>,
     pub query_id: Option<String>,
+    pub lazy: Option<bool>,
 }
 
 #[derive(Debug, Serialize)]
@@ -51,12 +56,13 @@ pub struct ExecuteQueryResponse {
     #[serde(flatten)]
     base: ResponseMessageBase,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub result: Option<SparqlResult>,
+    pub result: Option<ExecuteQueryResponseResult>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<ExecuteQueryError>,
 }
+
 impl ExecuteQueryResponse {
-    pub(crate) fn success(id: &RequestId, result: SparqlResult) -> Self {
+    pub(crate) fn success(id: &RequestId, result: ExecuteQueryResponseResult) -> Self {
         Self {
             base: ResponseMessageBase::success(id),
             result: Some(result),
@@ -89,6 +95,13 @@ impl LspMessage for ExecuteQueryResponse {
     fn id(&self) -> Option<&crate::server::lsp::rpc::RequestId> {
         self.base.id.request_id()
     }
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExecuteQueryResponseResult {
+    pub time_ms: u128,
+    pub result: Option<SparqlResult>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -127,6 +140,35 @@ pub struct Metadata {
 pub enum QLeverStatus {
     #[serde(rename = "ERROR")]
     Error,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PartialSparqlResultNotification {
+    #[serde(flatten)]
+    pub base: NotificationMessageBase,
+    pub params: PartialResult,
+}
+
+impl PartialSparqlResultNotification {
+    pub(crate) fn new(chunk: PartialResult) -> Self {
+        Self {
+            base: NotificationMessageBase::new("qlueLs/partialResult"),
+            params: PartialResult::from(chunk),
+        }
+    }
+}
+
+impl LspMessage for PartialSparqlResultNotification {
+    type Kind = NotificationMarker;
+
+    fn method(&self) -> Option<&str> {
+        Some("qlueLs/partialResult")
+    }
+
+    fn id(&self) -> Option<&RequestId> {
+        None
+    }
 }
 
 #[cfg(test)]

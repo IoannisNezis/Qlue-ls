@@ -19,6 +19,11 @@ pub struct SparqlResultsVars {
     #[allow(dead_code)]
     pub vars: Vec<String>,
 }
+impl SparqlResultsVars {
+    pub(crate) fn new() -> Self {
+        Self { vars: Vec::new() }
+    }
+}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SparqlResultsBindings {

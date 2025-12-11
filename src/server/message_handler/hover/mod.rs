@@ -18,13 +18,16 @@ pub(super) async fn handle_hover_request(
     server_rc: Rc<Mutex<Server>>,
     request: HoverRequest,
 ) -> Result<(), LSPError> {
-    let server = server_rc.lock().await;
+    let document_text = {
+        let server = server_rc.lock().await;
+        let document = server.state.get_document(request.get_document_uri())?;
+        document.text.clone()
+    };
     let mut hover_response = HoverResponse::new(request.get_id());
-    let document = server.state.get_document(request.get_document_uri())?;
-    let root = parse_query(&document.text);
+    let root = parse_query(&document_text);
     let offset = request
         .get_position()
-        .byte_index(&document.text)
+        .byte_index(&document_text)
         .ok_or_else(|| {
             LSPError::new(
                 ErrorCode::InvalidParams,
@@ -34,12 +37,12 @@ pub(super) async fn handle_hover_request(
     if let TokenAtOffset::Single(token) = root.token_at_offset(offset) {
         if let Some(content) = match token.kind() {
             SyntaxKind::PNAME_LN | SyntaxKind::PNAME_NS | SyntaxKind::IRIREF => {
-                iri::hover(&server, root, token).await?
+                iri::hover(server_rc.clone(), root, token).await?
             }
             other => documentation::get_docstring_for_kind(other),
         } {
             hover_response.set_markdown_content(content.to_string());
         }
     }
-    server.send_message(hover_response)
+    server_rc.lock().await.send_message(hover_response)
 }

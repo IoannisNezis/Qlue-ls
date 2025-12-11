@@ -21,7 +21,7 @@ build-native:
 build-wasm profile="release" target="web":
 	wasm-pack build --{{profile}} --target {{target}}
 
-watch-and-run recipe="test":
+watch-and recipe="test":
 	watchexec --restart --watch src --watch Cargo.toml -- just {{recipe}}
 
 publish:

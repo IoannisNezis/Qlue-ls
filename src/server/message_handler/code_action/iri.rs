@@ -80,6 +80,7 @@ mod test {
             name: "test".to_string(),
             url: "".to_string(),
             health_check_url: None,
+            engine: None,
         });
         state.set_default_backend("test".to_string());
         state

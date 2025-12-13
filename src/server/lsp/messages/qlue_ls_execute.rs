@@ -1,21 +1,16 @@
-use lazy_sparql_result_reader::{
-    parser::PartialResult,
-    sparql::{Bindings, Header},
-};
-use serde::{Deserialize, Serialize};
-
 use crate::{
     server::{
         fetch::ConnectionError,
         lsp::{
-            LspMessage, NotificationMarker, RequestMarker, ResponseMarker,
+            LspMessage, RequestMarker, ResponseMarker,
             errors::{ErrorCode, LSPErrorBase},
-            rpc::{NotificationMessageBase, RequestId, RequestMessageBase, ResponseMessageBase},
+            rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
             textdocument::TextDocumentIdentifier,
         },
     },
-    sparql::results::{SparqlResult, SparqlResultsBindings, SparqlResultsVars},
+    sparql::results::SparqlResult,
 };
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize)]
 pub struct ExecuteQueryRequest {
@@ -144,12 +139,14 @@ pub enum QLeverStatus {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[cfg(target_arch = "wasm32")]
 pub struct PartialSparqlResultNotification {
     #[serde(flatten)]
     pub base: NotificationMessageBase,
     pub params: PartialResult,
 }
 
+#[cfg(target_arch = "wasm32")]
 impl PartialSparqlResultNotification {
     pub(crate) fn new(chunk: PartialResult) -> Self {
         Self {
@@ -159,6 +156,7 @@ impl PartialSparqlResultNotification {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
 impl LspMessage for PartialSparqlResultNotification {
     type Kind = NotificationMarker;
 
@@ -180,12 +178,12 @@ mod test {
         let error = ExecuteQueryErrorData::QLeverException(QLeverException {
             exception: "foo".to_string(),
             query: "bar".to_string(),
-            metadata: Metadata {
+            metadata: Some(Metadata {
                 line: 0,
                 position_in_line: 0,
                 start_index: 0,
                 stop_index: 0,
-            },
+            }),
             status: QLeverStatus::Error,
         });
         let serialized = serde_json::to_string(&error).unwrap();

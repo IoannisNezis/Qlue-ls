@@ -12,10 +12,8 @@ use crate::sparql::results::SparqlResult;
 use futures::lock::Mutex;
 #[cfg(target_arch = "wasm32")]
 use futures::lock::Mutex;
+#[cfg(target_arch = "wasm32")]
 use lazy_sparql_result_reader::parser::PartialResult;
-use lazy_sparql_result_reader::sparql::Binding;
-use lazy_sparql_result_reader::sparql::Bindings;
-use lazy_sparql_result_reader::sparql::RDFValue;
 use ll_sparql_parser::ast::{AstNode, QueryUnit};
 use ll_sparql_parser::parse_query;
 use serde::{Deserialize, Serialize};
@@ -297,7 +295,10 @@ pub(crate) async fn fetch_sparql_result(
     }
 }
 
+#[cfg(target_arch = "wasm32")]
 fn compress_result_uris(server: &Server, partial_result: &mut PartialResult) {
+    use lazy_sparql_result_reader::sparql::Binding;
+    use lazy_sparql_result_reader::sparql::RDFValue;
     if let PartialResult::Bindings(bindings) = partial_result {
         for binding in bindings.iter_mut() {
             for (_, rdf_term) in binding.0.iter_mut() {

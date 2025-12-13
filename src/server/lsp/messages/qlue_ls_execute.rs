@@ -124,7 +124,7 @@ pub struct QLeverException {
     pub exception: String,
     pub query: String,
     pub status: QLeverStatus,
-    pub metadata: Metadata,
+    pub metadata: Option<Metadata>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

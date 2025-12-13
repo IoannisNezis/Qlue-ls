@@ -6,11 +6,16 @@ use crate::server::Server;
 use crate::server::Server;
 use crate::server::configuration::RequestMethod;
 use crate::server::lsp::QLeverException;
+use crate::server::lsp::SparqlEngine;
 use crate::sparql::results::SparqlResult;
 #[cfg(not(target_arch = "wasm32"))]
 use futures::lock::Mutex;
 #[cfg(target_arch = "wasm32")]
 use futures::lock::Mutex;
+use lazy_sparql_result_reader::parser::PartialResult;
+use lazy_sparql_result_reader::sparql::Binding;
+use lazy_sparql_result_reader::sparql::Bindings;
+use lazy_sparql_result_reader::sparql::RDFValue;
 use ll_sparql_parser::ast::{AstNode, QueryUnit};
 use ll_sparql_parser::parse_query;
 use serde::{Deserialize, Serialize};
@@ -74,6 +79,7 @@ pub(crate) async fn fetch_sparql_result(
     url: &str,
     query: &str,
     _query_id: Option<&str>,
+    _engine: Option<SparqlEngine>,
     timeout_ms: u32,
     method: RequestMethod,
     window: Option<Window>,
@@ -160,6 +166,7 @@ pub(crate) async fn fetch_sparql_result(
     url: &str,
     query: &str,
     query_id: Option<&str>,
+    engine: Option<SparqlEngine>,
     timeout_ms: u32,
     method: RequestMethod,
     window: Option<Window>,
@@ -173,38 +180,46 @@ pub(crate) async fn fetch_sparql_result(
 
     use lazy_sparql_result_reader::parser::PartialResult;
 
-    let query = window
-        .and_then(|window| window.rewrite(query))
-        .unwrap_or(query.to_string());
-
     let opts = RequestInit::new();
     opts.set_signal(Some(&AbortSignal::timeout_with_u32(timeout_ms)));
 
-    let request = match method {
-        RequestMethod::GET => {
+    let request = match (&method, engine) {
+        (RequestMethod::GET, _) => {
             opts.set_method("GET");
-            Request::new_with_str_and_init(&format!("{url}?query={}", encode(&query)), &opts)
+            Request::new_with_str_and_init(&format!("{url}?query={}", encode(query)), &opts)
                 .unwrap()
         }
-        RequestMethod::POST => {
+        (RequestMethod::POST, Some(SparqlEngine::QLever)) => {
             opts.set_method("POST");
-            opts.set_body(&JsString::from_str(&query).unwrap());
-            Request::new_with_str_and_init(url, &opts).unwrap()
+            let body = format!("send=100&query={}", js_sys::encode_uri_component(query));
+            opts.set_body(&JsString::from_str(&body).unwrap());
+            let request = Request::new_with_str_and_init(url, &opts).unwrap();
+            request
+                .headers()
+                .set("Content-Type", "application/x-www-form-urlencoded")
+                .unwrap();
+            if let Some(id) = query_id {
+                request.headers().set("Query-Id", id).unwrap();
+            }
+            request
+        }
+        (RequestMethod::POST, _) => {
+            opts.set_method("POST");
+            opts.set_body(&JsString::from_str(query).unwrap());
+            let request = Request::new_with_str_and_init(url, &opts).unwrap();
+            request
+                .headers()
+                .set("Content-Type", "application/sparql-query")
+                .unwrap();
+            request
         }
     };
-    let headers = request.headers();
-    if method == RequestMethod::POST {
-        headers
-            .set("Content-Type", "application/sparql-query")
-            .unwrap();
-    }
-    headers
+    request
+        .headers()
         .set("Accept", "application/sparql-results+json")
         .unwrap();
-    if let Some(id) = query_id {
-        headers.set("Query-Id", id).unwrap();
-    }
-    // headers.set("User-Agent", "qlue-ls/1.0").unwrap();
+
+    request.headers().set("User-Agent", "qlue-ls/1.0").unwrap();
 
     // Get global worker scope
     let worker_global: WorkerGlobalScope = js_sys::global().unchecked_into();
@@ -213,10 +228,10 @@ pub(crate) async fn fetch_sparql_result(
     let resp_value = JsFuture::from(worker_global.fetch_with_request(&request))
         .await
         .map_err(|err| {
-            log::error!("{err:?}");
+            log::error!("error: {err:?}");
             SparqlRequestError::Connection(ConnectionError {
                 status_text: format!("{err:?}"),
-                query,
+                query: query.to_string(),
             })
         })?;
 
@@ -225,6 +240,7 @@ pub(crate) async fn fetch_sparql_result(
 
     // Check if the response status is OK (200-299)
     if !resp.ok() {
+        log::debug!("Not ok {resp:?}");
         return match resp.json() {
             Ok(json) => match JsFuture::from(json).await {
                 Ok(js_value) => match serde_wasm_bindgen::from_value(js_value) {
@@ -245,12 +261,12 @@ pub(crate) async fn fetch_sparql_result(
         };
     }
     if lazy {
-        let callback = async |partial_result: PartialResult| {
+        let callback = async |mut partial_result: PartialResult| {
             use crate::server::lsp::PartialSparqlResultNotification;
-            if let Err(err) = server_rc
-                .lock()
-                .await
-                .send_message(PartialSparqlResultNotification::new(partial_result))
+            let server = server_rc.lock().await;
+            compress_result_uris(&*server, &mut partial_result);
+            if let Err(err) =
+                server.send_message(PartialSparqlResultNotification::new(partial_result))
             {
                 log::error!(
                     "Could not send Partial-Sparql-Result-Notification:\n{:?}",
@@ -277,6 +293,21 @@ pub(crate) async fn fetch_sparql_result(
         let result = serde_json::from_str(&text)
             .map_err(|err| SparqlRequestError::Deserialization(err.to_string()))?;
         Ok(Some(result))
+    }
+}
+
+fn compress_result_uris(server: &Server, partial_result: &mut PartialResult) {
+    if let PartialResult::Bindings(bindings) = partial_result {
+        for binding in bindings.iter_mut() {
+            for (_, rdf_term) in binding.0.iter_mut() {
+                if let RDFValue::Uri { value, curie } = rdf_term {
+                    *curie = server
+                        .state
+                        .get_default_converter()
+                        .and_then(|converer| converer.compress(value).ok());
+                }
+            }
+        }
     }
 }
 

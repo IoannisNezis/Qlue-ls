@@ -95,6 +95,7 @@ pub(super) async fn fetch_online_completions(
         &url,
         &query,
         None,
+        None,
         timeout_ms,
         method,
         None,

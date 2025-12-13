@@ -64,6 +64,7 @@ pub(super) async fn hover(
             &backend.url,
             &query,
             None,
+            None,
             server.settings.completion.timeout_ms,
             method,
             None,

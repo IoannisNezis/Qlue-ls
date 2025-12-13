@@ -20,23 +20,18 @@ pub(super) async fn handle_execute_query_request(
     server_rc: Rc<Mutex<Server>>,
     request: ExecuteQueryRequest,
 ) -> Result<(), LSPError> {
-    let (query, url) = {
+    let (query, url, engine) = {
         let server = server_rc.lock().await;
         let text = server
             .state
             .get_document(&request.params.text_document.uri)?
             .text
             .clone();
-        let url = server
-            .state
-            .get_default_backend()
-            .ok_or(LSPError::new(
-                ErrorCode::InvalidRequest,
-                "Can not execute query, no SPARQL endpoint was specified",
-            ))?
-            .url
-            .clone();
-        (text, url)
+        let service = server.state.get_default_backend().ok_or(LSPError::new(
+            ErrorCode::InvalidRequest,
+            "Can not execute query, no SPARQL endpoint was specified",
+        ))?;
+        (text, service.url.clone(), service.engine.clone())
     };
 
     let start_time = get_timestamp();
@@ -45,6 +40,7 @@ pub(super) async fn handle_execute_query_request(
         &url,
         &query,
         request.params.query_id.as_ref().map(|s| s.as_ref()),
+        engine,
         1000000,
         RequestMethod::POST,
         Some(Window::new(

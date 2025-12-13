@@ -49,4 +49,8 @@ pub struct BackendService {
 pub enum SparqlEngine {
     QLever,
     GraphDB,
+    Virtuoso,
+    MillenniumDB,
+    Blazegraph,
+    Jena,
 }

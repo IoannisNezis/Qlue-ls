@@ -8,7 +8,7 @@ pub enum SyntaxKind {
     Error,
     #[regex(r"[ \t\n\r\f]+")]
     WHITESPACE,
-    #[regex(r"#.*")]
+    #[regex(r"#[^\n]*", allow_greedy = true)]
     Comment,
     #[token("BASE", ignore(case))]
     BASE,
@@ -355,7 +355,7 @@ pub enum SyntaxKind {
     // There is no known fix.
     // Here is the issue, currently open (14.04.2025)
     // https://github.com/maciejhirsz/logos/issues/315
-    #[regex(r"\[\]|\[ \]|\[  \]")]
+    #[regex(r"\[\s*\]")]
     ANON,
 
     // Composite nodes

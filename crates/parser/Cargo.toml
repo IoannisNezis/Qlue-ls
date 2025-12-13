@@ -1,6 +1,6 @@
 [package]
 name = "ll-sparql-parser"
-version = "0.15.0"
+version = "0.16.0"
 edition = "2021"
 authors = ["Ioannis Nezis <ioannis@nezis.de>"]
 description = "A resilient LL parser for SPARQL"
@@ -14,7 +14,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 js-sys = "0.3.77"
-logos = "0.15.0"
+logos = "0.16.0"
 rowan = "0.16.1"
 wasm-bindgen = "0.2.100"
 

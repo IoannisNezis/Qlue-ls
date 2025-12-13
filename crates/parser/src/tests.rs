@@ -95,16 +95,33 @@ fn tokenize_langtag() {
 
 #[test]
 fn tokenize_delete_where() {
-    let tokens = tokenize(r#"delete where where"#);
-    assert_eq!(tokens, vec![SyntaxKind::DELETE_WHERE, SyntaxKind::WHERE,])
+    let tokens = tokenize(r#"delete delete               where where"#);
+    assert_eq!(
+        tokens,
+        vec![
+            SyntaxKind::DELETE,
+            SyntaxKind::DELETE_WHERE,
+            SyntaxKind::WHERE,
+        ]
+    )
 }
 
 #[test]
 fn tokenize_brack() {
-    let tokens = tokenize("[] [ ] [ ?var ] ");
+    let tokens = tokenize("[ [ [");
+    assert_eq!(
+        tokens,
+        vec![SyntaxKind::LBrack, SyntaxKind::LBrack, SyntaxKind::LBrack,]
+    )
+}
+
+#[test]
+fn tokenize_anon() {
+    let tokens = tokenize("[] [ ] [                             ][ ?var ] ");
     assert_eq!(
         tokens,
         vec![
+            SyntaxKind::ANON,
             SyntaxKind::ANON,
             SyntaxKind::ANON,
             SyntaxKind::LBrack,

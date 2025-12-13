@@ -1,3 +1,5 @@
+#[cfg(target_arch = "wasm32")]
+use crate::server::lsp::{NotificationMarker, rpc::NotificationMessageBase};
 use crate::{
     server::{
         fetch::ConnectionError,
@@ -10,6 +12,8 @@ use crate::{
     },
     sparql::results::SparqlResult,
 };
+#[cfg(target_arch = "wasm32")]
+use lazy_sparql_result_reader::parser::PartialResult;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize)]
@@ -149,6 +153,8 @@ pub struct PartialSparqlResultNotification {
 #[cfg(target_arch = "wasm32")]
 impl PartialSparqlResultNotification {
     pub(crate) fn new(chunk: PartialResult) -> Self {
+        use lazy_sparql_result_reader::parser::PartialResult;
+
         Self {
             base: NotificationMessageBase::new("qlueLs/partialResult"),
             params: PartialResult::from(chunk),

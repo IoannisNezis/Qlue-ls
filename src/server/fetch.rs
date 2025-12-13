@@ -14,8 +14,6 @@ use futures::lock::Mutex;
 use futures::lock::Mutex;
 #[cfg(target_arch = "wasm32")]
 use lazy_sparql_result_reader::parser::PartialResult;
-use ll_sparql_parser::ast::{AstNode, QueryUnit};
-use ll_sparql_parser::parse_query;
 use serde::{Deserialize, Serialize};
 use urlencoding::encode;
 
@@ -54,7 +52,13 @@ impl Window {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn rewrite(&self, query: &str) -> Option<String> {
+        use ll_sparql_parser::{
+            ast::{AstNode, QueryUnit},
+            parse_query,
+        };
+
         let syntax_tree = QueryUnit::cast(parse_query(query))?;
         let select_query = syntax_tree.select_query()?;
         Some(format!(
@@ -167,7 +171,7 @@ pub(crate) async fn fetch_sparql_result(
     engine: Option<SparqlEngine>,
     timeout_ms: u32,
     method: RequestMethod,
-    window: Option<Window>,
+    _window: Option<Window>,
     lazy: bool,
 ) -> Result<Option<SparqlResult>, SparqlRequestError> {
     use js_sys::JsString;
@@ -273,7 +277,7 @@ pub(crate) async fn fetch_sparql_result(
                 );
             }
         };
-        lazy_sparql_result_reader::read(resp.body().unwrap(), 100, callback)
+        lazy_sparql_result_reader::read(resp.body().unwrap(), 100, 100, Some(0), callback)
             .await
             .unwrap();
         Ok(None)
@@ -297,7 +301,6 @@ pub(crate) async fn fetch_sparql_result(
 
 #[cfg(target_arch = "wasm32")]
 fn compress_result_uris(server: &Server, partial_result: &mut PartialResult) {
-    use lazy_sparql_result_reader::sparql::Binding;
     use lazy_sparql_result_reader::sparql::RDFValue;
     if let PartialResult::Bindings(bindings) = partial_result {
         for binding in bindings.iter_mut() {

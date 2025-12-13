@@ -19,12 +19,6 @@ pub struct SparqlResultsVars {
     #[allow(dead_code)]
     pub vars: Vec<String>,
 }
-impl SparqlResultsVars {
-    #[cfg(target_arch = "wasm32")]
-    pub(crate) fn new() -> Self {
-        Self { vars: Vec::new() }
-    }
-}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SparqlResultsBindings {

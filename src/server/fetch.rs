@@ -219,7 +219,8 @@ pub(crate) async fn fetch_sparql_result(
         .set("Accept", "application/sparql-results+json")
         .unwrap();
 
-    request.headers().set("User-Agent", "qlue-ls/1.0").unwrap();
+    // Currently blocked by CORS...
+    // request.headers().set("User-Agent", "qlue-ls/1.0").unwrap();
 
     // Get global worker scope
     let worker_global: WorkerGlobalScope = js_sys::global().unchecked_into();

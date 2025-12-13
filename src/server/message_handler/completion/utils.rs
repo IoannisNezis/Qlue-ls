@@ -89,7 +89,7 @@ pub(super) async fn fetch_online_completions(
         (url, query, timeout_ms, method)
     };
 
-    log::debug!("Query:\n{}", query);
+    log::debug!("Completioin query:\n{}", query);
     let result = fetch_sparql_result(
         server_rc.clone(),
         &url,

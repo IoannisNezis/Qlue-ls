@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.23.0] - 2025-12-14
+
+### added
+
+- more sparql engines
+- lazy sparql result reader
+
+### fixed
+
+- read qlever exeption
+
 ## [0.21.0] - 2025-12-09
 
 - rename backend to service in qlueLs/addBackend

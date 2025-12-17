@@ -350,7 +350,7 @@ pub(crate) async fn check_server_availability(url: &str) -> bool {
 mod test {
     use indoc::indoc;
 
-    use crate::server::fetch::Window;
+    use crate::server::sparql_operations::Window;
 
     #[test]
     fn window_rewrite_query() {

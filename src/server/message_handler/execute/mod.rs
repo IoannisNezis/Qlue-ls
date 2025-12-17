@@ -6,12 +6,12 @@ use crate::{
     server::{
         Server,
         configuration::RequestMethod,
-        fetch::{SparqlRequestError, Window, fetch_sparql_result},
         lsp::{
             ExecuteQueryErrorData, ExecuteQueryRequest, ExecuteQueryResponse,
             ExecuteQueryResponseResult,
             errors::{ErrorCode, LSPError},
         },
+        sparql_operations::{SparqlRequestError, Window, fetch_sparql_result},
     },
     sparql::results::RDFTerm,
 };

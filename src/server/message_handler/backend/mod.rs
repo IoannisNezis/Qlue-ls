@@ -4,12 +4,12 @@ use futures::lock::Mutex;
 
 use crate::server::{
     Server,
-    fetch::check_server_availability,
     lsp::{
         AddBackendNotification, GetBackendRequest, GetBackendResponse, PingBackendRequest,
         PingBackendResponse, UpdateDefaultBackendNotification,
         errors::{ErrorCode, LSPError},
     },
+    sparql_operations::check_server_availability,
 };
 
 pub(super) async fn handle_update_backend_default_notification(

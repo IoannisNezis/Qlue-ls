@@ -2,13 +2,13 @@
 use crate::server::lsp::{NotificationMarker, rpc::NotificationMessageBase};
 use crate::{
     server::{
-        fetch::ConnectionError,
         lsp::{
             LspMessage, RequestMarker, ResponseMarker,
             errors::{ErrorCode, LSPErrorBase},
             rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
             textdocument::TextDocumentIdentifier,
         },
+        sparql_operations::ConnectionError,
     },
     sparql::results::SparqlResult,
 };

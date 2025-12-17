@@ -2,9 +2,9 @@ use std::rc::Rc;
 
 use crate::server::{
     Server,
-    fetch::fetch_sparql_result,
     lsp::errors::{ErrorCode, LSPError},
     message_handler::misc::resolve_backend,
+    sparql_operations::fetch_sparql_result,
 };
 use futures::lock::Mutex;
 use ll_sparql_parser::{

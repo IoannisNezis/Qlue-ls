@@ -11,12 +11,12 @@ use text_size::TextSize;
 use crate::{
     server::{
         Server,
-        fetch::fetch_sparql_result,
         lsp::{
             BackendService, Command, CompletionItem, CompletionItemKind,
             CompletionItemLabelDetails, CompletionList,
             textdocument::{Position, Range, TextEdit},
         },
+        sparql_operations::fetch_sparql_result,
     },
     sparql::results::RDFTerm,
 };
@@ -103,17 +103,19 @@ pub(super) async fn fetch_online_completions(
     )
     .await
     .map_err(|err| match err {
-        crate::server::fetch::SparqlRequestError::Timeout => {
+        crate::server::sparql_operations::SparqlRequestError::Timeout => {
             CompletionError::Request("Completion query timed out".to_string())
         }
-        crate::server::fetch::SparqlRequestError::Connection(_err) => {
+        crate::server::sparql_operations::SparqlRequestError::Connection(_err) => {
             CompletionError::Request("Completion query failed, connection errored".to_string())
         }
-        crate::server::fetch::SparqlRequestError::Response(msg) => CompletionError::Request(msg),
-        crate::server::fetch::SparqlRequestError::Deserialization(msg) => {
+        crate::server::sparql_operations::SparqlRequestError::Response(msg) => {
             CompletionError::Request(msg)
         }
-        crate::server::fetch::SparqlRequestError::QLeverException(exception) => {
+        crate::server::sparql_operations::SparqlRequestError::Deserialization(msg) => {
+            CompletionError::Request(msg)
+        }
+        crate::server::sparql_operations::SparqlRequestError::QLeverException(exception) => {
             CompletionError::Request(exception.exception)
         }
     })?

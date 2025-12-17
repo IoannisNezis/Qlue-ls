@@ -16,7 +16,7 @@ use crate::{
             CompletionItemLabelDetails, CompletionList,
             textdocument::{Position, Range, TextEdit},
         },
-        sparql_operations::fetch_sparql_result,
+        sparql_operations::execute_sparql_query,
     },
     sparql::results::RDFTerm,
 };
@@ -90,7 +90,7 @@ pub(super) async fn fetch_online_completions(
     };
 
     log::debug!("Completioin query:\n{}", query);
-    let result = fetch_sparql_result(
+    let result = execute_sparql_query(
         server_rc.clone(),
         &url,
         &query,

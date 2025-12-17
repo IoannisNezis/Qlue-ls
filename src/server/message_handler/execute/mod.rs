@@ -11,7 +11,7 @@ use crate::{
             ExecuteQueryResponseResult,
             errors::{ErrorCode, LSPError},
         },
-        sparql_operations::{SparqlRequestError, Window, fetch_sparql_result},
+        sparql_operations::{SparqlRequestError, Window, execute_sparql_query},
     },
     sparql::results::RDFTerm,
 };
@@ -35,7 +35,7 @@ pub(super) async fn handle_execute_query_request(
     };
 
     let start_time = get_timestamp();
-    let query_result = match fetch_sparql_result(
+    let query_result = match execute_sparql_query(
         server_rc.clone(),
         &url,
         &query,

@@ -76,7 +76,7 @@ impl Window {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub(crate) async fn fetch_sparql_result(
+pub(crate) async fn execute_sparql_query(
     _server_rc: Rc<Mutex<Server>>,
     url: &str,
     query: &str,
@@ -163,7 +163,7 @@ pub(crate) async fn check_server_availability(url: &str) -> bool {
 }
 
 #[cfg(target_arch = "wasm32")]
-pub(crate) async fn fetch_sparql_result(
+pub(crate) async fn execute_sparql_query(
     server_rc: Rc<Mutex<Server>>,
     url: &str,
     query: &str,

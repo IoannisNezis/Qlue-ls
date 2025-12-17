@@ -193,7 +193,10 @@ pub(crate) async fn fetch_sparql_result(
         }
         (RequestMethod::POST, Some(SparqlEngine::QLever)) => {
             opts.set_method("POST");
-            let body = format!("send=100&query={}", js_sys::encode_uri_component(query));
+            // FIXME: Here the send limit is hardcoded to 10000
+            // this is due to the internal batching of QLever
+            // A lower send limit causes QLever not imediatly sending the result.
+            let body = format!("send=10000&query={}", js_sys::encode_uri_component(query));
             opts.set_body(&JsString::from_str(&body).unwrap());
             let request = Request::new_with_str_and_init(url, &opts).unwrap();
             request
@@ -243,7 +246,6 @@ pub(crate) async fn fetch_sparql_result(
 
     // Check if the response status is OK (200-299)
     if !resp.ok() {
-        log::debug!("Not ok {resp:?}");
         return match resp.json() {
             Ok(json) => match JsFuture::from(json).await {
                 Ok(js_value) => match serde_wasm_bindgen::from_value(js_value) {
@@ -264,23 +266,32 @@ pub(crate) async fn fetch_sparql_result(
         };
     }
     if lazy {
-        let callback = async |mut partial_result: PartialResult| {
-            use crate::server::lsp::PartialSparqlResultNotification;
-            let server = server_rc.lock().await;
-            compress_result_uris(&*server, &mut partial_result);
-            if let Err(err) =
-                server.send_message(PartialSparqlResultNotification::new(partial_result))
-            {
-                log::error!(
-                    "Could not send Partial-Sparql-Result-Notification:\n{:?}",
-                    err
-                );
-            }
-        };
-        lazy_sparql_result_reader::read(resp.body().unwrap(), 100, 100, Some(0), callback)
-            .await
-            .unwrap();
-        Ok(None)
+        if let Err(err) = lazy_sparql_result_reader::read(
+            resp.body().unwrap(),
+            100,
+            Some(100),
+            0,
+            async |mut partial_result: PartialResult| {
+                use crate::server::lsp::PartialSparqlResultNotification;
+                let server = server_rc.lock().await;
+                compress_result_uris(&*server, &mut partial_result);
+                if let Err(err) =
+                    server.send_message(PartialSparqlResultNotification::new(partial_result))
+                {
+                    log::error!(
+                        "Could not send Partial-Sparql-Result-Notification:\n{:?}",
+                        err
+                    );
+                }
+            },
+        )
+        .await
+        {
+            log::error!("An error occured while reading sparql results:\n{err:?}");
+            Err(SparqlRequestError::Deserialization(format!("{err:?}")))
+        } else {
+            Ok(None)
+        }
     } else {
         // Get the response body as text and await it
         let text = JsFuture::from(resp.text().map_err(|err| {

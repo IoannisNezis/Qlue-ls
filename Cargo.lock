@@ -1154,7 +1154,9 @@ dependencies = [
 
 [[package]]
 name = "lazy-sparql-result-reader"
-version = "1.3.0"
+version = "2.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5082c445652ae8b4181f949deefe18830867a8e43bbe5f6451be4d74596be022"
 dependencies = [
  "console_error_panic_hook",
  "js-sys",

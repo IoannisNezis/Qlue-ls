@@ -354,7 +354,6 @@ pub(crate) async fn execute_query(
     let resp_value = JsFuture::from(worker_global.fetch_with_request(&request))
         .await
         .map_err(|err| {
-            log::error!("error: {err:?}");
             let was_canceled = err
                 .dyn_ref::<web_sys::DomException>()
                 .map(|e| e.name() == "AbortError")
@@ -417,8 +416,17 @@ pub(crate) async fn execute_query(
         )
         .await
         {
-            log::error!("An error occured while reading sparql results:\n{err:?}");
-            Err(SparqlRequestError::Deserialization(format!("{err:?}")))
+            match err {
+                lazy_sparql_result_reader::SparqlResultReaderError::CorruptStream
+                | lazy_sparql_result_reader::SparqlResultReaderError::JsonParseError(_) => {
+                    Err(SparqlRequestError::Deserialization(format!("{err:?}")))
+                }
+                lazy_sparql_result_reader::SparqlResultReaderError::Canceled => {
+                    Err(SparqlRequestError::Canceled(CanceledError {
+                        query: query.to_string(),
+                    }))
+                }
+            }
         } else {
             Ok(None)
         }

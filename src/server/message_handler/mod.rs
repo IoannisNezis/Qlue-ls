@@ -1,4 +1,5 @@
 mod backend;
+mod cancel;
 mod code_action;
 mod completion;
 mod diagnostic;
@@ -48,7 +49,8 @@ use crate::server::{
     lsp::{TraceValue, errors::ErrorCode},
     message_handler::{
         backend::handle_get_backend_request,
-        execute::handle_execute_query_request,
+        cancel::handle_cancel_notification,
+        execute::handle_execute_request,
         folding_range::handle_folding_range_request,
         identification::handle_identify_request,
         settings::{handle_change_settings_notification, handle_default_settings_request},
@@ -123,7 +125,7 @@ pub(super) async fn dispatch(
         "qlueLs/jump" => call!(handle_jump_request),
         "qlueLs/identifyOperationType" => call!(handle_identify_request),
         "qlueLs/defaultSettings" => call!(handle_default_settings_request),
-        "qlueLs/executeQuery" => call_async!(handle_execute_query_request),
+        "qlueLs/executeQuery" => call_async!(handle_execute_request),
         // NOTE: Notifications
         "initialized" => call!(handle_initialized_notification),
         "exit" => call!(handle_exit_notification),
@@ -133,6 +135,7 @@ pub(super) async fn dispatch(
         "$/setTrace" => call!(handle_set_trace_notification),
         // NOTE: LSP extensions Notifications
         "qlueLs/changeSettings" => call!(handle_change_settings_notification),
+        "qlueLs/cancelQuery" => call_async!(handle_cancel_notification),
         // NOTE: Responses
         "response" => {
             call!(handle_workspace_edit_response)

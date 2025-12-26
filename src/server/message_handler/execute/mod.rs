@@ -1,20 +1,18 @@
 mod query;
 mod utils;
-
-use futures::lock::Mutex;
-use ll_sparql_parser::{TopEntryPoint, guess_operation_type};
-use std::rc::Rc;
-
 use crate::server::{
     Server,
     lsp::{
         ExecuteQueryRequest,
         errors::{ErrorCode, LSPError},
     },
-    message_handler::execute::query::execute_query,
+    message_handler::execute::query::handle_execute_query_request,
 };
+use futures::lock::Mutex;
+use ll_sparql_parser::{TopEntryPoint, guess_operation_type};
+use std::rc::Rc;
 
-pub(super) async fn handle_execute_query_request(
+pub(super) async fn handle_execute_request(
     server_rc: Rc<Mutex<Server>>,
     request: ExecuteQueryRequest,
 ) -> Result<(), LSPError> {
@@ -33,14 +31,16 @@ pub(super) async fn handle_execute_query_request(
     };
 
     match guess_operation_type(&query) {
-        Some(TopEntryPoint::QueryUnit) => execute_query(server_rc, request, url, query, engine),
+        Some(TopEntryPoint::QueryUnit) => {
+            handle_execute_query_request(server_rc, request, url, query, engine)
+        }
         Some(TopEntryPoint::UpdateUnit) => {
             // TODO: support update
             todo!()
         }
         None => {
             log::warn!("Could not determine operation type.\nFalling back to Query.");
-            execute_query(server_rc, request, url, query, engine)
+            handle_execute_query_request(server_rc, request, url, query, engine)
         }
     }
     .await

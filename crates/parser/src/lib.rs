@@ -16,6 +16,8 @@ pub use utils::*;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
+use crate::parser::lex;
+
 pub fn parse_query(input: &str) -> SyntaxNode {
     SyntaxNode::new_root(parser::parse_text(input, parser::TopEntryPoint::QueryUnit))
 }
@@ -29,6 +31,24 @@ pub fn parse(input: &str) -> SyntaxNode {
         Some(TopEntryPoint::QueryUnit) | None => parse_query(input),
         Some(TopEntryPoint::UpdateUnit) => parse_update(input),
     }
+}
+
+pub enum QueryType {
+    SelectQuery,
+    ConstructQuery,
+    DescribeQuery,
+    AskQuery,
+}
+
+pub fn guess_query_type(input: &str) -> Option<QueryType> {
+    let tokens = lex(input);
+    tokens.iter().find_map(|token| match token.kind() {
+        SyntaxKind::SELECT => Some(QueryType::SelectQuery),
+        SyntaxKind::CONSTRUCT => Some(QueryType::ConstructQuery),
+        SyntaxKind::ASK => Some(QueryType::AskQuery),
+        SyntaxKind::DESCRIBE => Some(QueryType::DescribeQuery),
+        _ => None,
+    })
 }
 
 #[cfg(test)]

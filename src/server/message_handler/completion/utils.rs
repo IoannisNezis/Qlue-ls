@@ -16,7 +16,7 @@ use crate::{
             CompletionItemLabelDetails, CompletionList,
             textdocument::{Position, Range, TextEdit},
         },
-        sparql_operations::execute_sparql_query,
+        sparql_operations::execute_query,
     },
     sparql::results::RDFTerm,
 };
@@ -90,13 +90,13 @@ pub(super) async fn fetch_online_completions(
     };
 
     log::debug!("Completioin query:\n{}", query);
-    let result = execute_sparql_query(
+    let result = execute_query(
         server_rc.clone(),
         &url,
         &query,
         None,
         None,
-        timeout_ms,
+        Some(timeout_ms),
         method,
         None,
         false,
@@ -108,6 +108,9 @@ pub(super) async fn fetch_online_completions(
         }
         crate::server::sparql_operations::SparqlRequestError::Connection(_err) => {
             CompletionError::Request("Completion query failed, connection errored".to_string())
+        }
+        crate::server::sparql_operations::SparqlRequestError::Canceled(_err) => {
+            CompletionError::Request("Completion query was canceled".to_string())
         }
         crate::server::sparql_operations::SparqlRequestError::Response(msg) => {
             CompletionError::Request(msg)

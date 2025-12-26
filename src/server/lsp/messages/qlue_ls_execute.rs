@@ -115,7 +115,13 @@ pub struct ExecuteQueryError {
 pub enum ExecuteQueryErrorData {
     QLeverException(QLeverException),
     Connection(ConnectionError),
+    Canceled(CanceledError),
     Unknown,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CanceledError {
+    pub query: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

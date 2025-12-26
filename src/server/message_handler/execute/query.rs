@@ -7,14 +7,36 @@ use crate::{
             ExecuteQueryResponseResult, SparqlEngine, errors::LSPError,
         },
         message_handler::execute::utils::get_timestamp,
-        sparql_operations::{SparqlRequestError, Window, execute_sparql_query},
+        sparql_operations::{SparqlRequestError, Window, execute_construct_query, execute_query},
     },
     sparql::results::RDFTerm,
 };
 use futures::lock::Mutex;
+use ll_sparql_parser::{QueryType, guess_query_type};
 use std::rc::Rc;
 
-pub(super) async fn execute_query(
+pub(super) async fn handle_execute_query_request(
+    server_rc: Rc<Mutex<Server>>,
+    request: ExecuteQueryRequest,
+    url: String,
+    query: String,
+    engine: Option<SparqlEngine>,
+) -> Result<(), LSPError> {
+    match guess_query_type(&query) {
+        Some(QueryType::SelectQuery | QueryType::DescribeQuery | QueryType::AskQuery) => {
+            handle_normal_query(server_rc, request, url, query, engine).await
+        }
+        Some(QueryType::ConstructQuery) => {
+            handle_construct_query(server_rc, request, url, query, engine).await
+        }
+        None => {
+            log::warn!("Cound not determine Query-type, falling back to SelectQuery");
+            handle_normal_query(server_rc, request, url, query, engine).await
+        }
+    }
+}
+
+async fn handle_normal_query(
     server_rc: Rc<Mutex<Server>>,
     request: ExecuteQueryRequest,
     url: String,
@@ -22,13 +44,13 @@ pub(super) async fn execute_query(
     engine: Option<SparqlEngine>,
 ) -> Result<(), LSPError> {
     let start_time = get_timestamp();
-    let query_result = match execute_sparql_query(
+    let query_result = match execute_query(
         server_rc.clone(),
         &url,
         &query,
         request.params.query_id.as_ref().map(|s| s.as_ref()),
         engine,
-        1000000,
+        None,
         RequestMethod::POST,
         Some(Window::new(
             request.params.max_result_size.unwrap_or(100),
@@ -55,6 +77,16 @@ pub(super) async fn execute_query(
                 .send_message(ExecuteQueryResponse::error(
                     request.get_id(),
                     ExecuteQueryErrorData::Connection(error),
+                ));
+        }
+        Err(SparqlRequestError::Canceled(error)) => {
+            log::info!("Sending cancel error");
+            return server_rc
+                .lock()
+                .await
+                .send_message(ExecuteQueryResponse::error(
+                    request.get_id(),
+                    ExecuteQueryErrorData::Canceled(error),
                 ));
         }
         Err(_err) => {
@@ -104,4 +136,23 @@ pub(super) async fn execute_query(
             },
         ))
     }
+}
+
+async fn handle_construct_query(
+    server_rc: Rc<Mutex<Server>>,
+    request: ExecuteQueryRequest,
+    url: String,
+    query: String,
+    engine: Option<SparqlEngine>,
+) -> Result<(), LSPError> {
+    let result = execute_construct_query(
+        server_rc,
+        &url,
+        &query,
+        request.params.query_id.as_ref().map(|s| s.as_ref()),
+        engine,
+    )
+    .await;
+    log::info!("{result:?}");
+    Ok(())
 }

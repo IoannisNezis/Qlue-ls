@@ -4,7 +4,7 @@ use crate::server::{
     Server,
     lsp::errors::{ErrorCode, LSPError},
     message_handler::misc::resolve_backend,
-    sparql_operations::execute_sparql_query,
+    sparql_operations::execute_query,
 };
 use futures::lock::Mutex;
 use ll_sparql_parser::{
@@ -59,13 +59,13 @@ pub(super) async fn hover(
                 LSPError::new(ErrorCode::InternalError, &err.to_string())
             })?;
         let method = server.state.get_backend_request_method(&backend.name);
-        let sparql_response = execute_sparql_query(
+        let sparql_response = execute_query(
             server_rc.clone(),
             &backend.url,
             &query,
             None,
             None,
-            server.settings.completion.timeout_ms,
+            Some(server.settings.completion.timeout_ms),
             method,
             None,
             false,

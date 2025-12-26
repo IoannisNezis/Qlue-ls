@@ -331,7 +331,7 @@ pub enum SyntaxKind {
     True,
     #[token("false")]
     False,
-    #[regex("'[^\u{27}\u{5C}\u{A}\u{D}]*'")]
+    #[regex(r#"'[^'\u{27}\u{5C}\u{A}\u{D}]*'"#)]
     STRING_LITERAL1,
     #[regex(r#""([^"\\\x00-\x1F]|\\(["\\bnfrt/]|u[a-fA-F0-9]{4}))*""#)]
     STRING_LITERAL2,

@@ -177,10 +177,18 @@ impl LspMessage for ResponseMessage {
 }
 
 impl ResponseMessage {
-    pub fn error(id: RequestIdOrNull, error: LSPError) -> Self {
+    pub fn success(id: &RequestId) -> Self {
         Self {
             base: Message::new(),
-            id,
+            id: RequestIdOrNull::RequestId(id.clone()),
+            result: Some(LSPAny::Null),
+            error: None,
+        }
+    }
+    pub fn error(id: &RequestId, error: LSPError) -> Self {
+        Self {
+            base: Message::new(),
+            id: RequestIdOrNull::RequestId(id.clone()),
             result: None,
             error: Some(error),
         }

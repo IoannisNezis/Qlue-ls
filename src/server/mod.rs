@@ -144,13 +144,11 @@ async fn handle_error(server_rc: Rc<Mutex<Server>>, message: &str, error: LSPErr
         error.code,
         error.message
     );
-    if let Ok(id) =
-        serde_json::from_str::<RecoverId>(message).map(|msg| RequestIdOrNull::RequestId(msg.id))
-    {
+    if let Ok(id) = serde_json::from_str::<RecoverId>(message).map(|msg| msg.id) {
         if let Err(error) = server_rc
             .lock()
             .await
-            .send_message(ResponseMessage::error(id, error))
+            .send_message(ResponseMessage::error(&id, error))
         {
             error!(
                 "CRITICAL: could not serialize error message (this very bad):\n{:?}",

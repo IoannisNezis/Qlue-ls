@@ -27,6 +27,7 @@ pub struct ServerState {
     default_backend: Option<String>,
     parse_tree_cache: Option<(String, u32, SyntaxNode)>,
     request_id_counter: u32,
+    running_requests: HashMap<String, Box<dyn Fn()>>,
     pub label_memory: HashMap<String, String>,
     pub(super) trace_events: Rc<Mutex<TraceFile>>,
 }
@@ -43,6 +44,7 @@ impl ServerState {
             default_backend: None,
             parse_tree_cache: None,
             request_id_counter: 0,
+            running_requests: HashMap::new(),
             label_memory: HashMap::new(),
             trace_events: Rc::new(Mutex::new(TraceFile::default())),
         }
@@ -164,5 +166,13 @@ impl ServerState {
 
     pub(crate) fn get_all_backends(&self) -> Vec<&BackendService> {
         self.backends.values().collect()
+    }
+
+    pub(crate) fn add_running_request(&mut self, id: String, cancel_fn: Box<dyn Fn()>) {
+        self.running_requests.insert(id, cancel_fn);
+    }
+
+    pub(crate) fn get_running_request(&mut self, id: &str) -> Option<&Box<dyn Fn()>> {
+        self.running_requests.get(id)
     }
 }

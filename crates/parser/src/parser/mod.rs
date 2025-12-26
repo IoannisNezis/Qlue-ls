@@ -16,7 +16,7 @@ pub struct Parser {
 }
 
 #[derive(Debug, Clone)]
-struct Token {
+pub(super) struct Token {
     kind: SyntaxKind,
     text: std::string::String,
 }
@@ -24,6 +24,10 @@ struct Token {
 impl Token {
     fn is_trivia(&self) -> bool {
         matches!(self.kind, SyntaxKind::WHITESPACE | SyntaxKind::Comment)
+    }
+
+    pub(super) fn kind(&self) -> SyntaxKind {
+        self.kind
     }
 }
 
@@ -189,7 +193,7 @@ impl TopEntryPoint {
     }
 }
 
-fn lex(text: &str) -> Vec<Token> {
+pub(super) fn lex(text: &str) -> Vec<Token> {
     let mut lexer = SyntaxKind::lexer(text);
     let mut tokens = Vec::new();
 

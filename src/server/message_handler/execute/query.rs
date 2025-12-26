@@ -145,14 +145,64 @@ async fn handle_construct_query(
     query: String,
     engine: Option<SparqlEngine>,
 ) -> Result<(), LSPError> {
-    let result = execute_construct_query(
-        server_rc,
+    let result = match execute_construct_query(
+        server_rc.clone(),
         &url,
         &query,
         request.params.query_id.as_ref().map(|s| s.as_ref()),
         engine,
+        request.params.lazy.unwrap_or(false),
     )
-    .await;
-    log::info!("{result:?}");
-    Ok(())
+    .await
+    {
+        Ok(res) => res,
+        Err(SparqlRequestError::QLeverException(exception)) => {
+            return server_rc
+                .lock()
+                .await
+                .send_message(ExecuteQueryResponse::error(
+                    request.get_id(),
+                    ExecuteQueryErrorData::QLeverException(exception),
+                ));
+        }
+        Err(SparqlRequestError::Connection(error)) => {
+            return server_rc
+                .lock()
+                .await
+                .send_message(ExecuteQueryResponse::error(
+                    request.get_id(),
+                    ExecuteQueryErrorData::Connection(error),
+                ));
+        }
+        Err(SparqlRequestError::Canceled(error)) => {
+            log::info!("Sending cancel error");
+            return server_rc
+                .lock()
+                .await
+                .send_message(ExecuteQueryResponse::error(
+                    request.get_id(),
+                    ExecuteQueryErrorData::Canceled(error),
+                ));
+        }
+        Err(_err) => {
+            return server_rc
+                .lock()
+                .await
+                .send_message(ExecuteQueryResponse::error(
+                    request.get_id(),
+                    ExecuteQueryErrorData::Unknown,
+                ));
+        }
+    };
+
+    server_rc
+        .lock()
+        .await
+        .send_message(ExecuteQueryResponse::success(
+            request.get_id(),
+            ExecuteQueryResponseResult {
+                time_ms: 0,
+                result: result,
+            },
+        ))
 }

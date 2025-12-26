@@ -1,18 +1,15 @@
-#[cfg(target_arch = "wasm32")]
-use crate::server::lsp::{NotificationMarker, rpc::NotificationMessageBase};
 use crate::{
     server::{
         lsp::{
-            LspMessage, RequestMarker, ResponseMarker,
+            LspMessage, NotificationMarker, RequestMarker, ResponseMarker,
             errors::{ErrorCode, LSPErrorBase},
-            rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
+            rpc::{NotificationMessageBase, RequestId, RequestMessageBase, ResponseMessageBase},
             textdocument::TextDocumentIdentifier,
         },
         sparql_operations::ConnectionError,
     },
     sparql::results::SparqlResult,
 };
-#[cfg(target_arch = "wasm32")]
 use lazy_sparql_result_reader::parser::PartialResult;
 use serde::{Deserialize, Serialize};
 
@@ -149,14 +146,12 @@ pub enum QLeverStatus {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[cfg(target_arch = "wasm32")]
 pub struct PartialSparqlResultNotification {
     #[serde(flatten)]
     pub base: NotificationMessageBase,
     pub params: PartialResult,
 }
 
-#[cfg(target_arch = "wasm32")]
 impl PartialSparqlResultNotification {
     pub(crate) fn new(chunk: PartialResult) -> Self {
         use lazy_sparql_result_reader::parser::PartialResult;
@@ -168,7 +163,6 @@ impl PartialSparqlResultNotification {
     }
 }
 
-#[cfg(target_arch = "wasm32")]
 impl LspMessage for PartialSparqlResultNotification {
     type Kind = NotificationMarker;
 

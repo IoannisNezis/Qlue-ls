@@ -84,6 +84,7 @@ unicode-width = "0.2.1"
 # 	"call_from_rust",
 # ] }
 lazy-sparql-result-reader = { features = ["call_from_rust"], version = "2.0.3" }
+ntriples-parser = "0.1.1"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 log4rs = { version = "1.3.0" }

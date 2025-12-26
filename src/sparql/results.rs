@@ -3,6 +3,7 @@ use std::{
     fmt::{self, Display},
 };
 
+use lazy_sparql_result_reader::sparql::RDFValue;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -12,6 +13,16 @@ pub struct SparqlResult {
     pub results: SparqlResultsBindings,
     #[serde(skip_deserializing)]
     pub prefixes: HashMap<String, String>,
+}
+
+impl SparqlResult {
+    pub fn new(vars: Vec<String>, bindings: Vec<HashMap<String, RDFTerm>>) -> Self {
+        Self {
+            head: SparqlResultsVars { vars },
+            results: SparqlResultsBindings { bindings },
+            prefixes: HashMap::new(),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -88,6 +99,24 @@ impl Display for RDFTerm {
                 }
             }
             RDFTerm::Bnode { value } => write!(f, "_:{}", value),
+        }
+    }
+}
+
+impl Into<RDFValue> for RDFTerm {
+    fn into(self) -> RDFValue {
+        match self {
+            RDFTerm::Uri { value, curie } => RDFValue::Uri { value, curie },
+            RDFTerm::Literal {
+                value,
+                lang,
+                datatype,
+            } => RDFValue::Literal {
+                value,
+                lang,
+                datatype,
+            },
+            RDFTerm::Bnode { value } => RDFValue::Bnode { value },
         }
     }
 }

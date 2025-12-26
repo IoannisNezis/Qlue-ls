@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::rc::Rc;
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -6,18 +7,23 @@ use crate::server::Server;
 use crate::server::Server;
 use crate::server::configuration::RequestMethod;
 use crate::server::lsp::CanceledError;
+use crate::server::lsp::PartialSparqlResultNotification;
 use crate::server::lsp::QLeverException;
 use crate::server::lsp::SparqlEngine;
+use crate::sparql::results::RDFTerm;
 use crate::sparql::results::SparqlResult;
 #[cfg(not(target_arch = "wasm32"))]
 use futures::lock::Mutex;
 #[cfg(target_arch = "wasm32")]
 use futures::lock::Mutex;
-#[cfg(target_arch = "wasm32")]
 use lazy_sparql_result_reader::parser::PartialResult;
+use lazy_sparql_result_reader::sparql::Head;
+use lazy_sparql_result_reader::sparql::Header;
 use serde::{Deserialize, Serialize};
 use urlencoding::encode;
+#[cfg(target_arch = "wasm32")]
 use wasm_bindgen::JsValue;
+#[cfg(target_arch = "wasm32")]
 use web_sys::AbortController;
 
 /// Everything that can go wrong when sending a SPARQL request
@@ -173,14 +179,13 @@ pub(crate) async fn execute_construct_query(
     query: &str,
     query_id: Option<&str>,
     engine: Option<SparqlEngine>,
+    lazy: bool,
 ) -> Result<Option<SparqlResult>, SparqlRequestError> {
     use js_sys::JsString;
     use std::str::FromStr;
     use wasm_bindgen::JsCast;
     use wasm_bindgen_futures::JsFuture;
     use web_sys::{Request, RequestInit, Response, WorkerGlobalScope};
-
-    use lazy_sparql_result_reader::parser::PartialResult;
 
     let opts = RequestInit::new();
 
@@ -212,7 +217,7 @@ pub(crate) async fn execute_construct_query(
     };
     request
         .headers()
-        .set("Accept", "application/sparql-results+json")
+        .set("Accept", "application/n-triples")
         .unwrap();
 
     // Get global worker scope
@@ -265,9 +270,84 @@ pub(crate) async fn execute_construct_query(
     .unwrap();
     log::info!("{}", text);
     // Return the text as a JsValue
-    let result = serde_json::from_str(&text)
-        .map_err(|err| SparqlRequestError::Deserialization(err.to_string()))?;
-    Ok(Some(result))
+    let triples = ntriples_parser::parse(text.as_bytes()).map_err(|_e| {
+        SparqlRequestError::Deserialization("Could not read n-triples response".to_string())
+    })?;
+
+    let result = SparqlResult::new(
+        ["subject", "predicate", "object"]
+            .into_iter()
+            .map(|var| var.to_string())
+            .collect(),
+        triples
+            .into_iter()
+            .map(|triple| {
+                HashMap::from_iter([
+                    (
+                        "subject".to_string(),
+                        RDFTerm::Literal {
+                            value: String::from_utf8(triple.0.to_vec())
+                                .expect("Should be valid utf8"),
+                            lang: None,
+                            datatype: None,
+                        },
+                    ),
+                    (
+                        "predicate".to_string(),
+                        RDFTerm::Literal {
+                            value: String::from_utf8(triple.1.to_vec())
+                                .expect("Should be valid utf8"),
+                            lang: None,
+                            datatype: None,
+                        },
+                    ),
+                    (
+                        "object".to_string(),
+                        RDFTerm::Literal {
+                            value: String::from_utf8(triple.2.to_vec())
+                                .expect("Should be valid utf8"),
+                            lang: None,
+                            datatype: None,
+                        },
+                    ),
+                ])
+            })
+            .collect(),
+    );
+    if lazy {
+        let server = server_rc.lock().await;
+        let SparqlResult {
+            head,
+            results,
+            prefixes: _prefixes,
+        } = result;
+        log::info!("lock aquired");
+        server
+            .send_message(PartialSparqlResultNotification::new(PartialResult::Header(
+                Header {
+                    head: Head { vars: head.vars },
+                },
+            )))
+            .expect("Response should be sendable");
+        server
+            .send_message(PartialSparqlResultNotification::new(
+                PartialResult::Bindings(
+                    results
+                        .bindings
+                        .into_iter()
+                        .map(|binding| {
+                            lazy_sparql_result_reader::sparql::Binding(HashMap::from_iter(
+                                binding.into_iter().map(|(key, value)| (key, value.into())),
+                            ))
+                        })
+                        .collect(),
+                ),
+            ))
+            .expect("Response should be sendable");
+        Ok(None)
+    } else {
+        Ok(Some(result))
+    }
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -401,7 +481,6 @@ pub(crate) async fn execute_query(
             Some(100),
             0,
             async |mut partial_result: PartialResult| {
-                use crate::server::lsp::PartialSparqlResultNotification;
                 let server = server_rc.lock().await;
                 compress_result_uris(&*server, &mut partial_result);
                 if let Err(err) =

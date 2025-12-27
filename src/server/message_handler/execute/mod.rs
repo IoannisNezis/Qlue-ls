@@ -1,12 +1,16 @@
 mod query;
+mod update;
 mod utils;
+
 use crate::server::{
     Server,
     lsp::{
-        ExecuteQueryRequest,
+        ExecuteOperationRequest,
         errors::{ErrorCode, LSPError},
     },
-    message_handler::execute::query::handle_execute_query_request,
+    message_handler::execute::{
+        query::handle_execute_query_request, update::handle_execute_update_request,
+    },
 };
 use futures::lock::Mutex;
 use ll_sparql_parser::{TopEntryPoint, guess_operation_type};
@@ -14,7 +18,7 @@ use std::rc::Rc;
 
 pub(super) async fn handle_execute_request(
     server_rc: Rc<Mutex<Server>>,
-    request: ExecuteQueryRequest,
+    request: ExecuteOperationRequest,
 ) -> Result<(), LSPError> {
     let (query, url, engine) = {
         let server = server_rc.lock().await;
@@ -32,16 +36,14 @@ pub(super) async fn handle_execute_request(
 
     match guess_operation_type(&query) {
         Some(TopEntryPoint::QueryUnit) => {
-            handle_execute_query_request(server_rc, request, url, query, engine)
+            handle_execute_query_request(server_rc, request, url, query, engine).await
         }
         Some(TopEntryPoint::UpdateUnit) => {
-            // TODO: support update
-            todo!()
+            handle_execute_update_request(server_rc, request, url, query).await
         }
         None => {
             log::warn!("Could not determine operation type.\nFalling back to Query.");
-            handle_execute_query_request(server_rc, request, url, query, engine)
+            handle_execute_query_request(server_rc, request, url, query, engine).await
         }
     }
-    .await
 }

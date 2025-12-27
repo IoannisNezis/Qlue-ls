@@ -3,8 +3,9 @@ use crate::{
         Server,
         configuration::RequestMethod,
         lsp::{
-            ExecuteQueryErrorData, ExecuteQueryRequest, ExecuteQueryResponse,
-            ExecuteQueryResponseResult, SparqlEngine, errors::LSPError,
+            ExecuteOperationErrorData, ExecuteOperationRequest, ExecuteOperationResponse,
+            ExecuteOperationResponseResult, ExecuteQueryResponseResult, SparqlEngine,
+            errors::LSPError,
         },
         message_handler::execute::utils::get_timestamp,
         sparql_operations::{SparqlRequestError, Window, execute_construct_query, execute_query},
@@ -17,7 +18,7 @@ use std::rc::Rc;
 
 pub(super) async fn handle_execute_query_request(
     server_rc: Rc<Mutex<Server>>,
-    request: ExecuteQueryRequest,
+    request: ExecuteOperationRequest,
     url: String,
     query: String,
     engine: Option<SparqlEngine>,
@@ -38,7 +39,7 @@ pub(super) async fn handle_execute_query_request(
 
 async fn handle_normal_query(
     server_rc: Rc<Mutex<Server>>,
-    request: ExecuteQueryRequest,
+    request: ExecuteOperationRequest,
     url: String,
     query: String,
     engine: Option<SparqlEngine>,
@@ -65,18 +66,18 @@ async fn handle_normal_query(
             return server_rc
                 .lock()
                 .await
-                .send_message(ExecuteQueryResponse::error(
+                .send_message(ExecuteOperationResponse::error(
                     request.get_id(),
-                    ExecuteQueryErrorData::QLeverException(exception),
+                    ExecuteOperationErrorData::QLeverException(exception),
                 ));
         }
         Err(SparqlRequestError::Connection(error)) => {
             return server_rc
                 .lock()
                 .await
-                .send_message(ExecuteQueryResponse::error(
+                .send_message(ExecuteOperationResponse::error(
                     request.get_id(),
-                    ExecuteQueryErrorData::Connection(error),
+                    ExecuteOperationErrorData::Connection(error),
                 ));
         }
         Err(SparqlRequestError::Canceled(error)) => {
@@ -84,18 +85,18 @@ async fn handle_normal_query(
             return server_rc
                 .lock()
                 .await
-                .send_message(ExecuteQueryResponse::error(
+                .send_message(ExecuteOperationResponse::error(
                     request.get_id(),
-                    ExecuteQueryErrorData::Canceled(error),
+                    ExecuteOperationErrorData::Canceled(error),
                 ));
         }
         Err(_err) => {
             return server_rc
                 .lock()
                 .await
-                .send_message(ExecuteQueryResponse::error(
+                .send_message(ExecuteOperationResponse::error(
                     request.get_id(),
-                    ExecuteQueryErrorData::Unknown,
+                    ExecuteOperationErrorData::Unknown,
                 ));
         }
     };
@@ -105,12 +106,12 @@ async fn handle_normal_query(
         server_rc
             .lock()
             .await
-            .send_message(ExecuteQueryResponse::success(
+            .send_message(ExecuteOperationResponse::success(
                 request.get_id(),
-                ExecuteQueryResponseResult {
+                ExecuteOperationResponseResult::QueryResult(ExecuteQueryResponseResult {
                     time_ms: duration,
                     result: None,
-                },
+                }),
             ))
     } else {
         let server = server_rc.lock().await;
@@ -128,19 +129,19 @@ async fn handle_normal_query(
                 }
             }
         }
-        server.send_message(ExecuteQueryResponse::success(
+        server.send_message(ExecuteOperationResponse::success(
             request.get_id(),
-            ExecuteQueryResponseResult {
+            ExecuteOperationResponseResult::QueryResult(ExecuteQueryResponseResult {
                 time_ms: duration,
                 result: Some(query_result),
-            },
+            }),
         ))
     }
 }
 
 async fn handle_construct_query(
     server_rc: Rc<Mutex<Server>>,
-    request: ExecuteQueryRequest,
+    request: ExecuteOperationRequest,
     url: String,
     query: String,
     engine: Option<SparqlEngine>,
@@ -160,18 +161,18 @@ async fn handle_construct_query(
             return server_rc
                 .lock()
                 .await
-                .send_message(ExecuteQueryResponse::error(
+                .send_message(ExecuteOperationResponse::error(
                     request.get_id(),
-                    ExecuteQueryErrorData::QLeverException(exception),
+                    ExecuteOperationErrorData::QLeverException(exception),
                 ));
         }
         Err(SparqlRequestError::Connection(error)) => {
             return server_rc
                 .lock()
                 .await
-                .send_message(ExecuteQueryResponse::error(
+                .send_message(ExecuteOperationResponse::error(
                     request.get_id(),
-                    ExecuteQueryErrorData::Connection(error),
+                    ExecuteOperationErrorData::Connection(error),
                 ));
         }
         Err(SparqlRequestError::Canceled(error)) => {
@@ -179,18 +180,18 @@ async fn handle_construct_query(
             return server_rc
                 .lock()
                 .await
-                .send_message(ExecuteQueryResponse::error(
+                .send_message(ExecuteOperationResponse::error(
                     request.get_id(),
-                    ExecuteQueryErrorData::Canceled(error),
+                    ExecuteOperationErrorData::Canceled(error),
                 ));
         }
         Err(_err) => {
             return server_rc
                 .lock()
                 .await
-                .send_message(ExecuteQueryResponse::error(
+                .send_message(ExecuteOperationResponse::error(
                     request.get_id(),
-                    ExecuteQueryErrorData::Unknown,
+                    ExecuteOperationErrorData::Unknown,
                 ));
         }
     };
@@ -198,11 +199,11 @@ async fn handle_construct_query(
     server_rc
         .lock()
         .await
-        .send_message(ExecuteQueryResponse::success(
+        .send_message(ExecuteOperationResponse::success(
             request.get_id(),
-            ExecuteQueryResponseResult {
+            ExecuteOperationResponseResult::QueryResult(ExecuteQueryResponseResult {
                 time_ms: 0,
                 result: result,
-            },
+            }),
         ))
 }

@@ -125,7 +125,7 @@ pub(super) async fn dispatch(
         "qlueLs/jump" => call!(handle_jump_request),
         "qlueLs/identifyOperationType" => call!(handle_identify_request),
         "qlueLs/defaultSettings" => call!(handle_default_settings_request),
-        "qlueLs/executeQuery" => call_async!(handle_execute_request),
+        "qlueLs/executeOperation" => call_async!(handle_execute_request),
         // NOTE: Notifications
         "initialized" => call!(handle_initialized_notification),
         "exit" => call!(handle_exit_notification),

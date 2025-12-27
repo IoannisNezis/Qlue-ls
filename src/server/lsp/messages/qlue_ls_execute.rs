@@ -29,7 +29,7 @@ impl LspMessage for ExecuteOperationRequest {
     type Kind = RequestMarker;
 
     fn method(&self) -> Option<&str> {
-        Some("qlueLs/executeQuery")
+        Some("qlueLs/executeOperation")
     }
 
     fn id(&self) -> Option<&crate::server::lsp::rpc::RequestId> {

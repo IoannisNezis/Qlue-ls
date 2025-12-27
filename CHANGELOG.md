@@ -7,9 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.0.0] - 2025-12-27
+
+### BREAKING
+
+The request for "qlueLs/executeQuery" as been renamed to "qlueLs/executeOperateion".  
+The result schema of this request also changed.
+
 ### added
 
-- basic construct support
+- construct support
+- update support
+
+### fixed
+
+- adjust to breaking changes in the parser
 
 ## [0.24.1] - 2025-12-26
 

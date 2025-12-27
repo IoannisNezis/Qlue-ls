@@ -2,7 +2,7 @@ use crate::server::{
     Server,
     lsp::{
         ExecuteOperationErrorData, ExecuteOperationRequest, ExecuteOperationResponse,
-        ExecuteOperationResponseResult, ExecuteUpdateResponseResult, LspMessage, errors::LSPError,
+        ExecuteOperationResponseResult, errors::LSPError,
     },
     message_handler::execute::utils::get_timestamp,
     sparql_operations::{SparqlRequestError, execute_update},

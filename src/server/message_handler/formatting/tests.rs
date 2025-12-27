@@ -14,7 +14,7 @@ fn check_collision(edits: &[TextEdit]) {
         for idx2 in idx1 + 1..edits.len() {
             let a = edits.get(idx1).unwrap();
             let b = edits.get(idx2).unwrap();
-            assert!(!a.overlaps(b));
+            assert!(!a.overlaps(b), "Edits overlap: {a} vs {b}");
         }
     }
 }

@@ -565,12 +565,7 @@ fn get_anchor_token(
             | SyntaxKind::Slash
             | SyntaxKind::Zirkumflex
             | SyntaxKind::ANON
-    ) &&
-        // FIXME: This is also related to THE bug in the tokenizer
-        // https://github.com/maciejhirsz/logos/issues/291
-        (!matches!(trigger_token.kind(), SyntaxKind::a)
-            || trigger_token.text_range().contains(trigger_offset))
-    {
+    ) {
         trigger_token = trigger_token.prev_token()?;
     }
     while trigger_token.kind() == SyntaxKind::WHITESPACE

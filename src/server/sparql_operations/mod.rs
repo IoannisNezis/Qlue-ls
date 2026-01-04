@@ -7,9 +7,9 @@ use crate::server::lsp::{CanceledError, QLeverException};
 use serde::{Deserialize, Serialize};
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use native::*;
+pub(crate) use native::*;
 #[cfg(target_arch = "wasm32")]
-pub use wasm::*;
+pub(crate) use wasm::*;
 
 /// Everything that can go wrong when sending a SPARQL request
 /// - `Timeout`: The request took to long

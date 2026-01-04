@@ -45,6 +45,7 @@ pub struct ExecuteOperationParams {
     pub result_offset: Option<u32>,
     pub query_id: Option<String>,
     pub lazy: Option<bool>,
+    pub access_token: Option<String>,
 }
 
 #[derive(Debug, Serialize)]

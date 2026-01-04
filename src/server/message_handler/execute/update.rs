@@ -22,6 +22,7 @@ pub(super) async fn handle_execute_update_request(
         &url,
         &query,
         request.params.query_id.as_ref().map(|s| s.as_ref()),
+        request.params.access_token.as_ref().map(|s| s.as_ref()),
     )
     .await
     {

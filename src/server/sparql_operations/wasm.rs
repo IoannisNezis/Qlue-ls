@@ -200,6 +200,7 @@ pub(crate) async fn execute_update(
     url: &str,
     query: &str,
     query_id: Option<&str>,
+    access_token: Option<&str>,
 ) -> Result<Vec<ExecuteUpdateResponseResult>, SparqlRequestError> {
     use js_sys::JsString;
     use std::str::FromStr;
@@ -227,10 +228,12 @@ pub(crate) async fn execute_update(
         .headers()
         .set("Content-Type", "application/x-www-form-urlencoded")
         .unwrap();
-    request
-        .headers()
-        .set("Authorization", "Bearer UdKTWNFUoLm9POa8m7a5jvhjVrq7tYqU")
-        .unwrap();
+    if let Some(access_token) = access_token {
+        request
+            .headers()
+            .set("Authorization", &format!("Bearer {access_token}"))
+            .unwrap();
+    }
     request
         .headers()
         .set("Accept", "application/sparql-results+json")

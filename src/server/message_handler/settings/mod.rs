@@ -30,6 +30,5 @@ pub(super) async fn handle_change_settings_notification(
 ) -> Result<(), LSPError> {
     // TODO: Merge settings instead of replaceing everything
     server_rc.lock().await.settings = request.params;
-    log::info!("Changed settings");
     Ok(())
 }

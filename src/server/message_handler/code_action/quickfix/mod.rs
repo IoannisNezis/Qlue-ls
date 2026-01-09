@@ -62,7 +62,7 @@ pub(crate) fn remove_prefix_declaration(
                         .and_then(|text_range| {
                             let prefix_decl = tree.covering_element(text_range);
                             (prefix_decl.kind() == SyntaxKind::PrefixDecl)
-                                .then_some({
+                                .then(|| {
                                     assert!(matches!(prefix_decl.kind(), SyntaxKind::PrefixDecl));
                                     let mut maybe_next = prefix_decl
                                         .as_node()

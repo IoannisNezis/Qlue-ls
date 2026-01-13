@@ -20,7 +20,7 @@ pub(super) async fn completions(
                 "SELECT",
                 Some("Select query".to_string()),
                 None,
-                "SELECT ${1:*} WHERE {\n  ${0:?s ?p ?o}\n}",
+                "SELECT ${1:*} WHERE {\n\t${0:?s ?p ?o}\n}",
                 CompletionItemKind::Snippet,
                 None,
             ),
@@ -49,7 +49,7 @@ pub(super) async fn completions(
                 None,
             ),
             CompletionItem::new(
-                "Load",
+                "LOAD",
                 Some("Load query".to_string()),
                 None,
                 "LOAD <${0:iri}>;",
@@ -57,7 +57,7 @@ pub(super) async fn completions(
                 None,
             ),
             CompletionItem::new(
-                "Clear",
+                "CLEAR",
                 Some("Clear graph".to_string()),
                 None,
                 "CLEAR <${0:GraphRef}>;",
@@ -65,7 +65,7 @@ pub(super) async fn completions(
                 None,
             ),
             CompletionItem::new(
-                "Drop",
+                "DROP",
                 Some("Drop graph".to_string()),
                 None,
                 "DROP <${0:GraphRef}>;",
@@ -73,7 +73,7 @@ pub(super) async fn completions(
                 None,
             ),
             CompletionItem::new(
-                "Add",
+                "ADD",
                 Some("Add graph".to_string()),
                 None,
                 "ADD <${1:GraphRef}> TO <${0:GraphRef}>;",
@@ -81,7 +81,7 @@ pub(super) async fn completions(
                 None,
             ),
             CompletionItem::new(
-                "Move",
+                "MOVE",
                 Some("Move graph".to_string()),
                 None,
                 "MOVE <${1:GraphRef}> TO <${0:GraphRef}>;",
@@ -89,7 +89,7 @@ pub(super) async fn completions(
                 None,
             ),
             CompletionItem::new(
-                "Copy",
+                "COPY",
                 Some("Copy graph".to_string()),
                 None,
                 "COPY <${1:GraphRef}> TO <${0:GraphRef}>;",
@@ -97,7 +97,7 @@ pub(super) async fn completions(
                 None,
             ),
             CompletionItem::new(
-                "Insert data",
+                "INSERT DATA",
                 Some("Insert data.".to_string()),
                 None,
                 "INSERT DATA {\n  ${0}\n}",
@@ -105,7 +105,7 @@ pub(super) async fn completions(
                 None,
             ),
             CompletionItem::new(
-                "Delete data",
+                "DELETE DATA",
                 Some("Delete data.".to_string()),
                 None,
                 "DELETE DATA {\n  ${0}\n}",
@@ -113,7 +113,7 @@ pub(super) async fn completions(
                 None,
             ),
             CompletionItem::new(
-                "Delete where",
+                "DELETE WHERE",
                 Some("Delete data with a where clause.".to_string()),
                 None,
                 "DELETE WHERE {\n  ${0}\n}",
@@ -121,7 +121,7 @@ pub(super) async fn completions(
                 None,
             ),
             CompletionItem::new(
-                "Insert where",
+                "INSERT WHERE",
                 Some("Insert with a where clause.".to_string()),
                 None,
                 "Insert {\n  ${1}\n}\nWHERE {\n  ${0}\n}",
@@ -129,7 +129,7 @@ pub(super) async fn completions(
                 None,
             ),
             CompletionItem::new(
-                "Delte Modify",
+                "DELETE MODIFY",
                 Some("Delete data with a where clause.".to_string()),
                 None,
                 "DELETE {\n  ${1}\n}\nINSERT {\n  ${2}\n}\nWHERE {\n  ${0}\n}",

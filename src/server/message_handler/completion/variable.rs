@@ -94,14 +94,14 @@ pub(super) async fn completions(
                         .to_string();
                 }
             }
-            object_name = object_name.to_lowercase();
+            let object_var_name = to_sparql_variable(&object_name);
             suggestions.insert(
                 0,
                 CompletionItem::new(
-                    &object_name,
+                    &object_var_name,
                     None,
                     Some(format!("{:0>5}", 0)),
-                    &format!("{}{}", object_name, suffix),
+                    &format!("{}{}", object_var_name, suffix),
                     CompletionItemKind::Variable,
                     None,
                 ),
@@ -115,14 +115,14 @@ pub(super) async fn completions(
                     .and_then(VarOrTerm::cast)
                     .and_then(|var_or_term| var_or_term.var())
                 {
-                    let var_name = var.var_name();
+                    let subject_var_name = var.var_name();
                     suggestions.insert(
                         0,
                         CompletionItem::new(
-                            &format!("{}_{}", var_name, object_name),
+                            &format!("{}_{}", subject_var_name, object_var_name),
                             None,
                             Some(format!("{:0>5}", 1)),
-                            &format!("{}_{}{}", var_name, object_name, suffix),
+                            &format!("{}_{}{}", subject_var_name, object_var_name, suffix),
                             CompletionItemKind::Variable,
                             None,
                         ),
@@ -141,6 +141,63 @@ pub(super) async fn completions(
         }),
         items: suggestions,
     })
+}
+
+/// Transforms an arbitrary string into a valid SPARQL variable name.
+///
+/// SPARQL variable names must:
+/// - Start with a letter (A-Z, a-z) or underscore
+/// - Contain only letters, digits, underscores
+/// - Be prefixed with '?' or '$'
+///
+/// This function:
+/// - Removes the '?' or '$' prefix if present
+/// - Replaces invalid characters with underscores
+/// - Ensures the name starts with a valid character
+/// - Returns the variable name with '?' prefix
+fn to_sparql_variable(s: &str) -> String {
+    if s.is_empty() {
+        return "?var".to_string();
+    }
+
+    // Remove leading '?' or '$' if present
+    let s = s
+        .strip_prefix('?')
+        .or_else(|| s.strip_prefix('$'))
+        .unwrap_or(s);
+
+    let mut result = String::new();
+    let mut chars = s.chars();
+
+    // Handle first character - must be letter or underscore
+    if let Some(first) = chars.next() {
+        if first.is_ascii_alphabetic() || first == '_' {
+            result.push(first);
+        } else if first.is_ascii_digit() {
+            // If starts with digit, prefix with underscore
+            result.push('_');
+            result.push(first);
+        } else {
+            // Replace invalid first char with underscore
+            result.push('_');
+        }
+    }
+
+    // Process remaining characters
+    for c in chars {
+        if c.is_ascii_alphanumeric() || c == '_' {
+            result.push(c);
+        } else {
+            result.push('_');
+        }
+    }
+
+    // Ensure we have at least some content
+    if result.is_empty() {
+        result.push_str("var");
+    }
+
+    result
 }
 
 pub(super) async fn completions_transformed(

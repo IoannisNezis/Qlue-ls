@@ -3,13 +3,14 @@ use std::rc::Rc;
 use futures::lock::Mutex;
 
 use crate::server::{
-    Server,
     lsp::{
-        AddBackendNotification, GetBackendRequest, GetBackendResponse, PingBackendRequest,
-        PingBackendResponse, UpdateDefaultBackendNotification,
         errors::{ErrorCode, LSPError},
+        AddBackendNotification, GetBackendRequest, GetBackendResponse, ListBackendsRequest,
+        ListBackendsResponse, PingBackendRequest, PingBackendResponse,
+        UpdateDefaultBackendNotification,
     },
     sparql_operations::check_server_availability,
+    Server,
 };
 
 pub(super) async fn handle_update_backend_default_notification(
@@ -121,5 +122,21 @@ pub(super) async fn handle_get_backend_request(
     server.send_message(GetBackendResponse::new(
         request.get_id(),
         server.state.get_default_backend().cloned(),
+    ))
+}
+
+pub(super) async fn handle_list_backends_request(
+    server_rc: Rc<Mutex<Server>>,
+    request: ListBackendsRequest,
+) -> Result<(), LSPError> {
+    let server = server_rc.lock().await;
+    server.send_message(ListBackendsResponse::new(
+        request.get_id(),
+        server
+            .state
+            .get_all_backends()
+            .into_iter()
+            .cloned()
+            .collect(),
     ))
 }

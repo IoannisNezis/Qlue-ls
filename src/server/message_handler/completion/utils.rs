@@ -89,7 +89,6 @@ pub(super) async fn fetch_online_completions(
         (url, query, timeout_ms, method)
     };
 
-    log::debug!("Completioin query:\n{}", query);
     let result = execute_query(
         server_rc.clone(),
         &url,
@@ -142,10 +141,17 @@ pub(super) async fn fetch_online_completions(
             let detail = binding
                 .get("qlue_ls_detail")
                 .map(|rdf_term: &RDFTerm| rdf_term.value().to_string());
+            // NOTE: This is the text the in editor filter uses.
+            // If a compressed IRI is used as search term i.e. "wdt:p" the expanded iri is used as
+            // filter text. Otherwise the label and detail is used as filter text.
             let filter_text = query_template_context
                 .get("search_term_uncompressed")
                 .is_some()
-                .then_some(value.to_string());
+                .then_some(value.to_string())
+                .or(label
+                    .as_ref()
+                    .map(|label| format!("{}{}", label, detail.as_ref().unwrap_or(&String::new()))))
+                .or(Some(rdf_term.to_string()));
             if let Some(label) = label.as_ref() {
                 server
                     .state
@@ -326,39 +332,42 @@ pub(super) fn to_completion_items(
     let items: Vec<_> = items
         .into_iter()
         .enumerate()
-        .map(|(idx, internal_completion_item)| CompletionItem {
-            label: format!(
-                "{} ",
-                internal_completion_item
-                    .label
-                    .as_ref()
-                    .unwrap_or(&internal_completion_item.value)
-            ),
-            label_details: internal_completion_item
-                .detail
-                .map(|detail| CompletionItemLabelDetails { detail })
-                .or(internal_completion_item
-                    .label
-                    .and(Some(CompletionItemLabelDetails {
-                        detail: internal_completion_item.value.clone(),
-                    }))),
-            detail: None,
-            // NOTE: The first 100 id's. are reserved
-            sort_text: Some(format!("{:0>5}", idx + 100)),
-            insert_text: None,
-            filter_text: internal_completion_item.filter_text,
-            text_edit: Some(TextEdit {
-                range: range.clone(),
-                new_text: format!("{} ", internal_completion_item.value),
-            }),
-            kind: CompletionItemKind::Value,
-            insert_text_format: None,
-            additional_text_edits: internal_completion_item.import_edit.map(|edit| vec![edit]),
-            command: command.map(|command| Command {
-                title: command.to_string(),
-                command: command.to_string(),
-                arguments: None,
-            }),
+        .map(|(idx, internal_completion_item)| {
+            log::debug!("{:?}", internal_completion_item.detail);
+            CompletionItem {
+                label: format!(
+                    "{} ",
+                    internal_completion_item
+                        .label
+                        .as_ref()
+                        .unwrap_or(&internal_completion_item.value)
+                ),
+                label_details: internal_completion_item
+                    .detail
+                    .map(|detail| CompletionItemLabelDetails { detail })
+                    .or(internal_completion_item
+                        .label
+                        .and(Some(CompletionItemLabelDetails {
+                            detail: internal_completion_item.value.clone(),
+                        }))),
+                detail: None,
+                // NOTE: The first 100 ID's are reserved
+                sort_text: Some(format!("{:0>5}", idx + 100)),
+                insert_text: None,
+                filter_text: internal_completion_item.filter_text,
+                text_edit: Some(TextEdit {
+                    range: range.clone(),
+                    new_text: format!("{} ", internal_completion_item.value),
+                }),
+                kind: CompletionItemKind::Value,
+                insert_text_format: None,
+                additional_text_edits: internal_completion_item.import_edit.map(|edit| vec![edit]),
+                command: command.map(|command| Command {
+                    title: command.to_string(),
+                    command: command.to_string(),
+                    arguments: None,
+                }),
+            }
         })
         .collect();
     CompletionList {

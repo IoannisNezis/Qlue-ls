@@ -31,7 +31,6 @@ use lifecycle::{
     handle_exit_notification, handle_initialize_request, handle_initialized_notification,
     handle_shutdown_request,
 };
-use misc::handle_set_trace_notification;
 use textdocument_synchronization::{
     handle_did_change_notification, handle_did_open_notification, handle_did_save_notification,
 };
@@ -45,8 +44,8 @@ use tokio::task::spawn_local;
 use wasm_bindgen_futures::spawn_local;
 
 use crate::server::{
-    handle_error, log_trace,
-    lsp::{TraceValue, errors::ErrorCode},
+    handle_error,
+    lsp::errors::ErrorCode,
     message_handler::{
         backend::handle_get_backend_request,
         cancel::handle_cancel_notification,
@@ -73,12 +72,6 @@ pub(super) async fn dispatch(
     macro_rules! call {
         ($handler:ident) => {{
             let message = message.parse()?;
-            {
-                let server = server_rc.lock().await;
-                if server.state.trace_value != TraceValue::Off {
-                    log_trace(server.state.trace_events.clone(), &message);
-                }
-            }
             $handler(server_rc, message).await
         }};
     }
@@ -89,12 +82,6 @@ pub(super) async fn dispatch(
 
             let task = spawn_local(async move {
                 let message = message.parse().unwrap();
-                {
-                    let server = server_rc.lock().await;
-                    if server.state.trace_value != TraceValue::Off {
-                        log_trace(server.state.trace_events.clone(), &message);
-                    }
-                }
                 if let Err(err) = $handler(server_rc.clone(), message).await {
                     handle_error(server_rc, &message_copy, err).await;
                 }
@@ -132,7 +119,6 @@ pub(super) async fn dispatch(
         "textDocument/didOpen" => call!(handle_did_open_notification),
         "textDocument/didChange" => call!(handle_did_change_notification),
         "textDocument/didSave" => call!(handle_did_save_notification),
-        "$/setTrace" => call!(handle_set_trace_notification),
         // NOTE: LSP extensions Notifications
         "qlueLs/changeSettings" => call!(handle_change_settings_notification),
         "qlueLs/cancelQuery" => call_async!(handle_cancel_notification),

@@ -1,14 +1,13 @@
-use crate::server::{configuration::RequestMethod, tracing::TraceFile};
+use crate::server::configuration::RequestMethod;
 
 use super::lsp::{
-    BackendService, TextDocumentContentChangeEvent, TraceValue,
+    BackendService, TextDocumentContentChangeEvent,
     errors::{ErrorCode, LSPError},
     textdocument::TextDocumentItem,
 };
 use curies::{Converter, CuriesError};
-use futures::lock::Mutex;
 use ll_sparql_parser::{SyntaxNode, parse};
-use std::{collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 
 #[derive(Debug, PartialEq)]
 pub enum ServerStatus {
@@ -19,7 +18,6 @@ pub enum ServerStatus {
 
 pub struct ServerState {
     pub status: ServerStatus,
-    pub trace_value: TraceValue,
     documents: HashMap<String, TextDocumentItem>,
     backends: HashMap<String, BackendService>,
     request_method: HashMap<String, RequestMethod>,
@@ -29,14 +27,12 @@ pub struct ServerState {
     request_id_counter: u32,
     running_requests: HashMap<String, Box<dyn Fn()>>,
     pub label_memory: HashMap<String, String>,
-    pub(super) trace_events: Rc<Mutex<TraceFile>>,
 }
 
 impl ServerState {
     pub fn new() -> Self {
         ServerState {
             status: ServerStatus::Initializing,
-            trace_value: TraceValue::Off,
             documents: HashMap::new(),
             backends: HashMap::new(),
             request_method: HashMap::new(),
@@ -46,7 +42,6 @@ impl ServerState {
             request_id_counter: 0,
             running_requests: HashMap::new(),
             label_memory: HashMap::new(),
-            trace_events: Rc::new(Mutex::new(TraceFile::default())),
         }
     }
 

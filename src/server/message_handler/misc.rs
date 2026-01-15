@@ -1,24 +1,9 @@
-use std::rc::Rc;
-
-use futures::lock::Mutex;
 use ll_sparql_parser::{
     SyntaxToken,
     ast::{AstNode, QueryUnit, ServiceGraphPattern},
 };
 
-use crate::server::{
-    Server,
-    lsp::{BackendService, SetTraceNotification, errors::LSPError},
-};
-
-pub(super) async fn handle_set_trace_notification(
-    server: Rc<Mutex<Server>>,
-    set_trace_notification: SetTraceNotification,
-) -> Result<(), LSPError> {
-    log::info!("Trace set to: {:?}", set_trace_notification.params.value);
-    server.lock().await.state.trace_value = set_trace_notification.params.value;
-    Ok(())
-}
+use crate::server::{Server, lsp::BackendService};
 
 /// Resolve which Backend to use at given token.
 /// Currently only works for Query operations.

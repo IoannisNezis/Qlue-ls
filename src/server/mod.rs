@@ -6,7 +6,6 @@ mod lsp;
 mod sparql_operations;
 mod state;
 mod tools;
-mod tracing;
 
 mod message_handler;
 
@@ -33,10 +32,7 @@ use state::ServerState;
 use tools::Tools;
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use crate::server::{
-    lsp::{LspMessage, TraceValue},
-    tracing::log_trace,
-};
+use crate::server::lsp::LspMessage;
 
 #[wasm_bindgen]
 pub struct Server {
@@ -46,7 +42,7 @@ pub struct Server {
     pub(crate) client_capabilities: Option<lsp::capabilities::ClientCapabilities>,
     pub(crate) server_info: ServerInfo,
     tools: Tools,
-    send_message_clusure: Box<dyn Fn(String)>,
+    send_message_closure: Box<dyn Fn(String)>,
 }
 
 impl Server {
@@ -63,7 +59,7 @@ impl Server {
                 version: Some(version.to_string()),
             },
             tools: Tools::init(),
-            send_message_clusure: Box::new(write_function),
+            send_message_closure: Box::new(write_function),
         }
     }
 
@@ -92,11 +88,7 @@ impl Server {
                 ),
             )
         })?;
-        (self.send_message_clusure)(message_string);
-        if self.state.trace_value != TraceValue::Off {
-            log_trace(self.state.trace_events.clone(), &message);
-        }
-
+        (self.send_message_closure)(message_string);
         Ok(())
     }
 

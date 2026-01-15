@@ -1,22 +1,13 @@
 use crate::server::Server;
 use crate::server::configuration::RequestMethod;
-use crate::server::lsp::CanceledError;
 use crate::server::lsp::ExecuteUpdateResponseResult;
-use crate::server::lsp::PartialSparqlResultNotification;
-use crate::server::lsp::QLeverException;
 use crate::server::lsp::SparqlEngine;
 use crate::server::sparql_operations::ConnectionError;
 use crate::server::sparql_operations::SparqlRequestError;
 use crate::server::sparql_operations::Window;
-use crate::sparql::results::RDFTerm;
 use crate::sparql::results::SparqlResult;
 use futures::lock::Mutex;
-use lazy_sparql_result_reader::parser::PartialResult;
-use lazy_sparql_result_reader::sparql::Head;
-use lazy_sparql_result_reader::sparql::Header;
 use reqwest::Client;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::Duration;
 use tokio::time::timeout;
@@ -105,22 +96,22 @@ pub(crate) async fn check_server_availability(url: &str) -> bool {
 }
 
 pub(crate) async fn execute_construct_query(
-    server_rc: Rc<Mutex<Server>>,
-    url: &str,
-    query: &str,
-    query_id: Option<&str>,
-    engine: Option<SparqlEngine>,
-    lazy: bool,
+    _server_rc: Rc<Mutex<Server>>,
+    _url: &str,
+    _query: &str,
+    _query_id: Option<&str>,
+    _engine: Option<SparqlEngine>,
+    _lazy: bool,
 ) -> Result<Option<SparqlResult>, SparqlRequestError> {
     todo!()
 }
 
 pub(crate) async fn execute_update(
-    server_rc: Rc<Mutex<Server>>,
-    url: &str,
-    query: &str,
-    query_id: Option<&str>,
-    access_token: Option<&str>,
+    _server_rc: Rc<Mutex<Server>>,
+    _url: &str,
+    _query: &str,
+    _query_id: Option<&str>,
+    _access_token: Option<&str>,
 ) -> Result<Vec<ExecuteUpdateResponseResult>, SparqlRequestError> {
     todo!()
 }

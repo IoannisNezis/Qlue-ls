@@ -19,16 +19,6 @@ pub enum RPCMessage {
 }
 
 impl RPCMessage {
-    // pub fn get_id(&self) -> Option<&RequestId> {
-    //     match self {
-    //         RPCMessage::Request(request_message) => Some(&request_message.id),
-    //         RPCMessage::Response(response_message) => match &response_message.id {
-    //             RequestIdOrNull::RequestId(request_id) => Some(&request_id),
-    //             RequestIdOrNull::Null => None,
-    //         },
-    //         _ => None,
-    //     }
-    // }
     pub fn get_method(&self) -> Option<&str> {
         match self {
             RPCMessage::Notification(notification) => Some(&notification.method),

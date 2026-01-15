@@ -1,2 +1,6 @@
 /target
 log/
+
+# Claude Code
+.claude/
+CLAUDE.md

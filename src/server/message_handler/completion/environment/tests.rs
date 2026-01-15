@@ -306,3 +306,11 @@ fn search_term_includes_all_error_tokens() {
         "At position 13 (after 'Ex'), search_term should include both Error tokens"
     );
 }
+
+#[test]
+fn localize_order_condition() {
+    //           0123456789012345678901234567
+    let input = "SELECT * WHERE {} ORDER BY ";
+    let root = parse_query(input);
+    assert!(matches!(get_trigger_token(&root, 27.into()), Some(_)));
+}

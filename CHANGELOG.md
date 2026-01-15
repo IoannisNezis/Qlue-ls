@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### fixed
+
+- aggregate completion variable
+- completion trigger token detection at end of query with trailing empty nodes
+
 ## [1.1.2] - 2025-01-13
 
 ### fixed

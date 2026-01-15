@@ -538,7 +538,13 @@ fn get_trigger_token(root: &SyntaxNode, offset: TextSize) -> Option<SyntaxToken>
     if offset == 0.into() || root.text_range().end() < offset {
         None
     } else if root.text_range().end() == offset {
-        root.last_token()
+        // last_token() can return None if the tree ends with an empty node (e.g., Error@27..27).
+        // In that case, fall back to iterating through all tokens.
+        root.last_token().or_else(|| {
+            root.descendants_with_tokens()
+                .filter_map(|it| it.into_token())
+                .last()
+        })
     } else {
         match root.token_at_offset(offset) {
             TokenAtOffset::Single(token) => Some(token),

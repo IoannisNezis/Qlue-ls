@@ -11,6 +11,7 @@ use wasm_bindgen_futures::JsFuture;
 use web_sys::js_sys;
 
 pub use server::format_raw;
+pub use server::{Server as LspServer, handle_message as handle_lsp_message};
 
 fn send_message(writer: &web_sys::WritableStreamDefaultWriter, message: String) {
     let _future = JsFuture::from(writer.write_with_chunk(&message.into()));

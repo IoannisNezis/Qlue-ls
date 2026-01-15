@@ -1,0 +1,188 @@
+---
+source: tests/formatting.rs
+expression: "response[\"result\"]"
+---
+[
+  {
+    "newText": "\n",
+    "range": {
+      "end": {
+        "character": 48,
+        "line": 0
+      },
+      "start": {
+        "character": 48,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": " ",
+    "range": {
+      "end": {
+        "character": 46,
+        "line": 0
+      },
+      "start": {
+        "character": 45,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": " ",
+    "range": {
+      "end": {
+        "character": 43,
+        "line": 0
+      },
+      "start": {
+        "character": 42,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": "\n  ",
+    "range": {
+      "end": {
+        "character": 40,
+        "line": 0
+      },
+      "start": {
+        "character": 40,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": "\n  ",
+    "range": {
+      "end": {
+        "character": 39,
+        "line": 0
+      },
+      "start": {
+        "character": 39,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": "\n    ",
+    "range": {
+      "end": {
+        "character": 38,
+        "line": 0
+      },
+      "start": {
+        "character": 38,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": " ",
+    "range": {
+      "end": {
+        "character": 36,
+        "line": 0
+      },
+      "start": {
+        "character": 35,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": " ",
+    "range": {
+      "end": {
+        "character": 33,
+        "line": 0
+      },
+      "start": {
+        "character": 32,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": "\n      ",
+    "range": {
+      "end": {
+        "character": 30,
+        "line": 0
+      },
+      "start": {
+        "character": 30,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": " WHERE ",
+    "range": {
+      "end": {
+        "character": 29,
+        "line": 0
+      },
+      "start": {
+        "character": 23,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": "\n    SELECT ",
+    "range": {
+      "end": {
+        "character": 21,
+        "line": 0
+      },
+      "start": {
+        "character": 14,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": "\n  ",
+    "range": {
+      "end": {
+        "character": 13,
+        "line": 0
+      },
+      "start": {
+        "character": 13,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": " WHERE ",
+    "range": {
+      "end": {
+        "character": 12,
+        "line": 0
+      },
+      "start": {
+        "character": 7,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": "SELECT ",
+    "range": {
+      "end": {
+        "character": 6,
+        "line": 0
+      },
+      "start": {
+        "character": 0,
+        "line": 0
+      }
+    }
+  }
+]

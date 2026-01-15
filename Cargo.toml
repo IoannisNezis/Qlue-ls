@@ -19,6 +19,7 @@ path = "src/main.rs"
 [features]
 default = ["console_error_panic_hook"]
 console_error_panic_hook = ["dep:console_error_panic_hook"]
+integration-tests = []
 
 [dependencies]
 # logging
@@ -92,6 +93,11 @@ tokio = { version = "1.44.1", features = ["full"] }
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = false
+
+[dev-dependencies]
+insta = { version = "1.40", features = ["json", "redactions"] }
+wiremock = "0.6"
+pretty_assertions = "1.4"
 
 [profile.release]
 # Tell `rustc` to optimize for small code size.

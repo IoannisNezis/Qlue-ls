@@ -1,0 +1,71 @@
+---
+source: tests/formatting.rs
+expression: "response[\"result\"]"
+---
+[
+  {
+    "newText": "\n",
+    "range": {
+      "end": {
+        "character": 12,
+        "line": 0
+      },
+      "start": {
+        "character": 12,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": " ",
+    "range": {
+      "end": {
+        "character": 10,
+        "line": 0
+      },
+      "start": {
+        "character": 9,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": " ",
+    "range": {
+      "end": {
+        "character": 7,
+        "line": 0
+      },
+      "start": {
+        "character": 6,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": "\n  ",
+    "range": {
+      "end": {
+        "character": 4,
+        "line": 0
+      },
+      "start": {
+        "character": 4,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": "ASK ",
+    "range": {
+      "end": {
+        "character": 3,
+        "line": 0
+      },
+      "start": {
+        "character": 0,
+        "line": 0
+      }
+    }
+  }
+]

@@ -1,0 +1,84 @@
+---
+source: tests/formatting.rs
+expression: "response[\"result\"]"
+---
+[
+  {
+    "newText": "\n",
+    "range": {
+      "end": {
+        "character": 21,
+        "line": 0
+      },
+      "start": {
+        "character": 21,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": " ",
+    "range": {
+      "end": {
+        "character": 19,
+        "line": 0
+      },
+      "start": {
+        "character": 18,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": " ",
+    "range": {
+      "end": {
+        "character": 16,
+        "line": 0
+      },
+      "start": {
+        "character": 15,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": "\n  ",
+    "range": {
+      "end": {
+        "character": 13,
+        "line": 0
+      },
+      "start": {
+        "character": 13,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": " WHERE ",
+    "range": {
+      "end": {
+        "character": 12,
+        "line": 0
+      },
+      "start": {
+        "character": 7,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": "SELECT ",
+    "range": {
+      "end": {
+        "character": 6,
+        "line": 0
+      },
+      "start": {
+        "character": 0,
+        "line": 0
+      }
+    }
+  }
+]

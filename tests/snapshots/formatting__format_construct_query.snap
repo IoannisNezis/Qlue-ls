@@ -1,0 +1,136 @@
+---
+source: tests/formatting.rs
+expression: "response[\"result\"]"
+---
+[
+  {
+    "newText": "\n",
+    "range": {
+      "end": {
+        "character": 33,
+        "line": 0
+      },
+      "start": {
+        "character": 33,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": " ",
+    "range": {
+      "end": {
+        "character": 31,
+        "line": 0
+      },
+      "start": {
+        "character": 30,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": " ",
+    "range": {
+      "end": {
+        "character": 28,
+        "line": 0
+      },
+      "start": {
+        "character": 27,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": "\n  ",
+    "range": {
+      "end": {
+        "character": 25,
+        "line": 0
+      },
+      "start": {
+        "character": 25,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": "\nWHERE ",
+    "range": {
+      "end": {
+        "character": 24,
+        "line": 0
+      },
+      "start": {
+        "character": 19,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": "\n",
+    "range": {
+      "end": {
+        "character": 18,
+        "line": 0
+      },
+      "start": {
+        "character": 18,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": " ",
+    "range": {
+      "end": {
+        "character": 16,
+        "line": 0
+      },
+      "start": {
+        "character": 15,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": " ",
+    "range": {
+      "end": {
+        "character": 13,
+        "line": 0
+      },
+      "start": {
+        "character": 12,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": "\n  ",
+    "range": {
+      "end": {
+        "character": 10,
+        "line": 0
+      },
+      "start": {
+        "character": 10,
+        "line": 0
+      }
+    }
+  },
+  {
+    "newText": "CONSTRUCT ",
+    "range": {
+      "end": {
+        "character": 9,
+        "line": 0
+      },
+      "start": {
+        "character": 0,
+        "line": 0
+      }
+    }
+  }
+]

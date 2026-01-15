@@ -105,7 +105,7 @@ pub(super) fn completions(
                             sort_text: None,
                             filter_text: None,
                             insert_text: Some(format!(
-                                "({aggregate}(?s) AS ?${{0:{}_{}}})",
+                                "({aggregate}({var}) AS ?${{0:{}_{}}})",
                                 aggregate.to_lowercase(),
                                 var.split_at(1).1
                             )),

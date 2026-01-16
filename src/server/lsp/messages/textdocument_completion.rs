@@ -132,6 +132,8 @@ pub struct CompletionItem {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub detail: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub documentation: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub sort_text: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filter_text: Option<String>,
@@ -161,6 +163,7 @@ impl CompletionItem {
             label_details: None,
             kind,
             detail,
+            documentation: None,
             sort_text,
             filter_text: None,
             insert_text: Some(insert_text.to_string()),
@@ -265,6 +268,7 @@ mod tests {
             label: "SELECT".to_string(),
             label_details: None,
             detail: Some("Select query".to_string()),
+            documentation: None,
             sort_text: None,
             filter_text: None,
             insert_text: Some("SELECT ${1:*} WHERE {\n  $0\n}".to_string()),

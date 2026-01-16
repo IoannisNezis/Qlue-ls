@@ -42,6 +42,7 @@ pub(super) async fn completions(
                         label_details: None,
                         kind: CompletionItemKind::Method,
                         detail: Some(format!("Order by descending {}", var)),
+                        documentation: None,
                         sort_text: Some(format!("{idx:0>5}")),
                         filter_text: None,
                         insert_text: Some(format!("{order}({var})")),

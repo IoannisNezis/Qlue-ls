@@ -102,6 +102,7 @@ pub(super) fn completions(
                             label_details: None,
                             kind: CompletionItemKind::Snippet,
                             detail: None,
+                            documentation: None,
                             sort_text: None,
                             filter_text: None,
                             insert_text: Some(format!(
@@ -123,6 +124,7 @@ pub(super) fn completions(
                 label_details: None,
                 kind: CompletionItemKind::Snippet,
                 detail: None,
+                documentation: None,
                 sort_text: None,
                 filter_text: None,
                 insert_text: Some("(COUNT(*) AS ?${0:count})".to_string()),

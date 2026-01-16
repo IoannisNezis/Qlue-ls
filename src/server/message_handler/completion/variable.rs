@@ -37,6 +37,7 @@ pub(super) async fn completions(
         label: var,
         label_details: None,
         detail: Some("Variable".to_string()),
+        documentation: None,
         kind: CompletionItemKind::Variable,
         sort_text: None,
         filter_text: None,

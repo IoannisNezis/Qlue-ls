@@ -59,7 +59,7 @@ pub(super) async fn dispatch_completion_query(
 }
 
 pub(super) struct InternalCompletionItem {
-    label: Option<String>,
+    label: String,
     detail: Option<String>,
     value: String,
     filter_text: Option<String>,
@@ -137,7 +137,7 @@ pub(super) async fn fetch_online_completions(
                 render_rdf_term(&server, query_unit, rdf_term, &backend.name);
             let label = binding
                 .get("qlue_ls_label")
-                .map(|rdf_term| rdf_term.value().to_string());
+                .map_or(String::new(), |rdf_term| rdf_term.value().to_string());
             let detail = binding
                 .get("qlue_ls_detail")
                 .map(|rdf_term: &RDFTerm| rdf_term.value().to_string());
@@ -148,11 +148,13 @@ pub(super) async fn fetch_online_completions(
                 .get("search_term_uncompressed")
                 .is_some()
                 .then_some(value.to_string())
-                .or(label
-                    .as_ref()
-                    .map(|label| format!("{}{}", label, detail.as_ref().unwrap_or(&String::new()))))
+                .or((!label.is_empty()).then_some(format!(
+                    "{}{}",
+                    label,
+                    detail.as_ref().unwrap_or(&String::new())
+                )))
                 .or(Some(rdf_term.to_string()));
-            if let Some(label) = label.as_ref() {
+            if !label.is_empty() {
                 server
                     .state
                     .label_memory
@@ -332,43 +334,47 @@ pub(super) fn to_completion_items(
     let items: Vec<_> = items
         .into_iter()
         .enumerate()
-        .map(|(idx, internal_completion_item)| {
-            log::debug!("{:?}", internal_completion_item.detail);
-            CompletionItem {
-                label: format!(
-                    "{} ",
-                    internal_completion_item
-                        .label
-                        .as_ref()
-                        .unwrap_or(&internal_completion_item.value)
-                ),
-                label_details: internal_completion_item
-                    .detail
-                    .map(|detail| CompletionItemLabelDetails { detail })
-                    .or(internal_completion_item
-                        .label
-                        .and(Some(CompletionItemLabelDetails {
-                            detail: internal_completion_item.value.clone(),
-                        }))),
-                detail: None,
-                // NOTE: The first 100 ID's are reserved
-                sort_text: Some(format!("{:0>5}", idx + 100)),
-                insert_text: None,
-                filter_text: internal_completion_item.filter_text,
-                text_edit: Some(TextEdit {
-                    range: range.clone(),
-                    new_text: format!("{} ", internal_completion_item.value),
-                }),
-                kind: CompletionItemKind::Value,
-                insert_text_format: None,
-                additional_text_edits: internal_completion_item.import_edit.map(|edit| vec![edit]),
-                command: command.map(|command| Command {
-                    title: command.to_string(),
-                    command: command.to_string(),
-                    arguments: None,
-                }),
-            }
-        })
+        .map(
+            |(
+                idx,
+                InternalCompletionItem {
+                    label,
+                    detail,
+                    value,
+                    filter_text,
+                    import_edit,
+                },
+            )| {
+                CompletionItem {
+                    label: value.clone(),
+                    label_details: Some(CompletionItemLabelDetails {
+                        detail: format!(
+                            "{}{}",
+                            label,
+                            detail.map_or(String::new(), |detail| format!("/{detail}"))
+                        ),
+                    }),
+                    detail: Some(format!("Internal rank: {idx}")),
+                    documentation: None,
+                    // NOTE: The first 100 ID's are reserved
+                    sort_text: Some(format!("{:0>5}", idx + 100)),
+                    insert_text: None,
+                    filter_text: filter_text,
+                    text_edit: Some(TextEdit {
+                        range: range.clone(),
+                        new_text: format!("{} ", value),
+                    }),
+                    kind: CompletionItemKind::Value,
+                    insert_text_format: None,
+                    additional_text_edits: import_edit.map(|edit| vec![edit]),
+                    command: command.map(|command| Command {
+                        title: command.to_string(),
+                        command: command.to_string(),
+                        arguments: None,
+                    }),
+                }
+            },
+        )
         .collect();
     CompletionList {
         is_incomplete: items.len() == limit as usize,

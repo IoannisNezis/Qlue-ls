@@ -33,6 +33,7 @@ pub(super) async fn completions(
                     label_details: None,
                     kind: CompletionItemKind::Value,
                     detail: Some(backend.url.clone()),
+                    documentation: None,
                     sort_text: None,
                     filter_text: None,
                     insert_text: Some(prefix),

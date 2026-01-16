@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Cache target dir
         id: cache-primes
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: target/
           key: target-${{  github.run_number }}-${{ github.run_attempt }}
@@ -33,7 +33,7 @@ jobs:
       - name: Clone repository
         uses: actions/checkout@v4
       - name: Restore cargo build
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: target/
           key: target-${{  github.run_number }}-${{ github.run_attempt }}
@@ -64,7 +64,7 @@ jobs:
       - name: Clone repository
         uses: actions/checkout@v4
       - name: Restore cargo build
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: target/
           key: target-${{  github.run_number }}-${{ github.run_attempt }}

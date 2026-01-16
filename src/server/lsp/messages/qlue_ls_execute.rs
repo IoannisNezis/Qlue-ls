@@ -285,7 +285,7 @@ mod test {
                 "total": "0ms"
             }
         }"#;
-        let x: TimeInfo = serde_json::from_str(message).unwrap();
+        let _x: TimeInfo = serde_json::from_str(message).unwrap();
     }
 
     #[test]
@@ -381,6 +381,6 @@ mod test {
         ]
     }
 ]"#;
-        let x: Vec<ExecuteUpdateResponseResult> = serde_json::from_str(message).unwrap();
+        let _x: Vec<ExecuteUpdateResponseResult> = serde_json::from_str(message).unwrap();
     }
 }

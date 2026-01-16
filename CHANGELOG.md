@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### changed
+
+- keyword completions (FILTER, BIND, OPTIONAL, etc.) are now filtered by search term prefix
+
 ## [1.1.3] - 2025-01-16
 
 ### added

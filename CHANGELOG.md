@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### added
+
+- documentation field to CompletionItem for richer completion hints
+
+### changed
+
+- refactored completion item label and detail rendering
+
 ### fixed
 
 - aggregate completion variable

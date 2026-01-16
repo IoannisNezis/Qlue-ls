@@ -1,3 +1,34 @@
+//! Server configuration and settings structures.
+//!
+//! This module defines the configuration schema for qlue-ls, loadable from
+//! `qlue-ls.toml` or `qlue-ls.yml` files in the working directory.
+//!
+//! # Key Types
+//!
+//! - [`Settings`]: Top-level configuration container
+//! - [`FormatSettings`]: Formatter options (alignment, capitalization, spacing)
+//! - [`CompletionSettings`]: Timeout and result limits for completions
+//! - [`BackendConfiguration`]: SPARQL endpoint with prefix map and custom queries
+//!
+//! # Configuration Loading
+//!
+//! [`Settings::new`] attempts to load from a config file. If not found or invalid,
+//! it falls back to [`Settings::default`]. Settings can also be updated at runtime
+//! via the `qlueLs/changeSettings` notification.
+//!
+//! # Backend Configuration
+//!
+//! Backends define SPARQL endpoints used for completions and query execution.
+//! Each backend can have:
+//! - Custom prefix maps for URI compression
+//! - Request method (GET/POST)
+//! - Custom SPARQL templates for completion queries
+//!
+//! # Related Modules
+//!
+//! - [`super::Server`]: Stores settings in `Server.settings`
+//! - [`super::message_handler::settings`]: Handles runtime settings changes
+
 use std::{collections::HashMap, fmt};
 
 use config::{Config, ConfigError};

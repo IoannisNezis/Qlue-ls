@@ -1,3 +1,31 @@
+//! Server state management and document storage.
+//!
+//! This module manages all mutable state for the language server, including open
+//! documents, registered backends, and cached parse trees.
+//!
+//! # Key Types
+//!
+//! - [`ServerState`]: Central state container accessed via `Server.state`
+//! - [`ServerStatus`]: Lifecycle state (Initializing, Running, ShuttingDown)
+//!
+//! # State Components
+//!
+//! - **Documents**: Open text documents keyed by URI, with incremental sync support
+//! - **Backends**: SPARQL endpoints with associated prefix maps and request methods
+//! - **Parse tree cache**: Single-entry cache to avoid re-parsing unchanged documents
+//! - **URI converters**: CURIE/prefix converters for URI compression per backend
+//!
+//! # Parse Tree Caching
+//!
+//! [`ServerState::get_cached_parse_tree`] returns cached parse results when the
+//! document URI and version match, avoiding expensive re-parsing for repeated
+//! operations on the same document state.
+//!
+//! # Related Modules
+//!
+//! - [`super::Server`]: Owns the `ServerState` instance
+//! - [`super::lsp::textdocument`]: `TextDocumentItem` stored in documents map
+
 use crate::server::configuration::RequestMethod;
 
 use super::lsp::{

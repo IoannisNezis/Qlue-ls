@@ -1,3 +1,28 @@
+//! LSP message framing for stdin input.
+//!
+//! The Language Server Protocol uses a simple framing format: each message is preceded
+//! by HTTP-style headers, with `Content-Length` indicating the message body size.
+//!
+//! # Key Types
+//!
+//! - [`StdioMessages`]: An iterator that yields complete LSP messages from stdin
+//!
+//! # Protocol Format
+//!
+//! ```text
+//! Content-Length: 123\r\n
+//! \r\n
+//! {"jsonrpc": "2.0", ...}
+//! ```
+//!
+//! The iterator handles reading headers, parsing `Content-Length`, and buffering
+//! exactly the right number of bytes for each message body.
+//!
+//! # Related Modules
+//!
+//! - [`crate::main`]: Uses this to read messages in server mode
+//! - [`crate::server::lsp::rpc`]: Deserializes the JSON-RPC message content
+
 use std::io::{self, BufReader, Read};
 
 pub(super) struct StdioMessages {

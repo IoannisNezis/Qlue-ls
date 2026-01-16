@@ -1,3 +1,27 @@
+//! Native CLI entry point for the qlue-ls language server.
+//!
+//! This binary provides three subcommands:
+//!
+//! - `server`: Run the LSP server over stdio (used by editors)
+//! - `format`: Format SPARQL files from disk or stdin
+//! - `logs`: Tail the server log file (Linux only)
+//!
+//! # Server Mode
+//!
+//! When running as a language server, this module sets up a single-threaded tokio
+//! runtime with a `LocalSet` for spawning async tasks. Messages are read from stdin
+//! via [`StdioMessages`] and responses are written to stdout with Content-Length headers.
+//!
+//! # Logging
+//!
+//! Logs are written to `$XDG_DATA_HOME/qlue-ls/qlue-ls.log` (or equivalent on other
+//! platforms). The log level can be controlled via the `LOG_LEVEL` environment variable.
+//!
+//! # Related Modules
+//!
+//! - [`server`]: Core server implementation
+//! - [`stdio_reader`]: LSP message framing for stdin
+
 mod server;
 mod sparql;
 mod stdio_reader;

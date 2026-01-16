@@ -1,3 +1,22 @@
+//! WASM entry point for the qlue-ls language server.
+//!
+//! This module provides the WebAssembly interface for running qlue-ls in browsers
+//! and other WASM environments. It exposes two main functions to JavaScript:
+//!
+//! - [`init_language_server`]: Creates a new server instance with a writer for responses
+//! - [`listen`]: Main event loop that reads messages and dispatches them to handlers
+//!
+//! # Architecture
+//!
+//! The WASM build uses Web Streams API for I/O instead of stdio. Messages flow through
+//! `ReadableStreamDefaultReader` (input) and `WritableStreamDefaultWriter` (output).
+//! The server itself is shared via `Rc<Mutex<Server>>` to allow async message handling.
+//!
+//! # Related Modules
+//!
+//! - `server`: Core server implementation shared with native build
+//! - `main.rs` (native only): Alternative entry point using stdio
+
 mod server;
 mod sparql;
 

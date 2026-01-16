@@ -1,3 +1,26 @@
+//! LSP capability declaration.
+//!
+//! This module defines what features the server advertises to clients during
+//! the `initialize` handshake. Capabilities tell the client which LSP methods
+//! the server supports.
+//!
+//! # Key Functions
+//!
+//! - [`create_capabilities`]: Builds the `ServerCapabilities` struct sent to clients
+//!
+//! # Supported Features
+//!
+//! - Incremental text document sync
+//! - Hover, code actions, diagnostics
+//! - Completions (triggered by `?` and space)
+//! - Document formatting
+//! - Folding ranges
+//!
+//! # Related Modules
+//!
+//! - [`super::lsp::capabilities`]: Type definitions for capability structs
+//! - [`super::message_handler::lifecycle`]: Sends capabilities in `initialize` response
+
 use super::lsp::capabilities::{
     CompletionOptions, DiagnosticOptions, DocumentFormattingOptions, ExecuteCommandOptions,
     ServerCapabilities, TextDocumentSyncKind, WorkDoneProgressOptions,

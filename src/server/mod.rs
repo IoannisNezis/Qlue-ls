@@ -1,3 +1,31 @@
+//! Core language server implementation.
+//!
+//! This module contains the [`Server`] struct and the main message handling loop.
+//! The server is platform-agnostic and works with both native stdio and WASM streams.
+//!
+//! # Key Types
+//!
+//! - [`Server`]: Holds server state, settings, capabilities, and the message send function
+//! - [`handle_message`]: Entry point for processing incoming LSP messages
+//!
+//! # Architecture
+//!
+//! The server uses a closure-based approach for output: callers provide a `Fn(String)`
+//! that handles sending responses. This allows the same server code to work with
+//! stdio (native) or Web Streams (WASM).
+//!
+//! Message dispatch happens in [`message_handler`], which routes method names to
+//! specific handlers. The server is wrapped in `Rc<Mutex<>>` for async access.
+//!
+//! # Submodules
+//!
+//! - [`state`]: Document storage, parse tree cache, backend registry
+//! - [`capabilities`]: LSP capability negotiation
+//! - [`configuration`]: Settings from `qlue-ls.toml`/`qlue-ls.yml`
+//! - [`message_handler`]: Request/notification dispatch
+//! - [`lsp`]: Protocol types and JSON-RPC serialization
+//! - [`analysis`]: Semantic analysis (completions, hover, etc.)
+
 mod analysis;
 mod capabilities;
 mod common;

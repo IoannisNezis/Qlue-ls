@@ -1,3 +1,38 @@
+//! LSP message dispatch and request routing.
+//!
+//! This module is the central router for all incoming LSP messages. The [`dispatch`]
+//! function matches on method names and delegates to specialized handler modules.
+//!
+//! # Key Functions
+//!
+//! - [`dispatch`]: Routes messages by method name to appropriate handlers
+//!
+//! # Dispatch Pattern
+//!
+//! The module uses two macros for handler invocation:
+//! - `call!`: Synchronous handlers that block until complete
+//! - `call_async!`: Handlers spawned as local tasks (for network operations like completions)
+//!
+//! # Handler Organization
+//!
+//! Handlers are grouped by functionality:
+//! - [`lifecycle`]: `initialize`, `shutdown`, `exit`
+//! - [`textdocument_synchronization`]: `didOpen`, `didChange`, `didSave`
+//! - [`completion`], [`hover`], [`diagnostic`]: Core IDE features
+//! - [`formatting`]: Document formatting
+//! - [`backend`], [`execute`]: Custom qlue-ls extensions
+//!
+//! # Adding New Methods
+//!
+//! To add a new LSP method:
+//! 1. Create a handler function in the appropriate submodule
+//! 2. Add a match arm in [`dispatch`] calling the handler
+//!
+//! # Related Modules
+//!
+//! - [`super::Server`]: Passed to all handlers for state access
+//! - [`super::lsp::rpc`]: Message deserialization
+
 mod backend;
 mod cancel;
 mod code_action;

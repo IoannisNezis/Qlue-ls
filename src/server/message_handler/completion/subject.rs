@@ -3,7 +3,7 @@ use std::rc::Rc;
 use super::{
     CompletionEnvironment,
     error::CompletionError,
-    utils::{CompletionTemplate, dispatch_completion_query},
+    utils::{CompletionTemplate, dispatch_completion_query, matches_search_term},
     variable,
 };
 use crate::server::{
@@ -17,13 +17,18 @@ pub(super) async fn completions(
     server_rc: Rc<Mutex<Server>>,
     environment: CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
-    let mut items = (environment
+    let mut items: Vec<CompletionItem> = (environment
         .continuations
         .contains(&SyntaxKind::GroupGraphPatternSub)
         || environment
             .continuations
             .contains(&SyntaxKind::GraphPatternNotTriples))
-    .then_some(static_completions())
+    .then_some(
+        static_completions()
+            .into_iter()
+            .filter(|item| matches_search_term(&item.label, environment.search_term.as_deref()))
+            .collect(),
+    )
     .unwrap_or_default();
     let mut is_incomplete = false;
 
@@ -186,4 +191,82 @@ fn static_completions() -> Vec<CompletionItem> {
             additional_text_edits: None,
         },
     ]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{matches_search_term, static_completions};
+
+    fn filter_completions(search_term: Option<&str>) -> Vec<String> {
+        static_completions()
+            .into_iter()
+            .filter(|item| matches_search_term(&item.label, search_term))
+            .map(|item| item.label)
+            .collect()
+    }
+
+    #[test]
+    fn no_search_term_returns_all_keywords() {
+        let labels = filter_completions(None);
+        assert_eq!(labels.len(), 8);
+        assert!(labels.contains(&"FILTER".to_string()));
+        assert!(labels.contains(&"BIND".to_string()));
+        assert!(labels.contains(&"VALUES".to_string()));
+        assert!(labels.contains(&"SERVICE".to_string()));
+        assert!(labels.contains(&"MINUS".to_string()));
+        assert!(labels.contains(&"OPTIONAL".to_string()));
+        assert!(labels.contains(&"UNION".to_string()));
+        assert!(labels.contains(&"Sub select".to_string()));
+    }
+
+    #[test]
+    fn filter_prefix_returns_filter() {
+        let labels = filter_completions(Some("FI"));
+        assert_eq!(labels, vec!["FILTER"]);
+    }
+
+    #[test]
+    fn filter_prefix_case_insensitive() {
+        let labels = filter_completions(Some("fi"));
+        assert_eq!(labels, vec!["FILTER"]);
+    }
+
+    #[test]
+    fn bind_prefix_returns_bind() {
+        let labels = filter_completions(Some("BI"));
+        assert_eq!(labels, vec!["BIND"]);
+    }
+
+    #[test]
+    fn optional_prefix_returns_optional() {
+        let labels = filter_completions(Some("OP"));
+        assert_eq!(labels, vec!["OPTIONAL"]);
+    }
+
+    #[test]
+    fn service_and_sub_select_share_prefix() {
+        let labels = filter_completions(Some("S"));
+        assert_eq!(labels.len(), 2);
+        assert!(labels.contains(&"SERVICE".to_string()));
+        assert!(labels.contains(&"Sub select".to_string()));
+    }
+
+    #[test]
+    fn non_keyword_prefix_returns_empty() {
+        let labels = filter_completions(Some("Germany"));
+        assert!(labels.is_empty());
+    }
+
+    #[test]
+    fn random_text_returns_empty() {
+        let labels = filter_completions(Some("xyz"));
+        assert!(labels.is_empty());
+    }
+
+    #[test]
+    fn partial_match_not_prefix_returns_empty() {
+        // "ILTER" is part of "FILTER" but not a prefix
+        let labels = filter_completions(Some("ILTER"));
+        assert!(labels.is_empty());
+    }
 }

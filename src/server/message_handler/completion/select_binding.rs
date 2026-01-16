@@ -1,4 +1,4 @@
-use super::{CompletionEnvironment, CompletionLocation, error::CompletionError};
+use super::{CompletionEnvironment, CompletionLocation, error::CompletionError, utils::matches_search_term};
 use crate::server::lsp::{
     CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
 };
@@ -10,26 +10,31 @@ pub(super) fn completions(
 ) -> Result<CompletionList, CompletionError> {
     if let CompletionLocation::SelectBinding(select_clause) = &context.location {
         let mut items = Vec::new();
+        let search_term = context.search_term.as_deref();
         // NOTE: suggest keywords DISTINCT & REDUCED
         if context.continuations.contains(&SyntaxKind::DISTINCT) {
-            items.append(&mut vec![
-                CompletionItem::new(
-                    "DISTINCT",
-                    Some("Ensure unique results".to_string()),
-                    None,
-                    "DISTINCT ",
-                    CompletionItemKind::Keyword,
-                    None,
-                ),
-                CompletionItem::new(
-                    "REDUCED",
-                    Some("Permit elimination of some non-distinct solutions".to_string()),
-                    None,
-                    "REDUCED ",
-                    CompletionItemKind::Keyword,
-                    None,
-                ),
-            ]);
+            items.extend(
+                vec![
+                    CompletionItem::new(
+                        "DISTINCT",
+                        Some("Ensure unique results".to_string()),
+                        None,
+                        "DISTINCT ",
+                        CompletionItemKind::Keyword,
+                        None,
+                    ),
+                    CompletionItem::new(
+                        "REDUCED",
+                        Some("Permit elimination of some non-distinct solutions".to_string()),
+                        None,
+                        "REDUCED ",
+                        CompletionItemKind::Keyword,
+                        None,
+                    ),
+                ]
+                .into_iter()
+                .filter(|item| matches_search_term(&item.label, search_term)),
+            );
         }
         // NOTE: suggest availible variables (non duplicates).
         let result_vars: HashSet<String> = HashSet::from_iter(
@@ -150,5 +155,70 @@ pub(super) fn completions(
             "select binding completions was called with location: {:?}",
             context.location
         )))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::matches_search_term;
+
+    const SELECT_BINDING_KEYWORDS: [&str; 2] = ["DISTINCT", "REDUCED"];
+
+    fn filter_keywords(search_term: Option<&str>) -> Vec<&'static str> {
+        SELECT_BINDING_KEYWORDS
+            .into_iter()
+            .filter(|label| matches_search_term(label, search_term))
+            .collect()
+    }
+
+    #[test]
+    fn no_search_term_returns_all_keywords() {
+        let labels = filter_keywords(None);
+        assert_eq!(labels.len(), 2);
+        assert!(labels.contains(&"DISTINCT"));
+        assert!(labels.contains(&"REDUCED"));
+    }
+
+    #[test]
+    fn distinct_prefix_returns_distinct() {
+        let labels = filter_keywords(Some("DI"));
+        assert_eq!(labels, vec!["DISTINCT"]);
+    }
+
+    #[test]
+    fn reduced_prefix_returns_reduced() {
+        let labels = filter_keywords(Some("RE"));
+        assert_eq!(labels, vec!["REDUCED"]);
+    }
+
+    #[test]
+    fn d_prefix_returns_distinct() {
+        let labels = filter_keywords(Some("D"));
+        assert_eq!(labels, vec!["DISTINCT"]);
+    }
+
+    #[test]
+    fn r_prefix_returns_reduced() {
+        let labels = filter_keywords(Some("R"));
+        assert_eq!(labels, vec!["REDUCED"]);
+    }
+
+    #[test]
+    fn non_keyword_prefix_returns_empty() {
+        let labels = filter_keywords(Some("Germany"));
+        assert!(labels.is_empty());
+    }
+
+    #[test]
+    fn case_insensitive_matching() {
+        let labels = filter_keywords(Some("distinct"));
+        assert_eq!(labels, vec!["DISTINCT"]);
+    }
+
+    #[test]
+    fn variable_like_prefix_returns_empty() {
+        // A variable like "?foo" should not match keywords
+        let labels = filter_keywords(Some("?foo"));
+        assert!(labels.is_empty());
     }
 }

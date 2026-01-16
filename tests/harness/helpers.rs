@@ -136,6 +136,9 @@ impl TestClient {
                 "position": {
                     "line": line,
                     "character": character
+                },
+                "context": {
+                    "triggerKind": 1
                 }
             }),
         )

@@ -23,6 +23,15 @@ use crate::{
 
 use super::{environment::CompletionEnvironment, error::CompletionError};
 
+/// Returns true if the label matches the search term as a case-insensitive prefix.
+/// If no search term is provided (or it's empty), returns true to show all completions.
+pub(super) fn matches_search_term(label: &str, search_term: Option<&str>) -> bool {
+    match search_term {
+        Some(term) if !term.is_empty() => label.to_uppercase().starts_with(&term.to_uppercase()),
+        _ => true,
+    }
+}
+
 pub(super) type CompletionTemplate = crate::server::configuration::CompletionTemplate;
 
 pub(super) async fn dispatch_completion_query(
@@ -49,6 +58,7 @@ pub(super) async fn dispatch_completion_query(
                 get_replace_range(environment),
                 trigger_on_accept.then_some("triggerNewCompletion"),
                 server_rc.lock().await.settings.completion.result_size_limit,
+                environment.search_term.as_deref(),
             ))
         }
         _ => {
@@ -330,6 +340,7 @@ pub(super) fn to_completion_items(
     range: Range,
     command: Option<&str>,
     limit: u32,
+    search_term: Option<&str>,
 ) -> CompletionList {
     let items: Vec<_> = items
         .into_iter()
@@ -341,7 +352,7 @@ pub(super) fn to_completion_items(
                     label,
                     detail,
                     value,
-                    filter_text,
+                    filter_text: _,
                     import_edit,
                 },
             )| {
@@ -354,12 +365,15 @@ pub(super) fn to_completion_items(
                             detail.map_or(String::new(), |detail| format!("/{detail}"))
                         ),
                     }),
-                    detail: Some(format!("Internal rank: {idx}")),
+                    detail: Some(format!("internal rank {:0>5}", idx + 100)),
                     documentation: None,
                     // NOTE: The first 100 ID's are reserved
                     sort_text: Some(format!("{:0>5}", idx + 100)),
                     insert_text: None,
-                    filter_text: filter_text,
+                    // NOTE: Use the search term as filter_text for all items.
+                    // This gives all items the same fuzzy match score in Monaco,
+                    // forcing it to fall back to sortText for ordering.
+                    filter_text: search_term.map(|s| s.to_string()),
                     text_edit: Some(TextEdit {
                         range: range.clone(),
                         new_text: format!("{} ", value),
@@ -377,7 +391,7 @@ pub(super) fn to_completion_items(
         )
         .collect();
     CompletionList {
-        is_incomplete: items.len() == limit as usize,
+        is_incomplete: true,
         items,
         item_defaults: None,
     }
@@ -390,7 +404,59 @@ mod test {
         parse_query,
     };
 
-    use super::reduce_path;
+    use super::{matches_search_term, reduce_path};
+
+    #[test]
+    fn matches_search_term_exact_match() {
+        assert!(matches_search_term("FILTER", Some("FILTER")));
+    }
+
+    #[test]
+    fn matches_search_term_prefix_match() {
+        assert!(matches_search_term("FILTER", Some("FI")));
+        assert!(matches_search_term("FILTER", Some("F")));
+        assert!(matches_search_term("OPTIONAL", Some("OP")));
+        assert!(matches_search_term("GROUP BY", Some("GR")));
+    }
+
+    #[test]
+    fn matches_search_term_case_insensitive() {
+        assert!(matches_search_term("FILTER", Some("fi")));
+        assert!(matches_search_term("FILTER", Some("filter")));
+        assert!(matches_search_term("FILTER", Some("Filter")));
+        assert!(matches_search_term("OPTIONAL", Some("opt")));
+        assert!(matches_search_term("GROUP BY", Some("group")));
+    }
+
+    #[test]
+    fn matches_search_term_no_match() {
+        assert!(!matches_search_term("FILTER", Some("Germany")));
+        assert!(!matches_search_term("FILTER", Some("BI")));
+        assert!(!matches_search_term("OPTIONAL", Some("FI")));
+        assert!(!matches_search_term("BIND", Some("FILTER")));
+    }
+
+    #[test]
+    fn matches_search_term_none_shows_all() {
+        assert!(matches_search_term("FILTER", None));
+        assert!(matches_search_term("BIND", None));
+        assert!(matches_search_term("OPTIONAL", None));
+    }
+
+    #[test]
+    fn matches_search_term_empty_string_shows_all() {
+        assert!(matches_search_term("FILTER", Some("")));
+        assert!(matches_search_term("BIND", Some("")));
+        assert!(matches_search_term("OPTIONAL", Some("")));
+    }
+
+    #[test]
+    fn matches_search_term_partial_word_not_prefix() {
+        // "ILTER" is not a prefix of "FILTER"
+        assert!(!matches_search_term("FILTER", Some("ILTER")));
+        // "TER" is not a prefix of "FILTER"
+        assert!(!matches_search_term("FILTER", Some("TER")));
+    }
 
     #[test]
     fn reduce_sequence_path() {

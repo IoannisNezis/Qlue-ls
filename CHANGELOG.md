@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.1.7] - 2025-01-17
+
+### fixed
+
+- lexer for blank node label
+
 ## [1.1.5] - 2025-01-17
 
 ### added

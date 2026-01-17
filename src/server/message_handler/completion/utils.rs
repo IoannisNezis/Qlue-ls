@@ -364,15 +364,15 @@ pub(super) fn to_completion_items(
                 },
             )| {
                 CompletionItem {
-                    label: format!(
-                        "{}{}",
-                        &label,
-                        detail
-                            .as_ref()
-                            .map_or(String::new(), |detail| format!("/{detail}"))
-                    ),
+                    label: format!("{value}"),
                     label_details: Some(CompletionItemLabelDetails {
-                        detail: value.clone(),
+                        detail: format!(
+                            "{}{}",
+                            &label,
+                            detail
+                                .as_ref()
+                                .map_or(String::new(), |detail| format!("/{detail}"))
+                        ),
                     }),
                     detail: None,
                     documentation: Some(format!(

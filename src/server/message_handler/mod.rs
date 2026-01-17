@@ -53,7 +53,7 @@ mod workspace;
 use std::rc::Rc;
 
 use backend::{
-    handle_add_backend_notification, handle_ping_backend_request,
+    handle_add_backend_notification, handle_list_backends_request, handle_ping_backend_request,
     handle_update_backend_default_notification,
 };
 use code_action::handle_codeaction_request;
@@ -94,8 +94,8 @@ use crate::server::{
 use self::formatting::handle_format_request;
 
 use super::{
-    Server,
     lsp::{errors::LSPError, rpc::deserialize_message},
+    Server,
 };
 
 pub(super) async fn dispatch(
@@ -142,6 +142,7 @@ pub(super) async fn dispatch(
         // NOTE: LSP extensions Requests
         "qlueLs/addBackend" => call!(handle_add_backend_notification),
         "qlueLs/getBackend" => call!(handle_get_backend_request),
+        "qlueLs/listBackends" => call!(handle_list_backends_request),
         "qlueLs/updateDefaultBackend" => call!(handle_update_backend_default_notification),
         "qlueLs/pingBackend" => call_async!(handle_ping_backend_request),
         "qlueLs/jump" => call!(handle_jump_request),

@@ -68,7 +68,7 @@ dependencies = [
 
 [[package]]
 name = "ll-sparql-parser"
-version = "0.17.2"
+version = "0.17.3"
 dependencies = [
  "indoc",
  "js-sys",

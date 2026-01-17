@@ -70,10 +70,11 @@ fn tokenize_insert() {
 
 #[test]
 fn tokenize_blank_node_label() {
-    let tokens = lex_all(r#"_:asdasdbc _:_-- _:a...a _:123.345.abc"#);
+    let tokens = lex_all(r#"_:asdasdbc _:a _:_-- _:a...a _:123.345.abc"#);
     assert_eq!(
         tokens,
         vec![
+            SyntaxKind::BLANK_NODE_LABEL,
             SyntaxKind::BLANK_NODE_LABEL,
             SyntaxKind::BLANK_NODE_LABEL,
             SyntaxKind::BLANK_NODE_LABEL,

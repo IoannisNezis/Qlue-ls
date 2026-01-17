@@ -72,7 +72,8 @@ pub(super) struct InternalCompletionItem {
     label: String,
     detail: Option<String>,
     value: String,
-    filter_text: Option<String>,
+    _filter_text: Option<String>,
+    score: Option<usize>,
     import_edit: Option<TextEdit>,
 }
 
@@ -151,9 +152,13 @@ pub(super) async fn fetch_online_completions(
             let detail = binding
                 .get("qlue_ls_detail")
                 .map(|rdf_term: &RDFTerm| rdf_term.value().to_string());
+            let score = binding
+                .get("qlue_ls_count")
+                .and_then(|rdf_term: &RDFTerm| rdf_term.value().parse().ok());
             // NOTE: This is the text the in editor filter uses.
             // If a compressed IRI is used as search term i.e. "wdt:p" the expanded iri is used as
             // filter text. Otherwise the label and detail is used as filter text.
+            // This is currently not used, but should be redone at some point
             let filter_text = query_template_context
                 .get("search_term_uncompressed")
                 .is_some()
@@ -174,7 +179,8 @@ pub(super) async fn fetch_online_completions(
                 label,
                 detail,
                 value,
-                filter_text,
+                _filter_text: filter_text,
+                score,
                 import_edit,
             }
         })
@@ -352,21 +358,29 @@ pub(super) fn to_completion_items(
                     label,
                     detail,
                     value,
-                    filter_text: _,
+                    _filter_text,
+                    score,
                     import_edit,
                 },
             )| {
                 CompletionItem {
-                    label: value.clone(),
+                    label: format!(
+                        "{}{}",
+                        &label,
+                        detail
+                            .as_ref()
+                            .map_or(String::new(), |detail| format!("/{detail}"))
+                    ),
                     label_details: Some(CompletionItemLabelDetails {
-                        detail: format!(
-                            "{}{}",
-                            label,
-                            detail.map_or(String::new(), |detail| format!("/{detail}"))
-                        ),
+                        detail: value.clone(),
                     }),
-                    detail: Some(format!("internal rank {:0>5}", idx + 100)),
-                    documentation: None,
+                    detail: None,
+                    documentation: Some(format!(
+                        "Label: {label}\nAlias: {}\nRank: {}\nScore: {}",
+                        detail.unwrap_or_default(),
+                        idx + 100,
+                        score.map_or("None".to_string(), |score| score.to_string()),
+                    )),
                     // NOTE: The first 100 ID's are reserved
                     sort_text: Some(format!("{:0>5}", idx + 100)),
                     insert_text: None,

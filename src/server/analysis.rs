@@ -7,7 +7,7 @@ use super::{
 };
 
 pub fn namespace_is_declared(
-    server_state: &mut ServerState,
+    server_state: &ServerState,
     document_uri: &str,
     namespace: &str,
 ) -> Result<bool, LSPError> {
@@ -59,7 +59,7 @@ pub fn find_all_uncompacted_iris(
 /// This function can return a `LSPError` if:
 /// * The document specified by `document_uri` cannot be found or loaded.
 pub(crate) fn find_all_prefix_declarations(
-    server_state: &mut ServerState,
+    server_state: &ServerState,
     document_uri: &str,
 ) -> Result<Vec<PrefixDeclaration>, LSPError> {
     let root = server_state.get_cached_parse_tree(document_uri)?;
@@ -111,14 +111,14 @@ mod tests {
 
     #[test]
     fn declared_namespaces() {
-        let mut state = setup_state(indoc!(
+        let state = setup_state(indoc!(
             "PREFIX wdt: <iri>
                  PREFIX wd: <iri>
                  PREFIX wdt: <iri>
 
                  SELECT * {}"
         ));
-        let declared_namespaces = find_all_prefix_declarations(&mut state, "uri").unwrap();
+        let declared_namespaces = find_all_prefix_declarations(&state, "uri").unwrap();
         assert_eq!(
             declared_namespaces
                 .iter()

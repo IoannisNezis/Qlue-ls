@@ -35,6 +35,7 @@ use super::lsp::{
 };
 use curies::{Converter, CuriesError};
 use ll_sparql_parser::{SyntaxNode, parse};
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq)]
@@ -51,7 +52,7 @@ pub struct ServerState {
     request_method: HashMap<String, RequestMethod>,
     uri_converter: HashMap<String, Converter>,
     default_backend: Option<String>,
-    parse_tree_cache: Option<(String, u32, SyntaxNode)>,
+    parse_tree_cache: RefCell<Option<(String, u32, SyntaxNode)>>,
     request_id_counter: u32,
     running_requests: HashMap<String, Box<dyn Fn()>>,
     pub label_memory: HashMap<String, String>,
@@ -66,7 +67,7 @@ impl ServerState {
             request_method: HashMap::new(),
             uri_converter: HashMap::new(),
             default_backend: None,
-            parse_tree_cache: None,
+            parse_tree_cache: RefCell::new(None),
             request_id_counter: 0,
             running_requests: HashMap::new(),
             label_memory: HashMap::new(),
@@ -164,18 +165,18 @@ impl ServerState {
         ))
     }
 
-    pub(super) fn get_cached_parse_tree(&mut self, uri: &str) -> Result<SyntaxNode, LSPError> {
+    pub(super) fn get_cached_parse_tree(&self, uri: &str) -> Result<SyntaxNode, LSPError> {
         let document = self.documents.get(uri).ok_or(LSPError::new(
             ErrorCode::InvalidRequest,
             &format!("Requested document \"{}\"could not be found", uri),
         ))?;
-        if let Some((cached_uri, cached_version, cached_root)) = self.parse_tree_cache.as_ref() {
+        if let Some((cached_uri, cached_version, cached_root)) = self.parse_tree_cache.borrow().as_ref() {
             if uri == cached_uri && *cached_version == document.version() {
                 return Ok(cached_root.clone());
             }
         }
         let root = parse(&document.text);
-        self.parse_tree_cache = Some((uri.to_string(), document.version(), root.clone()));
+        *self.parse_tree_cache.borrow_mut() = Some((uri.to_string(), document.version(), root.clone()));
         Ok(root)
     }
 

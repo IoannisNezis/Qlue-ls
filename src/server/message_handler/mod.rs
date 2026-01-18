@@ -167,6 +167,10 @@ pub(super) async fn dispatch(
             log::warn!("Received cancel request (unsupported)");
             Ok(())
         }
+        "$/setTrace" => {
+            log::warn!("Received cancel request (unsupported)");
+            Ok(())
+        }
         unknown_method => {
             log::warn!(
                 "Received message with unknown method \"{}\"",

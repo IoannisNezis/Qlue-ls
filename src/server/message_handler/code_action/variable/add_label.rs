@@ -34,15 +34,6 @@ pub(super) fn code_action(
     document: &TextDocumentItem,
 ) -> Option<CodeAction> {
     let triple = var.triple()?;
-    let position = Position::from_byte_index(
-        triple
-            .syntax()
-            .next_sibling_or_token_by_kind(&|kind| kind == SyntaxKind::Dot)
-            .map(|dot| dot.text_range().end())
-            .unwrap_or(triple.syntax().text_range().end()),
-        &document.text,
-    )?;
-
     // Extract indentation from the subject of the triple
     let subject = triple.subject()?;
     let subject_start: usize = subject.syntax().text_range().start().into();
@@ -56,18 +47,33 @@ pub(super) fn code_action(
     let label_var = format!("?{var_name}_label");
     let lang_filter = format!(r#"FILTER (LANG({label_var}) = "en")"#);
     let label_triple = format!(
-        "\n{indentation}{} rdfs:label {label_var} . {lang_filter}",
+        " .\n{indentation}{} rdfs:label {label_var} . {lang_filter}",
         var.syntax()
     );
-    let insert_text = label_triple;
 
-    let mut edits = vec![TextEdit::new(
-        Range {
-            start: position,
-            end: position,
-        },
-        &insert_text,
-    )];
+    let start = Position::from_byte_index(
+        triple.properties_list_path().and_then(|path| {
+            path.properties()
+                .last()
+                .map(|last| last.object.syntax().text_range().end())
+        })?,
+        &document.text,
+    )?;
+
+    let end = triple
+        .syntax()
+        .next_sibling_or_token()
+        .and_then(|next| {
+            if next.kind().is_trivia() {
+                next.next_sibling_or_token()
+            } else {
+                Some(next)
+            }
+        })
+        .filter(|next| matches!(next.kind(), SyntaxKind::Dot))
+        .and_then(|next| Position::from_byte_index(next.text_range().end(), &document.text))
+        .unwrap_or(start.clone());
+    let mut edits = vec![TextEdit::new(Range { start, end }, &label_triple)];
 
     // Add rdfs prefix if not declared
     if !namespace_is_declared(server_state, &document.uri, RDFS_PREFIX).unwrap_or(true) {
@@ -138,7 +144,7 @@ mod tests {
                 .contains("?country rdfs:label ?country_label . FILTER")
         );
         // Verify indentation matches the original subject (2 spaces from indoc normalization)
-        assert!(insert_edit.new_text.starts_with("\n  ?country"));
+        assert!(insert_edit.new_text.starts_with(" .\n  ?country"));
 
         // Check that prefix is added
         let prefix_edit = &uri_edits[1];
@@ -186,8 +192,10 @@ mod tests {
         let insert_edit = &uri_edits[0];
 
         // Check that triple and filter are on same line
-        assert!(insert_edit.new_text.contains(
-            r#"?person rdfs:label ?person_label . FILTER (LANG(?person_label) = "en")"#
-        ));
+        assert!(
+            insert_edit.new_text.contains(
+                r#"?person rdfs:label ?person_label . FILTER (LANG(?person_label) = "en")"#
+            )
+        );
     }
 }

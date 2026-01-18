@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### added
+
+- code action: add rdfs:label for variable
+
+### changed
+
+- use interior mutability for parse tree cache
+
 ## [1.1.7] - 2025-01-17
 
 ### fixed

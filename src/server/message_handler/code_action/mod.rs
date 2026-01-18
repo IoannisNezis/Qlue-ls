@@ -79,7 +79,9 @@ fn generate_code_actions(
         code_actions.extend(iri::code_actions(server, document.uri.clone()));
     } else {
         match selected_element.parent().and_then(Var::cast) {
-            Some(var) => code_actions.extend(variable::code_actions(var, document)),
+            Some(var) => {
+                code_actions.extend(variable::code_actions(var, &server.state, document))
+            }
             _ => {
                 if matches!(
                     selected_element.kind(),
@@ -87,7 +89,7 @@ fn generate_code_actions(
                 ) {
                     code_actions.extend(select::code_actions(
                         selected_element,
-                        document,
+                        &document,
                         server.settings.format.tab_size.unwrap_or(2),
                     ));
                 }

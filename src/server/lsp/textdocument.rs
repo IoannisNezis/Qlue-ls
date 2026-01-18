@@ -5,7 +5,7 @@ use text_size::{TextRange, TextSize};
 
 pub type DocumentUri = String;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TextDocumentItem {
     pub uri: DocumentUri,

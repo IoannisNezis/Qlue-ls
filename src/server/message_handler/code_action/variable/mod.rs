@@ -1,13 +1,24 @@
-use crate::server::lsp::{CodeAction, textdocument::TextDocumentItem};
+use crate::server::{
+    lsp::{CodeAction, textdocument::TextDocumentItem},
+    state::ServerState,
+};
 use ll_sparql_parser::ast::Var;
 mod add_aggregate_to_result;
+mod add_label;
 mod add_to_result;
 mod filter_var;
 mod filter_var_lang;
 
-pub(super) fn code_actions(var: Var, document: &TextDocumentItem) -> Vec<CodeAction> {
+pub(super) fn code_actions(
+    var: Var,
+    server_state: &ServerState,
+    document: &TextDocumentItem,
+) -> Vec<CodeAction> {
     let mut code_actions = Vec::new();
     if let Some(code_action) = add_to_result::code_action(&var, document) {
+        code_actions.push(code_action)
+    }
+    if let Some(code_action) = add_label::code_action(&var, server_state, document) {
         code_actions.push(code_action)
     }
     if let Some(code_action) = filter_var_lang::code_action(&var, document) {

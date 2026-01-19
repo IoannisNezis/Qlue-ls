@@ -72,11 +72,6 @@ pub(super) async fn completions(
             }
         }
     }
-    items.extend(
-        variable::completions_transformed(server_rc, &environment)
-            .await?
-            .items,
-    );
     Ok(CompletionList {
         is_incomplete: true,
         item_defaults: None,

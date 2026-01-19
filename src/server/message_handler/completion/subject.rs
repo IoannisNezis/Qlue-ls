@@ -30,33 +30,45 @@ pub(super) async fn completions(
             .collect(),
     )
     .unwrap_or_default();
-    let mut is_incomplete = false;
 
-    if [
-        SyntaxKind::GroupGraphPatternSub,
-        SyntaxKind::TriplesBlock,
-        SyntaxKind::DataBlockValue,
-        SyntaxKind::GraphNodePath,
-    ]
-    .iter()
-    .any(|kind| environment.continuations.contains(kind))
-    {
-        let template_context = environment.template_context().await;
-        match dispatch_completion_query(
-            server_rc.clone(),
-            &environment,
-            template_context,
-            CompletionTemplate::SubjectCompletion,
-            true,
-        )
+    // NOTE: entity subject completions are only triggered if the search term is atleast N long.
+    let trigger_threshold = server_rc
+        .lock()
         .await
+        .settings
+        .completion
+        .subject_completion_trigger_length;
+
+    if environment
+        .search_term
+        .as_ref()
+        .is_some_and(|search_term| search_term.len() > trigger_threshold as usize)
+    {
+        if [
+            SyntaxKind::GroupGraphPatternSub,
+            SyntaxKind::TriplesBlock,
+            SyntaxKind::DataBlockValue,
+            SyntaxKind::GraphNodePath,
+        ]
+        .iter()
+        .any(|kind| environment.continuations.contains(kind))
         {
-            Ok(online_completions) => {
-                items.extend(online_completions.items);
-                is_incomplete = online_completions.is_incomplete;
-            }
-            Err(err) => {
-                log::error!("Completion query failed: {err:?}");
+            let template_context = environment.template_context().await;
+            match dispatch_completion_query(
+                server_rc.clone(),
+                &environment,
+                template_context,
+                CompletionTemplate::SubjectCompletion,
+                true,
+            )
+            .await
+            {
+                Ok(online_completions) => {
+                    items.extend(online_completions.items);
+                }
+                Err(err) => {
+                    log::error!("Completion query failed: {err:?}");
+                }
             }
         }
     }
@@ -66,7 +78,7 @@ pub(super) async fn completions(
             .items,
     );
     Ok(CompletionList {
-        is_incomplete,
+        is_incomplete: true,
         item_defaults: None,
         items,
     })

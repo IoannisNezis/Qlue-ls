@@ -130,6 +130,7 @@ pub enum RequestMethod {
 pub struct CompletionSettings {
     pub timeout_ms: u32,
     pub result_size_limit: u32,
+    pub subject_completion_trigger_length: u32,
 }
 
 impl Default for CompletionSettings {
@@ -137,6 +138,7 @@ impl Default for CompletionSettings {
         Self {
             timeout_ms: 5000,
             result_size_limit: 100,
+            subject_completion_trigger_length: 3,
         }
     }
 }

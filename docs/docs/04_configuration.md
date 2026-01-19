@@ -18,6 +18,7 @@ filter_same_line = true
 [completion]
 timeout_ms = 5000
 result_size_limit = 100
+subject_completion_trigger_length = 3
 
 [prefixes]
 add_missing = true
@@ -136,6 +137,15 @@ Time (in ms) a completion query is allowed to take.
 | integer  | 100     |
 
 The result size of a completion query.
+
+### completion.subject_completion_trigger_length
+
+| Type     | Default |
+| ---------| --------|
+| integer  | 3     |
+
+The amount of chars (actually bytes) required to trigger a subject completion.  
+This concerns online completions and not variable or construct completions!
 
 ## Prefix settings
 

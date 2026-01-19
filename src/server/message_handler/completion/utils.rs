@@ -376,9 +376,8 @@ pub(super) fn to_completion_items(
                     }),
                     detail: None,
                     documentation: Some(format!(
-                        "Label: {label}\nAlias: {}\nRank: {}\nScore: {}",
+                        "Label: {label}\nAlias: {}\n\nScore: {}",
                         detail.unwrap_or_default(),
-                        idx + 100,
                         score.map_or("None".to_string(), |score| score.to_string()),
                     )),
                     // NOTE: The first 100 ID's are reserved

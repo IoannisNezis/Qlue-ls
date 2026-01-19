@@ -23,9 +23,10 @@ use futures::lock::Mutex;
 use crate::server::{
     Server,
     lsp::{
-        CompletionList, CompletionRequest, CompletionResponse, CompletionTriggerKind,
-        errors::LSPError,
+        CompletionItem, CompletionList, CompletionRequest, CompletionResponse,
+        CompletionTriggerKind, InsertTextFormat, errors::LSPError,
     },
+    state::ClientType,
 };
 
 pub(super) async fn handle_completion_request(
@@ -36,6 +37,9 @@ pub(super) async fn handle_completion_request(
         .await
         .map_err(to_lsp_error)?;
     // log::info!("Completion env:\n{}", env);
+
+    let is_object_location = matches!(env.location, CompletionLocation::Object(_));
+    let line_indentation = env.line_indentation.clone();
 
     let completion_list = if env.trigger_kind == CompletionTriggerKind::TriggerCharacter
         && env.trigger_character.as_ref().is_some_and(|tc| tc == "?")
@@ -106,12 +110,34 @@ pub(super) async fn handle_completion_request(
                 .map_err(to_lsp_error)?,
             )
         };
+
         merge_completions(completion_list, variable_completions)
     };
-    server_rc
-        .lock()
-        .await
-        .send_message(CompletionResponse::new(request.get_id(), completion_list))
+
+    let server = server_rc.lock().await;
+
+    // Apply object suffix (trailing ` .\n` with indentation and cursor position)
+    let completion_list = if is_object_location {
+        completion_list.map(|mut list| {
+            for item in list.items.iter_mut() {
+                apply_object_suffix(
+                    item,
+                    server
+                        .state
+                        .client_Type
+                        .as_ref()
+                        .is_some_and(|client_type| matches!(client_type, ClientType::Monaco))
+                        .then_some("")
+                        .unwrap_or(&line_indentation),
+                );
+            }
+            list
+        })
+    } else {
+        completion_list
+    };
+
+    server.send_message(CompletionResponse::new(request.get_id(), completion_list))
 }
 
 fn merge_completions(
@@ -126,4 +152,16 @@ fn merge_completions(
             Some(list1)
         }
     }
+}
+
+fn apply_object_suffix(item: &mut CompletionItem, indent: &str) {
+    // Handle text_edit (used by online completions)
+    if let Some(ref mut text_edit) = item.text_edit {
+        text_edit.new_text = format!("{} .\n{indent}$0", text_edit.new_text.trim_end());
+    }
+    // Handle insert_text (used by variable completions)
+    if let Some(ref mut insert_text) = item.insert_text {
+        *insert_text = format!("{} .\n{indent}$0", insert_text.trim_end());
+    }
+    item.insert_text_format = Some(InsertTextFormat::Snippet);
 }

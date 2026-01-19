@@ -30,6 +30,7 @@ pub(super) struct CompletionEnvironment {
     pub(super) search_term: Option<String>,
     pub(super) backend: Option<BackendService>,
     pub(super) context: Option<Context>,
+    pub(super) line_indentation: String,
 }
 
 impl Display for CompletionEnvironment {
@@ -305,6 +306,15 @@ impl CompletionEnvironment {
                 "Position ({}) not inside document range",
                 document_position.position
             )))?;
+        let offset_usize: usize = offset.into();
+        let line_start = document.text[..offset_usize]
+            .rfind('\n')
+            .map(|pos| pos + 1)
+            .unwrap_or(0);
+        let line_indentation = document.text[line_start..]
+            .chars()
+            .take_while(|c| c.is_whitespace() && *c != '\n')
+            .collect::<String>();
         let trigger_kind = request.get_completion_context().trigger_kind.clone();
         let trigger_character = request.get_completion_context().trigger_character.clone();
         let tree = parse(&document.text);
@@ -328,6 +338,7 @@ impl CompletionEnvironment {
             search_term,
             backend,
             context,
+            line_indentation,
         })
     }
 }

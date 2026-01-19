@@ -45,8 +45,15 @@ pub enum ServerStatus {
     ShuttingDown,
 }
 
+#[derive(Debug)]
+pub enum ClientType {
+    Monaco,
+    Neovim,
+}
+
 pub struct ServerState {
     pub status: ServerStatus,
+    pub client_Type: Option<ClientType>,
     documents: HashMap<String, TextDocumentItem>,
     backends: HashMap<String, BackendService>,
     request_method: HashMap<String, RequestMethod>,
@@ -62,6 +69,7 @@ impl ServerState {
     pub fn new() -> Self {
         ServerState {
             status: ServerStatus::Initializing,
+            client_Type: None,
             documents: HashMap::new(),
             backends: HashMap::new(),
             request_method: HashMap::new(),
@@ -170,13 +178,16 @@ impl ServerState {
             ErrorCode::InvalidRequest,
             &format!("Requested document \"{}\"could not be found", uri),
         ))?;
-        if let Some((cached_uri, cached_version, cached_root)) = self.parse_tree_cache.borrow().as_ref() {
+        if let Some((cached_uri, cached_version, cached_root)) =
+            self.parse_tree_cache.borrow().as_ref()
+        {
             if uri == cached_uri && *cached_version == document.version() {
                 return Ok(cached_root.clone());
             }
         }
         let root = parse(&document.text);
-        *self.parse_tree_cache.borrow_mut() = Some((uri.to_string(), document.version(), root.clone()));
+        *self.parse_tree_cache.borrow_mut() =
+            Some((uri.to_string(), document.version(), root.clone()));
         Ok(root)
     }
 

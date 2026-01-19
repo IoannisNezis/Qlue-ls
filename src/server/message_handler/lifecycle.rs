@@ -10,7 +10,7 @@ use crate::server::{
         ProgressNotification, ShutdownRequest, ShutdownResponse,
         errors::{ErrorCode, LSPError},
     },
-    state::ServerStatus,
+    state::{ClientType, ServerStatus},
 };
 
 pub(super) async fn handle_shutdown_request(
@@ -51,6 +51,11 @@ pub(super) async fn handle_initialize_request(
                         .clone()
                         .unwrap_or("no version specified".to_string())
                 );
+                server.state.client_Type = match client_info.name.as_str() {
+                    "Code - OSS" => Some(ClientType::Monaco),
+                    "Neovim" => Some(ClientType::Neovim),
+                    _ => None,
+                };
             }
             server.client_capabilities = Some(initialize_request.params.capabilities.clone());
             if let Some(ref work_done_token) =

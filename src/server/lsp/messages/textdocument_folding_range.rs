@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::server::lsp::{
-    LspMessage, RequestMarker, ResponseMarker,
+    LspMessage,
     rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
     textdocument::TextDocumentIdentifier,
 };
@@ -21,17 +21,7 @@ impl FoldingRangeRequest {
     }
 }
 
-impl LspMessage for FoldingRangeRequest {
-    type Kind = RequestMarker;
-
-    fn method(&self) -> Option<&str> {
-        Some("textDocument/hover")
-    }
-
-    fn id(&self) -> Option<&RequestId> {
-        Some(&self.base.id)
-    }
-}
+impl LspMessage for FoldingRangeRequest {}
 
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -46,17 +36,7 @@ pub struct FoldingRangeResponse {
     result: Option<Vec<FoldingRange>>,
 }
 
-impl LspMessage for FoldingRangeResponse {
-    type Kind = ResponseMarker;
-
-    fn method(&self) -> Option<&str> {
-        Some("textDocument/foldingRange")
-    }
-
-    fn id(&self) -> Option<&RequestId> {
-        self.base.request_id()
-    }
-}
+impl LspMessage for FoldingRangeResponse {}
 
 impl FoldingRangeResponse {
     pub fn new(id: &RequestId) -> Self {

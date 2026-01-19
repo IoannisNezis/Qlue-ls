@@ -1,7 +1,7 @@
 use serde::Serialize;
 
 use crate::server::lsp::{
-    LspMessage, NotificationMarker,
+    LspMessage,
     rpc::NotificationMessageBase,
     workdoneprogress::{
         ProgressToken, ProgressValue, WorkDoneProgressBegin, WorkDoneProgressEnd,
@@ -16,17 +16,7 @@ pub struct ProgressNotification {
     pub params: ProgressParams<ProgressValue>,
 }
 
-impl LspMessage for ProgressNotification {
-    type Kind = NotificationMarker;
-
-    fn method(&self) -> Option<&str> {
-        Some("$/progress")
-    }
-
-    fn id(&self) -> Option<&crate::server::lsp::rpc::RequestId> {
-        None
-    }
-}
+impl LspMessage for ProgressNotification {}
 
 impl ProgressNotification {
     pub fn begin_notification(

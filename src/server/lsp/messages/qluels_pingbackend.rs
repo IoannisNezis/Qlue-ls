@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::server::lsp::{
-    LspMessage, RequestMarker, ResponseMarker,
+    LspMessage,
     rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
 };
 
@@ -12,17 +12,7 @@ pub struct PingBackendRequest {
     pub params: PingBackendParams,
 }
 
-impl LspMessage for PingBackendRequest {
-    type Kind = RequestMarker;
-
-    fn method(&self) -> Option<&str> {
-        Some("qlueLs/pingBackend")
-    }
-
-    fn id(&self) -> Option<&RequestId> {
-        Some(&self.base.id)
-    }
-}
+impl LspMessage for PingBackendRequest {}
 
 impl PingBackendRequest {
     pub(crate) fn get_id(&self) -> &RequestId {
@@ -43,17 +33,7 @@ pub struct PingBackendResponse {
     pub result: PingBackendResult,
 }
 
-impl LspMessage for PingBackendResponse {
-    type Kind = ResponseMarker;
-
-    fn method(&self) -> Option<&str> {
-        None
-    }
-
-    fn id(&self) -> Option<&RequestId> {
-        self.base.request_id()
-    }
-}
+impl LspMessage for PingBackendResponse {}
 
 impl PingBackendResponse {
     pub fn new(id: &RequestId, available: bool) -> Self {

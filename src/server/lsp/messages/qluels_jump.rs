@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::server::lsp::{
-    LspMessage, RequestMarker, ResponseMarker,
+    LspMessage,
     rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
     textdocument::Position,
 };
@@ -15,17 +15,7 @@ pub struct JumpRequest {
     pub params: JumpParams,
 }
 
-impl LspMessage for JumpRequest {
-    type Kind = RequestMarker;
-
-    fn method(&self) -> Option<&str> {
-        Some("qlueLs/jump")
-    }
-
-    fn id(&self) -> Option<&RequestId> {
-        Some(&self.base.id)
-    }
-}
+impl LspMessage for JumpRequest {}
 
 impl JumpRequest {
     pub(crate) fn get_id(&self) -> &RequestId {
@@ -48,17 +38,7 @@ pub struct JumpResponse {
     result: Option<JumpResult>,
 }
 
-impl LspMessage for JumpResponse {
-    type Kind = ResponseMarker;
-
-    fn method(&self) -> Option<&str> {
-        None
-    }
-
-    fn id(&self) -> Option<&RequestId> {
-        self.base.request_id()
-    }
-}
+impl LspMessage for JumpResponse {}
 
 #[derive(Debug, Serialize, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]

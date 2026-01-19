@@ -51,46 +51,4 @@ pub use textdocument_hover::*;
 pub use workspace::*;
 pub use workspace_applyedit::*;
 
-use crate::server::lsp::rpc::RequestId;
-
-#[derive(Debug)]
-pub enum LspMessageKind {
-    Request,
-    Response,
-    Notification,
-}
-
-pub enum RequestMarker {}
-pub enum ResponseMarker {}
-pub enum NotificationMarker {}
-
-pub trait LspMessageKindMarker {
-    fn kind() -> LspMessageKind;
-}
-
-impl LspMessageKindMarker for RequestMarker {
-    fn kind() -> LspMessageKind {
-        LspMessageKind::Request
-    }
-}
-
-impl LspMessageKindMarker for ResponseMarker {
-    fn kind() -> LspMessageKind {
-        LspMessageKind::Response
-    }
-}
-
-impl LspMessageKindMarker for NotificationMarker {
-    fn kind() -> LspMessageKind {
-        LspMessageKind::Notification
-    }
-}
-
-pub trait LspMessage {
-    type Kind: LspMessageKindMarker;
-    fn kind(&self) -> LspMessageKind {
-        <RequestMarker as LspMessageKindMarker>::kind()
-    }
-    fn method(&self) -> Option<&str>;
-    fn id(&self) -> Option<&RequestId>;
-}
+pub trait LspMessage {}

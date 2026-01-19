@@ -1,27 +1,17 @@
 use serde::{Deserialize, Serialize};
 
 use crate::server::lsp::{
-    LspMessage, NotificationMarker, rpc::NotificationMessage, textdocument::TextDocumentIdentifier,
+    LspMessage, rpc::NotificationMessageBase, textdocument::TextDocumentIdentifier,
 };
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct DidSaveTextDocumentNotification {
     #[serde(flatten)]
-    base: NotificationMessage,
+    base: NotificationMessageBase,
     pub params: DidSaveTextDocumentParams,
 }
 
-impl LspMessage for DidSaveTextDocumentNotification {
-    type Kind = NotificationMarker;
-
-    fn method(&self) -> Option<&str> {
-        Some("textDocument/didSave")
-    }
-
-    fn id(&self) -> Option<&crate::server::lsp::rpc::RequestId> {
-        None
-    }
-}
+impl LspMessage for DidSaveTextDocumentNotification {}
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]

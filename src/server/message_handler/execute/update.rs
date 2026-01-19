@@ -27,6 +27,7 @@ pub(super) async fn handle_execute_update_request(
     .await
     {
         Ok(res) => res,
+        #[cfg(target_arch = "wasm32")]
         Err(SparqlRequestError::QLeverException(exception)) => {
             return server_rc
                 .lock()
@@ -45,7 +46,7 @@ pub(super) async fn handle_execute_update_request(
                     ExecuteOperationErrorData::Connection(error),
                 ));
         }
-        Err(SparqlRequestError::Canceled(error)) => {
+        Err(SparqlRequestError::_Canceled(error)) => {
             return server_rc
                 .lock()
                 .await
@@ -77,7 +78,7 @@ pub(super) async fn handle_execute_update_request(
         }
     };
     let stop_time = get_timestamp();
-    let duration = stop_time - start_time;
+    let _duration = stop_time - start_time;
     server_rc
         .lock()
         .await

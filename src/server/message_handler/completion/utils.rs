@@ -119,7 +119,7 @@ pub(super) async fn fetch_online_completions(
         crate::server::sparql_operations::SparqlRequestError::Connection(_err) => {
             CompletionError::Request("Completion query failed, connection errored".to_string())
         }
-        crate::server::sparql_operations::SparqlRequestError::Canceled(_err) => {
+        crate::server::sparql_operations::SparqlRequestError::_Canceled(_err) => {
             CompletionError::Request("Completion query was canceled".to_string())
         }
         crate::server::sparql_operations::SparqlRequestError::Response(msg) => {
@@ -128,6 +128,7 @@ pub(super) async fn fetch_online_completions(
         crate::server::sparql_operations::SparqlRequestError::Deserialization(msg) => {
             CompletionError::Request(msg)
         }
+        #[cfg(target_arch = "wasm32")]
         crate::server::sparql_operations::SparqlRequestError::QLeverException(exception) => {
             CompletionError::Request(exception.exception)
         }
@@ -345,7 +346,7 @@ pub(super) fn to_completion_items(
     items: Vec<InternalCompletionItem>,
     range: Range,
     command: Option<&str>,
-    limit: u32,
+    _limit: u32,
     search_term: Option<&str>,
 ) -> CompletionList {
     let items: Vec<_> = items

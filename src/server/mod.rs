@@ -46,7 +46,7 @@ use log::{error, info};
 use lsp::{
     ServerInfo,
     errors::{ErrorCode, LSPError},
-    rpc::{RecoverId, RequestIdOrNull, ResponseMessage},
+    rpc::{RecoverId, ResponseMessage},
 };
 use message_handler::dispatch;
 

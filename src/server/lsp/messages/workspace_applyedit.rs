@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::server::lsp::{
-    LspMessage, RequestMarker, ResponseMarker,
+    LspMessage,
     rpc::{RequestMessageBase, ResponseMessageBase},
     textdocument::TextEdit,
 };
@@ -17,17 +17,7 @@ pub struct WorkspaceEditRequest {
     pub params: ApplyWorkspaceEditParams,
 }
 
-impl LspMessage for WorkspaceEditRequest {
-    type Kind = RequestMarker;
-
-    fn method(&self) -> Option<&str> {
-        Some("workspace/applyEdit")
-    }
-
-    fn id(&self) -> Option<&crate::server::lsp::rpc::RequestId> {
-        Some(&self.base.id)
-    }
-}
+impl LspMessage for WorkspaceEditRequest {}
 
 impl WorkspaceEditRequest {
     pub fn new(id: u32, changes: HashMap<String, Vec<TextEdit>>) -> Self {
@@ -57,17 +47,7 @@ pub struct WorkspaceEditResponse {
     pub result: Option<ApplyWorkspaceEditResult>,
 }
 
-impl LspMessage for WorkspaceEditResponse {
-    type Kind = ResponseMarker;
-
-    fn method(&self) -> Option<&str> {
-        Some("workspace/applyEdit")
-    }
-
-    fn id(&self) -> Option<&crate::server::lsp::rpc::RequestId> {
-        self.base.request_id()
-    }
-}
+impl LspMessage for WorkspaceEditResponse {}
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct ApplyWorkspaceEditResult {

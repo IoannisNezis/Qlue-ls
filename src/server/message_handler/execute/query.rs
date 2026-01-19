@@ -62,6 +62,8 @@ async fn handle_normal_query(
     .await
     {
         Ok(res) => res,
+
+        #[cfg(target_arch = "wasm32")]
         Err(SparqlRequestError::QLeverException(exception)) => {
             return server_rc
                 .lock()
@@ -80,7 +82,7 @@ async fn handle_normal_query(
                     ExecuteOperationErrorData::Connection(error),
                 ));
         }
-        Err(SparqlRequestError::Canceled(error)) => {
+        Err(SparqlRequestError::_Canceled(error)) => {
             log::info!("Sending cancel error");
             return server_rc
                 .lock()
@@ -157,6 +159,7 @@ async fn handle_construct_query(
     .await
     {
         Ok(res) => res,
+        #[cfg(target_arch = "wasm32")]
         Err(SparqlRequestError::QLeverException(exception)) => {
             return server_rc
                 .lock()
@@ -175,7 +178,7 @@ async fn handle_construct_query(
                     ExecuteOperationErrorData::Connection(error),
                 ));
         }
-        Err(SparqlRequestError::Canceled(error)) => {
+        Err(SparqlRequestError::_Canceled(error)) => {
             log::info!("Sending cancel error");
             return server_rc
                 .lock()

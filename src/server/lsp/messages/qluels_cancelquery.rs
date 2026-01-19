@@ -1,34 +1,15 @@
 use serde::Deserialize;
 
-use crate::server::lsp::{
-    LspMessage, NotificationMarker,
-    rpc::{RequestId, RequestMessageBase},
-};
+use crate::server::lsp::{LspMessage, rpc::NotificationMessageBase};
 
 #[derive(Debug, Deserialize)]
 pub struct CancelQueryNotification {
     #[serde(flatten)]
-    base: RequestMessageBase,
+    _base: NotificationMessageBase,
     pub params: CancelQueryParams,
 }
 
-impl CancelQueryNotification {
-    pub(crate) fn get_id(&self) -> &RequestId {
-        &self.base.id
-    }
-}
-
-impl LspMessage for CancelQueryNotification {
-    type Kind = NotificationMarker;
-
-    fn method(&self) -> Option<&str> {
-        Some("qlueLs/cancelQuery")
-    }
-
-    fn id(&self) -> Option<&crate::server::lsp::rpc::RequestId> {
-        None
-    }
-}
+impl LspMessage for CancelQueryNotification {}
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]

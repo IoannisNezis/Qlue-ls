@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
 use crate::server::lsp::{
-    LspMessage, RequestMarker, ResponseMarker,
+    LspMessage,
     base_types::LSPAny,
     rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
     textdocument::{Range, TextEdit},
@@ -17,17 +17,7 @@ pub struct CompletionRequest {
     pub params: CompletionParams,
 }
 
-impl LspMessage for CompletionRequest {
-    type Kind = RequestMarker;
-
-    fn method(&self) -> Option<&str> {
-        Some("textDocument/completion")
-    }
-
-    fn id(&self) -> Option<&RequestId> {
-        Some(&self.base.id)
-    }
-}
+impl LspMessage for CompletionRequest {}
 
 impl CompletionRequest {
     pub(crate) fn get_text_position(&self) -> &TextDocumentPositionParams {
@@ -72,17 +62,7 @@ pub struct CompletionResponse {
     result: Option<CompletionList>,
 }
 
-impl LspMessage for CompletionResponse {
-    type Kind = ResponseMarker;
-
-    fn method(&self) -> Option<&str> {
-        None
-    }
-
-    fn id(&self) -> Option<&RequestId> {
-        self.base.request_id()
-    }
-}
+impl LspMessage for CompletionResponse {}
 
 impl CompletionResponse {
     pub fn new(id: &RequestId, completion_list: Option<CompletionList>) -> Self {

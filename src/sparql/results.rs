@@ -15,6 +15,7 @@ pub struct SparqlResult {
     pub prefixes: HashMap<String, String>,
 }
 
+#[cfg(target_arch = "wasm32")]
 impl SparqlResult {
     pub fn new(vars: Vec<String>, bindings: Vec<HashMap<String, RDFTerm>>) -> Self {
         Self {

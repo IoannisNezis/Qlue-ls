@@ -1,15 +1,18 @@
+#[cfg(target_arch = "wasm32")]
+use crate::server::lsp::rpc::NotificationMessageBase;
 use crate::{
     server::{
         lsp::{
-            LspMessage, NotificationMarker, RequestMarker, ResponseMarker,
+            LspMessage,
             errors::{ErrorCode, LSPErrorBase},
-            rpc::{NotificationMessageBase, RequestId, RequestMessageBase, ResponseMessageBase},
+            rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
             textdocument::TextDocumentIdentifier,
         },
         sparql_operations::ConnectionError,
     },
     sparql::results::SparqlResult,
 };
+#[cfg(target_arch = "wasm32")]
 use lazy_sparql_result_reader::parser::PartialResult;
 use serde::{Deserialize, Serialize};
 
@@ -25,17 +28,7 @@ impl ExecuteOperationRequest {
     }
 }
 
-impl LspMessage for ExecuteOperationRequest {
-    type Kind = RequestMarker;
-
-    fn method(&self) -> Option<&str> {
-        Some("qlueLs/executeOperation")
-    }
-
-    fn id(&self) -> Option<&crate::server::lsp::rpc::RequestId> {
-        Some(&self.base.id)
-    }
-}
+impl LspMessage for ExecuteOperationRequest {}
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -82,17 +75,7 @@ impl ExecuteOperationResponse {
     }
 }
 
-impl LspMessage for ExecuteOperationResponse {
-    type Kind = ResponseMarker;
-
-    fn method(&self) -> Option<&str> {
-        None
-    }
-
-    fn id(&self) -> Option<&crate::server::lsp::rpc::RequestId> {
-        self.base.id.request_id()
-    }
-}
+impl LspMessage for ExecuteOperationResponse {}
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -215,12 +198,14 @@ pub enum QLeverStatus {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[cfg(target_arch = "wasm32")]
 pub struct PartialSparqlResultNotification {
     #[serde(flatten)]
     pub base: NotificationMessageBase,
     pub params: PartialResult,
 }
 
+#[cfg(target_arch = "wasm32")]
 impl PartialSparqlResultNotification {
     pub(crate) fn new(chunk: PartialResult) -> Self {
         use lazy_sparql_result_reader::parser::PartialResult;
@@ -232,17 +217,8 @@ impl PartialSparqlResultNotification {
     }
 }
 
-impl LspMessage for PartialSparqlResultNotification {
-    type Kind = NotificationMarker;
-
-    fn method(&self) -> Option<&str> {
-        Some("qlueLs/partialResult")
-    }
-
-    fn id(&self) -> Option<&RequestId> {
-        None
-    }
-}
+#[cfg(target_arch = "wasm32")]
+impl LspMessage for PartialSparqlResultNotification {}
 
 #[cfg(test)]
 mod test {

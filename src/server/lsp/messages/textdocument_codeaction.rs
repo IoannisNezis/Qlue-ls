@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::server::lsp::{
-    LspMessage, RequestMarker, ResponseMarker,
+    LspMessage,
     rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
     textdocument::{DocumentUri, Range, TextDocumentIdentifier, TextEdit},
 };
@@ -22,17 +22,7 @@ impl CodeActionRequest {
     }
 }
 
-impl LspMessage for CodeActionRequest {
-    type Kind = RequestMarker;
-
-    fn method(&self) -> Option<&str> {
-        Some("textDocument/codeAction")
-    }
-
-    fn id(&self) -> Option<&RequestId> {
-        Some(&self.base.id)
-    }
-}
+impl LspMessage for CodeActionRequest {}
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -78,17 +68,7 @@ pub struct CodeActionResponse {
     result: Vec<CodeAction>,
 }
 
-impl LspMessage for CodeActionResponse {
-    type Kind = ResponseMarker;
-
-    fn method(&self) -> Option<&str> {
-        None
-    }
-
-    fn id(&self) -> Option<&RequestId> {
-        self.base.request_id()
-    }
-}
+impl LspMessage for CodeActionResponse {}
 
 impl CodeActionResponse {
     pub fn new(id: &RequestId) -> Self {

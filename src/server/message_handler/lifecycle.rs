@@ -51,7 +51,7 @@ pub(super) async fn handle_initialize_request(
                         .clone()
                         .unwrap_or("no version specified".to_string())
                 );
-                server.state.client_Type = match client_info.name.as_str() {
+                server.state.client_type = match client_info.name.as_str() {
                     "Code - OSS" => Some(ClientType::Monaco),
                     "Neovim" => Some(ClientType::Neovim),
                     _ => None,

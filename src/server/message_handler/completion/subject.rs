@@ -4,7 +4,6 @@ use super::{
     CompletionEnvironment,
     error::CompletionError,
     utils::{CompletionTemplate, dispatch_completion_query, matches_search_term},
-    variable,
 };
 use crate::server::{
     Server,

@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::server::lsp::{LspMessage, NotificationMarker, rpc::NotificationMessageBase};
+use crate::server::lsp::{LspMessage, rpc::NotificationMessageBase};
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct UpdateDefaultBackendNotification {
@@ -9,17 +9,7 @@ pub struct UpdateDefaultBackendNotification {
     pub params: UpdateDefaultBackendParams,
 }
 
-impl LspMessage for UpdateDefaultBackendNotification {
-    type Kind = NotificationMarker;
-
-    fn method(&self) -> Option<&str> {
-        Some("qlueLs/updateDefaultBackend")
-    }
-
-    fn id(&self) -> Option<&crate::server::lsp::rpc::RequestId> {
-        None
-    }
-}
+impl LspMessage for UpdateDefaultBackendNotification {}
 
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]

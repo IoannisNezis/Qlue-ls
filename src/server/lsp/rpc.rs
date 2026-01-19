@@ -3,7 +3,7 @@ use std::{any::type_name, collections::HashMap, fmt::Display};
 use log::error;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
-use crate::server::lsp::{LspMessage, ResponseMarker};
+use crate::server::lsp::LspMessage;
 
 use super::{
     base_types::LSPAny,
@@ -154,27 +154,9 @@ pub struct ResponseMessage {
     pub error: Option<LSPError>,
 }
 
-impl LspMessage for ResponseMessage {
-    type Kind = ResponseMarker;
-
-    fn method(&self) -> Option<&str> {
-        None
-    }
-
-    fn id(&self) -> Option<&RequestId> {
-        self.id.request_id()
-    }
-}
+impl LspMessage for ResponseMessage {}
 
 impl ResponseMessage {
-    pub fn success(id: &RequestId) -> Self {
-        Self {
-            base: Message::new(),
-            id: RequestIdOrNull::RequestId(id.clone()),
-            result: Some(LSPAny::Null),
-            error: None,
-        }
-    }
     pub fn error(id: &RequestId, error: LSPError) -> Self {
         Self {
             base: Message::new(),
@@ -190,15 +172,6 @@ impl ResponseMessage {
 pub enum RequestIdOrNull {
     RequestId(RequestId),
     Null,
-}
-
-impl RequestIdOrNull {
-    pub fn request_id(&self) -> Option<&RequestId> {
-        match self {
-            RequestIdOrNull::RequestId(request_id) => Some(request_id),
-            RequestIdOrNull::Null => None,
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -221,9 +194,6 @@ impl ResponseMessageBase {
             base: Message::new(),
             id: RequestIdOrNull::RequestId(id.clone()),
         }
-    }
-    pub fn request_id(&self) -> Option<&RequestId> {
-        self.id.request_id()
     }
 }
 

@@ -53,7 +53,7 @@ pub enum ClientType {
 
 pub struct ServerState {
     pub status: ServerStatus,
-    pub client_Type: Option<ClientType>,
+    pub client_type: Option<ClientType>,
     documents: HashMap<String, TextDocumentItem>,
     backends: HashMap<String, BackendService>,
     request_method: HashMap<String, RequestMethod>,
@@ -69,7 +69,7 @@ impl ServerState {
     pub fn new() -> Self {
         ServerState {
             status: ServerStatus::Initializing,
-            client_Type: None,
+            client_type: None,
             documents: HashMap::new(),
             backends: HashMap::new(),
             request_method: HashMap::new(),
@@ -203,6 +203,7 @@ impl ServerState {
         self.backends.values().collect()
     }
 
+    #[cfg(target_arch = "wasm32")]
     pub(crate) fn add_running_request(&mut self, id: String, cancel_fn: Box<dyn Fn()>) {
         self.running_requests.insert(id, cancel_fn);
     }

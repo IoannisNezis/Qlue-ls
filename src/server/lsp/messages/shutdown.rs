@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::server::lsp::{
-    LspMessage, NotificationMarker, RequestMarker, ResponseMarker,
+    LspMessage,
     base_types::LSPAny,
-    rpc::{NotificationMessage, RequestId, RequestMessageBase, ResponseMessageBase},
+    rpc::{NotificationMessageBase, RequestId, RequestMessageBase, ResponseMessageBase},
 };
 
 #[derive(Debug, Deserialize, PartialEq)]
@@ -12,17 +12,7 @@ pub struct ShutdownRequest {
     pub base: RequestMessageBase,
 }
 
-impl LspMessage for ShutdownRequest {
-    type Kind = RequestMarker;
-
-    fn method(&self) -> Option<&str> {
-        Some("shutdown")
-    }
-
-    fn id(&self) -> Option<&RequestId> {
-        Some(&self.base.id)
-    }
-}
+impl LspMessage for ShutdownRequest {}
 
 #[derive(Debug, Serialize, PartialEq)]
 pub struct ShutdownResponse {
@@ -32,17 +22,7 @@ pub struct ShutdownResponse {
     pub result: Option<LSPAny>,
 }
 
-impl LspMessage for ShutdownResponse {
-    type Kind = ResponseMarker;
-
-    fn method(&self) -> Option<&str> {
-        todo!()
-    }
-
-    fn id(&self) -> Option<&RequestId> {
-        todo!()
-    }
-}
+impl LspMessage for ShutdownResponse {}
 
 impl ShutdownResponse {
     pub fn new(id: &RequestId) -> Self {
@@ -56,17 +36,7 @@ impl ShutdownResponse {
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct ExitNotification {
     #[serde(flatten)]
-    pub base: NotificationMessage,
+    pub base: NotificationMessageBase,
 }
 
-impl LspMessage for ExitNotification {
-    type Kind = NotificationMarker;
-
-    fn method(&self) -> Option<&str> {
-        Some("exit")
-    }
-
-    fn id(&self) -> Option<&RequestId> {
-        None
-    }
-}
+impl LspMessage for ExitNotification {}

@@ -567,7 +567,7 @@ fn get_trigger_token(root: &SyntaxNode, offset: TextSize) -> Option<SyntaxToken>
 
 fn get_anchor_token(
     mut trigger_token: SyntaxToken,
-    trigger_offset: TextSize,
+    _trigger_offset: TextSize,
 ) -> Option<SyntaxToken> {
     // NOTE: Skip first token in some cases:
     if !matches!(

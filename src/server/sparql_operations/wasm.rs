@@ -250,7 +250,7 @@ pub(crate) async fn execute_update(
                 .map(|e| e.name() == "AbortError")
                 .unwrap_or(false);
             if was_canceled {
-                SparqlRequestError::Canceled(CanceledError {
+                SparqlRequestError::_Canceled(CanceledError {
                     query: query.to_string(),
                 })
             } else {
@@ -380,7 +380,7 @@ pub(crate) async fn execute_query(
                 .map(|e| e.name() == "AbortError")
                 .unwrap_or(false);
             if was_canceled {
-                SparqlRequestError::Canceled(CanceledError {
+                SparqlRequestError::_Canceled(CanceledError {
                     query: query.to_string(),
                 })
             } else {
@@ -442,7 +442,7 @@ pub(crate) async fn execute_query(
                     Err(SparqlRequestError::Deserialization(format!("{err:?}")))
                 }
                 lazy_sparql_result_reader::SparqlResultReaderError::Canceled => {
-                    Err(SparqlRequestError::Canceled(CanceledError {
+                    Err(SparqlRequestError::_Canceled(CanceledError {
                         query: query.to_string(),
                     }))
                 }

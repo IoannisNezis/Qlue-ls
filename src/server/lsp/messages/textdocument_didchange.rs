@@ -3,29 +3,19 @@ use core::fmt;
 use serde::{Deserialize, Serialize};
 
 use crate::server::lsp::{
-    LspMessage, NotificationMarker,
-    rpc::NotificationMessage,
+    LspMessage,
+    rpc::NotificationMessageBase,
     textdocument::{Range, VersionedTextDocumentIdentifier},
 };
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct DidChangeTextDocumentNotification {
     #[serde(flatten)]
-    base: NotificationMessage,
+    base: NotificationMessageBase,
     pub params: DidChangeTextDocumentParams,
 }
 
-impl LspMessage for DidChangeTextDocumentNotification {
-    type Kind = NotificationMarker;
-
-    fn method(&self) -> Option<&str> {
-        Some("textDocument/didChange")
-    }
-
-    fn id(&self) -> Option<&crate::server::lsp::rpc::RequestId> {
-        None
-    }
-}
+impl LspMessage for DidChangeTextDocumentNotification {}
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]

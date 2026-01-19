@@ -1,27 +1,17 @@
 use serde::{Deserialize, Serialize};
 
 use crate::server::lsp::{
-    LspMessage, NotificationMarker, rpc::NotificationMessage, textdocument::TextDocumentItem,
+    LspMessage, rpc::NotificationMessageBase, textdocument::TextDocumentItem,
 };
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct DidOpenTextDocumentNotification {
     #[serde(flatten)]
-    base: NotificationMessage,
+    base: NotificationMessageBase,
     pub params: DidOpenTextDocumentPrams,
 }
 
-impl LspMessage for DidOpenTextDocumentNotification {
-    type Kind = NotificationMarker;
-
-    fn method(&self) -> Option<&str> {
-        Some("textDocument/didOpen")
-    }
-
-    fn id(&self) -> Option<&crate::server::lsp::rpc::RequestId> {
-        None
-    }
-}
+impl LspMessage for DidOpenTextDocumentNotification {}
 
 impl DidOpenTextDocumentNotification {
     pub fn get_text_document(self) -> TextDocumentItem {

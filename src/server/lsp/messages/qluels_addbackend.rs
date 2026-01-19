@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::server::{
     configuration::{CompletionTemplate, RequestMethod},
-    lsp::{LspMessage, NotificationMarker, rpc::NotificationMessageBase},
+    lsp::{LspMessage, rpc::NotificationMessageBase},
 };
 
 #[derive(Debug, Deserialize, PartialEq)]
@@ -14,17 +14,7 @@ pub struct AddBackendNotification {
     pub params: AddBackendParams,
 }
 
-impl LspMessage for AddBackendNotification {
-    type Kind = NotificationMarker;
-
-    fn method(&self) -> Option<&str> {
-        Some("qlueLs/addBackend")
-    }
-
-    fn id(&self) -> Option<&crate::server::lsp::rpc::RequestId> {
-        None
-    }
-}
+impl LspMessage for AddBackendNotification {}
 
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]

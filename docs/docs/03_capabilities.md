@@ -97,6 +97,7 @@ Often in the form of a *quickfix*, to fix a diagnostic.
 | shorten all uri's        | shorten all uri's into compacted form   |                   |
 | add to result            | add variable to selected result         |                   |
 | filter variable          | add filter for this variable            |                   |
+| add label                | add rdfs:label with a language filter   |                   |
 | lang-filter              | add language filter for object variable |                   |
 | transform into subselect | make a select into a subselect          |                   |
 

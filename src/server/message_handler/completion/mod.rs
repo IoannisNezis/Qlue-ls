@@ -117,7 +117,8 @@ pub(super) async fn handle_completion_request(
     let server = server_rc.lock().await;
 
     // Apply object suffix (trailing ` .\n` with indentation and cursor position)
-    let completion_list = if is_object_location {
+    let completion_list = if is_object_location && server.settings.completion.object_completion_suffix
+    {
         completion_list.map(|mut list| {
             for item in list.items.iter_mut() {
                 apply_object_suffix(

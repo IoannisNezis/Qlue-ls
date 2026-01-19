@@ -98,6 +98,7 @@ filter_same_line = true
 timeout_ms = 5000
 result_size_limit = 100
 subject_completion_trigger_length = 3
+object_completion_suffix = true
 
 [prefixes]
 add_missing = true

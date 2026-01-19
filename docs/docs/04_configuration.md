@@ -19,6 +19,7 @@ filter_same_line = true
 timeout_ms = 5000
 result_size_limit = 100
 subject_completion_trigger_length = 3
+object_completion_suffix = true
 
 [prefixes]
 add_missing = true
@@ -144,8 +145,17 @@ The result size of a completion query.
 | ---------| --------|
 | integer  | 3     |
 
-The amount of chars (actually bytes) required to trigger a subject completion.  
+The amount of chars (actually bytes) required to trigger a subject completion.
 This concerns online completions and not variable or construct completions!
+
+### completion.object_completion_suffix
+
+| Type     | Default |
+| ---------| --------|
+| boolean  | true    |
+
+Automatically append ` .\n` after object completions.
+This helps with writing triple patterns by automatically closing the statement.
 
 ## Prefix settings
 

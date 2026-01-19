@@ -107,3 +107,22 @@ remove_unused = false
 
 * [TJ DeVries](https://github.com/tjdevries) - for the inspiration and fantastic tutorials
 * [Hannah Bast](https://ad.informatik.uni-freiburg.de/staff/bast) - for mentorship and guidance.
+
+---
+
+<div align="center">
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="https://api.star-history.com/svg?repos=IoannisNezis/Qlue-ls&type=Date"
+    />
+    <source
+      media="(prefers-color-scheme: light)"
+      srcset="https://api.star-history.com/svg?repos=IoannisNezis/Qlue-ls&type=Date"
+    />
+    <img
+      alt="Star History Chart"
+      src="https://api.star-history.com/svg?repos=IoannisNezis/Qlue-ls&type=Date"
+    />
+  </picture>
+</div>

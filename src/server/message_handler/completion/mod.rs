@@ -23,7 +23,7 @@ use futures::lock::Mutex;
 use crate::server::{
     Server,
     lsp::{
-        CompletionItem, CompletionList, CompletionRequest, CompletionResponse,
+        Command, CompletionItem, CompletionList, CompletionRequest, CompletionResponse,
         CompletionTriggerKind, InsertTextFormat, errors::LSPError,
     },
     state::ClientType,
@@ -131,6 +131,11 @@ pub(super) async fn handle_completion_request(
                             .then_some("")
                             .unwrap_or(&line_indentation),
                     );
+                    item.command = Some(Command {
+                        title: "triggerNewCompletion".to_string(),
+                        command: "triggerNewCompletion".to_string(),
+                        arguments: None,
+                    });
                 }
                 list
             })

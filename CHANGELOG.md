@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.1.12] - 2025-01-21
+
+### fixed
+
+- use provided window in query execution requests
+
+### changed
+
+- renamed query template variable "qlue_ls_detail" to "qlue_ls_alias"
+
 ## [1.1.11] - 2025-01-20
 
 ### changed

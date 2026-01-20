@@ -12,7 +12,7 @@ Each completion query result **MUST** contain the following variables:
 | ----------------- | ----------------------------------- | --------------------- |
 | `?qlue_ls_entity` | RDF term, value to be completed     | \<book_1\>            |
 | `?qlue_ls_label`  | representation of completion item   | book title            |
-| `?qlue_ls_detail` | description of the completion item  | Book from author ...  |
+| `?qlue_ls_alias` | description of the completion item  | Book from author ...  |
 
 Optionally, you can include `?qlue_ls_count` to provide a relevance score (e.g., occurrence count) for sorting results.
 
@@ -101,7 +101,7 @@ Below are simplified, generic examples for each query type. These can be adapted
 PREFIX {{prefix.0}}: <{{prefix.1}}>
 {% endfor %}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail ?qlue_ls_count WHERE {
+SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
   {
     SELECT ?qlue_ls_entity (COUNT(*) AS ?qlue_ls_count) WHERE {
       ?qlue_ls_entity ?p ?o .
@@ -115,7 +115,7 @@ SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail ?qlue_ls_count WHERE {
     LIMIT {{ limit }}
   }
   OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label }
-  OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_detail }
+  OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_alias }
 }
 ```
 
@@ -126,7 +126,7 @@ SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail ?qlue_ls_count WHERE {
 PREFIX {{prefix.0}}: <{{prefix.1}}>
 {% endfor %}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail ?qlue_ls_count WHERE {
+SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
   {
     SELECT ?qlue_ls_entity (COUNT(*) AS ?qlue_ls_count) WHERE {
       {{ context }} {{ local_context }}
@@ -136,7 +136,7 @@ SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail ?qlue_ls_count WHERE {
     LIMIT {{ limit }}
   }
   OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label }
-  OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_detail }
+  OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_alias }
 }
 ```
 
@@ -147,7 +147,7 @@ SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail ?qlue_ls_count WHERE {
 PREFIX {{prefix.0}}: <{{prefix.1}}>
 {% endfor %}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail ?qlue_ls_count WHERE {
+SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
   {
     SELECT ?qlue_ls_entity (COUNT(*) AS ?qlue_ls_count) WHERE {
       {{ local_context }}
@@ -157,7 +157,7 @@ SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail ?qlue_ls_count WHERE {
     LIMIT {{ limit }}
   }
   OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label }
-  OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_detail }
+  OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_alias }
 }
 ```
 
@@ -168,7 +168,7 @@ SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail ?qlue_ls_count WHERE {
 PREFIX {{prefix.0}}: <{{prefix.1}}>
 {% endfor %}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail ?qlue_ls_count WHERE {
+SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
   {
     SELECT ?qlue_ls_entity (COUNT(*) AS ?qlue_ls_count) WHERE {
       {{ context }} {{ local_context }}
@@ -178,7 +178,7 @@ SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail ?qlue_ls_count WHERE {
     LIMIT {{ limit }}
   }
   OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label }
-  OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_detail }
+  OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_alias }
   {% if search_term %}
   FILTER(CONTAINS(LCASE(STR(?qlue_ls_label)), LCASE("{{ search_term }}")))
   {% endif %}
@@ -192,7 +192,7 @@ SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail ?qlue_ls_count WHERE {
 PREFIX {{prefix.0}}: <{{prefix.1}}>
 {% endfor %}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail ?qlue_ls_count WHERE {
+SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
   {
     SELECT ?qlue_ls_entity (COUNT(*) AS ?qlue_ls_count) WHERE {
       {{ local_context }}
@@ -202,7 +202,7 @@ SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail ?qlue_ls_count WHERE {
     LIMIT {{ limit }}
   }
   OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label }
-  OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_detail }
+  OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_alias }
   {% if search_term %}
   FILTER(CONTAINS(LCASE(STR(?qlue_ls_label)), LCASE("{{ search_term }}")))
   {% endif %}
@@ -218,16 +218,16 @@ Hover queries fetch information about an entity for display in tooltips. Unlike 
 | Variable          | Content                            |
 | ----------------- | ---------------------------------- |
 | `?qlue_ls_label`  | Label/name of the entity           |
-| `?qlue_ls_detail` | Description or additional details  |
+| `?qlue_ls_alias` | Description or additional details  |
 
 ```sparql
 {% for prefix in prefixes %}
 PREFIX {{prefix.0}}: <{{prefix.1}}>
 {% endfor %}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?qlue_ls_label ?qlue_ls_detail WHERE {
+SELECT ?qlue_ls_label ?qlue_ls_alias WHERE {
   {{ entity }} rdfs:label ?qlue_ls_label .
-  OPTIONAL { {{ entity }} rdfs:comment ?qlue_ls_detail }
+  OPTIONAL { {{ entity }} rdfs:comment ?qlue_ls_alias }
 }
 LIMIT 1
 ```
@@ -275,7 +275,7 @@ Use the `variable` test to adapt queries based on whether the subject is bound:
 Sub-select queries are a powerful technique to speed up completion queries. By performing aggregation and limiting in an inner query, you reduce the number of entities that need label/detail lookups:
 
 ```sparql
-SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail ?qlue_ls_count WHERE {
+SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
   {
     # Inner query: find and rank entities efficiently
     SELECT ?qlue_ls_entity (COUNT(*) AS ?qlue_ls_count) WHERE {
@@ -287,7 +287,7 @@ SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail ?qlue_ls_count WHERE {
   }
   # Outer query: fetch labels only for the top results
   OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label }
-  OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_detail }
+  OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_alias }
 }
 ```
 
@@ -303,7 +303,7 @@ Use OPTIONAL for non-critical fields:
 
 ```sparql
 OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label }
-OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_detail }
+OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_alias }
 ```
 
 ### Performance Tips

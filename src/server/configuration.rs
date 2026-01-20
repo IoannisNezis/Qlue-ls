@@ -302,7 +302,7 @@ mod tests {
               rdfs: http://www.w3.org/2000/01/rdf-schema#
             default: false
             queries:
-              subjectCompletion: SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail WHERE { ?qlue_ls_entity a ?type }
+              subjectCompletion: SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias WHERE { ?qlue_ls_entity a ?type }
               predicateCompletionContextSensitive: SELECT ?qlue_ls_entity WHERE { ?s ?qlue_ls_entity ?o }
               predicateCompletionContextInsensitive: SELECT ?qlue_ls_entity WHERE { [] ?qlue_ls_entity [] }
               objectCompletionContextSensitive: SELECT ?qlue_ls_entity WHERE { ?s ?p ?qlue_ls_entity }
@@ -409,10 +409,10 @@ mod tests {
             default: false
             queries:
               subjectCompletion: |
-                SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail
+                SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias
                 WHERE {
                   ?qlue_ls_entity rdfs:label ?qlue_ls_label .
-                  OPTIONAL { ?qlue_ls_entity schema:description ?qlue_ls_detail }
+                  OPTIONAL { ?qlue_ls_entity schema:description ?qlue_ls_alias }
                   FILTER(LANG(?qlue_ls_label) = "en")
                 }
                 LIMIT 100
@@ -436,7 +436,7 @@ mod tests {
             .queries
             .get(&CompletionTemplate::SubjectCompletion)
             .unwrap();
-        assert!(subject_query.contains("SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail"));
+        assert!(subject_query.contains("SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias"));
         assert!(subject_query.contains("FILTER(LANG(?qlue_ls_label) = \"en\")"));
     }
 

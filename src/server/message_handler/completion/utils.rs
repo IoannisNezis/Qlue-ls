@@ -151,7 +151,7 @@ pub(super) async fn fetch_online_completions(
                 .get("qlue_ls_label")
                 .map_or(String::new(), |rdf_term| rdf_term.value().to_string());
             let detail = binding
-                .get("qlue_ls_detail")
+                .get("qlue_ls_alias")
                 .map(|rdf_term: &RDFTerm| rdf_term.value().to_string());
             let score = binding
                 .get("qlue_ls_count")
@@ -377,7 +377,7 @@ pub(super) fn to_completion_items(
                     }),
                     detail: None,
                     documentation: Some(format!(
-                        "Label: {label}\nAlias: {}\n\nScore: {}",
+                        "Label: {label}\nAlias: {}\nScore: {}",
                         detail.unwrap_or_default(),
                         score.map_or("None".to_string(), |score| score.to_string()),
                     )),

@@ -300,7 +300,7 @@ pub(crate) async fn execute_query(
     engine: Option<SparqlEngine>,
     timeout_ms: Option<u32>,
     method: RequestMethod,
-    _window: Option<Window>,
+    window: Option<Window>,
     lazy: bool,
 ) -> Result<Option<SparqlResult>, SparqlRequestError> {
     use js_sys::JsString;
@@ -419,7 +419,7 @@ pub(crate) async fn execute_query(
         if let Err(err) = lazy_sparql_result_reader::read(
             resp.body().unwrap(),
             100,
-            Some(100),
+            window.map(|window| window.window_size as usize),
             0,
             async |mut partial_result: PartialResult| {
                 let server = server_rc.lock().await;

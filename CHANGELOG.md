@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.1.11] - 2025-01-20
+
+### changed
+
+- remove "Rank" from completion item documentation
+- trigger completion after object comletion if object_completion_suffix is enabled
+
 ## [1.1.10] - 2025-01-19
 
 ### added

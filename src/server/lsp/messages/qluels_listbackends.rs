@@ -1,6 +1,6 @@
 use crate::server::lsp::{
     rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
-    BackendService, LspMessage, RequestMarker, ResponseMarker,
+    BackendService, LspMessage,
 };
 use serde::{Deserialize, Serialize};
 
@@ -16,17 +16,7 @@ impl ListBackendsRequest {
     }
 }
 
-impl LspMessage for ListBackendsRequest {
-    type Kind = RequestMarker;
-
-    fn method(&self) -> Option<&str> {
-        Some("qlueLs/listBackends")
-    }
-
-    fn id(&self) -> Option<&crate::server::lsp::rpc::RequestId> {
-        Some(&self.base.id)
-    }
-}
+impl LspMessage for ListBackendsRequest {}
 
 #[derive(Debug, Serialize, PartialEq)]
 pub struct ListBackendsResponse {
@@ -43,14 +33,4 @@ impl ListBackendsResponse {
     }
 }
 
-impl LspMessage for ListBackendsResponse {
-    type Kind = ResponseMarker;
-
-    fn method(&self) -> Option<&str> {
-        None
-    }
-
-    fn id(&self) -> Option<&crate::server::lsp::rpc::RequestId> {
-        None
-    }
-}
+impl LspMessage for ListBackendsResponse {}

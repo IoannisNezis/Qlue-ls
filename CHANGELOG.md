@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.1.14] - 2025-01-22
+
+### changed
+
+- If not limit is provided for "qlueLs/executeOperateion" request, the full result is returned
+
 ## [1.1.13] - 2025-01-22
 
 ### added

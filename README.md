@@ -81,7 +81,7 @@ For a complete overview, see the [capabilities section](https://docs.qlue-ls.com
 Qlue-ls is configured via a qlue-ls.toml or qlue-ls.yml file.  
 Full configuration options are explained in the [documentation](https://docs.qlue-ls.com/04_configuration/).
 
-## Default Configuration
+## Example Configuration
 
 ```toml
 [format]
@@ -99,6 +99,7 @@ timeout_ms = 5000
 result_size_limit = 100
 subject_completion_trigger_length = 3
 object_completion_suffix = true
+variable_completion_limit = 10
 
 [prefixes]
 add_missing = true

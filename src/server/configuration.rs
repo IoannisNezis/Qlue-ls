@@ -132,6 +132,8 @@ pub struct CompletionSettings {
     pub result_size_limit: u32,
     pub subject_completion_trigger_length: u32,
     pub object_completion_suffix: bool,
+    /// Maximum number of variable completions to suggest. None means unlimited.
+    pub variable_completion_limit: Option<u32>,
 }
 
 impl Default for CompletionSettings {
@@ -141,6 +143,7 @@ impl Default for CompletionSettings {
             result_size_limit: 100,
             subject_completion_trigger_length: 3,
             object_completion_suffix: true,
+            variable_completion_limit: None,
         }
     }
 }

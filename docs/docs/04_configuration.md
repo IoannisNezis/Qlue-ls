@@ -2,7 +2,7 @@
 
 Qlue-ls can be configured through a `qlue-ls.toml` or `qlue-ls.yml` file.
 
-Here is the full default configuration:
+Here is an example configuration:
 
 ```toml
 [format]
@@ -20,6 +20,7 @@ timeout_ms = 5000
 result_size_limit = 100
 subject_completion_trigger_length = 3
 object_completion_suffix = true
+variable_completion_limit = 10
 
 [prefixes]
 add_missing = true
@@ -156,6 +157,16 @@ This concerns online completions and not variable or construct completions!
 
 Automatically append ` .\n` after object completions.
 This helps with writing triple patterns by automatically closing the statement.
+
+### completion.variable_completion_limit
+
+| Type     | Default |
+| ---------| --------|
+| integer  | none    |
+
+Maximum number of variable completions to suggest.
+When not set (default), all variables in the query are suggested.
+Set this to limit suggestions when queries have many variables.
 
 ## Prefix settings
 

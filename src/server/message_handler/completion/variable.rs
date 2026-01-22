@@ -132,8 +132,20 @@ pub(super) async fn completions(
             }
         }
     }
+
+    // Apply variable completion limit if configured
+    let limit = server_rc
+        .lock()
+        .await
+        .settings
+        .completion
+        .variable_completion_limit;
+    if let Some(limit) = limit {
+        suggestions.truncate(limit as usize);
+    }
+
     Ok(CompletionList {
-        is_incomplete: false,
+        is_incomplete: limit.is_some_and(|l| suggestions.len() >= l as usize),
         item_defaults: Some(ItemDefaults {
             edit_range: None,
             commit_characters: None,

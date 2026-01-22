@@ -34,8 +34,8 @@ impl LspMessage for ExecuteOperationRequest {}
 #[serde(rename_all = "camelCase")]
 pub struct ExecuteOperationParams {
     pub text_document: TextDocumentIdentifier,
-    pub max_result_size: Option<u32>,
-    pub result_offset: Option<u32>,
+    pub max_result_size: Option<usize>,
+    pub result_offset: Option<usize>,
     pub query_id: Option<String>,
     pub lazy: Option<bool>,
     pub access_token: Option<String>,

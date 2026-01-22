@@ -61,13 +61,14 @@ pub(super) async fn hover(
         let method = server.state.get_backend_request_method(&backend.name);
         let sparql_response = execute_query(
             server_rc.clone(),
-            &backend.url,
-            &query,
+            backend.url,
+            query,
             None,
             None,
             Some(server.settings.completion.timeout_ms),
             method,
             None,
+            0,
             false,
         )
         .await

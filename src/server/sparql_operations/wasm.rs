@@ -6,7 +6,6 @@ use crate::server::lsp::PartialSparqlResultNotification;
 use crate::server::lsp::SparqlEngine;
 use crate::server::sparql_operations::ConnectionError;
 use crate::server::sparql_operations::SparqlRequestError;
-use crate::server::sparql_operations::Window;
 use crate::sparql::results::RDFTerm;
 use crate::sparql::results::SparqlResult;
 use futures::lock::Mutex;
@@ -294,13 +293,14 @@ pub(crate) async fn execute_update(
 
 pub(crate) async fn execute_query(
     server_rc: Rc<Mutex<Server>>,
-    url: &str,
-    query: &str,
+    url: String,
+    query: String,
     query_id: Option<&str>,
     engine: Option<SparqlEngine>,
     timeout_ms: Option<u32>,
     method: RequestMethod,
-    window: Option<Window>,
+    limit: Option<usize>,
+    offset: usize,
     lazy: bool,
 ) -> Result<Option<SparqlResult>, SparqlRequestError> {
     use js_sys::JsString;
@@ -329,7 +329,7 @@ pub(crate) async fn execute_query(
     let request = match (&method, engine) {
         (RequestMethod::GET, _) => {
             opts.set_method("GET");
-            Request::new_with_str_and_init(&format!("{url}?query={}", encode(query)), &opts)
+            Request::new_with_str_and_init(&format!("{url}?query={}", encode(&query)), &opts)
                 .unwrap()
         }
         (RequestMethod::POST, Some(SparqlEngine::QLever)) => {
@@ -337,9 +337,9 @@ pub(crate) async fn execute_query(
             // FIXME: Here the send limit is hardcoded to 10000
             // this is due to the internal batching of QLever
             // A lower send limit causes QLever not imediatly sending the result.
-            let body = format!("send=10000&query={}", js_sys::encode_uri_component(query));
+            let body = format!("send=10000&query={}", js_sys::encode_uri_component(&query));
             opts.set_body(&JsString::from_str(&body).unwrap());
-            let request = Request::new_with_str_and_init(url, &opts).unwrap();
+            let request = Request::new_with_str_and_init(&url, &opts).unwrap();
             request
                 .headers()
                 .set("Content-Type", "application/x-www-form-urlencoded")
@@ -351,8 +351,8 @@ pub(crate) async fn execute_query(
         }
         (RequestMethod::POST, _) => {
             opts.set_method("POST");
-            opts.set_body(&JsString::from_str(query).unwrap());
-            let request = Request::new_with_str_and_init(url, &opts).unwrap();
+            opts.set_body(&JsString::from_str(&query).unwrap());
+            let request = Request::new_with_str_and_init(&url, &opts).unwrap();
             request
                 .headers()
                 .set("Content-Type", "application/sparql-query")
@@ -418,9 +418,9 @@ pub(crate) async fn execute_query(
     if lazy {
         if let Err(err) = lazy_sparql_result_reader::read(
             resp.body().unwrap(),
-            100,
-            window.map(|window| window.window_size as usize),
-            0,
+            1000,
+            limit,
+            offset,
             async |mut partial_result: PartialResult| {
                 let server = server_rc.lock().await;
                 compress_result_uris(&*server, &mut partial_result);

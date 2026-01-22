@@ -102,13 +102,14 @@ pub(super) async fn fetch_online_completions(
 
     let result = execute_query(
         server_rc.clone(),
-        &url,
-        &query,
+        url,
+        query,
         None,
         None,
         Some(timeout_ms),
         method,
         None,
+        0,
         false,
     )
     .await

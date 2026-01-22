@@ -8,7 +8,7 @@ use crate::{
             errors::LSPError,
         },
         message_handler::execute::utils::get_timestamp,
-        sparql_operations::{SparqlRequestError, Window, execute_construct_query, execute_query},
+        sparql_operations::{SparqlRequestError, execute_construct_query, execute_query},
     },
     sparql::results::RDFTerm,
 };
@@ -47,16 +47,14 @@ async fn handle_normal_query(
     let start_time = get_timestamp();
     let query_result = match execute_query(
         server_rc.clone(),
-        &url,
-        &query,
+        url,
+        query,
         request.params.query_id.as_ref().map(|s| s.as_ref()),
         engine,
         None,
         RequestMethod::POST,
-        Some(Window::new(
-            request.params.max_result_size.unwrap_or(100),
-            request.params.result_offset.unwrap_or(0),
-        )),
+        request.params.max_result_size,
+        request.params.result_offset.unwrap_or(0),
         request.params.lazy.unwrap_or(false),
     )
     .await

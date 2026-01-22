@@ -4,7 +4,6 @@ use crate::server::lsp::ExecuteUpdateResponseResult;
 use crate::server::lsp::SparqlEngine;
 use crate::server::sparql_operations::ConnectionError;
 use crate::server::sparql_operations::SparqlRequestError;
-use crate::server::sparql_operations::Window;
 use crate::sparql::results::SparqlResult;
 use futures::lock::Mutex;
 use reqwest::Client;
@@ -15,21 +14,22 @@ use urlencoding::encode;
 
 pub(crate) async fn execute_query(
     _server_rc: Rc<Mutex<Server>>,
-    url: &str,
-    query: &str,
+    url: String,
+    mut query: String,
     _query_id: Option<&str>,
     _engine: Option<SparqlEngine>,
     timeout_ms: Option<u32>,
     method: RequestMethod,
-    window: Option<Window>,
+    limit: Option<usize>,
+    offset: usize,
     lazy: bool,
 ) -> Result<Option<SparqlResult>, SparqlRequestError> {
     if lazy {
         log::warn!("Lazy Query execution is not implemented for non wasm targets");
     }
-    let query = window
-        .and_then(|window| window.rewrite(query))
-        .unwrap_or(query.to_string());
+    if let Some(new_query) = add_limit_offset_to_query(&query, limit, offset) {
+        query = new_query;
+    }
 
     let request = match method {
         RequestMethod::GET => Client::new()
@@ -114,4 +114,27 @@ pub(crate) async fn execute_update(
     _access_token: Option<&str>,
 ) -> Result<Vec<ExecuteUpdateResponseResult>, SparqlRequestError> {
     todo!()
+}
+
+fn add_limit_offset_to_query(query: &str, limit: Option<usize>, offset: usize) -> Option<String> {
+    if limit.is_none() && offset == 0 {
+        return None;
+    }
+    use ll_sparql_parser::{
+        ast::{AstNode, QueryUnit},
+        parse_query,
+    };
+    let syntax_tree = QueryUnit::cast(parse_query(query))?;
+    let select_query = syntax_tree.select_query()?;
+    Some(format!(
+        "{}{}{}",
+        &query[0..select_query.syntax().text_range().start().into()],
+        format!(
+            "SELECT * WHERE {{\n{}\n}}\n{}OFFSET {}",
+            select_query.text(),
+            limit.map_or(String::new(), |limit| format!("LIMIT {limit}\n")),
+            offset
+        ),
+        &query[select_query.syntax().text_range().end().into()..]
+    ))
 }

@@ -59,13 +59,13 @@ pub enum CompletionTriggerKind {
 pub struct CompletionResponse {
     #[serde(flatten)]
     base: ResponseMessageBase,
-    result: Option<CompletionList>,
+    result: CompletionList,
 }
 
 impl LspMessage for CompletionResponse {}
 
 impl CompletionResponse {
-    pub fn new(id: &RequestId, completion_list: Option<CompletionList>) -> Self {
+    pub fn new(id: &RequestId, completion_list: CompletionList) -> Self {
         CompletionResponse {
             base: ResponseMessageBase::success(id),
             result: completion_list,
@@ -73,7 +73,7 @@ impl CompletionResponse {
     }
 }
 
-#[derive(Debug, Serialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct CompletionList {
     pub is_incomplete: bool,

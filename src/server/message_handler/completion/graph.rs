@@ -3,7 +3,7 @@ use crate::server::lsp::{CompletionItem, CompletionItemKind, CompletionList, Ins
 use super::{environment::CompletionEnvironment, error::CompletionError};
 
 pub(super) fn completions(
-    _context: CompletionEnvironment,
+    _context: &CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
     Ok(CompletionList {
         is_incomplete: false,

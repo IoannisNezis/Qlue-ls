@@ -11,6 +11,7 @@ mod service_url;
 mod solution_modifier;
 mod start;
 mod subject;
+mod transformer;
 mod utils;
 mod variable;
 
@@ -23,10 +24,12 @@ use futures::lock::Mutex;
 use crate::server::{
     Server,
     lsp::{
-        Command, CompletionItem, CompletionList, CompletionRequest, CompletionResponse,
-        CompletionTriggerKind, InsertTextFormat, errors::LSPError,
+        CompletionList, CompletionRequest, CompletionResponse, CompletionTriggerKind,
+        errors::LSPError,
     },
-    state::ClientType,
+    message_handler::completion::transformer::{
+        CompletionTransformer, ObjectSuffixTransformer, SemicolonTransformer,
+    },
 };
 
 pub(super) async fn handle_completion_request(
@@ -38,10 +41,7 @@ pub(super) async fn handle_completion_request(
         .map_err(to_lsp_error)?;
     // log::info!("Completion env:\n{}", env);
 
-    let is_object_location = matches!(env.location, CompletionLocation::Object(_));
-    let line_indentation = env.line_indentation.clone();
-
-    let completion_list = if env.trigger_kind == CompletionTriggerKind::TriggerCharacter
+    let mut completion_list = if env.trigger_kind == CompletionTriggerKind::TriggerCharacter
         && env.trigger_character.as_ref().is_some_and(|tc| tc == "?")
         || env
             .search_term
@@ -68,80 +68,51 @@ pub(super) async fn handle_completion_request(
                 .ok(),
         )
         .flatten();
-
-        let completion_list = if env.location == CompletionLocation::Unknown {
-            None
-        } else {
-            Some(
-                match env.location {
-                    CompletionLocation::Start => start::completions(env).await,
-                    CompletionLocation::SelectBinding(_) => select_binding::completions(env),
-                    CompletionLocation::Subject => {
-                        subject::completions(server_rc.clone(), env).await
-                    }
-                    CompletionLocation::Predicate(_) => {
-                        predicate::completions(server_rc.clone(), env).await
-                    }
-                    CompletionLocation::Object(_) => {
-                        object::completions(server_rc.clone(), env).await
-                    }
-                    CompletionLocation::SolutionModifier => solution_modifier::completions(env),
-                    CompletionLocation::Graph => graph::completions(env),
-                    CompletionLocation::BlankNodeProperty(_) => {
-                        blank_node_property::completions(server_rc.clone(), env).await
-                    }
-                    CompletionLocation::BlankNodeObject(_) => {
-                        blank_node_object::completions(server_rc.clone(), env).await
-                    }
-                    CompletionLocation::ServiceUrl => {
-                        service_url::completions(server_rc.clone(), env).await
-                    }
-                    CompletionLocation::FilterConstraint | CompletionLocation::GroupCondition => {
-                        variable::completions_transformed(server_rc.clone(), &env).await
-                    }
-                    CompletionLocation::OrderCondition => {
-                        order_condition::completions(server_rc.clone(), env).await
-                    }
-                    location => Err(CompletionError::Localization(format!(
-                        "Unknown location \"{:?}\"",
-                        location
-                    ))),
+        let completion_list = (env.location != CompletionLocation::Unknown).then_some(
+            match env.location {
+                CompletionLocation::Start => start::completions(&env).await,
+                CompletionLocation::SelectBinding(_) => select_binding::completions(&env),
+                CompletionLocation::Subject => subject::completions(server_rc.clone(), &env).await,
+                CompletionLocation::Predicate(_) => {
+                    predicate::completions(server_rc.clone(), &env).await
                 }
-                .map_err(to_lsp_error)?,
-            )
-        };
-
+                CompletionLocation::Object(_) => object::completions(server_rc.clone(), &env).await,
+                CompletionLocation::SolutionModifier => solution_modifier::completions(&env),
+                CompletionLocation::Graph => graph::completions(&env),
+                CompletionLocation::BlankNodeProperty(_) => {
+                    blank_node_property::completions(server_rc.clone(), &env).await
+                }
+                CompletionLocation::BlankNodeObject(_) => {
+                    blank_node_object::completions(server_rc.clone(), &env).await
+                }
+                CompletionLocation::ServiceUrl => {
+                    service_url::completions(server_rc.clone(), &env).await
+                }
+                CompletionLocation::FilterConstraint | CompletionLocation::GroupCondition => {
+                    variable::completions_transformed(server_rc.clone(), &env).await
+                }
+                CompletionLocation::OrderCondition => {
+                    order_condition::completions(server_rc.clone(), &env).await
+                }
+                ref location => Err(CompletionError::Localization(format!(
+                    "Unknown location \"{:?}\"",
+                    location
+                ))),
+            }
+            .map_err(to_lsp_error)?,
+        );
         merge_completions(completion_list, variable_completions)
-    };
+    }
+    .unwrap_or_default();
 
     let server = server_rc.lock().await;
-
-    // Apply object suffix (trailing ` .\n` with indentation and cursor position)
-    let completion_list =
-        if is_object_location && server.settings.completion.object_completion_suffix {
-            completion_list.map(|mut list| {
-                for item in list.items.iter_mut() {
-                    apply_object_suffix(
-                        item,
-                        server
-                            .state
-                            .client_type
-                            .as_ref()
-                            .is_some_and(|client_type| matches!(client_type, ClientType::Monaco))
-                            .then_some("")
-                            .unwrap_or(&line_indentation),
-                    );
-                    item.command = Some(Command {
-                        title: "triggerNewCompletion".to_string(),
-                        command: "triggerNewCompletion".to_string(),
-                        arguments: None,
-                    });
-                }
-                list
-            })
-        } else {
-            completion_list
-        };
+    if let Some(transformer) = ObjectSuffixTransformer::try_from_env(&env, &server) {
+        transformer.transform(&mut completion_list);
+    }
+    if let Some(transformer) = SemicolonTransformer::try_from_env(&env) {
+        transformer.transform(&mut completion_list);
+    }
+    log::debug!("completion_list len : {}", completion_list.items.len());
 
     server.send_message(CompletionResponse::new(request.get_id(), completion_list))
 }
@@ -158,16 +129,4 @@ fn merge_completions(
             Some(list1)
         }
     }
-}
-
-fn apply_object_suffix(item: &mut CompletionItem, indent: &str) {
-    // Handle text_edit (used by online completions)
-    if let Some(ref mut text_edit) = item.text_edit {
-        text_edit.new_text = format!("{} .\n{indent}$0", text_edit.new_text.trim_end());
-    }
-    // Handle insert_text (used by variable completions)
-    if let Some(ref mut insert_text) = item.insert_text {
-        *insert_text = format!("{} .\n{indent}$0", insert_text.trim_end());
-    }
-    item.insert_text_format = Some(InsertTextFormat::Snippet);
 }

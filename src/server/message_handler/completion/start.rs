@@ -5,7 +5,7 @@ use crate::server::lsp::{
 use super::{CompletionEnvironment, error::CompletionError};
 
 pub(super) async fn completions(
-    _context: CompletionEnvironment,
+    _context: &CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
     Ok(CompletionList {
         is_incomplete: false,

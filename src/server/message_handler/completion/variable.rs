@@ -34,13 +34,13 @@ pub(super) async fn completions(
     .into_iter()
     .map(|var| CompletionItem {
         insert_text: Some(format!("{}{}", var, suffix)),
-        label: var,
+        label: var.clone(),
         label_details: None,
         detail: Some("Variable".to_string()),
         documentation: None,
         kind: CompletionItemKind::Variable,
         sort_text: None,
-        filter_text: None,
+        filter_text: Some(format!("?{var}")),
         text_edit: None,
         insert_text_format: Some(InsertTextFormat::PlainText),
         additional_text_edits: None,
@@ -221,6 +221,7 @@ pub(super) async fn completions_transformed(
     for item in variable_completions.items.iter_mut() {
         item.insert_text = item.insert_text.as_ref().map(|text| format!("?{}", text));
         item.label = format!("?{}", item.label);
+        item.filter_text = Some(format!("?{}", item.label));
         if item.sort_text.is_none() {
             item.sort_text = Some(format!("{:0>4}0", 1));
         }

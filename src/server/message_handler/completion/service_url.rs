@@ -12,11 +12,11 @@ use std::rc::Rc;
 
 pub(super) async fn completions(
     server_rc: Rc<Mutex<Server>>,
-    environment: CompletionEnvironment,
+    environment: &CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
     let server = server_rc.lock().await;
     let default_backend = server.state.get_default_backend();
-    let query_unit = QueryUnit::cast(environment.tree);
+    let query_unit = QueryUnit::cast(environment.tree.clone());
     Ok(CompletionList {
         is_incomplete: false,
         item_defaults: None,

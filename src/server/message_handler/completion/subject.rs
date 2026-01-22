@@ -14,7 +14,7 @@ use ll_sparql_parser::syntax_kind::SyntaxKind;
 
 pub(super) async fn completions(
     server_rc: Rc<Mutex<Server>>,
-    environment: CompletionEnvironment,
+    environment: &CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
     let mut items: Vec<CompletionItem> = (environment
         .continuations
@@ -71,6 +71,7 @@ pub(super) async fn completions(
             }
         }
     }
+
     Ok(CompletionList {
         is_incomplete: true,
         item_defaults: None,

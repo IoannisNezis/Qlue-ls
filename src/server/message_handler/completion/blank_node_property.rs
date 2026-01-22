@@ -11,7 +11,7 @@ use ll_sparql_parser::syntax_kind::SyntaxKind;
 
 pub(super) async fn completions(
     server_rc: Rc<Mutex<Server>>,
-    environment: CompletionEnvironment,
+    environment: &CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
     let mut template_context = environment.template_context().await;
     template_context.insert("local_context", &local_context(&environment));

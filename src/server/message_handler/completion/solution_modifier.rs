@@ -1,11 +1,11 @@
-use super::{CompletionEnvironment, error::CompletionError, utils::matches_search_term};
+use super::{error::CompletionError, utils::matches_search_term, CompletionEnvironment};
 use crate::server::lsp::{
     Command, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
 };
 use ll_sparql_parser::syntax_kind::SyntaxKind::*;
 
 pub(super) fn completions(
-    context: CompletionEnvironment,
+    context: &CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
     let mut items = Vec::new();
     let search_term = context.search_term.as_deref();

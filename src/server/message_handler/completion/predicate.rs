@@ -19,7 +19,7 @@ use wasm_bindgen_futures::spawn_local;
 
 pub(super) async fn completions(
     server_rc: Rc<Mutex<Server>>,
-    environment: CompletionEnvironment,
+    environment: &CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
     // NOTE: Compute template Context
     let mut template_context = environment.template_context().await;

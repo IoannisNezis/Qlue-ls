@@ -1390,3 +1390,45 @@ fn format_emojis() {
     settings.align_predicates = true;
     format_and_compare(ugly_query, pretty_query, &settings);
 }
+
+#[test]
+fn compact_formatting_1() {
+    let ugly_query = indoc! {
+    "SELECT * WHERE {
+       {
+          SELECT * WHERE {}
+       }
+     }"
+    };
+    let pretty_query = indoc! {
+    "SELECT * WHERE {
+       { SELECT * WHERE {} }
+     }
+     "
+    };
+    let mut settings = FormatSettings::default();
+    settings.compact = Some(70);
+    format_and_compare(ugly_query, pretty_query, &settings);
+}
+
+#[test]
+fn compact_formatting_2() {
+    let ugly_query = indoc! {
+    "SELECT * WHERE {
+       {
+          SELECT * WHERE {
+            ?a ?b ?c
+          }
+       }
+     }"
+    };
+    let pretty_query = indoc! {
+    "SELECT * WHERE {
+       { SELECT * WHERE { ?a ?b ?c } }
+     }
+     "
+    };
+    let mut settings = FormatSettings::default();
+    settings.compact = Some(70);
+    format_and_compare(ugly_query, pretty_query, &settings);
+}

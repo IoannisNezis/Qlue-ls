@@ -1,7 +1,12 @@
 use core::fmt;
 use std::vec;
 
-use ll_sparql_parser::{SyntaxElement, SyntaxNode, parse, syntax_kind::SyntaxKind};
+use ll_sparql_parser::{
+    SyntaxElement, SyntaxNode,
+    ast::{AstNode, TriplesBlock},
+    parse,
+    syntax_kind::SyntaxKind,
+};
 use text_size::{TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
@@ -12,6 +17,7 @@ use crate::server::{
         errors::LSPError,
         textdocument::{Position, Range, TextDocumentItem, TextEdit},
     },
+    message_handler::{formatting::utils::subtree_width, settings},
 };
 
 use super::utils::KEYWORDS;
@@ -556,20 +562,33 @@ impl<'a> Walker<'a> {
     ) -> Option<SimplifiedTextEdit> {
         let insert = match node.kind() {
             SyntaxKind::ConstructTriples
-            | SyntaxKind::SubSelect
             | SyntaxKind::SolutionModifier
             | SyntaxKind::DatasetClause
             | SyntaxKind::TriplesTemplate
-            | SyntaxKind::TriplesBlock
             | SyntaxKind::UNION => Some(self.get_linebreak(indentation)),
-
+            SyntaxKind::TriplesBlock => node
+                .as_node()
+                .is_some_and(|node| node.prev_sibling().is_some())
+                .then_some(self.get_linebreak(indentation)),
             SyntaxKind::GraphPatternNotTriples
                 if node
                     .as_node()
+                    .filter(|node| node.prev_sibling().is_some())
                     .and_then(|node| node.first_child())
-                    .is_some_and(|child| child.kind() != SyntaxKind::Filter) =>
+                    .is_some_and(|child| !matches!(child.kind(), SyntaxKind::Filter)) =>
             {
                 Some(self.get_linebreak(indentation))
+            }
+            SyntaxKind::SubSelect | SyntaxKind::GroupGraphPatternSub => {
+                self.settings
+                    .compact
+                    .and_then(|line_length| {
+                        ((node.ancestors().nth(3).is_some_and(|grandparent| {
+                            grandparent.kind() != SyntaxKind::SelectQuery
+                        })) && subtree_width(node) <= line_length as usize)
+                            .then_some(" ".to_string())
+                    })
+                    .or(Some(self.get_linebreak(indentation)))
             }
 
             SyntaxKind::Filter => match node
@@ -587,7 +606,8 @@ impl<'a> Walker<'a> {
                 {
                     Some(" ".to_string())
                 }
-                _ => Some(self.get_linebreak(indentation)),
+                Some(_) => Some(self.get_linebreak(indentation)),
+                None => None,
             },
             SyntaxKind::QuadsNotTriples | SyntaxKind::UpdateOne
                 if node
@@ -689,9 +709,19 @@ impl<'a> Walker<'a> {
             //     }
             //     _ => None,
             // },
-            SyntaxKind::GroupGraphPatternSub
-            | SyntaxKind::ConstructTriples
-            | SyntaxKind::SubSelect => Some(self.get_linebreak(indentation.saturating_sub(1))),
+            SyntaxKind::ConstructTriples => Some(self.get_linebreak(indentation.saturating_sub(1))),
+
+            SyntaxKind::GroupGraphPatternSub | SyntaxKind::SubSelect => {
+                self.settings
+                    .compact
+                    .and_then(|line_length| {
+                        ((node.ancestors().nth(3).is_some_and(|grandparent| {
+                            grandparent.kind() != SyntaxKind::SelectQuery
+                        })) && subtree_width(node) <= line_length as usize)
+                            .then_some(" ".to_string())
+                    })
+                    .or(Some(self.get_linebreak(indentation.saturating_sub(1))))
+            }
             _ => None,
         }?;
         Some(SimplifiedTextEdit::new(
@@ -774,6 +804,7 @@ impl Iterator for Walker<'_> {
 
         // NOTE: Step 1: Separation
         let separator = get_separator(element.kind());
+
         let seperation_edits = children
             .iter()
             .zip(children.iter().skip(1))

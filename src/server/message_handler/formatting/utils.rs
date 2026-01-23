@@ -1,4 +1,5 @@
-use ll_sparql_parser::syntax_kind::SyntaxKind;
+use ll_sparql_parser::{SyntaxElement, syntax_kind::SyntaxKind};
+use unicode_width::UnicodeWidthStr;
 
 pub const KEYWORDS: [SyntaxKind; 109] = [
     SyntaxKind::BASE,
@@ -111,3 +112,17 @@ pub const KEYWORDS: [SyntaxKind; 109] = [
     SyntaxKind::USING,
     SyntaxKind::CREATE,
 ];
+
+pub(super) fn subtree_width(element: &SyntaxElement) -> usize {
+    if let Some(node) = element.as_node() {
+        node.descendants_with_tokens()
+            .filter_map(|node| {
+                (node.as_token().is_some() && !node.kind().is_trivia())
+                    .then_some(node.to_string().width())
+            })
+            .sum::<usize>()
+            + node.children().count().saturating_sub(1)
+    } else {
+        element.to_string().width()
+    }
+}

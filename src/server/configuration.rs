@@ -164,6 +164,7 @@ pub struct FormatSettings {
     pub tab_size: Option<u8>,
     pub where_new_line: bool,
     pub filter_same_line: bool,
+    pub compact: Option<u32>,
 }
 
 impl Default for FormatSettings {
@@ -177,6 +178,7 @@ impl Default for FormatSettings {
             tab_size: Some(2),
             where_new_line: false,
             filter_same_line: true,
+            compact: None,
         }
     }
 }
@@ -322,21 +324,31 @@ mod tests {
         assert_eq!(config.service.url, "https://example.com/sparql");
         assert_eq!(config.default, false);
         assert_eq!(config.queries.len(), 5);
-        assert!(config
-            .queries
-            .contains_key(&CompletionTemplate::SubjectCompletion));
-        assert!(config
-            .queries
-            .contains_key(&CompletionTemplate::PredicateCompletionContextSensitive));
-        assert!(config
-            .queries
-            .contains_key(&CompletionTemplate::PredicateCompletionContextInsensitive));
-        assert!(config
-            .queries
-            .contains_key(&CompletionTemplate::ObjectCompletionContextSensitive));
-        assert!(config
-            .queries
-            .contains_key(&CompletionTemplate::ObjectCompletionContextInsensitive));
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::SubjectCompletion)
+        );
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::PredicateCompletionContextSensitive)
+        );
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::PredicateCompletionContextInsensitive)
+        );
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::ObjectCompletionContextSensitive)
+        );
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::ObjectCompletionContextInsensitive)
+        );
     }
 
     #[test]
@@ -354,15 +366,21 @@ mod tests {
         let config: BackendConfiguration = parse_yaml(yaml);
 
         assert_eq!(config.queries.len(), 2);
-        assert!(config
-            .queries
-            .contains_key(&CompletionTemplate::SubjectCompletion));
-        assert!(config
-            .queries
-            .contains_key(&CompletionTemplate::ObjectCompletionContextInsensitive));
-        assert!(!config
-            .queries
-            .contains_key(&CompletionTemplate::PredicateCompletionContextSensitive));
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::SubjectCompletion)
+        );
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::ObjectCompletionContextInsensitive)
+        );
+        assert!(
+            !config
+                .queries
+                .contains_key(&CompletionTemplate::PredicateCompletionContextSensitive)
+        );
     }
 
     #[test]

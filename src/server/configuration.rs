@@ -165,6 +165,7 @@ pub struct FormatSettings {
     pub where_new_line: bool,
     pub filter_same_line: bool,
     pub compact: Option<u32>,
+    pub line_length: u32,
 }
 
 impl Default for FormatSettings {
@@ -179,6 +180,7 @@ impl Default for FormatSettings {
             where_new_line: false,
             filter_same_line: true,
             compact: None,
+            line_length: 120,
         }
     }
 }

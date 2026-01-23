@@ -246,30 +246,78 @@ impl<'a> Walker<'a> {
                     .collect()
             }
 
-            SyntaxKind::SelectClause | SyntaxKind::GroupCondition => children
+            SyntaxKind::SelectClause => children
+                .iter()
+                .skip(1)
+                .enumerate()
+                .filter_map(|(idx, child)| match child.kind() {
+                    SyntaxKind::RParen => None,
+                    _ => {
+                        let total_width = {
+                            let select_width = 6;
+                            let where_width = 7;
+                            let where_seperator = 1;
+                            let bindings_width = children
+                                .iter()
+                                .skip(1)
+                                .map(|child| match child.kind() {
+                                    SyntaxKind::LParen | SyntaxKind::RParen => 1,
+                                    _ => child.to_string().width() + 1,
+                                })
+                                .sum::<usize>();
+                            log::debug!("bindings width: {bindings_width}");
+                            select_width + bindings_width + where_seperator + where_width
+                        };
+                        let line_too_long = total_width > self.settings.line_length as usize;
+                        if idx > 0
+                            && children
+                                .get(idx)
+                                .is_some_and(|prev| prev.kind() == SyntaxKind::LParen)
+                        {
+                            None
+                        } else if child.kind() == SyntaxKind::AS
+                            || children[idx].kind() == SyntaxKind::AS
+                        {
+                            Some(SimplifiedTextEdit::new(
+                                TextRange::empty(child.text_range().start()),
+                                " ",
+                            ))
+                        } else if idx > 0 && line_too_long {
+                            // NOTE: SELECT has a width of 6, plus one space the indentation is 7
+                            Some(SimplifiedTextEdit::new(
+                                TextRange::empty(child.text_range().start()),
+                                &format!("\n{}", " ".repeat(7)),
+                            ))
+                        } else {
+                            Some(SimplifiedTextEdit::new(
+                                TextRange::empty(child.text_range().start()),
+                                " ",
+                            ))
+                        }
+                    }
+                })
+                .collect(),
+            SyntaxKind::GroupCondition => children
                 .iter()
                 .enumerate()
                 .filter_map(|(idx, child)| match child.kind() {
-                    SyntaxKind::RParen | SyntaxKind::SELECT => None,
-                    SyntaxKind::LParen if idx == 0 => None,
-                    _ if child
-                        .prev_sibling_or_token()
-                        .is_some_and(|prev| prev.kind() == SyntaxKind::LParen) =>
-                    {
-                        None
+                    SyntaxKind::RParen => None,
+                    _ => {
+                        if idx > 0
+                            && children
+                                .get(idx - 1)
+                                .is_some_and(|prev| prev.kind() == SyntaxKind::LParen)
+                        {
+                            None
+                        } else if idx > 0 {
+                            Some(SimplifiedTextEdit::new(
+                                TextRange::empty(child.text_range().start()),
+                                " ",
+                            ))
+                        } else {
+                            None
+                        }
                     }
-                    _ if idx > 0
-                        && children
-                            .get(idx - 1)
-                            .is_some_and(|prev| prev.kind() == SyntaxKind::LParen) =>
-                    {
-                        None
-                    }
-                    _ if idx > 0 => Some(SimplifiedTextEdit::new(
-                        TextRange::empty(child.text_range().start()),
-                        " ",
-                    )),
-                    _ => None,
                 })
                 .collect(),
             SyntaxKind::ConstructQuery => children

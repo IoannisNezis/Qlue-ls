@@ -106,12 +106,13 @@ pub(super) async fn handle_completion_request(
     .unwrap_or_default();
 
     let server = server_rc.lock().await;
-    if let Some(transformer) = ObjectSuffixTransformer::try_from_env(&env, &server) {
+    if let Some(transformer) = ObjectSuffixTransformer::try_from_env(&server, &env) {
         transformer.transform(&mut completion_list);
     }
-    if let Some(transformer) = SemicolonTransformer::try_from_env(&env) {
+    if let Some(transformer) = SemicolonTransformer::try_from_env(&server, &env) {
         transformer.transform(&mut completion_list);
     }
+
     log::debug!("completion_list len : {}", completion_list.items.len());
 
     server.send_message(CompletionResponse::new(request.get_id(), completion_list))

@@ -3,9 +3,12 @@ use ll_sparql_parser::{
     syntax_kind::SyntaxKind,
 };
 
-use crate::server::lsp::{
-    CompletionItemKind, CompletionList,
-    textdocument::{Position, Range, TextEdit},
+use crate::server::{
+    Server,
+    lsp::{
+        CompletionItemKind, CompletionList,
+        textdocument::{Position, Range, TextEdit},
+    },
 };
 
 use super::super::environment::{CompletionEnvironment, CompletionLocation};
@@ -31,9 +34,12 @@ impl SemicolonTransformer {
     ///
     /// Returns `None` if the transformation doesn't apply.
     pub(in crate::server::message_handler::completion) fn try_from_env(
+        server: &Server,
         env: &CompletionEnvironment,
     ) -> Option<Self> {
-        if !matches!(env.location, CompletionLocation::Subject) {
+        if !matches!(env.location, CompletionLocation::Subject)
+            || !server.settings.completion.same_subject_semicolon
+        {
             return None;
         }
         let document_text = env.tree.text().to_string();

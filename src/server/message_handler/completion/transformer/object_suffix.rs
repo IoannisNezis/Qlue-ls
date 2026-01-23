@@ -22,14 +22,12 @@ impl ObjectSuffixTransformer {
     ///
     /// Returns `None` if the transformation doesn't apply.
     pub(in crate::server::message_handler::completion) fn try_from_env(
-        env: &CompletionEnvironment,
         server: &Server,
+        env: &CompletionEnvironment,
     ) -> Option<Self> {
-        if !matches!(env.location, CompletionLocation::Object(_)) {
-            return None;
-        }
-
-        if !server.settings.completion.object_completion_suffix {
+        if !matches!(env.location, CompletionLocation::Object(_))
+            || !server.settings.completion.object_completion_suffix
+        {
             return None;
         }
 

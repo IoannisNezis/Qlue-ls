@@ -1,13 +1,8 @@
-use ll_sparql_parser::{
-    SyntaxToken,
-    ast::{AstNode, TriplesBlock},
-    syntax_kind::SyntaxKind,
-};
+use ll_sparql_parser::{SyntaxToken, syntax_kind::SyntaxKind};
 
 use crate::server::{
     Server,
     lsp::{Command, CompletionList, InsertTextFormat, InsertTextMode, ItemDefaults},
-    state::ClientType,
 };
 
 use super::super::environment::{CompletionEnvironment, CompletionLocation};

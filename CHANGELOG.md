@@ -7,116 +7,116 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### added
+### Added
 
 - new configuration option `completion.same_subject_semicolon` to control whether subject completions matching the previous subject transform the trailing dot to a semicolon
 
 ## [1.1.14] - 2025-01-22
 
-### changed
+### Changed
 
-- If not limit is provided for "qlueLs/executeOperateion" request, the full result is returned
+- If no limit is provided for "qlueLs/executeOperation" request, the full result is returned
 
 ## [1.1.13] - 2025-01-22
 
-### added
+### Added
 
 - new "qlueLs/listBackends" method to list loaded SPARQL services
 
 ## [1.1.12] - 2025-01-21
 
-### fixed
+### Fixed
 
 - use provided window in query execution requests
 
-### changed
+### Changed
 
 - renamed query template variable "qlue_ls_detail" to "qlue_ls_alias"
 
 ## [1.1.11] - 2025-01-20
 
-### changed
+### Changed
 
 - remove "Rank" from completion item documentation
-- trigger completion after object comletion if object_completion_suffix is enabled
+- trigger completion after object completion if object_completion_suffix is enabled
 
 ## [1.1.10] - 2025-01-19
 
-### added
+### Added
 
 - option to add suffix " .\n" to object completion queries
-- option to have a minimum of chars befor subject online completions are triggered
+- option to have a minimum of chars before subject online completions are triggered
 
 ## [1.1.9] - 2025-01-18
 
-### added
+### Added
 
 - code action: add rdfs:label for variable
 
-### changed
+### Changed
 
 - use interior mutability for parse tree cache
 
 ## [1.1.7] - 2025-01-17
 
-### fixed
+### Fixed
 
 - lexer for blank node label
 
 ## [1.1.5] - 2025-01-17
 
-### added
+### Added
 
 - extra information in the documentation of completion items
 
 ## [1.1.4] - 2025-01-16
 
-### changed
+### Changed
 
 - keyword completions (FILTER, BIND, OPTIONAL, etc.) are now filtered by search term prefix
 
 ## [1.1.3] - 2025-01-16
 
-### added
+### Added
 
 - documentation field to CompletionItem for richer completion hints
 
-### changed
+### Changed
 
 - refactored completion item label and detail rendering
 
-### fixed
+### Fixed
 
 - aggregate completion variable
 - completion trigger token detection at end of query with trailing empty nodes
 
 ## [1.1.2] - 2025-01-13
 
-### fixed
+### Fixed
 
-- spaces in varaible name completions
+- spaces in variable name completions
 
 ## [1.1.1] - 2025-01-13
 
-### changed
+### Changed
 
 - capitalize snippet label
 
-### fixed
+### Fixed
 
 - "remove prefix declaration" quickfix
 
 ## [1.1.0] - 2025-12-27
 
-### added
+### Added
 
-- access token to qlueLs/executeOperateion request
+- access token to qlueLs/executeOperation request
 
 ## [1.0.0] - 2025-12-27
 
 ### BREAKING
 
-The request for "qlueLs/executeQuery" as been renamed to "qlueLs/executeOperateion".  
+The request for "qlueLs/executeQuery" has been renamed to "qlueLs/executeOperation".  
 The result schema of this request also changed.
 
 ### added
@@ -148,153 +148,155 @@ The result schema of this request also changed.
 
 ## [0.23.0] - 2025-12-14
 
-### added
+### Added
 
 - more sparql engines
 - lazy sparql result reader
 
-### fixed
+### Fixed
 
-- read qlever exeption
+- read qlever exception
 
 ## [0.21.0] - 2025-12-09
+
+### Changed
 
 - rename backend to service in qlueLs/addBackend
 
 ## [0.20.3] - 2025-11-26
 
-### added
+### Added
 
 - CRLF support
 
-### changed
+### Changed
 
 - updated rust edition to 2024
 
 ## [0.20.2] - 2025-11-25
 
-### fixed
+### Fixed
 
 - apply changes from textDocument/didChange correctly, again
 
 ## [0.20.1] - 2025-11-24
 
-### fixed
+### Fixed
 
 - predicate and object completion for non-wasm targets. (thanks to @DeaconDesperado)
 - completion replacement for neovim (thanks to @DeaconDesperado)
 - apply changes from textDocument/didChange correctly
 
-### added
+### Added
 
 - set Query-Id for executeQuery requests
 - qlueLs/getBackend request to get current default backend
 
 ## [0.19.2] - 2025-11-06
 
-### added
+### Added
 
 - post message if wasm-target crashes
 
 ## [0.19.1] - 2025-11-03
 
-### added
+### Added
 
 - forward connection error for executeQuery requests
 - forward SPARQL endpoint error for executeQuery requests
 
-### fixed
+### Fixed
 
 - formatting blank-node-property-list
 
 ## [0.18.0] - 2025-10-29
 
-### fixed
+### Fixed
 
-- completion queies in demo
+- completion queries in demo
 
-### added
+### Added
 
 - capability to execute queries
 
 
 ## [0.17.1] - 2025-10-21
 
-### fixed
+### Fixed
 
 - object completions now use correct query templates
 
 ## [0.17.0] - 2025-10-18
 
-### changed
+### Changed
 
 - renamed completion query templates (BREAKING)
 
-### added
+### Added
 
 - foldingRange for Prologue
 
-### fixed
+### Fixed
 
 - formatting emojis
 - indentation after contract same subject triples
 
 ## [0.15.1] - 2025-09-30
 
-### changed
+### Changed
 
 - core textedit apply algorithm
 
-## added
+### Added
 
 - more hover documentation for keywords
 - aggregate completions for implicit GROUP BY
 
 ## [0.14.2] - 2025-09-23
 
-### added
+### Added
 
 - aggregate completions
 
-### fixed
+### Fixed
 
 - prevent trailing newline for monaco based editors
 
 ## [0.14.1]
 
-### fixed
+### Fixed
 
 - cli formatting, ignored newlines
 
 ## [0.14.0]
 
-### added
+### Added
 
 - Snippets for SPARQL 1.1 Update
 
-### changed
+### Changed
 
 - cli format api: when path is omited, use stdin stdout
 
 ## [0.13.4]
 
-### fixed
+### Fixed
 
-- handle subject completion request gracefull
-- fix formatting for codepoints with with 2 (emojis)
+- handle subject completion request gracefully
+- fix formatting for codepoints with width 2 (emojis)
 - fix subselect code action when emojis are present
 
-### added
+### Added
 
 - tracing capability
 
 ## [0.13.3]
 
-### added
+### Added
 
 - diagnostic and code-action for same subject triples
 
-### changed
+### Changed
 
 - prefill order completions
 
@@ -305,7 +307,7 @@ The result schema of this request also changed.
 - add order-condition completions
 - prepend variable completions to spo completions
 
-### changed
+### Changed
 
 - add to result code-action: insert before aggregates
 - filter & filter-lang code-action: insert after Dot
@@ -332,11 +334,11 @@ The result schema of this request also changed.
 
 ### Added
 
-- New code-acitons: add aggreagtes to result
+- New code-actions: add aggregates to result
 
 ## [0.12.1]
 
-### changed
+### Changed
 
 - set default settings 'remove_unused' to false
 
@@ -368,7 +370,7 @@ The result schema of this request also changed.
 
 - custom capability: determine what type of operation is present
 
-### changed
+### Changed
 
 - when typing a prefix and a ":", completion now works
 
@@ -411,7 +413,7 @@ The result schema of this request also changed.
 
 ## [0.7.1]
 
-## Changed
+### Changed
 
 - property list is not part of the global completion context
 
@@ -427,7 +429,7 @@ The result schema of this request also changed.
 ### Fixed
 
 - syntax highlighting of comments in demo editor
-- tokeize 'DELETE WHERE'
+- tokenize 'DELETE WHERE'
 - tokenize comments
 
 ## [0.6.4]
@@ -454,7 +456,7 @@ The result schema of this request also changed.
 
 ### Changed
 
-- updated and removed variouse dependencies
+- updated and removed various dependencies
 
 ## [0.6.1]
 
@@ -470,7 +472,7 @@ The result schema of this request also changed.
 - configurable completion query result limit
 - development setup documentation
 - debug log for completion queries
-- samantic variable completions: hasHeight -> ?height
+- semantic variable completions: hasHeight -> ?height
 - async processing of long running requests (completion and ping)
 - custom lsp message "jump", to jump to next relevant location
 
@@ -485,9 +487,9 @@ The result schema of this request also changed.
 
 - langtag tokenization
 - prefix-compression in service blocks
-- varable completions
+- variable completions
 - textual rendering of rdf-terms
-- variouse completion query templates
+- various completion query templates
 
 
 ## [0.5.6] - 2025-04-01

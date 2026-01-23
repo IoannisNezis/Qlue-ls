@@ -43,6 +43,18 @@ impl ObjectSuffixTransformer {
     }
 }
 
+/// Returns the indentation level for a syntax token based on its nesting depth
+/// within `GroupGraphPattern` nodes.
+///
+/// # Limitations
+///
+/// This function only considers `GroupGraphPattern` for indentation. Other
+/// brace-delimited constructs like `QuadPattern`, `QuadData`, `ConstructTemplate`,
+/// `QuadsNotTriples`, `InlineDataOneVar`, and `InlineDataFull` are not counted.
+///
+/// This is sufficient for tokens inside WHERE clauses and graph patterns, but
+/// will not produce correct indentation for tokens in UPDATE data blocks or
+/// CONSTRUCT templates.
 fn get_indentation(syntax_token: &SyntaxToken) -> usize {
     syntax_token.parent_ancestors().fold(0, |acc, node| {
         if matches!(node.kind(), SyntaxKind::GroupGraphPattern) {

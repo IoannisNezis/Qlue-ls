@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- new configuration option `format.line_length` to control when SELECT clauses break across multiple lines
+
 ## [1.1.16] - 2025-01-23
 
 ### Added

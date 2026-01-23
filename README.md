@@ -93,6 +93,7 @@ insert_spaces = true
 tab_size = 2
 where_new_line = true
 filter_same_line = true
+line_length = 120
 
 [completion]
 timeout_ms = 5000

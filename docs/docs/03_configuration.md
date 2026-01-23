@@ -14,6 +14,7 @@ insert_spaces = true
 tab_size = 2
 where_new_line = true
 filter_same_line = true
+line_length = 120
 
 [completion]
 timeout_ms = 5000
@@ -121,6 +122,22 @@ Allow trailing filter statements:
 SELECT * WHERE {
     ?a ?b ?c Filter(?a)
 }
+```
+
+### format.line_length
+
+| Type     | Default |
+| ---------| --------|
+| integer  | 120     |
+
+Maximum line length before SELECT clauses break across multiple lines.
+When a SELECT clause exceeds this length, each binding is placed on a new line with proper indentation:
+
+```sparql
+SELECT ?variable1
+       ?variable2
+       ?variable3
+WHERE {}
 ```
 
 ## Completion settings

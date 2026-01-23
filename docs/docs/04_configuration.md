@@ -21,6 +21,7 @@ result_size_limit = 100
 subject_completion_trigger_length = 3
 object_completion_suffix = true
 variable_completion_limit = 10
+same_subject_semicolon = true
 
 [prefixes]
 add_missing = true
@@ -167,6 +168,30 @@ This helps with writing triple patterns by automatically closing the statement.
 Maximum number of variable completions to suggest.
 When not set (default), all variables in the query are suggested.
 Set this to limit suggestions when queries have many variables.
+
+### completion.same_subject_semicolon
+
+| Type     | Default |
+| ---------| --------|
+| boolean  | true    |
+
+When completing a subject that matches the previous triple's subject, transform the completion to use semicolon notation instead of starting a new triple.
+This allows you to continue adding predicates to the same subject without repeating it.
+
+For example, if you have:
+
+```sparql
+?person rdf:type foaf:Person .
+```
+
+And you complete `?person` as the next subject, it will transform to:
+
+```sparql
+?person rdf:type foaf:Person ;
+        |
+```
+
+Where `|` represents your cursor position, ready to add another predicate.
 
 ## Prefix settings
 

@@ -100,6 +100,7 @@ result_size_limit = 100
 subject_completion_trigger_length = 3
 object_completion_suffix = true
 variable_completion_limit = 10
+same_subject_semicolon = true
 
 [prefixes]
 add_missing = true

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### added
+
+- new configuration option `completion.same_subject_semicolon` to control whether subject completions matching the previous subject transform the trailing dot to a semicolon
+
 ## [1.1.14] - 2025-01-22
 
 ### changed

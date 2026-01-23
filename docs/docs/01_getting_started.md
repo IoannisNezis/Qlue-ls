@@ -14,9 +14,7 @@
 
 You can use Qlue-ls with any tool that has a lsp-client.
 
-If you plan to use qlue-ls on your machine, install it first:
-
-## 📦 Installation
+## Local Installation
 
 Qlue-ls is available on [crate.io](https://crates.io/crates/qlue-ls):
 
@@ -38,9 +36,25 @@ cd Qlue-ls
 cargo build --release --bin qlue-ls
 ```
 
+## Web Usage
+
+If you want to connect from a web-based-editor, you can use this package as well.
+For this purpose this can be compiled to wasm and is available on [npm](https://www.npmjs.com/package/@ioannisnezis/sparql-language-server):
+
+```shell
+npm i qlue-ls
+```
+
+You will have to wrap this in a Web Worker and provide a language server client.
+There will be more documentation on this in the future...
+
+Until then you can check out the demo in ./editor/
+
+## Editor Setup
+
 Here are a few common editors:
 
-## Neovim
+### Neovim
 
 After you installed the language server, add this to your `init.lua`:
 
@@ -59,7 +73,7 @@ vim.lsp.config('qlue-ls',{
 vim.lsp.enable({'qlue-ls'})
 ```
 
-With the above setup, Qlue-ls will load [configuration](/04_configuration) from a file called `qlue-ls.{yml, toml}` in the working
+With the above setup, Qlue-ls will load [configuration](/03_configuration) from a file called `qlue-ls.{yml, toml}` in the working
 directory neovim is launched from.  All file formats supported by the config create are valid.
 
 Open a `.rq` file and check that the buffer is attached to the server:

@@ -1432,3 +1432,68 @@ fn compact_formatting_2() {
     settings.compact = Some(70);
     format_and_compare(ugly_query, pretty_query, &settings);
 }
+
+// Tests for SELECT clause line-breaking feature
+
+#[test]
+fn select_line_short() {
+    // Short SELECT should remain on a single line (well under 120 chars)
+    let ugly_query = "SELECT   ?a    ?b     ?c   WHERE { }\n";
+    let pretty_query = "SELECT ?a ?b ?c WHERE {}\n";
+    format_and_compare(ugly_query, pretty_query, &FormatSettings::default());
+}
+
+#[test]
+fn select_line_long_breaks() {
+    // Long SELECT (exceeds 120 chars) should break into multiple lines
+    // Each binding goes on a new line with 7-space indentation, WHERE stays on last line
+    let ugly_query = "SELECT ?variable1 ?variable2 ?variable3 ?variable4 ?variable5 ?variable6 ?variable7 ?variable8 ?variable9 ?variable10 ?variable11 WHERE { }\n";
+    let pretty_query = "SELECT ?variable1\n       ?variable2\n       ?variable3\n       ?variable4\n       ?variable5\n       ?variable6\n       ?variable7\n       ?variable8\n       ?variable9\n       ?variable10\n       ?variable11 WHERE {}\n";
+    format_and_compare(ugly_query, pretty_query, &FormatSettings::default());
+}
+
+#[test]
+fn select_line_with_as_alias() {
+    // AS expressions with line breaking should have proper spacing
+    let ugly_query = "SELECT ?variable1 ?variable2 ?variable3 ?variable4 ?variable5 (?variable6   AS   ?alias6) ?variable7 ?variable8 ?variable9 ?variable10 WHERE { }\n";
+    let pretty_query = "SELECT ?variable1\n       ?variable2\n       ?variable3\n       ?variable4\n       ?variable5\n       (?variable6 AS ?alias6)\n       ?variable7\n       ?variable8\n       ?variable9\n       ?variable10 WHERE {}\n";
+    format_and_compare(ugly_query, pretty_query, &FormatSettings::default());
+}
+
+#[test]
+fn select_line_custom_threshold() {
+    // Use a custom line_length of 40 to trigger breaking on shorter queries
+    let settings = FormatSettings {
+        line_length: 40,
+        ..Default::default()
+    };
+    let ugly_query = "SELECT ?var1 ?var2 ?var3 ?var4 ?var5 WHERE { }\n";
+    let pretty_query =
+        "SELECT ?var1\n       ?var2\n       ?var3\n       ?var4\n       ?var5 WHERE {}\n";
+    format_and_compare(ugly_query, pretty_query, &settings);
+}
+
+#[test]
+fn select_line_at_boundary() {
+    let settings = FormatSettings {
+        line_length: 23,
+        ..Default::default()
+    };
+    // Test query near the boundary - should NOT break
+    // "SELECT ?a ?b ?c WHERE {" = 6 + 9 + 1 + 7 <= 23
+    let ugly_query = "SELECT ?a ?b ?c WHERE { }\n";
+    let pretty_query = "SELECT ?a ?b ?c WHERE {}\n";
+    format_and_compare(ugly_query, pretty_query, &settings);
+}
+
+#[test]
+fn select_line_star_no_break() {
+    let settings = FormatSettings {
+        line_length: 0,
+        ..Default::default()
+    };
+    // SELECT * should stay compact and not break
+    let ugly_query = "SELECT    *    WHERE { }\n";
+    let pretty_query = "SELECT * WHERE {}\n";
+    format_and_compare(ugly_query, pretty_query, &settings);
+}

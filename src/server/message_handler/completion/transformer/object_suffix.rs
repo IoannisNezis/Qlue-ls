@@ -1,6 +1,12 @@
+use ll_sparql_parser::{
+    SyntaxToken,
+    ast::{AstNode, TriplesBlock},
+    syntax_kind::SyntaxKind,
+};
+
 use crate::server::{
     Server,
-    lsp::{Command, CompletionList, InsertTextFormat},
+    lsp::{Command, CompletionList, InsertTextFormat, InsertTextMode, ItemDefaults},
     state::ClientType,
 };
 
@@ -30,21 +36,32 @@ impl ObjectSuffixTransformer {
         {
             return None;
         }
-
-        let indent = server
-            .state
-            .client_type
-            .as_ref()
-            .is_some_and(|client_type| matches!(client_type, ClientType::Monaco))
-            .then_some(String::new())
-            .unwrap_or_else(|| env.line_indentation.clone());
-
+        let indent = " "
+            .repeat(get_indentation(env.anchor_token.as_ref()?))
+            .repeat(server.settings.format.tab_size.unwrap_or(2) as usize);
         Some(Self { indent })
     }
 }
 
+fn get_indentation(syntax_token: &SyntaxToken) -> usize {
+    syntax_token.parent_ancestors().fold(0, |acc, node| {
+        if matches!(node.kind(), SyntaxKind::GroupGraphPattern) {
+            acc + 1
+        } else {
+            acc
+        }
+    })
+}
+
 impl CompletionTransformer for ObjectSuffixTransformer {
     fn transform(&self, list: &mut CompletionList) {
+        list.item_defaults = Some(ItemDefaults {
+            commit_characters: None,
+            edit_range: None,
+            insert_text_format: None,
+            insert_text_mode: Some(InsertTextMode::AsIs),
+            data: None,
+        });
         for item in list.items.iter_mut() {
             // Handle text_edit (used by online completions)
             if let Some(ref mut text_edit) = item.text_edit {

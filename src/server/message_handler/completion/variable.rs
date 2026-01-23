@@ -151,6 +151,7 @@ pub(super) async fn completions(
             commit_characters: None,
             data: None,
             insert_text_format: Some(InsertTextFormat::PlainText),
+            insert_text_mode: None,
         }),
         items: suggestions,
     })

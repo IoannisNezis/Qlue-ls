@@ -149,6 +149,7 @@ pub(super) fn completions(
                 commit_characters: None,
                 data: None,
                 insert_text_format: None,
+                insert_text_mode: None,
             }),
             items,
         })

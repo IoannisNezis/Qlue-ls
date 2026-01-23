@@ -27,6 +27,7 @@ pub(super) async fn completions(
                     data: None,
                     commit_characters: None,
                     edit_range: None,
+                    insert_text_mode: None,
                 }),
                 items: variable_completions
                     .items

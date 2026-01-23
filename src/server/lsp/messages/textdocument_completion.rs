@@ -2,10 +2,10 @@ use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
 use crate::server::lsp::{
-    LspMessage,
     base_types::LSPAny,
     rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
     textdocument::{Range, TextEdit},
+    LspMessage,
 };
 
 use super::{command::Command, utils::TextDocumentPositionParams};
@@ -96,6 +96,10 @@ pub struct ItemDefaults {
     /// A default insert text format
     #[serde(skip_serializing_if = "Option::is_none")]
     pub insert_text_format: Option<InsertTextFormat>,
+
+    /// A default insert text mode
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub insert_text_mode: Option<InsertTextMode>,
 
     /// A default data value.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -198,14 +202,21 @@ pub enum InsertTextFormat {
     Snippet = 2,
 }
 
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq)]
+#[repr(u8)]
+pub enum InsertTextMode {
+    AsIs = 1,
+    AdjustIndentation = 2,
+}
+
 #[cfg(test)]
 mod tests {
     use crate::server::lsp::{
-        CompletionContext, CompletionItem, CompletionItemKind, CompletionList, CompletionParams,
-        CompletionTriggerKind, InsertTextFormat,
         messages::utils::TextDocumentPositionParams,
         rpc::{Message, RequestId, RequestMessageBase},
         textdocument::{Position, TextDocumentIdentifier},
+        CompletionContext, CompletionItem, CompletionItemKind, CompletionList, CompletionParams,
+        CompletionTriggerKind, InsertTextFormat,
     };
 
     use super::{CompletionRequest, CompletionResponse};

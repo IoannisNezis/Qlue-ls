@@ -123,7 +123,6 @@ impl CompletionTransformer for SemicolonTransformer {
                 new_text: format!(";\n{}", self.indent),
             }]);
             item.detail = Some("Continue with semicolon".to_string());
-            log::debug!("{:?}", item);
         }
     }
 }

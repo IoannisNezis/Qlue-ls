@@ -14,6 +14,7 @@ pub(super) async fn completions(
             commit_characters: None,
             data: None,
             insert_text_format: Some(InsertTextFormat::Snippet),
+            insert_text_mode: None,
         }),
         items: vec![
             CompletionItem::new(

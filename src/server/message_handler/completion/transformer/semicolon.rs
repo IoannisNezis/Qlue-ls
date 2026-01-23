@@ -84,6 +84,9 @@ impl SemicolonTransformer {
 impl CompletionTransformer for SemicolonTransformer {
     fn transform(&self, list: &mut CompletionList) {
         for item in list.items.iter_mut() {
+            if item.kind != CompletionItemKind::Variable {
+                continue;
+            }
             let item_value = item
                 .text_edit
                 .as_ref()

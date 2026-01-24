@@ -25,7 +25,7 @@ for [SPARQL](https://de.wikipedia.org/wiki/SPARQL), written in Rust 🦀, build 
 # 🚀 Capabilities
 
 Qlue-ls offers a wide range of LSP features tailored to SPARQL development.  
-For a complete overview, see the [capabilities section](https://docs.qlue-ls.com/03_capabilities/).
+For a complete overview, see the [capabilities section](https://docs.qlue-ls.com/02_capabilities/).
 
 ## ✨ Completion
 
@@ -79,7 +79,7 @@ For a complete overview, see the [capabilities section](https://docs.qlue-ls.com
 # ⚙️  Configuration
 
 Qlue-ls is configured via a qlue-ls.toml or qlue-ls.yml file.  
-Full configuration options are explained in the [documentation](https://docs.qlue-ls.com/04_configuration/).
+Full configuration options are explained in the [documentation](https://docs.qlue-ls.com/03_configuration/).
 
 ## Example Configuration
 

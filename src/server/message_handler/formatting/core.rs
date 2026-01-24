@@ -1,12 +1,7 @@
 use core::fmt;
 use std::vec;
 
-use ll_sparql_parser::{
-    SyntaxElement, SyntaxNode,
-    ast::{AstNode, TriplesBlock},
-    parse,
-    syntax_kind::SyntaxKind,
-};
+use ll_sparql_parser::{SyntaxElement, SyntaxNode, parse, syntax_kind::SyntaxKind};
 use text_size::{TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
@@ -17,7 +12,7 @@ use crate::server::{
         errors::LSPError,
         textdocument::{Position, Range, TextDocumentItem, TextEdit},
     },
-    message_handler::{formatting::utils::subtree_width, settings},
+    message_handler::formatting::utils::subtree_width,
 };
 
 use super::utils::KEYWORDS;

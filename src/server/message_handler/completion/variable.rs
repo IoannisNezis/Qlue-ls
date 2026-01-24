@@ -99,17 +99,26 @@ pub(super) async fn completions(
                         .to_string();
                 }
             }
-            let object_var_name = to_sparql_variable(&object_name);
+            let variable = to_sparql_variable(&object_name);
             suggestions.insert(
                 0,
-                CompletionItem::new(
-                    &object_var_name,
-                    None,
-                    Some(format!("{:0>5}", 0)),
-                    &format!("{}{}", object_var_name, suffix),
-                    CompletionItemKind::Variable,
-                    None,
-                ),
+                CompletionItem {
+                    label: format!("?{variable}"),
+                    label_details: None,
+                    kind: CompletionItemKind::Variable,
+                    detail: None,
+                    documentation: None,
+                    sort_text: Some("00000".to_string()),
+                    filter_text: Some(format!("?{variable}")),
+                    insert_text: None,
+                    text_edit: Some(TextEdit::new(
+                        environment.replace_range.clone(),
+                        &format!("?{variable}"),
+                    )),
+                    insert_text_format: Some(InsertTextFormat::PlainText),
+                    additional_text_edits: None,
+                    command: None,
+                },
             );
             // NOTE: If subject is a variable:
             // append ?[variable]_[object_name] as variable completion
@@ -123,14 +132,23 @@ pub(super) async fn completions(
                     let subject_var_name = var.var_name();
                     suggestions.insert(
                         0,
-                        CompletionItem::new(
-                            &format!("{}_{}", subject_var_name, object_var_name),
-                            None,
-                            Some(format!("{:0>5}", 1)),
-                            &format!("{}_{}{}", subject_var_name, object_var_name, suffix),
-                            CompletionItemKind::Variable,
-                            None,
-                        ),
+                        CompletionItem {
+                            label: format!("?{}_{}", subject_var_name, variable),
+                            label_details: None,
+                            kind: CompletionItemKind::Variable,
+                            detail: None,
+                            documentation: None,
+                            sort_text: Some("00001".to_string()),
+                            filter_text: Some(format!("?{}_{}", subject_var_name, variable)),
+                            insert_text: None,
+                            text_edit: Some(TextEdit::new(
+                                environment.replace_range.clone(),
+                                &format!("?{}_{}", subject_var_name, variable),
+                            )),
+                            insert_text_format: Some(InsertTextFormat::PlainText),
+                            additional_text_edits: None,
+                            command: None,
+                        },
                     );
                 }
             }
@@ -172,10 +190,10 @@ pub(super) async fn completions(
 /// - Removes the '?' or '$' prefix if present
 /// - Replaces invalid characters with underscores
 /// - Ensures the name starts with a valid character
-/// - Returns the variable name with '?' prefix
+/// - Returns the variable name WITHOUT '?' or '$' prefix
 fn to_sparql_variable(s: &str) -> String {
     if s.is_empty() {
-        return "?var".to_string();
+        return "var".to_string();
     }
 
     // Remove leading '?' or '$' if present
@@ -214,6 +232,5 @@ fn to_sparql_variable(s: &str) -> String {
     if result.is_empty() {
         result.push_str("var");
     }
-
     result
 }

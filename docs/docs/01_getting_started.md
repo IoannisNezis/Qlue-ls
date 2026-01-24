@@ -12,7 +12,8 @@
     </a>
 </div>
 
-You can use Qlue-ls with any tool that has a lsp-client.
+You can use Qlue-ls with any tool that has a lsp-client  
+or as standalone formatter..
 
 ## Local Installation
 

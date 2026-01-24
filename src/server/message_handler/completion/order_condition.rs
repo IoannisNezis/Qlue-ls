@@ -13,7 +13,7 @@ pub(super) async fn completions(
     server_rc: Rc<Mutex<Server>>,
     environment: &CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
-    let variable_completions = variable::completions_transformed(server_rc, environment).await?;
+    let variable_completions = variable::completions(server_rc, environment).await?;
     Ok(
         if environment
             .anchor_token

@@ -25,7 +25,7 @@ use crate::server::{
     Server,
     lsp::{
         CompletionList, CompletionRequest, CompletionResponse, CompletionTriggerKind,
-        errors::LSPError,
+        errors::LSPError, textdocument::Range,
     },
     message_handler::completion::transformer::{
         CompletionTransformer, ObjectSuffixTransformer, SemicolonTransformer,
@@ -36,7 +36,7 @@ pub(super) async fn handle_completion_request(
     server_rc: Rc<Mutex<Server>>,
     request: CompletionRequest,
 ) -> Result<(), LSPError> {
-    let env = CompletionEnvironment::from_completion_request(server_rc.clone(), &request)
+    let mut env = CompletionEnvironment::from_completion_request(server_rc.clone(), &request)
         .await
         .map_err(to_lsp_error)?;
     // log::info!("Completion env:\n{}", env);
@@ -62,11 +62,7 @@ pub(super) async fn handle_completion_request(
                 | CompletionLocation::BlankNodeProperty(_)
                 | CompletionLocation::BlankNodeObject(_)
         )
-        .then_some(
-            variable::completions_transformed(server_rc.clone(), &env)
-                .await
-                .ok(),
-        )
+        .then_some(variable::completions(server_rc.clone(), &env).await.ok())
         .flatten();
         let completion_list = (env.location != CompletionLocation::Unknown).then_some(
             match env.location {
@@ -89,7 +85,8 @@ pub(super) async fn handle_completion_request(
                     service_url::completions(server_rc.clone(), &env).await
                 }
                 CompletionLocation::FilterConstraint | CompletionLocation::GroupCondition => {
-                    variable::completions_transformed(server_rc.clone(), &env).await
+                    env.replace_range = Range::empty(env.trigger_textdocument_position);
+                    variable::completions(server_rc.clone(), &env).await
                 }
                 CompletionLocation::OrderCondition => {
                     order_condition::completions(server_rc.clone(), &env).await
@@ -112,8 +109,6 @@ pub(super) async fn handle_completion_request(
     if let Some(transformer) = SemicolonTransformer::try_from_env(&server, &env) {
         transformer.transform(&mut completion_list);
     }
-
-    log::debug!("completion_list len : {}", completion_list.items.len());
 
     server.send_message(CompletionResponse::new(request.get_id(), completion_list))
 }

@@ -14,7 +14,7 @@ use crate::{
         lsp::{
             BackendService, Command, CompletionItem, CompletionItemKind,
             CompletionItemLabelDetails, CompletionList,
-            textdocument::{Position, Range, TextEdit},
+            textdocument::{Range, TextEdit},
         },
         sparql_operations::execute_query,
     },
@@ -55,7 +55,7 @@ pub(super) async fn dispatch_completion_query(
                     template_context,
                 )
                 .await?,
-                get_replace_range(environment),
+                environment.replace_range.clone(),
                 trigger_on_accept.then_some("triggerNewCompletion"),
                 server_rc.lock().await.settings.completion.result_size_limit,
                 environment.search_term.as_deref(),
@@ -220,28 +220,6 @@ fn render_rdf_term(
             None => (rdf_term.to_string(), None),
         },
         _ => (rdf_term.to_string(), None),
-    }
-}
-
-/// Get the range the completion is supposed to replace
-/// The context.search_term MUST be not None!
-pub(super) fn get_replace_range(context: &CompletionEnvironment) -> Range {
-    Range {
-        start: Position::new(
-            context.trigger_textdocument_position.line,
-            context.trigger_textdocument_position.character
-                - context
-                    .search_term
-                    .as_ref()
-                    .map(|search_term| {
-                        search_term
-                            .chars()
-                            .fold(0, |accu, char| accu + char.len_utf16())
-                            as u32
-                    })
-                    .unwrap_or(0),
-        ),
-        end: context.trigger_textdocument_position,
     }
 }
 

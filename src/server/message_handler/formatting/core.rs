@@ -260,7 +260,6 @@ impl<'a> Walker<'a> {
                                     _ => child.to_string().width() + 1,
                                 })
                                 .sum::<usize>();
-                            log::debug!("bindings width: {bindings_width}");
                             select_width + bindings_width + where_seperator + where_width
                         };
                         let line_too_long = total_width > self.settings.line_length as usize;

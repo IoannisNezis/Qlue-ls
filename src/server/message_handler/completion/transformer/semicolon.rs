@@ -12,7 +12,6 @@ use crate::server::{
 };
 
 use super::super::environment::{CompletionEnvironment, CompletionLocation};
-use super::super::utils::get_replace_range;
 use super::CompletionTransformer;
 
 /// Transforms subject completions to use semicolon notation when the completed
@@ -43,7 +42,7 @@ impl SemicolonTransformer {
             return None;
         }
         let document_text = env.tree.text().to_string();
-        let replace_range = get_replace_range(env);
+        let replace_range = env.replace_range.clone();
 
         let triple_block = TriplesBlock::cast(env.anchor_token.as_ref()?.parent()?)?;
         let subject = triple_block.triples().first()?.subject()?;
@@ -109,8 +108,7 @@ impl CompletionTransformer for SemicolonTransformer {
                 range: self.replace_range.clone(),
                 new_text: String::new(),
             });
-            // Main edit: clear the search term range
-            item.insert_text = None;
+            item.sort_text = Some("00000".to_string());
 
             // Replace from dot start to replace_range start with semicolon + newline + indent
             // This removes the dot and any whitespace between it and the cursor position

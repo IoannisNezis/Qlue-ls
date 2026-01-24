@@ -5,7 +5,8 @@ use crate::server::{
     Server,
     configuration::Replacement,
     lsp::{
-        Command, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
+        Command, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat,
+        ItemDefaults, textdocument::TextEdit,
     },
 };
 use futures::lock::Mutex;
@@ -29,19 +30,22 @@ pub(super) async fn completions(
             .tree
             .descendants()
             .filter_map(Var::cast)
-            .map(|var| var.var_name()),
+            .map(|var| format!("?{}", var.var_name())),
     )
     .into_iter()
     .map(|var| CompletionItem {
-        insert_text: Some(format!("{}{}", var, suffix)),
         label: var.clone(),
         label_details: None,
+        kind: CompletionItemKind::Variable,
         detail: Some("Variable".to_string()),
         documentation: None,
-        kind: CompletionItemKind::Variable,
-        sort_text: None,
-        filter_text: Some(format!("?{var}")),
-        text_edit: None,
+        sort_text: Some(format!("{:0>4}0", 1)),
+        filter_text: Some(var.clone()),
+        insert_text: None,
+        text_edit: Some(TextEdit::new(
+            environment.replace_range.clone(),
+            &format!("{var}{suffix}"),
+        )),
         insert_text_format: Some(InsertTextFormat::PlainText),
         additional_text_edits: None,
         command: match environment.location {
@@ -212,20 +216,4 @@ fn to_sparql_variable(s: &str) -> String {
     }
 
     result
-}
-
-pub(super) async fn completions_transformed(
-    server_rc: Rc<Mutex<Server>>,
-    environment: &CompletionEnvironment,
-) -> Result<CompletionList, CompletionError> {
-    let mut variable_completions = completions(server_rc, environment).await?;
-    for item in variable_completions.items.iter_mut() {
-        item.insert_text = item.insert_text.as_ref().map(|text| format!("?{}", text));
-        item.label = format!("?{}", item.label);
-        item.filter_text = Some(format!("?{}", item.label));
-        if item.sort_text.is_none() {
-            item.sort_text = Some(format!("{:0>4}0", 1));
-        }
-    }
-    Ok(variable_completions)
 }

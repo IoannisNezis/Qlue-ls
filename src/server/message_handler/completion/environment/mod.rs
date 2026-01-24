@@ -3,7 +3,10 @@ mod query_graph;
 use super::{error::CompletionError, utils::get_prefix_declarations};
 use crate::server::{
     Server,
-    lsp::{BackendService, CompletionRequest, CompletionTriggerKind, textdocument::Position},
+    lsp::{
+        BackendService, CompletionRequest, CompletionTriggerKind,
+        textdocument::{Position, Range},
+    },
     message_handler::misc::resolve_backend,
 };
 use context::{Context, context};
@@ -28,6 +31,7 @@ pub(super) struct CompletionEnvironment {
     pub(super) trigger_character: Option<String>,
     pub(super) anchor_token: Option<SyntaxToken>,
     pub(super) search_term: Option<String>,
+    pub(super) replace_range: Range,
     pub(super) backend: Option<BackendService>,
     pub(super) context: Option<Context>,
 }
@@ -317,6 +321,7 @@ impl CompletionEnvironment {
         let continuations = get_continuations(&tree, &anchor_token);
         let location = get_location(&anchor_token, &continuations, offset);
         let context = context(&location);
+        let replace_range = get_replace_range(&document_position.position, &search_term);
         Ok(Self {
             location,
             trigger_textdocument_position: document_position.position,
@@ -328,6 +333,7 @@ impl CompletionEnvironment {
             search_term,
             backend,
             context,
+            replace_range,
         })
     }
 }
@@ -585,6 +591,26 @@ fn get_anchor_token(
         }
     }
     Some(trigger_token)
+}
+
+/// Get the range the completion is supposed to replace
+fn get_replace_range(trigger_pos: &Position, search_term: &Option<String>) -> Range {
+    Range {
+        start: Position::new(
+            trigger_pos.line,
+            trigger_pos.character
+                - search_term
+                    .as_ref()
+                    .map(|search_term| {
+                        search_term
+                            .chars()
+                            .map(|char| char.len_utf16())
+                            .sum::<usize>() as u32
+                    })
+                    .unwrap_or(0),
+        ),
+        end: trigger_pos.clone(),
+    }
 }
 
 #[cfg(test)]

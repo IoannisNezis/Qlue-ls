@@ -11,7 +11,7 @@ It's written in Rust and build for the web.
 
     Learn about what Qlue-ls can do to make your life easier.
 
-    [:octicons-arrow-right-24: capabilities](/03_capabilities)
+    [:octicons-arrow-right-24: capabilities](02_capabilities.md)
 
 -   :material-connection:{ .lg .middle } __Collect to a backend__
 
@@ -27,7 +27,7 @@ It's written in Rust and build for the web.
 
     Help Qlue-ls to provide  the best completion suggestions possible.
 
-    [:octicons-arrow-right-24: completion queries](/05_completion_queries)
+    [:octicons-arrow-right-24: completion queries](05_completion_queries.md)
 
 -   :material-scale-balance:{ .lg .middle } __Open Source, MIT__
 

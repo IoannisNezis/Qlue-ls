@@ -74,7 +74,7 @@ vim.lsp.config('qlue-ls',{
 vim.lsp.enable({'qlue-ls'})
 ```
 
-With the above setup, Qlue-ls will load [configuration](/03_configuration) from a file called `qlue-ls.{yml, toml}` in the working
+With the above setup, Qlue-ls will load [configuration](03_configuration.md) from a file called `qlue-ls.{yml, toml}` in the working
 directory neovim is launched from.  All file formats supported by the config create are valid.
 
 Open a `.rq` file and check that the buffer is attached to the server:

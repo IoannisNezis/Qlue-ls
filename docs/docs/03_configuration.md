@@ -296,5 +296,5 @@ request to 'qlueLs/updateDefaultBackend'.
 
 ### backend.queries
 
-This key defines the SPARQL queries used for completions by the LSP.  See the [Completion Queries](/05_completion_queries)
+This key defines the SPARQL queries used for completions by the LSP.  See the [Completion Queries](05_completion_queries.md)
 guide for details.

@@ -102,7 +102,7 @@ mod test {
              "
         };
         let mut document = TextDocumentItem::new("query.rq", input);
-        let tree = parse(&document.text);
+        let (tree, _) = parse(&document.text);
         let token = tree.covering_element(TextRange::new(TextSize::new(0), TextSize::new(0)));
         let action = code_actions(token, &document, 2).unwrap();
         document.apply_text_edits(
@@ -138,7 +138,7 @@ mod test {
              "
         };
         let mut document = TextDocumentItem::new("query.rq", input);
-        let tree = parse(&document.text);
+        let (tree, _) = parse(&document.text);
         let token = tree.covering_element(TextRange::new(TextSize::new(0), TextSize::new(0)));
         let action = code_actions(token, &document, 2).unwrap();
         document.apply_text_edits(
@@ -174,7 +174,7 @@ mod test {
              }"
         };
         let mut document = TextDocumentItem::new("query.rq", input);
-        let tree = parse(&document.text);
+        let (tree, _) = parse(&document.text);
         let token = tree.covering_element(TextRange::new(TextSize::new(0), TextSize::new(0)));
         let action = code_actions(token, &document, 2).unwrap();
         document.apply_text_edits(

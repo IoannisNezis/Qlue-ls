@@ -4,7 +4,7 @@ use crate::{
     ast::{
         AstNode, BlankPropertyList, GroupGraphPattern, QueryUnit, Triple, TriplesBlock, WhereClause,
     },
-    parse, parse_query, SyntaxNode,
+    parse, parse_query, print_full_tree, SyntaxNode,
 };
 
 fn walk(node: SyntaxNode, mut path: Vec<usize>) -> Option<SyntaxNode> {
@@ -21,7 +21,7 @@ fn walk(node: SyntaxNode, mut path: Vec<usize>) -> Option<SyntaxNode> {
 #[test]
 fn expression() {
     let input = "SELECT (3 as ?b)  (Min(?c) + (?d*10) as ?d) { }";
-    let query = QueryUnit::cast(parse(input)).unwrap();
+    let query = QueryUnit::cast(parse(input).0).unwrap();
     let expressions: Vec<_> = query
         .select_query()
         .unwrap()
@@ -46,7 +46,7 @@ fn expression() {
 #[test]
 fn select_clause() {
     let input = "SELECT ?a (3 as ?b) ?e (?c as ?d) { }";
-    let query = QueryUnit::cast(parse(input)).unwrap();
+    let query = QueryUnit::cast(parse(input).0).unwrap();
     let select_clause = query.select_query().unwrap().select_clause().unwrap();
     assert_eq!(
         select_clause
@@ -81,7 +81,7 @@ fn select_clause() {
 #[test]
 fn values_clause() {
     let input = "SELECT * WHERE { VALUES ?x {} }";
-    let root = parse(input);
+    let root = parse(input).0;
     let query = QueryUnit::cast(root).unwrap();
     let gpnt = query
         .select_query()
@@ -97,7 +97,7 @@ fn values_clause() {
 #[test]
 fn property_list() {
     let input = "SELECT * WHERE { ?a ?b ?c ;  ?x }";
-    let root = parse(input);
+    let root = parse(input).0;
     let query = QueryUnit::cast(root).unwrap();
     let triples = query
         .select_query()
@@ -122,13 +122,14 @@ fn property_list() {
 #[test]
 fn blank_prop_list() {
     let input = "SELECT * WHERE { ?s ?p []}";
-    let root = parse_query(input);
+    let root = parse_query(input).0;
+    println!("{}", print_full_tree(&root, 2));
     let node = walk(root, vec![0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0]).unwrap();
     let ast_node = BlankPropertyList::cast(node).unwrap();
     assert!(ast_node.property_list().is_none());
 
     let input = "SELECT * WHERE { ?s ?p [?a ]}";
-    let root = parse_query(input);
+    let root = parse_query(input).0;
     let node = walk(root, vec![0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0]).unwrap();
     let ast_node = BlankPropertyList::cast(node).unwrap();
     assert!(ast_node.property_list().is_some());
@@ -138,7 +139,7 @@ fn blank_prop_list() {
 fn prologue() {
     let input = "PREFIX a: <dings>\n Prefix b: <foo> SELECT ?a WHERE { ?s ?p ?o}";
 
-    let root = parse_query(input);
+    let root = parse_query(input).0;
     let query_unit = QueryUnit::cast(root).unwrap();
     let prologue = query_unit.prologue().unwrap();
     assert_eq!(prologue.prefix_declarations()[0].prefix().unwrap(), "a");
@@ -153,7 +154,7 @@ fn prologue() {
         "<foo>"
     );
 
-    let query_unit2 = QueryUnit::cast(parse_query("SELECT * {}")).unwrap();
+    let query_unit2 = QueryUnit::cast(parse_query("SELECT * {}").0).unwrap();
     assert_eq!(query_unit2.prologue(), None);
 }
 
@@ -161,7 +162,7 @@ fn prologue() {
 fn where_clause() {
     let input = "SELECT ?a WHERE { ?s ?p ?o}";
 
-    let root = parse_query(input);
+    let root = parse_query(input).0;
     let node = walk(root, vec![0, 0, 1]).unwrap();
     let where_clause = WhereClause::cast(node).unwrap();
     assert_eq!(
@@ -181,7 +182,7 @@ fn where_clause() {
 #[test]
 fn group_graph_pattern() {
     let input = "SELECT * { ?s ?p ?o . {} ?a  ?b ?c .     ?x ?y  ?z}";
-    let root = parse_query(input);
+    let root = parse_query(input).0;
     let node = walk(root, vec![0, 0, 1, 0]).unwrap();
     let ggp = GroupGraphPattern::cast(node).unwrap();
     let triples_blocks = ggp.triple_blocks();
@@ -207,7 +208,7 @@ fn group_graph_pattern() {
 #[test]
 fn triples_block() {
     let input = "SELECT * { ?s ?p ?o . ?a  ?b ?c .     ?x ?y  ?z}";
-    let root = parse_query(input);
+    let root = parse_query(input).0;
     let node = walk(root, vec![0, 0, 1, 0, 0, 0]).unwrap();
     let triples_block = TriplesBlock::cast(node).unwrap();
     let triples = triples_block.triples();
@@ -224,7 +225,8 @@ fn triples_block() {
 #[test]
 fn ast_triple() {
     let input = "SELECT * { ?s ?p ?o ; ?p2 ?o2 ; ?p3 ?o3}";
-    let root = parse_query(input);
+    let root = parse_query(input).0;
+    println!("{}", print_full_tree(&root, 2));
     let node = walk(root, vec![0, 0, 1, 0, 0, 0, 0]).unwrap();
     let triple = Triple::cast(node).unwrap();
     println!(

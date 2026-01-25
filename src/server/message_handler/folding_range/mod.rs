@@ -1,10 +1,7 @@
 use std::rc::Rc;
 
 use futures::lock::Mutex;
-use ll_sparql_parser::{
-    ast::{AstNode, Prologue},
-    parse,
-};
+use ll_sparql_parser::ast::{AstNode, Prologue};
 
 use crate::server::{
     Server,
@@ -21,7 +18,9 @@ pub(super) async fn handle_folding_range_request(
     let server = server_rc.lock().await;
     let mut result = vec![];
     let document = server.state.get_document(request.get_document_uri())?;
-    let tree = parse(&document.text);
+    let tree = server
+        .state
+        .get_cached_parse_tree(&request.get_document_uri())?;
     if let Some(prologue) = tree
         .first_child()
         .and_then(|child| child.first_child().and_then(Prologue::cast))

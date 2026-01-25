@@ -11,7 +11,7 @@ use crate::server::{
     },
 };
 use futures::lock::Mutex;
-use ll_sparql_parser::{SyntaxElement, ast::AstNode, parse_query};
+use ll_sparql_parser::{SyntaxElement, ast::AstNode};
 use ll_sparql_parser::{
     ast::{Iri, Var},
     syntax_kind::SyntaxKind,
@@ -60,7 +60,7 @@ fn generate_code_actions(
 ) -> Result<Vec<CodeAction>, LSPError> {
     let document_uri = &params.text_document.uri;
     let document = server.state.get_document(document_uri)?;
-    let root = parse_query(&document.text);
+    let root = server.state.get_cached_parse_tree(&document_uri)?;
     let range = params
         .range
         .to_byte_index_range(&document.text)
@@ -79,9 +79,7 @@ fn generate_code_actions(
         code_actions.extend(iri::code_actions(server, document.uri.clone()));
     } else {
         match selected_element.parent().and_then(Var::cast) {
-            Some(var) => {
-                code_actions.extend(variable::code_actions(var, &server.state, document))
-            }
+            Some(var) => code_actions.extend(variable::code_actions(var, &server.state, document)),
             _ => {
                 if matches!(
                     selected_element.kind(),

@@ -1,7 +1,7 @@
 use core::fmt;
 use std::vec;
 
-use ll_sparql_parser::{SyntaxElement, SyntaxNode, parse, syntax_kind::SyntaxKind};
+use ll_sparql_parser::{SyntaxElement, SyntaxNode, syntax_kind::SyntaxKind};
 use text_size::{TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
@@ -19,6 +19,7 @@ use super::utils::KEYWORDS;
 
 pub(super) fn format_document(
     document: &TextDocumentItem,
+    root: SyntaxNode,
     options: &FormattingOptions,
     settings: &FormatSettings,
 ) -> Result<Vec<TextEdit>, LSPError> {
@@ -27,12 +28,7 @@ pub(super) fn format_document(
         true => " ".repeat(settings.tab_size.unwrap_or(options.tab_size) as usize),
         false => "\t".to_string(),
     };
-    let walker = Walker::new(
-        parse(&document.text),
-        &document.text,
-        settings,
-        indent_string.clone(),
-    );
+    let walker = Walker::new(root, &document.text, settings, indent_string.clone());
 
     let (simplified_edits, simpified_comments) = walker.collect_edits_and_comments();
     let comments = transform_comments(simpified_comments, &document.text);

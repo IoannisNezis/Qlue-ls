@@ -4,7 +4,6 @@ use futures::lock::Mutex;
 use ll_sparql_parser::{
     SyntaxNode,
     ast::{AstNode, GroupGraphPattern, QueryUnit},
-    parse_query,
 };
 use text_size::TextSize;
 
@@ -24,7 +23,7 @@ pub(super) async fn handle_jump_request(
     let server = server_rc.lock().await;
     let document_uri = &request.params.base.text_document.uri;
     let document = server.state.get_document(document_uri)?;
-    let root = parse_query(&document.text);
+    let root = server.state.get_cached_parse_tree(&document_uri)?;
     let cursor_offset = request
         .params
         .base

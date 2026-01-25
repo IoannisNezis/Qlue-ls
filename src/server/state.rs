@@ -185,7 +185,8 @@ impl ServerState {
                 return Ok(cached_root.clone());
             }
         }
-        let root = parse(&document.text);
+
+        let (root, _) = parse(&document.text);
         *self.parse_tree_cache.borrow_mut() =
             Some((uri.to_string(), document.version(), root.clone()));
         Ok(root)

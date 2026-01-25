@@ -1,6 +1,5 @@
 use ll_sparql_parser::{
     ast::{AstNode, Triple},
-    parse,
     syntax_kind::SyntaxKind,
 };
 use text_size::{TextRange, TextSize};
@@ -29,7 +28,7 @@ pub(crate) fn contract_triples(
         "The same-subject diagnostic should have a array of ranges as data",
     ))?;
     let document = server.state.get_document(&document_uri)?;
-    let root = parse(&document.text);
+    let root = server.state.get_cached_parse_tree(&document_uri)?;
     let mut triples = Vec::new();
     for range in data {
         if !root.text_range().contains_range(range) {

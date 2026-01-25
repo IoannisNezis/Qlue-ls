@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::server::lsp::LspMessage;
-use crate::server::lsp::rpc::{RequestId, RequestMessageBase, ResponseMessageBase};
-use crate::server::lsp::textdocument::TextDocumentIdentifier;
+use crate::server::lsp::rpc::{NotificationMessageBase, RequestId, RequestMessageBase, ResponseMessageBase};
+use crate::server::lsp::textdocument::{DocumentUri, TextDocumentIdentifier};
 
 use super::diagnostic::Diagnostic;
 
@@ -59,4 +59,41 @@ pub struct DocumentDiagnosticReport {
 pub enum DocumentDiagnosticReportKind {
     Full,
     // Unchanged,
+}
+
+/// Notification sent from the server to the client to publish diagnostics.
+///
+/// See: https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_publishDiagnostics
+#[derive(Debug, Serialize, PartialEq)]
+pub struct PublishDiagnosticsNotification {
+    #[serde(flatten)]
+    base: NotificationMessageBase,
+    params: PublishDiagnosticsParams,
+}
+
+impl LspMessage for PublishDiagnosticsNotification {}
+
+impl PublishDiagnosticsNotification {
+    pub fn new(uri: DocumentUri, diagnostics: Vec<Diagnostic>, version: Option<u32>) -> Self {
+        Self {
+            base: NotificationMessageBase::new("textDocument/publishDiagnostics"),
+            params: PublishDiagnosticsParams {
+                uri,
+                diagnostics,
+                version,
+            },
+        }
+    }
+}
+
+#[derive(Debug, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+struct PublishDiagnosticsParams {
+    /// The URI for which diagnostic information is reported.
+    uri: DocumentUri,
+    /// An array of diagnostic information items.
+    diagnostics: Vec<Diagnostic>,
+    /// Optional the version number of the document the diagnostics are published for.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    version: Option<u32>,
 }

@@ -18,9 +18,16 @@ pub fn generate() {
     let grammar = ungrammar::Grammar::from_str(&contents).unwrap();
     let first = compute_first(&grammar);
 
-    generate_types(&grammar);
-    generate_parser(&grammar, &first);
-    generate_rules(&grammar);
+    if std::env::var("GENERATE_TYPES").map_or(false, |env| env == "1") {
+        generate_types(&grammar);
+    }
+    if std::env::var("GENERATE_PARSER").map_or(false, |env| env == "1") {
+        generate_parser(&grammar, &first);
+    }
+
+    if std::env::var("GENERATE_RULES").map_or(false, |env| env == "1") {
+        generate_rules(&grammar);
+    }
 }
 
 fn generate_rule(grammar: &Grammar, rule: &Rule, first: &FirstSet) -> TokenStream {
@@ -61,13 +68,21 @@ fn generate_rule(grammar: &Grammar, rule: &Rule, first: &FirstSet) -> TokenStrea
                     }
                 })
                 .collect();
+            let expected: Vec<TokenStream> = rules
+                .iter()
+                .flat_map(|rule| first.get_first_of_sorted(rule, grammar))
+                .map(|token| {
+                    let kind = generate_token_kind(&grammar[token].name);
+                    quote! { SyntaxKind::#kind }
+                })
+                .collect();
             let catch_arm = match is_nullable(rule, grammar) {
                 true => quote! {
                     _ => {}
                 },
                 false => quote! {
                     _ =>{
-                        p.advance_with_error("Expected ....");
+                        p.advance_with_error(vec![#(#expected),*]);
                     }
                 },
             };
@@ -75,7 +90,6 @@ fn generate_rule(grammar: &Grammar, rule: &Rule, first: &FirstSet) -> TokenStrea
                 match p.nth(0){
                   #(#match_arms)*,
                   SyntaxKind::Eof => {
-                        eprintln!("Unexpected Eof");
                         p.close(marker, SyntaxKind::Error);
                         return
                   },
@@ -137,7 +151,7 @@ fn generate_token_kind(token: &str) -> proc_macro2::Ident {
             "[" => "LBrack",
             "]" => "RBrack",
             "." => "Dot",
-            "," => "Colon",
+            "," => "Comma",
             ";" => "Semicolon",
             "|" => "Pipe",
             "||" => "DoublePipe",
@@ -236,7 +250,16 @@ fn generate_rules(grammar: &Grammar) {
             pub(super) fn first(&self) -> Vec<SyntaxKind> {
                 match self {
                     Rule::Node(syntax_kind) | Rule::Token(syntax_kind) => vec![*syntax_kind],
-                    Rule::Seq(rules) => rules.first().unwrap().first(),
+                    Rule::Seq(rules) => {
+                        let mut first = vec![];
+                        for rule in rules {
+                            first.extend(rule.first().iter());
+                            if !rule.is_nullable() {
+                                break;
+                            }
+                        }
+                        return first;
+                    }
                     Rule::Alt(rules) => rules.iter().flat_map(|rule| rule.first()).collect(),
                     Rule::Opt(rule) => rule.first(),
                     Rule::Rep(rule) => rule.first(),
@@ -245,7 +268,12 @@ fn generate_rules(grammar: &Grammar) {
             pub(super) fn is_nullable(&self) -> bool {
                 match self {
                     Rule::Opt(_rule) | Rule::Rep(_rule) => true,
-                    _ => false,
+                    Rule::Node(syntax_kind) => {
+                        Rule::from_node_kind(*syntax_kind).map_or(false, |rule| rule.is_nullable())
+                    }
+                    Rule::Token(_syntax_kind) => false,
+                    Rule::Seq(rules) => rules.iter().all(|rule| rule.is_nullable()),
+                    Rule::Alt(rules) => rules.iter().any(|rule| rule.is_nullable()),
                 }
             }
             pub(super) fn from_node_kind(kind: SyntaxKind) -> Option<Self> {

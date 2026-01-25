@@ -9,7 +9,7 @@ fn match_location_at_offset(input: &str, matcher: CompletionLocation, offset: u3
 }
 
 fn location(input: &str, offset: u32) -> CompletionLocation {
-    let root = parse_query(input);
+    let (root, _) = parse_query(input);
     let trigger_token = get_trigger_token(&root, offset.into());
     let anchor = trigger_token.and_then(|token| get_anchor_token(token, offset.into()));
     let continuations = get_continuations(&root, &anchor);
@@ -18,7 +18,7 @@ fn location(input: &str, offset: u32) -> CompletionLocation {
 
 #[test]
 fn find_anchor_path() {
-    let root = parse_query("Select * {?s ^}");
+    let (root, _) = parse_query("Select * {?s ^}");
     let trigger_token = get_trigger_token(&root, 14.into());
     let anchor = trigger_token
         .and_then(|token| get_anchor_token(token, 14.into()))
@@ -253,7 +253,7 @@ fn localize_object_4() {
 }
 
 fn trigger_token_at(input: &str, offset: u32) -> Option<SyntaxToken> {
-    let root = parse_query(input);
+    let (root, _) = parse_query(input);
     get_trigger_token(&root, offset.into())
 }
 
@@ -280,7 +280,7 @@ fn search_term_includes_all_error_tokens() {
     use super::get_search_term;
     //           0123456789012345
     let input = "Select * { Ex }";
-    let root = parse_query(input);
+    let (root, _) = parse_query(input);
 
     // When typing "Ex", the parser creates two separate Error tokens: "E" and "x"
     // The search term should include both, regardless of cursor position
@@ -311,6 +311,6 @@ fn search_term_includes_all_error_tokens() {
 fn localize_order_condition() {
     //           0123456789012345678901234567
     let input = "SELECT * WHERE {} ORDER BY ";
-    let root = parse_query(input);
+    let (root, _) = parse_query(input);
     assert!(matches!(get_trigger_token(&root, 27.into()), Some(_)));
 }

@@ -10,6 +10,7 @@ use crate::server::{
 };
 use core::*;
 use futures::lock::Mutex;
+use ll_sparql_parser::parse;
 use std::rc::Rc;
 use wasm_bindgen::prelude::wasm_bindgen;
 
@@ -19,7 +20,15 @@ pub(super) async fn handle_format_request(
 ) -> Result<(), LSPError> {
     let server = server_rc.lock().await;
     let document = server.state.get_document(request.get_document_uri())?;
-    let edits = format_document(document, request.get_options(), &server.settings.format)?;
+    let root = server
+        .state
+        .get_cached_parse_tree(&request.get_document_uri())?;
+    let edits = format_document(
+        document,
+        root,
+        request.get_options(),
+        &server.settings.format,
+    )?;
     server.send_message(FormattingResponse::new(request.get_id(), edits))
 }
 
@@ -27,9 +36,10 @@ pub(super) async fn handle_format_request(
 pub fn format_raw(text: String) -> Result<String, String> {
     let settings = Settings::new();
     let mut document = TextDocumentItem::new("tmp", &text);
+    let (root, _) = parse(&text);
     let edits = format_document(
         &document,
-        // &tree,
+        root,
         &FormattingOptions {
             tab_size: 2,
             insert_spaces: true,

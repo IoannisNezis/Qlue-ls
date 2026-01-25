@@ -457,7 +457,8 @@ mod test {
         let s = "Select * { ?a <p0>/  }";
         let reduced = "?a <p0> ?qlue_ls_inner . ?qlue_ls_inner ?qlue_ls_entity []";
         let offset = 19;
-        let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
+        let (tree, _) = parse_query(s);
+        let query_unit = QueryUnit::cast(tree).unwrap();
         let triples = query_unit
             .select_query()
             .unwrap()
@@ -492,7 +493,8 @@ mod test {
         let s = "Select * { ?a <p0>/<p1>|  <x>}";
         let reduced = "?a ?qlue_ls_entity []";
         let offset = 24;
-        let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
+        let (tree, _) = parse_query(s);
+        let query_unit = QueryUnit::cast(tree).unwrap();
         let triples = query_unit
             .select_query()
             .unwrap()
@@ -527,7 +529,8 @@ mod test {
         let s = "Select * { ?a ^  <x>}";
         let reduced = "[] ?qlue_ls_entity ?a";
         let offset = 15;
-        let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
+        let (tree, _) = parse_query(s);
+        let query_unit = QueryUnit::cast(tree).unwrap();
         let triples = query_unit
             .select_query()
             .unwrap()
@@ -562,7 +565,8 @@ mod test {
         let s = "Select * { ?a !()}";
         let reduced = "?a ?qlue_ls_entity []";
         let offset = 16;
-        let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
+        let (tree, _) = parse_query(s);
+        let query_unit = QueryUnit::cast(tree).unwrap();
         let triples = query_unit
             .select_query()
             .unwrap()
@@ -597,7 +601,8 @@ mod test {
         let s = "Select * { ?a <p0>|<p1>/(<p2>)/^  <x>}";
         let reduced = "?a <p1>/(<p2>) ?qlue_ls_inner . [] ?qlue_ls_entity ?qlue_ls_inner";
         let offset = 32;
-        let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
+        let (tree, _) = parse_query(s);
+        let query_unit = QueryUnit::cast(tree).unwrap();
         let triples = query_unit
             .select_query()
             .unwrap()
@@ -631,7 +636,8 @@ mod test {
         let s = "Select * { ?a <p0>|<p1>/(<p2>)/^<p2>/!(^)  <x>}";
         let reduced = "?a <p1>/(<p2>)/^<p2> ?qlue_ls_inner . [] ?qlue_ls_entity ?qlue_ls_inner";
         let offset = 40;
-        let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
+        let (tree, _) = parse_query(s);
+        let query_unit = QueryUnit::cast(tree).unwrap();
         let triples = query_unit
             .select_query()
             .unwrap()
@@ -666,7 +672,8 @@ mod test {
         let s = "Select * { ?a ^(^<a>/)  <x>}";
         let reduced = "[] ^<a> ?qlue_ls_inner . ?qlue_ls_inner ?qlue_ls_entity ?a";
         let offset = 21;
-        let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
+        let (tree, _) = parse_query(s);
+        let query_unit = QueryUnit::cast(tree).unwrap();
         let triples = query_unit
             .select_query()
             .unwrap()
@@ -701,7 +708,9 @@ mod test {
         let s = "Select * { ?a !^  <x>}";
         let reduced = "[] ?qlue_ls_entity ?a";
         let offset = 16;
-        let query_unit = QueryUnit::cast(parse_query(s)).unwrap();
+
+        let (tree, _) = parse_query(s);
+        let query_unit = QueryUnit::cast(tree).unwrap();
         let triples = query_unit
             .select_query()
             .unwrap()

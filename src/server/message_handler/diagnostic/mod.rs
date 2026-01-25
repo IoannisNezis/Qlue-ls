@@ -1,5 +1,6 @@
 pub mod invalid_projection_variable;
 pub mod same_subject;
+mod syntax_errors;
 pub mod uncompacted_uri;
 pub mod undeclared_prefix;
 pub mod ungrouped_select_variable;
@@ -14,10 +15,7 @@ use crate::server::{
     message_handler::code_action::declare_prefix,
 };
 use futures::lock::Mutex;
-use ll_sparql_parser::{
-    ast::{AstNode, QueryUnit},
-    parse,
-};
+use ll_sparql_parser::ast::{AstNode, QueryUnit};
 use std::{
     collections::{HashMap, HashSet},
     convert::identity,
@@ -34,7 +32,10 @@ pub(super) async fn handle_diagnostic_request(
     let document = server
         .state
         .get_document(&request.params.text_document.uri)?;
-    let ast = QueryUnit::cast(parse(&document.text)).ok_or(LSPError::new(
+    let tree = server
+        .state
+        .get_cached_parse_tree(&request.params.text_document.uri)?;
+    let ast = QueryUnit::cast(tree).ok_or(LSPError::new(
         crate::server::lsp::errors::ErrorCode::InternalError,
         "diagnostics are currently only supported for query operations",
     ))?;
@@ -52,6 +53,7 @@ pub(super) async fn handle_diagnostic_request(
     add!(ungrouped_select_variable::diagnostics);
     add!(invalid_projection_variable::diagnostics);
     add!(same_subject::diagnostics);
+    add!(syntax_errors::diagnostics);
 
     if client_support_workspace_edits(&server) {
         declare_and_undeclare_prefixes(&mut server, &request, &diagnostic_accu);

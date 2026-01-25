@@ -158,7 +158,7 @@ mod test {
     fn continueations_failure() {
         //           0123456789012345678
         let input = "SELECT WHERE { }";
-        let root = parse_query(input);
+        let root = parse_query(input).0;
         assert_eq!(continuations_at(&root, 12.into()), None);
     }
 
@@ -166,7 +166,7 @@ mod test {
     fn continueations_triplesblock() {
         //           012345678901234567890123456
         let input = "SELECT WHERE { ?a ?b ?c . }";
-        let root = parse_query(input);
+        let root = parse_query(input).0;
         assert_eq!(
             continuations_at(&root, 25.into()),
             vec![
@@ -182,7 +182,7 @@ mod test {
     fn continueations_where_clause() {
         //           0123456789012345678
         let input = "SELECT * WHERE { }";
-        let root = parse_query(input);
+        let root = parse_query(input).0;
         assert_eq!(
             continuations_at(&root, 14.into()),
             vec![SyntaxKind::GroupGraphPattern].into()
@@ -193,7 +193,7 @@ mod test {
     fn continueations_triple() {
         //           01234567890123456789012345678901234
         let input = "SELECT * FROM <> WHERE { ?a ?s ?c }  ";
-        let root = parse_query(input);
+        let root = parse_query(input).0;
         assert_eq!(
             continuations_at(&root, 24.into()),
             vec![
@@ -217,7 +217,7 @@ mod test {
     fn continueations_select_query() {
         //           012345678901234567890123456789
         let input = "SELECT * FROM <> WHERE {}\n";
-        let root = parse_query(input);
+        let root = parse_query(input).0;
         assert_eq!(
             continuations_at(&root, 8.into()),
             vec![SyntaxKind::DatasetClause, SyntaxKind::WhereClause].into()
@@ -241,7 +241,7 @@ mod test {
     fn continueations_values_clause() {
         //           0123456789012345678901234567890
         let input = "SELECT * WHERE { VALUES ?a {}}";
-        let root = parse_query(input);
+        let root = parse_query(input).0;
         assert_eq!(
             continuations_at(&root, 27.into()),
             vec![SyntaxKind::LCurly].into()
@@ -256,7 +256,7 @@ mod test {
     fn continueations_solution_modifier() {
         //           0123456789012345678901234567890
         let input = "SELECT * WHERE {#c\n}      \n\n";
-        let root = parse_query(input);
+        let root = parse_query(input).0;
         assert_eq!(
             continuations_at(&root, 20.into()),
             vec![SyntaxKind::SolutionModifier, SyntaxKind::ValuesClause].into()

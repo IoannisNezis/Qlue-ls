@@ -1,4 +1,5 @@
 use indoc::indoc;
+use ll_sparql_parser::parse;
 
 use crate::server::{
     configuration::FormatSettings,
@@ -25,7 +26,9 @@ fn format_and_compare(ugly_query: &str, pretty_query: &str, format_settings: &Fo
         insert_spaces: true,
     };
     let mut document = TextDocumentItem::new("testdocument", ugly_query);
-    let edits = format_document(&document, &format_options, format_settings).unwrap();
+
+    let (tree, _) = parse(&document.text);
+    let edits = format_document(&document, tree, &format_options, format_settings).unwrap();
     check_collision(&edits);
     document.apply_text_edits(edits);
     assert_eq!(document.text, pretty_query);

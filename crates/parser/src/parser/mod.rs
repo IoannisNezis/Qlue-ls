@@ -1,11 +1,11 @@
 mod grammar;
 
-use std::cell::Cell;
+use std::{cell::Cell, ops::Range};
 
 use crate::SyntaxKind;
 use grammar::{parse_QueryUnit, parse_UpdateUnit};
 use logos::Logos;
-use rowan::{GreenNode, GreenNodeBuilder};
+use rowan::{GreenNode, GreenNodeBuilder, TextRange, TextSize};
 use wasm_bindgen::prelude::wasm_bindgen;
 
 pub struct Parser {
@@ -31,20 +31,30 @@ impl Token {
     }
 }
 
-pub fn parse_text(input: &str, entry: TopEntryPoint) -> GreenNode {
+#[derive(Debug)]
+pub struct ParseError {
+    pub span: TextRange,
+    pub message: String,
+}
+
+pub fn parse_text(input: &str, entry: TopEntryPoint) -> (GreenNode, Vec<ParseError>) {
     let tokens = lex(input);
     let parse_input = tokens
         .iter()
-        .filter(|token| !token.is_trivia())
+        .filter_map(|(token, _span)| (!token.is_trivia()).then_some(token))
         .cloned()
         .collect();
     let output = entry.parse(parse_input);
     build_tree(tokens, output)
 }
 
-fn build_tree(tokens: Vec<Token>, events: Vec<Event>) -> GreenNode {
+fn build_tree(
+    tokens: Vec<(Token, Range<usize>)>,
+    events: Vec<Event>,
+) -> (GreenNode, Vec<ParseError>) {
     let mut tokens = tokens.into_iter().peekable();
     let mut builder = GreenNodeBuilder::new();
+    let mut erros: Vec<ParseError> = Vec::new();
 
     // Special case: pop the last `Close` event to ensure
     // that the stack is non-empty inside the loop.
@@ -53,35 +63,59 @@ fn build_tree(tokens: Vec<Token>, events: Vec<Event>) -> GreenNode {
         match event {
             Event::Open { kind } => {
                 while !matches!(kind, SyntaxKind::QueryUnit | SyntaxKind::UpdateUnit)
-                    && tokens.peek().map_or(false, |next| next.is_trivia())
+                    && tokens
+                        .peek()
+                        .map_or(false, |(next, _span)| next.is_trivia())
                 {
-                    let token = tokens.next().unwrap();
+                    let (token, _) = tokens.next().unwrap();
                     builder.token(token.kind.into(), &token.text);
                 }
                 builder.start_node((*kind).into());
+            }
+            Event::Error { expected } => {
+                if let Some((_, span)) = tokens.peek() {
+                    erros.push(ParseError {
+                        span: TextRange::new(
+                            TextSize::new(span.start as u32),
+                            TextSize::new(span.start as u32),
+                        ),
+                        message: if expected.is_empty() {
+                            "Syntax Error: unexpected token".to_string()
+                        } else {
+                            format!(
+                                "Syntax Error: expected {}",
+                                expected
+                                    .into_iter()
+                                    .map(|kind| format!("{kind:?}"))
+                                    .collect::<Vec<_>>()
+                                    .join(" or ")
+                            )
+                        },
+                    });
+                }
             }
             Event::Close => {
                 builder.finish_node();
             }
 
             Event::Advance => {
-                while tokens.peek().map_or(false, |next| next.is_trivia()) {
-                    let token = tokens.next().unwrap();
+                while tokens.peek().map_or(false, |(next, _)| next.is_trivia()) {
+                    let (token, _) = tokens.next().unwrap();
                     builder.token(token.kind.into(), &token.text);
                 }
-                let token = tokens.next().unwrap();
+                let (token, _) = tokens.next().unwrap();
                 builder.token(token.kind.into(), &token.text);
             }
         }
     }
     // Eat trailing trivia tokens
     assert!(matches!(events.last(), Some(Event::Close)));
-    while tokens.peek().map_or(false, |next| next.is_trivia()) {
-        let token = tokens.next().unwrap();
+    while tokens.peek().map_or(false, |(next, _)| next.is_trivia()) {
+        let (token, _) = tokens.next().unwrap();
         builder.token(token.kind.into(), &token.text);
     }
     builder.finish_node();
-    builder.finish()
+    (builder.finish(), erros)
 }
 
 impl Parser {
@@ -95,8 +129,10 @@ impl Parser {
     }
 }
 
+#[derive(Debug)]
 enum Event {
     Open { kind: SyntaxKind },
+    Error { expected: Vec<SyntaxKind> },
     Close,
     Advance,
 }
@@ -163,16 +199,16 @@ impl Parser {
         if self.eat(kind) {
             return;
         }
-        // TODO: Error reporting.
-        eprintln!("expected {kind:?}");
+        self.events.push(Event::Error {
+            expected: vec![kind],
+        });
     }
 
-    fn advance_with_error(&mut self, error: &str) {
+    fn advance_with_error(&mut self, expected: Vec<SyntaxKind>) {
         let m = self.open();
-        // TODO: Error reporting.
-        eprintln!("{error}");
         self.advance();
         self.close(m, SyntaxKind::Error);
+        self.events.push(Event::Error { expected });
     }
 }
 
@@ -193,22 +229,25 @@ impl TopEntryPoint {
     }
 }
 
-pub(super) fn lex(text: &str) -> Vec<Token> {
+pub(super) fn lex(text: &str) -> Vec<(Token, Range<usize>)> {
     let mut lexer = SyntaxKind::lexer(text);
     let mut tokens = Vec::new();
 
     while let Some(result) = lexer.next() {
-        tokens.push(Token {
-            kind: result.unwrap_or(SyntaxKind::Error),
-            text: lexer.slice().to_string(),
-        });
+        tokens.push((
+            Token {
+                kind: result.unwrap_or(SyntaxKind::Error),
+                text: lexer.slice().to_string(),
+            },
+            lexer.span(),
+        ));
     }
     tokens
 }
 
 pub fn guess_operation_type(input: &str) -> Option<TopEntryPoint> {
     let tokens = lex(input);
-    tokens.iter().find_map(|token| match token.kind {
+    tokens.iter().find_map(|(token, _)| match token.kind {
         SyntaxKind::SELECT | SyntaxKind::CONSTRUCT | SyntaxKind::ASK | SyntaxKind::DESCRIBE => {
             Some(TopEntryPoint::QueryUnit)
         }

@@ -124,7 +124,7 @@ fn add_limit_offset_to_query(query: &str, limit: Option<usize>, offset: usize) -
         ast::{AstNode, QueryUnit},
         parse_query,
     };
-    let syntax_tree = QueryUnit::cast(parse_query(query))?;
+    let syntax_tree = QueryUnit::cast(parse_query(query).0)?;
     let select_query = syntax_tree.select_query()?;
     Some(format!(
         "{}{}{}",

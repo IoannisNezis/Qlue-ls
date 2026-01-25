@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- report syntax errors
+
+### Fixed
+
+- variable completions use text_edits instead of insert_text
+
 ## [1.1.17] - 2025-01-24
 
 ### Added

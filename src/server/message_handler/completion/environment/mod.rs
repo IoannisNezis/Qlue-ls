@@ -15,7 +15,7 @@ use indoc::indoc;
 use ll_sparql_parser::{
     SyntaxNode, SyntaxToken, TokenAtOffset,
     ast::{AstNode, BlankPropertyList, QueryUnit, SelectClause, Triple},
-    continuations_at, parse,
+    continuations_at,
     syntax_kind::SyntaxKind,
 };
 use std::{collections::HashSet, fmt::Display, rc::Rc, vec};
@@ -311,7 +311,11 @@ impl CompletionEnvironment {
             )))?;
         let trigger_kind = request.get_completion_context().trigger_kind.clone();
         let trigger_character = request.get_completion_context().trigger_character.clone();
-        let tree = parse(&document.text);
+
+        let tree = server
+            .state
+            .get_cached_parse_tree(&document_position.text_document.uri)
+            .map_err(|err| CompletionError::Localization(err.message))?;
         let trigger_token = get_trigger_token(&tree, offset);
         let backend = trigger_token
             .as_ref()

@@ -7,7 +7,7 @@ mod utils;
 
 #[cfg(target_arch = "wasm32")]
 use js_sys::{Array, Object, Reflect};
-pub use parser::{guess_operation_type, TopEntryPoint};
+pub use parser::{guess_operation_type, ParseError, TopEntryPoint};
 #[cfg(target_arch = "wasm32")]
 use rowan::TextSize;
 use syntax_kind::SyntaxKind;
@@ -18,15 +18,17 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use crate::parser::lex;
 
-pub fn parse_query(input: &str) -> SyntaxNode {
-    SyntaxNode::new_root(parser::parse_text(input, parser::TopEntryPoint::QueryUnit))
+pub fn parse_query(input: &str) -> (SyntaxNode, Vec<ParseError>) {
+    let (root, errors) = parser::parse_text(input, parser::TopEntryPoint::QueryUnit);
+    (SyntaxNode::new_root(root), errors)
 }
 
-pub fn parse_update(input: &str) -> SyntaxNode {
-    SyntaxNode::new_root(parser::parse_text(input, parser::TopEntryPoint::UpdateUnit))
+pub fn parse_update(input: &str) -> (SyntaxNode, Vec<ParseError>) {
+    let (root, errors) = parser::parse_text(input, parser::TopEntryPoint::UpdateUnit);
+    (SyntaxNode::new_root(root), errors)
 }
 
-pub fn parse(input: &str) -> SyntaxNode {
+pub fn parse(input: &str) -> (SyntaxNode, Vec<ParseError>) {
     match guess_operation_type(input) {
         Some(TopEntryPoint::QueryUnit) | None => parse_query(input),
         Some(TopEntryPoint::UpdateUnit) => parse_update(input),
@@ -42,7 +44,7 @@ pub enum QueryType {
 
 pub fn guess_query_type(input: &str) -> Option<QueryType> {
     let tokens = lex(input);
-    tokens.iter().find_map(|token| match token.kind() {
+    tokens.iter().find_map(|(token, _)| match token.kind() {
         SyntaxKind::SELECT => Some(QueryType::SelectQuery),
         SyntaxKind::CONSTRUCT => Some(QueryType::ConstructQuery),
         SyntaxKind::ASK => Some(QueryType::AskQuery),
@@ -57,7 +59,7 @@ mod tests;
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 pub fn get_parse_tree(input: &str, offset: u32) -> JsValue {
-    let root = parse(input);
+    let root = parse(input).0;
     build_js_tree(&root, TextSize::new(offset))
 }
 

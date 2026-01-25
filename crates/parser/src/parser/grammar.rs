@@ -7,7 +7,7 @@ pub(super) fn parse_QueryUnit(p: &mut Parser) {
     parse_Query(p);
     // Add remaining tokens as error.
     while !p.at(SyntaxKind::Eof) {
-        p.advance_with_error("unexpected token");
+        p.advance_with_error(Vec::new());
     }
     p.close(marker, SyntaxKind::QueryUnit);
 }
@@ -29,12 +29,16 @@ pub(super) fn parse_Query(p: &mut Parser) {
             parse_AskQuery(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::SELECT,
+                SyntaxKind::CONSTRUCT,
+                SyntaxKind::DESCRIBE,
+                SyntaxKind::ASK,
+            ]);
         }
     };
     parse_ValuesClause(p);
@@ -55,12 +59,11 @@ pub(super) fn parse_Prologue(p: &mut Parser) {
                 parse_PrefixDecl(p);
             }
             SyntaxKind::Eof => {
-                eprintln!("Unexpected Eof");
                 p.close(marker, SyntaxKind::Error);
                 return;
             }
             _ => {
-                p.advance_with_error("Expected ....");
+                p.advance_with_error(vec![SyntaxKind::BASE, SyntaxKind::PREFIX]);
             }
         };
     }
@@ -129,12 +132,15 @@ pub(super) fn parse_ConstructQuery(p: &mut Parser) {
             parse_SolutionModifier(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::LCurly,
+                SyntaxKind::WHERE,
+                SyntaxKind::FROM,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::ConstructQuery);
@@ -166,12 +172,18 @@ pub(super) fn parse_DescribeQuery(p: &mut Parser) {
             p.expect(SyntaxKind::Star);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::VAR1,
+                SyntaxKind::VAR2,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::Star,
+            ]);
         }
     };
     while [SyntaxKind::FROM].contains(&p.nth(0)) {
@@ -231,7 +243,7 @@ pub(super) fn parse_UpdateUnit(p: &mut Parser) {
     parse_Update(p);
     // Add remaining tokens as error.
     while !p.at(SyntaxKind::Eof) {
-        p.advance_with_error("unexpected token");
+        p.advance_with_error(Vec::new());
     }
     p.close(marker, SyntaxKind::UpdateUnit);
 }
@@ -309,12 +321,11 @@ pub(super) fn parse_SelectClause(p: &mut Parser) {
                 p.expect(SyntaxKind::REDUCED);
             }
             SyntaxKind::Eof => {
-                eprintln!("Unexpected Eof");
                 p.close(marker, SyntaxKind::Error);
                 return;
             }
             _ => {
-                p.advance_with_error("Expected ....");
+                p.advance_with_error(vec![SyntaxKind::DISTINCT, SyntaxKind::REDUCED]);
             }
         };
     }
@@ -332,12 +343,15 @@ pub(super) fn parse_SelectClause(p: &mut Parser) {
                     p.expect(SyntaxKind::RParen);
                 }
                 SyntaxKind::Eof => {
-                    eprintln!("Unexpected Eof");
                     p.close(marker, SyntaxKind::Error);
                     return;
                 }
                 _ => {
-                    p.advance_with_error("Expected ....");
+                    p.advance_with_error(vec![
+                        SyntaxKind::VAR1,
+                        SyntaxKind::VAR2,
+                        SyntaxKind::LParen,
+                    ]);
                 }
             };
             while [SyntaxKind::LParen, SyntaxKind::VAR1, SyntaxKind::VAR2].contains(&p.nth(0)) {
@@ -353,12 +367,15 @@ pub(super) fn parse_SelectClause(p: &mut Parser) {
                         p.expect(SyntaxKind::RParen);
                     }
                     SyntaxKind::Eof => {
-                        eprintln!("Unexpected Eof");
                         p.close(marker, SyntaxKind::Error);
                         return;
                     }
                     _ => {
-                        p.advance_with_error("Expected ....");
+                        p.advance_with_error(vec![
+                            SyntaxKind::VAR1,
+                            SyntaxKind::VAR2,
+                            SyntaxKind::LParen,
+                        ]);
                     }
                 };
             }
@@ -367,12 +384,16 @@ pub(super) fn parse_SelectClause(p: &mut Parser) {
             p.expect(SyntaxKind::Star);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::LParen,
+                SyntaxKind::VAR1,
+                SyntaxKind::VAR2,
+                SyntaxKind::Star,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::SelectClause);
@@ -389,12 +410,16 @@ pub(super) fn parse_DatasetClause(p: &mut Parser) {
             parse_NamedGraphClause(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::NAMED,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::DatasetClause);
@@ -454,12 +479,11 @@ pub(super) fn parse_Var(p: &mut Parser) {
             p.expect(SyntaxKind::VAR2);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![SyntaxKind::VAR1, SyntaxKind::VAR2]);
         }
     };
     p.close(marker, SyntaxKind::Var);
@@ -555,12 +579,17 @@ pub(super) fn parse_VarOrIri(p: &mut Parser) {
             parse_iri(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::VAR1,
+                SyntaxKind::VAR2,
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::PNAME_LN,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::VarOrIri);
@@ -595,12 +624,15 @@ pub(super) fn parse_iri(p: &mut Parser) {
             parse_PrefixedName(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::PNAME_LN,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::iri);
@@ -649,15 +681,11 @@ pub(super) fn parse_GroupGraphPattern(p: &mut Parser) {
             parse_GroupGraphPatternSub(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {}
     };
-    while !p.at_any(&[SyntaxKind::RCurly, SyntaxKind::Eof]) {
-        p.advance_with_error("Not a valid GroupGraphPattern");
-    }
     p.expect(SyntaxKind::RCurly);
     p.close(marker, SyntaxKind::GroupGraphPattern);
 }
@@ -920,12 +948,11 @@ pub(super) fn parse_LimitOffsetClauses(p: &mut Parser) {
             }
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![SyntaxKind::LIMIT, SyntaxKind::OFFSET]);
         }
     };
     p.close(marker, SyntaxKind::LimitOffsetClauses);
@@ -1013,12 +1040,79 @@ pub(super) fn parse_GroupCondition(p: &mut Parser) {
             parse_Var(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::NOT,
+                SyntaxKind::STR,
+                SyntaxKind::LANG,
+                SyntaxKind::LANGMATCHES,
+                SyntaxKind::DATATYPE,
+                SyntaxKind::BOUND,
+                SyntaxKind::IRI,
+                SyntaxKind::URI,
+                SyntaxKind::BNODE,
+                SyntaxKind::RAND,
+                SyntaxKind::ABS,
+                SyntaxKind::CEIL,
+                SyntaxKind::FLOOR,
+                SyntaxKind::ROUND,
+                SyntaxKind::CONCAT,
+                SyntaxKind::STRLEN,
+                SyntaxKind::UCASE,
+                SyntaxKind::LCASE,
+                SyntaxKind::ENCODE_FOR_URI,
+                SyntaxKind::CONTAINS,
+                SyntaxKind::STRSTARTS,
+                SyntaxKind::STRENDS,
+                SyntaxKind::STRBEFORE,
+                SyntaxKind::STRAFTER,
+                SyntaxKind::YEAR,
+                SyntaxKind::MONTH,
+                SyntaxKind::DAY,
+                SyntaxKind::HOURS,
+                SyntaxKind::MINUTES,
+                SyntaxKind::SECONDS,
+                SyntaxKind::TIMEZONE,
+                SyntaxKind::TZ,
+                SyntaxKind::NOW,
+                SyntaxKind::UUID,
+                SyntaxKind::STRUUID,
+                SyntaxKind::MD5,
+                SyntaxKind::SHA1,
+                SyntaxKind::SHA256,
+                SyntaxKind::SHA384,
+                SyntaxKind::SHA512,
+                SyntaxKind::COALESCE,
+                SyntaxKind::IF,
+                SyntaxKind::STRLANG,
+                SyntaxKind::STRDT,
+                SyntaxKind::sameTerm,
+                SyntaxKind::isIRI,
+                SyntaxKind::isURI,
+                SyntaxKind::isBLANK,
+                SyntaxKind::isLITERAL,
+                SyntaxKind::isNUMERIC,
+                SyntaxKind::REGEX,
+                SyntaxKind::SUBSTR,
+                SyntaxKind::REPLACE,
+                SyntaxKind::EXISTS,
+                SyntaxKind::COUNT,
+                SyntaxKind::SUM,
+                SyntaxKind::MIN,
+                SyntaxKind::MAX,
+                SyntaxKind::AVG,
+                SyntaxKind::SAMPLE,
+                SyntaxKind::GROUP_CONCAT,
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::LParen,
+                SyntaxKind::VAR1,
+                SyntaxKind::VAR2,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::GroupCondition);
@@ -1092,12 +1186,11 @@ pub(super) fn parse_BuiltInCall(p: &mut Parser) {
                     p.expect(SyntaxKind::NIL);
                 }
                 SyntaxKind::Eof => {
-                    eprintln!("Unexpected Eof");
                     p.close(marker, SyntaxKind::Error);
                     return;
                 }
                 _ => {
-                    p.advance_with_error("Expected ....");
+                    p.advance_with_error(vec![SyntaxKind::LParen, SyntaxKind::NIL]);
                 }
             };
         }
@@ -1371,12 +1464,73 @@ pub(super) fn parse_BuiltInCall(p: &mut Parser) {
             parse_NotExistsFunc(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::COUNT,
+                SyntaxKind::SUM,
+                SyntaxKind::MIN,
+                SyntaxKind::MAX,
+                SyntaxKind::AVG,
+                SyntaxKind::SAMPLE,
+                SyntaxKind::GROUP_CONCAT,
+                SyntaxKind::STR,
+                SyntaxKind::LANG,
+                SyntaxKind::LANGMATCHES,
+                SyntaxKind::DATATYPE,
+                SyntaxKind::BOUND,
+                SyntaxKind::IRI,
+                SyntaxKind::URI,
+                SyntaxKind::BNODE,
+                SyntaxKind::RAND,
+                SyntaxKind::ABS,
+                SyntaxKind::CEIL,
+                SyntaxKind::FLOOR,
+                SyntaxKind::ROUND,
+                SyntaxKind::CONCAT,
+                SyntaxKind::SUBSTR,
+                SyntaxKind::STRLEN,
+                SyntaxKind::REPLACE,
+                SyntaxKind::UCASE,
+                SyntaxKind::LCASE,
+                SyntaxKind::ENCODE_FOR_URI,
+                SyntaxKind::CONTAINS,
+                SyntaxKind::STRSTARTS,
+                SyntaxKind::STRENDS,
+                SyntaxKind::STRBEFORE,
+                SyntaxKind::STRAFTER,
+                SyntaxKind::YEAR,
+                SyntaxKind::MONTH,
+                SyntaxKind::DAY,
+                SyntaxKind::HOURS,
+                SyntaxKind::MINUTES,
+                SyntaxKind::SECONDS,
+                SyntaxKind::TIMEZONE,
+                SyntaxKind::TZ,
+                SyntaxKind::NOW,
+                SyntaxKind::UUID,
+                SyntaxKind::STRUUID,
+                SyntaxKind::MD5,
+                SyntaxKind::SHA1,
+                SyntaxKind::SHA256,
+                SyntaxKind::SHA384,
+                SyntaxKind::SHA512,
+                SyntaxKind::COALESCE,
+                SyntaxKind::IF,
+                SyntaxKind::STRLANG,
+                SyntaxKind::STRDT,
+                SyntaxKind::sameTerm,
+                SyntaxKind::isIRI,
+                SyntaxKind::isURI,
+                SyntaxKind::isBLANK,
+                SyntaxKind::isLITERAL,
+                SyntaxKind::isNUMERIC,
+                SyntaxKind::REGEX,
+                SyntaxKind::EXISTS,
+                SyntaxKind::NOT,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::BuiltInCall);
@@ -1468,12 +1622,77 @@ pub(super) fn parse_Constraint(p: &mut Parser) {
             parse_FunctionCall(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::LParen,
+                SyntaxKind::NOT,
+                SyntaxKind::STR,
+                SyntaxKind::LANG,
+                SyntaxKind::LANGMATCHES,
+                SyntaxKind::DATATYPE,
+                SyntaxKind::BOUND,
+                SyntaxKind::IRI,
+                SyntaxKind::URI,
+                SyntaxKind::BNODE,
+                SyntaxKind::RAND,
+                SyntaxKind::ABS,
+                SyntaxKind::CEIL,
+                SyntaxKind::FLOOR,
+                SyntaxKind::ROUND,
+                SyntaxKind::CONCAT,
+                SyntaxKind::STRLEN,
+                SyntaxKind::UCASE,
+                SyntaxKind::LCASE,
+                SyntaxKind::ENCODE_FOR_URI,
+                SyntaxKind::CONTAINS,
+                SyntaxKind::STRSTARTS,
+                SyntaxKind::STRENDS,
+                SyntaxKind::STRBEFORE,
+                SyntaxKind::STRAFTER,
+                SyntaxKind::YEAR,
+                SyntaxKind::MONTH,
+                SyntaxKind::DAY,
+                SyntaxKind::HOURS,
+                SyntaxKind::MINUTES,
+                SyntaxKind::SECONDS,
+                SyntaxKind::TIMEZONE,
+                SyntaxKind::TZ,
+                SyntaxKind::NOW,
+                SyntaxKind::UUID,
+                SyntaxKind::STRUUID,
+                SyntaxKind::MD5,
+                SyntaxKind::SHA1,
+                SyntaxKind::SHA256,
+                SyntaxKind::SHA384,
+                SyntaxKind::SHA512,
+                SyntaxKind::COALESCE,
+                SyntaxKind::IF,
+                SyntaxKind::STRLANG,
+                SyntaxKind::STRDT,
+                SyntaxKind::sameTerm,
+                SyntaxKind::isIRI,
+                SyntaxKind::isURI,
+                SyntaxKind::isBLANK,
+                SyntaxKind::isLITERAL,
+                SyntaxKind::isNUMERIC,
+                SyntaxKind::REGEX,
+                SyntaxKind::SUBSTR,
+                SyntaxKind::REPLACE,
+                SyntaxKind::EXISTS,
+                SyntaxKind::COUNT,
+                SyntaxKind::SUM,
+                SyntaxKind::MIN,
+                SyntaxKind::MAX,
+                SyntaxKind::AVG,
+                SyntaxKind::SAMPLE,
+                SyntaxKind::GROUP_CONCAT,
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::PNAME_LN,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::Constraint);
@@ -1491,12 +1710,11 @@ pub(super) fn parse_OrderCondition(p: &mut Parser) {
                     p.expect(SyntaxKind::DESC);
                 }
                 SyntaxKind::Eof => {
-                    eprintln!("Unexpected Eof");
                     p.close(marker, SyntaxKind::Error);
                     return;
                 }
                 _ => {
-                    p.advance_with_error("Expected ....");
+                    p.advance_with_error(vec![SyntaxKind::ASC, SyntaxKind::DESC]);
                 }
             };
             parse_BrackettedExpression(p);
@@ -1640,22 +1858,158 @@ pub(super) fn parse_OrderCondition(p: &mut Parser) {
                     parse_Var(p);
                 }
                 SyntaxKind::Eof => {
-                    eprintln!("Unexpected Eof");
                     p.close(marker, SyntaxKind::Error);
                     return;
                 }
                 _ => {
-                    p.advance_with_error("Expected ....");
+                    p.advance_with_error(vec![
+                        SyntaxKind::IRIREF,
+                        SyntaxKind::PNAME_NS,
+                        SyntaxKind::LParen,
+                        SyntaxKind::NOT,
+                        SyntaxKind::STR,
+                        SyntaxKind::LANG,
+                        SyntaxKind::LANGMATCHES,
+                        SyntaxKind::DATATYPE,
+                        SyntaxKind::BOUND,
+                        SyntaxKind::IRI,
+                        SyntaxKind::URI,
+                        SyntaxKind::BNODE,
+                        SyntaxKind::RAND,
+                        SyntaxKind::ABS,
+                        SyntaxKind::CEIL,
+                        SyntaxKind::FLOOR,
+                        SyntaxKind::ROUND,
+                        SyntaxKind::CONCAT,
+                        SyntaxKind::STRLEN,
+                        SyntaxKind::UCASE,
+                        SyntaxKind::LCASE,
+                        SyntaxKind::ENCODE_FOR_URI,
+                        SyntaxKind::CONTAINS,
+                        SyntaxKind::STRSTARTS,
+                        SyntaxKind::STRENDS,
+                        SyntaxKind::STRBEFORE,
+                        SyntaxKind::STRAFTER,
+                        SyntaxKind::YEAR,
+                        SyntaxKind::MONTH,
+                        SyntaxKind::DAY,
+                        SyntaxKind::HOURS,
+                        SyntaxKind::MINUTES,
+                        SyntaxKind::SECONDS,
+                        SyntaxKind::TIMEZONE,
+                        SyntaxKind::TZ,
+                        SyntaxKind::NOW,
+                        SyntaxKind::UUID,
+                        SyntaxKind::STRUUID,
+                        SyntaxKind::MD5,
+                        SyntaxKind::SHA1,
+                        SyntaxKind::SHA256,
+                        SyntaxKind::SHA384,
+                        SyntaxKind::SHA512,
+                        SyntaxKind::COALESCE,
+                        SyntaxKind::IF,
+                        SyntaxKind::STRLANG,
+                        SyntaxKind::STRDT,
+                        SyntaxKind::sameTerm,
+                        SyntaxKind::isIRI,
+                        SyntaxKind::isURI,
+                        SyntaxKind::isBLANK,
+                        SyntaxKind::isLITERAL,
+                        SyntaxKind::isNUMERIC,
+                        SyntaxKind::REGEX,
+                        SyntaxKind::SUBSTR,
+                        SyntaxKind::REPLACE,
+                        SyntaxKind::EXISTS,
+                        SyntaxKind::COUNT,
+                        SyntaxKind::SUM,
+                        SyntaxKind::MIN,
+                        SyntaxKind::MAX,
+                        SyntaxKind::AVG,
+                        SyntaxKind::SAMPLE,
+                        SyntaxKind::GROUP_CONCAT,
+                        SyntaxKind::PNAME_LN,
+                        SyntaxKind::VAR1,
+                        SyntaxKind::VAR2,
+                    ]);
                 }
             };
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::ASC,
+                SyntaxKind::DESC,
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::LParen,
+                SyntaxKind::VAR1,
+                SyntaxKind::VAR2,
+                SyntaxKind::NOT,
+                SyntaxKind::STR,
+                SyntaxKind::LANG,
+                SyntaxKind::LANGMATCHES,
+                SyntaxKind::DATATYPE,
+                SyntaxKind::BOUND,
+                SyntaxKind::IRI,
+                SyntaxKind::URI,
+                SyntaxKind::BNODE,
+                SyntaxKind::RAND,
+                SyntaxKind::ABS,
+                SyntaxKind::CEIL,
+                SyntaxKind::FLOOR,
+                SyntaxKind::ROUND,
+                SyntaxKind::CONCAT,
+                SyntaxKind::STRLEN,
+                SyntaxKind::UCASE,
+                SyntaxKind::LCASE,
+                SyntaxKind::ENCODE_FOR_URI,
+                SyntaxKind::CONTAINS,
+                SyntaxKind::STRSTARTS,
+                SyntaxKind::STRENDS,
+                SyntaxKind::STRBEFORE,
+                SyntaxKind::STRAFTER,
+                SyntaxKind::YEAR,
+                SyntaxKind::MONTH,
+                SyntaxKind::DAY,
+                SyntaxKind::HOURS,
+                SyntaxKind::MINUTES,
+                SyntaxKind::SECONDS,
+                SyntaxKind::TIMEZONE,
+                SyntaxKind::TZ,
+                SyntaxKind::NOW,
+                SyntaxKind::UUID,
+                SyntaxKind::STRUUID,
+                SyntaxKind::MD5,
+                SyntaxKind::SHA1,
+                SyntaxKind::SHA256,
+                SyntaxKind::SHA384,
+                SyntaxKind::SHA512,
+                SyntaxKind::COALESCE,
+                SyntaxKind::IF,
+                SyntaxKind::STRLANG,
+                SyntaxKind::STRDT,
+                SyntaxKind::sameTerm,
+                SyntaxKind::isIRI,
+                SyntaxKind::isURI,
+                SyntaxKind::isBLANK,
+                SyntaxKind::isLITERAL,
+                SyntaxKind::isNUMERIC,
+                SyntaxKind::REGEX,
+                SyntaxKind::SUBSTR,
+                SyntaxKind::REPLACE,
+                SyntaxKind::EXISTS,
+                SyntaxKind::COUNT,
+                SyntaxKind::SUM,
+                SyntaxKind::MIN,
+                SyntaxKind::MAX,
+                SyntaxKind::AVG,
+                SyntaxKind::SAMPLE,
+                SyntaxKind::GROUP_CONCAT,
+                SyntaxKind::PNAME_LN,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::OrderCondition);
@@ -1693,12 +2047,16 @@ pub(super) fn parse_DataBlock(p: &mut Parser) {
             parse_InlineDataFull(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::VAR1,
+                SyntaxKind::VAR2,
+                SyntaxKind::LParen,
+                SyntaxKind::NIL,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::DataBlock);
@@ -1741,12 +2099,25 @@ pub(super) fn parse_UpdateOne(p: &mut Parser) {
             parse_Modify(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::LOAD,
+                SyntaxKind::CLEAR,
+                SyntaxKind::DROP,
+                SyntaxKind::ADD,
+                SyntaxKind::MOVE,
+                SyntaxKind::COPY,
+                SyntaxKind::CREATE,
+                SyntaxKind::INSERT_DATA,
+                SyntaxKind::DELETE_DATA,
+                SyntaxKind::DELETE_WHERE,
+                SyntaxKind::WITH,
+                SyntaxKind::DELETE,
+                SyntaxKind::INSERT,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::UpdateOne);
@@ -1870,12 +2241,11 @@ pub(super) fn parse_Modify(p: &mut Parser) {
             parse_InsertClause(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![SyntaxKind::DELETE, SyntaxKind::INSERT]);
         }
     };
     while [SyntaxKind::USING].contains(&p.nth(0)) {
@@ -1909,12 +2279,16 @@ pub(super) fn parse_GraphRefAll(p: &mut Parser) {
             p.expect(SyntaxKind::ALL);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::GRAPH,
+                SyntaxKind::DEFAULT,
+                SyntaxKind::NAMED,
+                SyntaxKind::ALL,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::GraphRefAll);
@@ -1933,12 +2307,17 @@ pub(super) fn parse_GraphOrDefault(p: &mut Parser) {
             parse_iri(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::DEFAULT,
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::GRAPH,
+                SyntaxKind::PNAME_LN,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::GraphOrDefault);
@@ -1986,12 +2365,16 @@ pub(super) fn parse_UsingClause(p: &mut Parser) {
             parse_iri(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::NAMED,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::UsingClause);
@@ -2168,12 +2551,37 @@ pub(super) fn parse_TriplesSameSubject(p: &mut Parser) {
             parse_PropertyList(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::INTEGER,
+                SyntaxKind::NIL,
+                SyntaxKind::VAR1,
+                SyntaxKind::VAR2,
+                SyntaxKind::DECIMAL,
+                SyntaxKind::DOUBLE,
+                SyntaxKind::INTEGER_POSITIVE,
+                SyntaxKind::DECIMAL_POSITIVE,
+                SyntaxKind::DOUBLE_POSITIVE,
+                SyntaxKind::INTEGER_NEGATIVE,
+                SyntaxKind::DECIMAL_NEGATIVE,
+                SyntaxKind::DOUBLE_NEGATIVE,
+                SyntaxKind::True,
+                SyntaxKind::False,
+                SyntaxKind::STRING_LITERAL1,
+                SyntaxKind::STRING_LITERAL2,
+                SyntaxKind::STRING_LITERAL_LONG1,
+                SyntaxKind::STRING_LITERAL_LONG2,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::BLANK_NODE_LABEL,
+                SyntaxKind::ANON,
+                SyntaxKind::LParen,
+                SyntaxKind::LBrack,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::TriplesSameSubject);
@@ -2362,12 +2770,20 @@ pub(super) fn parse_GraphPatternNotTriples(p: &mut Parser) {
             parse_InlineData(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::LCurly,
+                SyntaxKind::OPTIONAL,
+                SyntaxKind::MINUS,
+                SyntaxKind::GRAPH,
+                SyntaxKind::SERVICE,
+                SyntaxKind::FILTER,
+                SyntaxKind::BIND,
+                SyntaxKind::VALUES,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::GraphPatternNotTriples);
@@ -2407,12 +2823,37 @@ pub(super) fn parse_TriplesSameSubjectPath(p: &mut Parser) {
             parse_PropertyListPath(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::INTEGER,
+                SyntaxKind::NIL,
+                SyntaxKind::VAR1,
+                SyntaxKind::VAR2,
+                SyntaxKind::DECIMAL,
+                SyntaxKind::DOUBLE,
+                SyntaxKind::INTEGER_POSITIVE,
+                SyntaxKind::DECIMAL_POSITIVE,
+                SyntaxKind::DOUBLE_POSITIVE,
+                SyntaxKind::INTEGER_NEGATIVE,
+                SyntaxKind::DECIMAL_NEGATIVE,
+                SyntaxKind::DOUBLE_NEGATIVE,
+                SyntaxKind::True,
+                SyntaxKind::False,
+                SyntaxKind::STRING_LITERAL1,
+                SyntaxKind::STRING_LITERAL2,
+                SyntaxKind::STRING_LITERAL_LONG1,
+                SyntaxKind::STRING_LITERAL_LONG2,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::BLANK_NODE_LABEL,
+                SyntaxKind::ANON,
+                SyntaxKind::LParen,
+                SyntaxKind::LBrack,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::TriplesSameSubjectPath);
@@ -2533,12 +2974,11 @@ pub(super) fn parse_InlineDataFull(p: &mut Parser) {
             p.expect(SyntaxKind::RParen);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![SyntaxKind::NIL, SyntaxKind::LParen]);
         }
     };
     p.expect(SyntaxKind::LCurly);
@@ -2577,12 +3017,11 @@ pub(super) fn parse_InlineDataFull(p: &mut Parser) {
                 p.expect(SyntaxKind::NIL);
             }
             SyntaxKind::Eof => {
-                eprintln!("Unexpected Eof");
                 p.close(marker, SyntaxKind::Error);
                 return;
             }
             _ => {
-                p.advance_with_error("Expected ....");
+                p.advance_with_error(vec![SyntaxKind::LParen, SyntaxKind::NIL]);
             }
         };
     }
@@ -2620,12 +3059,31 @@ pub(super) fn parse_DataBlockValue(p: &mut Parser) {
             p.expect(SyntaxKind::UNDEF);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::STRING_LITERAL1,
+                SyntaxKind::STRING_LITERAL2,
+                SyntaxKind::STRING_LITERAL_LONG1,
+                SyntaxKind::STRING_LITERAL_LONG2,
+                SyntaxKind::INTEGER,
+                SyntaxKind::DECIMAL,
+                SyntaxKind::DOUBLE,
+                SyntaxKind::INTEGER_POSITIVE,
+                SyntaxKind::DECIMAL_POSITIVE,
+                SyntaxKind::DOUBLE_POSITIVE,
+                SyntaxKind::INTEGER_NEGATIVE,
+                SyntaxKind::DECIMAL_NEGATIVE,
+                SyntaxKind::DOUBLE_NEGATIVE,
+                SyntaxKind::True,
+                SyntaxKind::False,
+                SyntaxKind::UNDEF,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::DataBlockValue);
@@ -2644,12 +3102,11 @@ pub(super) fn parse_RDFLiteral(p: &mut Parser) {
                 parse_iri(p);
             }
             SyntaxKind::Eof => {
-                eprintln!("Unexpected Eof");
                 p.close(marker, SyntaxKind::Error);
                 return;
             }
             _ => {
-                p.advance_with_error("Expected ....");
+                p.advance_with_error(vec![SyntaxKind::LANGTAG, SyntaxKind::DoubleZirkumflex]);
             }
         };
     }
@@ -2673,12 +3130,21 @@ pub(super) fn parse_NumericLiteral(p: &mut Parser) {
             parse_NumericLiteralNegative(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::INTEGER,
+                SyntaxKind::DECIMAL,
+                SyntaxKind::DOUBLE,
+                SyntaxKind::INTEGER_POSITIVE,
+                SyntaxKind::DECIMAL_POSITIVE,
+                SyntaxKind::DOUBLE_POSITIVE,
+                SyntaxKind::INTEGER_NEGATIVE,
+                SyntaxKind::DECIMAL_NEGATIVE,
+                SyntaxKind::DOUBLE_NEGATIVE,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::NumericLiteral);
@@ -2694,12 +3160,11 @@ pub(super) fn parse_BooleanLiteral(p: &mut Parser) {
             p.expect(SyntaxKind::False);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![SyntaxKind::True, SyntaxKind::False]);
         }
     };
     p.close(marker, SyntaxKind::BooleanLiteral);
@@ -2724,12 +3189,11 @@ pub(super) fn parse_ArgList(p: &mut Parser) {
             p.expect(SyntaxKind::RParen);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![SyntaxKind::NIL, SyntaxKind::LParen]);
         }
     };
     p.close(marker, SyntaxKind::ArgList);
@@ -2751,12 +3215,11 @@ pub(super) fn parse_ExpressionList(p: &mut Parser) {
             p.expect(SyntaxKind::RParen);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![SyntaxKind::NIL, SyntaxKind::LParen]);
         }
     };
     p.close(marker, SyntaxKind::ExpressionList);
@@ -2830,12 +3293,35 @@ pub(super) fn parse_VarOrTerm(p: &mut Parser) {
             parse_GraphTerm(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::VAR1,
+                SyntaxKind::VAR2,
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::INTEGER,
+                SyntaxKind::NIL,
+                SyntaxKind::DECIMAL,
+                SyntaxKind::DOUBLE,
+                SyntaxKind::INTEGER_POSITIVE,
+                SyntaxKind::DECIMAL_POSITIVE,
+                SyntaxKind::DOUBLE_POSITIVE,
+                SyntaxKind::INTEGER_NEGATIVE,
+                SyntaxKind::DECIMAL_NEGATIVE,
+                SyntaxKind::DOUBLE_NEGATIVE,
+                SyntaxKind::True,
+                SyntaxKind::False,
+                SyntaxKind::STRING_LITERAL1,
+                SyntaxKind::STRING_LITERAL2,
+                SyntaxKind::STRING_LITERAL_LONG1,
+                SyntaxKind::STRING_LITERAL_LONG2,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::BLANK_NODE_LABEL,
+                SyntaxKind::ANON,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::VarOrTerm);
@@ -2872,12 +3358,11 @@ pub(super) fn parse_TriplesNode(p: &mut Parser) {
             parse_BlankNodePropertyList(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![SyntaxKind::LParen, SyntaxKind::LBrack]);
         }
     };
     p.close(marker, SyntaxKind::TriplesNode);
@@ -2922,12 +3407,18 @@ pub(super) fn parse_Verb(p: &mut Parser) {
             p.expect(SyntaxKind::a);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::VAR1,
+                SyntaxKind::VAR2,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::a,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::Verb);
@@ -2981,12 +3472,37 @@ pub(super) fn parse_GraphNode(p: &mut Parser) {
             parse_TriplesNode(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::INTEGER,
+                SyntaxKind::NIL,
+                SyntaxKind::VAR1,
+                SyntaxKind::VAR2,
+                SyntaxKind::DECIMAL,
+                SyntaxKind::DOUBLE,
+                SyntaxKind::INTEGER_POSITIVE,
+                SyntaxKind::DECIMAL_POSITIVE,
+                SyntaxKind::DOUBLE_POSITIVE,
+                SyntaxKind::INTEGER_NEGATIVE,
+                SyntaxKind::DECIMAL_NEGATIVE,
+                SyntaxKind::DOUBLE_NEGATIVE,
+                SyntaxKind::True,
+                SyntaxKind::False,
+                SyntaxKind::STRING_LITERAL1,
+                SyntaxKind::STRING_LITERAL2,
+                SyntaxKind::STRING_LITERAL_LONG1,
+                SyntaxKind::STRING_LITERAL_LONG2,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::BLANK_NODE_LABEL,
+                SyntaxKind::ANON,
+                SyntaxKind::LParen,
+                SyntaxKind::LBrack,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::GraphNode);
@@ -3008,12 +3524,21 @@ pub(super) fn parse_PropertyListPathNotEmpty(p: &mut Parser) {
             parse_VerbSimple(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::LParen,
+                SyntaxKind::a,
+                SyntaxKind::Zirkumflex,
+                SyntaxKind::ExclamationMark,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::VAR1,
+                SyntaxKind::VAR2,
+            ]);
         }
     };
     parse_ObjectListPath(p);
@@ -3044,12 +3569,21 @@ pub(super) fn parse_PropertyListPathNotEmpty(p: &mut Parser) {
                     parse_VerbSimple(p);
                 }
                 SyntaxKind::Eof => {
-                    eprintln!("Unexpected Eof");
                     p.close(marker, SyntaxKind::Error);
                     return;
                 }
                 _ => {
-                    p.advance_with_error("Expected ....");
+                    p.advance_with_error(vec![
+                        SyntaxKind::IRIREF,
+                        SyntaxKind::PNAME_NS,
+                        SyntaxKind::LParen,
+                        SyntaxKind::a,
+                        SyntaxKind::Zirkumflex,
+                        SyntaxKind::ExclamationMark,
+                        SyntaxKind::PNAME_LN,
+                        SyntaxKind::VAR1,
+                        SyntaxKind::VAR2,
+                    ]);
                 }
             };
             parse_ObjectList(p);
@@ -3068,12 +3602,11 @@ pub(super) fn parse_TriplesNodePath(p: &mut Parser) {
             parse_BlankNodePropertyListPath(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![SyntaxKind::LParen, SyntaxKind::LBrack]);
         }
     };
     p.close(marker, SyntaxKind::TriplesNodePath);
@@ -3176,12 +3709,37 @@ pub(super) fn parse_GraphNodePath(p: &mut Parser) {
             parse_TriplesNodePath(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::INTEGER,
+                SyntaxKind::NIL,
+                SyntaxKind::VAR1,
+                SyntaxKind::VAR2,
+                SyntaxKind::DECIMAL,
+                SyntaxKind::DOUBLE,
+                SyntaxKind::INTEGER_POSITIVE,
+                SyntaxKind::DECIMAL_POSITIVE,
+                SyntaxKind::DOUBLE_POSITIVE,
+                SyntaxKind::INTEGER_NEGATIVE,
+                SyntaxKind::DECIMAL_NEGATIVE,
+                SyntaxKind::DOUBLE_NEGATIVE,
+                SyntaxKind::True,
+                SyntaxKind::False,
+                SyntaxKind::STRING_LITERAL1,
+                SyntaxKind::STRING_LITERAL2,
+                SyntaxKind::STRING_LITERAL_LONG1,
+                SyntaxKind::STRING_LITERAL_LONG2,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::BLANK_NODE_LABEL,
+                SyntaxKind::ANON,
+                SyntaxKind::LParen,
+                SyntaxKind::LBrack,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::GraphNodePath);
@@ -3223,12 +3781,19 @@ pub(super) fn parse_PathEltOrInverse(p: &mut Parser) {
             parse_PathElt(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::LParen,
+                SyntaxKind::a,
+                SyntaxKind::ExclamationMark,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::Zirkumflex,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::PathEltOrInverse);
@@ -3262,12 +3827,18 @@ pub(super) fn parse_PathPrimary(p: &mut Parser) {
             p.expect(SyntaxKind::RParen);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::a,
+                SyntaxKind::ExclamationMark,
+                SyntaxKind::LParen,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::PathPrimary);
@@ -3286,12 +3857,15 @@ pub(super) fn parse_PathMod(p: &mut Parser) {
             p.expect(SyntaxKind::Plus);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::QuestionMark,
+                SyntaxKind::Star,
+                SyntaxKind::Plus,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::PathMod);
@@ -3325,12 +3899,18 @@ pub(super) fn parse_PathNegatedPropertySet(p: &mut Parser) {
             p.expect(SyntaxKind::RParen);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::a,
+                SyntaxKind::Zirkumflex,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::LParen,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::PathNegatedPropertySet);
@@ -3355,10 +3935,10 @@ pub(super) fn parse_PathOneInPropertySet(p: &mut Parser) {
                     p.expect(SyntaxKind::a);
                 }
                 SyntaxKind::Eof => {
-                    eprintln!("Unexpected Eof");
                     p.close(marker, SyntaxKind::Error);
                     return;
                 }
+                // NOTE: This in an adjustment. Unfortunatuly I did not document why this exists.
                 SyntaxKind::RParen => {
                     let inner_marker = p.open();
                     p.close(inner_marker, SyntaxKind::Error);
@@ -3366,17 +3946,27 @@ pub(super) fn parse_PathOneInPropertySet(p: &mut Parser) {
                     return;
                 }
                 _ => {
-                    p.advance_with_error("Expected ....");
+                    p.advance_with_error(vec![
+                        SyntaxKind::IRIREF,
+                        SyntaxKind::PNAME_NS,
+                        SyntaxKind::PNAME_LN,
+                        SyntaxKind::a,
+                    ]);
                 }
             };
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::a,
+                SyntaxKind::Zirkumflex,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::PathOneInPropertySet);
@@ -3517,12 +4107,33 @@ pub(super) fn parse_GraphTerm(p: &mut Parser) {
             p.expect(SyntaxKind::NIL);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::STRING_LITERAL1,
+                SyntaxKind::STRING_LITERAL2,
+                SyntaxKind::STRING_LITERAL_LONG1,
+                SyntaxKind::STRING_LITERAL_LONG2,
+                SyntaxKind::INTEGER,
+                SyntaxKind::DECIMAL,
+                SyntaxKind::DOUBLE,
+                SyntaxKind::INTEGER_POSITIVE,
+                SyntaxKind::DECIMAL_POSITIVE,
+                SyntaxKind::DOUBLE_POSITIVE,
+                SyntaxKind::INTEGER_NEGATIVE,
+                SyntaxKind::DECIMAL_NEGATIVE,
+                SyntaxKind::DOUBLE_NEGATIVE,
+                SyntaxKind::True,
+                SyntaxKind::False,
+                SyntaxKind::BLANK_NODE_LABEL,
+                SyntaxKind::ANON,
+                SyntaxKind::NIL,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::GraphTerm);
@@ -3538,12 +4149,11 @@ pub(super) fn parse_BlankNode(p: &mut Parser) {
             p.expect(SyntaxKind::ANON);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![SyntaxKind::BLANK_NODE_LABEL, SyntaxKind::ANON]);
         }
     };
     p.close(marker, SyntaxKind::BlankNode);
@@ -3623,12 +4233,20 @@ pub(super) fn parse_RelationalExpression(p: &mut Parser) {
                 parse_ExpressionList(p);
             }
             SyntaxKind::Eof => {
-                eprintln!("Unexpected Eof");
                 p.close(marker, SyntaxKind::Error);
                 return;
             }
             _ => {
-                p.advance_with_error("Expected ....");
+                p.advance_with_error(vec![
+                    SyntaxKind::Equals,
+                    SyntaxKind::ExclamationMarkEquals,
+                    SyntaxKind::Less,
+                    SyntaxKind::More,
+                    SyntaxKind::LessEquals,
+                    SyntaxKind::MoreEquals,
+                    SyntaxKind::IN,
+                    SyntaxKind::NOT,
+                ]);
             }
         };
     }
@@ -3683,12 +4301,18 @@ pub(super) fn parse_AdditiveExpression(p: &mut Parser) {
                         parse_NumericLiteralNegative(p);
                     }
                     SyntaxKind::Eof => {
-                        eprintln!("Unexpected Eof");
                         p.close(marker, SyntaxKind::Error);
                         return;
                     }
                     _ => {
-                        p.advance_with_error("Expected ....");
+                        p.advance_with_error(vec![
+                            SyntaxKind::INTEGER_POSITIVE,
+                            SyntaxKind::DECIMAL_POSITIVE,
+                            SyntaxKind::DOUBLE_POSITIVE,
+                            SyntaxKind::INTEGER_NEGATIVE,
+                            SyntaxKind::DECIMAL_NEGATIVE,
+                            SyntaxKind::DOUBLE_NEGATIVE,
+                        ]);
                     }
                 };
                 while [SyntaxKind::Star, SyntaxKind::Slash].contains(&p.nth(0)) {
@@ -3702,23 +4326,30 @@ pub(super) fn parse_AdditiveExpression(p: &mut Parser) {
                             parse_UnaryExpression(p);
                         }
                         SyntaxKind::Eof => {
-                            eprintln!("Unexpected Eof");
                             p.close(marker, SyntaxKind::Error);
                             return;
                         }
                         _ => {
-                            p.advance_with_error("Expected ....");
+                            p.advance_with_error(vec![SyntaxKind::Star, SyntaxKind::Slash]);
                         }
                     };
                 }
             }
             SyntaxKind::Eof => {
-                eprintln!("Unexpected Eof");
                 p.close(marker, SyntaxKind::Error);
                 return;
             }
             _ => {
-                p.advance_with_error("Expected ....");
+                p.advance_with_error(vec![
+                    SyntaxKind::Plus,
+                    SyntaxKind::Minus,
+                    SyntaxKind::INTEGER_POSITIVE,
+                    SyntaxKind::DECIMAL_POSITIVE,
+                    SyntaxKind::DOUBLE_POSITIVE,
+                    SyntaxKind::INTEGER_NEGATIVE,
+                    SyntaxKind::DECIMAL_NEGATIVE,
+                    SyntaxKind::DOUBLE_NEGATIVE,
+                ]);
             }
         };
     }
@@ -3739,12 +4370,11 @@ pub(super) fn parse_MultiplicativeExpression(p: &mut Parser) {
                 parse_UnaryExpression(p);
             }
             SyntaxKind::Eof => {
-                eprintln!("Unexpected Eof");
                 p.close(marker, SyntaxKind::Error);
                 return;
             }
             _ => {
-                p.advance_with_error("Expected ....");
+                p.advance_with_error(vec![SyntaxKind::Star, SyntaxKind::Slash]);
             }
         };
     }
@@ -3764,12 +4394,15 @@ pub(super) fn parse_NumericLiteralPositive(p: &mut Parser) {
             p.expect(SyntaxKind::DOUBLE_POSITIVE);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::INTEGER_POSITIVE,
+                SyntaxKind::DECIMAL_POSITIVE,
+                SyntaxKind::DOUBLE_POSITIVE,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::NumericLiteralPositive);
@@ -3788,12 +4421,15 @@ pub(super) fn parse_NumericLiteralNegative(p: &mut Parser) {
             p.expect(SyntaxKind::DOUBLE_NEGATIVE);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::INTEGER_NEGATIVE,
+                SyntaxKind::DECIMAL_NEGATIVE,
+                SyntaxKind::DOUBLE_NEGATIVE,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::NumericLiteralNegative);
@@ -3899,12 +4535,97 @@ pub(super) fn parse_UnaryExpression(p: &mut Parser) {
             parse_PrimaryExpression(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::ExclamationMark,
+                SyntaxKind::Plus,
+                SyntaxKind::Minus,
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::LParen,
+                SyntaxKind::INTEGER,
+                SyntaxKind::VAR1,
+                SyntaxKind::VAR2,
+                SyntaxKind::NOT,
+                SyntaxKind::STR,
+                SyntaxKind::LANG,
+                SyntaxKind::LANGMATCHES,
+                SyntaxKind::DATATYPE,
+                SyntaxKind::BOUND,
+                SyntaxKind::IRI,
+                SyntaxKind::URI,
+                SyntaxKind::BNODE,
+                SyntaxKind::RAND,
+                SyntaxKind::ABS,
+                SyntaxKind::CEIL,
+                SyntaxKind::FLOOR,
+                SyntaxKind::ROUND,
+                SyntaxKind::CONCAT,
+                SyntaxKind::STRLEN,
+                SyntaxKind::UCASE,
+                SyntaxKind::LCASE,
+                SyntaxKind::ENCODE_FOR_URI,
+                SyntaxKind::CONTAINS,
+                SyntaxKind::STRSTARTS,
+                SyntaxKind::STRENDS,
+                SyntaxKind::STRBEFORE,
+                SyntaxKind::STRAFTER,
+                SyntaxKind::YEAR,
+                SyntaxKind::MONTH,
+                SyntaxKind::DAY,
+                SyntaxKind::HOURS,
+                SyntaxKind::MINUTES,
+                SyntaxKind::SECONDS,
+                SyntaxKind::TIMEZONE,
+                SyntaxKind::TZ,
+                SyntaxKind::NOW,
+                SyntaxKind::UUID,
+                SyntaxKind::STRUUID,
+                SyntaxKind::MD5,
+                SyntaxKind::SHA1,
+                SyntaxKind::SHA256,
+                SyntaxKind::SHA384,
+                SyntaxKind::SHA512,
+                SyntaxKind::COALESCE,
+                SyntaxKind::IF,
+                SyntaxKind::STRLANG,
+                SyntaxKind::STRDT,
+                SyntaxKind::sameTerm,
+                SyntaxKind::isIRI,
+                SyntaxKind::isURI,
+                SyntaxKind::isBLANK,
+                SyntaxKind::isLITERAL,
+                SyntaxKind::isNUMERIC,
+                SyntaxKind::REGEX,
+                SyntaxKind::SUBSTR,
+                SyntaxKind::REPLACE,
+                SyntaxKind::EXISTS,
+                SyntaxKind::COUNT,
+                SyntaxKind::SUM,
+                SyntaxKind::MIN,
+                SyntaxKind::MAX,
+                SyntaxKind::AVG,
+                SyntaxKind::SAMPLE,
+                SyntaxKind::GROUP_CONCAT,
+                SyntaxKind::DECIMAL,
+                SyntaxKind::DOUBLE,
+                SyntaxKind::INTEGER_POSITIVE,
+                SyntaxKind::DECIMAL_POSITIVE,
+                SyntaxKind::DOUBLE_POSITIVE,
+                SyntaxKind::INTEGER_NEGATIVE,
+                SyntaxKind::DECIMAL_NEGATIVE,
+                SyntaxKind::DOUBLE_NEGATIVE,
+                SyntaxKind::True,
+                SyntaxKind::False,
+                SyntaxKind::STRING_LITERAL1,
+                SyntaxKind::STRING_LITERAL2,
+                SyntaxKind::STRING_LITERAL_LONG1,
+                SyntaxKind::STRING_LITERAL_LONG2,
+                SyntaxKind::PNAME_LN,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::UnaryExpression);
@@ -4006,12 +4727,94 @@ pub(super) fn parse_PrimaryExpression(p: &mut Parser) {
             parse_Var(p);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::LParen,
+                SyntaxKind::NOT,
+                SyntaxKind::STR,
+                SyntaxKind::LANG,
+                SyntaxKind::LANGMATCHES,
+                SyntaxKind::DATATYPE,
+                SyntaxKind::BOUND,
+                SyntaxKind::IRI,
+                SyntaxKind::URI,
+                SyntaxKind::BNODE,
+                SyntaxKind::RAND,
+                SyntaxKind::ABS,
+                SyntaxKind::CEIL,
+                SyntaxKind::FLOOR,
+                SyntaxKind::ROUND,
+                SyntaxKind::CONCAT,
+                SyntaxKind::STRLEN,
+                SyntaxKind::UCASE,
+                SyntaxKind::LCASE,
+                SyntaxKind::ENCODE_FOR_URI,
+                SyntaxKind::CONTAINS,
+                SyntaxKind::STRSTARTS,
+                SyntaxKind::STRENDS,
+                SyntaxKind::STRBEFORE,
+                SyntaxKind::STRAFTER,
+                SyntaxKind::YEAR,
+                SyntaxKind::MONTH,
+                SyntaxKind::DAY,
+                SyntaxKind::HOURS,
+                SyntaxKind::MINUTES,
+                SyntaxKind::SECONDS,
+                SyntaxKind::TIMEZONE,
+                SyntaxKind::TZ,
+                SyntaxKind::NOW,
+                SyntaxKind::UUID,
+                SyntaxKind::STRUUID,
+                SyntaxKind::MD5,
+                SyntaxKind::SHA1,
+                SyntaxKind::SHA256,
+                SyntaxKind::SHA384,
+                SyntaxKind::SHA512,
+                SyntaxKind::COALESCE,
+                SyntaxKind::IF,
+                SyntaxKind::STRLANG,
+                SyntaxKind::STRDT,
+                SyntaxKind::sameTerm,
+                SyntaxKind::isIRI,
+                SyntaxKind::isURI,
+                SyntaxKind::isBLANK,
+                SyntaxKind::isLITERAL,
+                SyntaxKind::isNUMERIC,
+                SyntaxKind::REGEX,
+                SyntaxKind::SUBSTR,
+                SyntaxKind::REPLACE,
+                SyntaxKind::EXISTS,
+                SyntaxKind::COUNT,
+                SyntaxKind::SUM,
+                SyntaxKind::MIN,
+                SyntaxKind::MAX,
+                SyntaxKind::AVG,
+                SyntaxKind::SAMPLE,
+                SyntaxKind::GROUP_CONCAT,
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::STRING_LITERAL1,
+                SyntaxKind::STRING_LITERAL2,
+                SyntaxKind::STRING_LITERAL_LONG1,
+                SyntaxKind::STRING_LITERAL_LONG2,
+                SyntaxKind::INTEGER,
+                SyntaxKind::DECIMAL,
+                SyntaxKind::DOUBLE,
+                SyntaxKind::INTEGER_POSITIVE,
+                SyntaxKind::DECIMAL_POSITIVE,
+                SyntaxKind::DOUBLE_POSITIVE,
+                SyntaxKind::INTEGER_NEGATIVE,
+                SyntaxKind::DECIMAL_NEGATIVE,
+                SyntaxKind::DOUBLE_NEGATIVE,
+                SyntaxKind::True,
+                SyntaxKind::False,
+                SyntaxKind::VAR1,
+                SyntaxKind::VAR2,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::PrimaryExpression);
@@ -4127,12 +4930,98 @@ pub(super) fn parse_Aggregate(p: &mut Parser) {
                     parse_Expression(p);
                 }
                 SyntaxKind::Eof => {
-                    eprintln!("Unexpected Eof");
                     p.close(marker, SyntaxKind::Error);
                     return;
                 }
                 _ => {
-                    p.advance_with_error("Expected ....");
+                    p.advance_with_error(vec![
+                        SyntaxKind::Star,
+                        SyntaxKind::IRIREF,
+                        SyntaxKind::PNAME_NS,
+                        SyntaxKind::LParen,
+                        SyntaxKind::INTEGER,
+                        SyntaxKind::Plus,
+                        SyntaxKind::ExclamationMark,
+                        SyntaxKind::VAR1,
+                        SyntaxKind::VAR2,
+                        SyntaxKind::NOT,
+                        SyntaxKind::Minus,
+                        SyntaxKind::STR,
+                        SyntaxKind::LANG,
+                        SyntaxKind::LANGMATCHES,
+                        SyntaxKind::DATATYPE,
+                        SyntaxKind::BOUND,
+                        SyntaxKind::IRI,
+                        SyntaxKind::URI,
+                        SyntaxKind::BNODE,
+                        SyntaxKind::RAND,
+                        SyntaxKind::ABS,
+                        SyntaxKind::CEIL,
+                        SyntaxKind::FLOOR,
+                        SyntaxKind::ROUND,
+                        SyntaxKind::CONCAT,
+                        SyntaxKind::STRLEN,
+                        SyntaxKind::UCASE,
+                        SyntaxKind::LCASE,
+                        SyntaxKind::ENCODE_FOR_URI,
+                        SyntaxKind::CONTAINS,
+                        SyntaxKind::STRSTARTS,
+                        SyntaxKind::STRENDS,
+                        SyntaxKind::STRBEFORE,
+                        SyntaxKind::STRAFTER,
+                        SyntaxKind::YEAR,
+                        SyntaxKind::MONTH,
+                        SyntaxKind::DAY,
+                        SyntaxKind::HOURS,
+                        SyntaxKind::MINUTES,
+                        SyntaxKind::SECONDS,
+                        SyntaxKind::TIMEZONE,
+                        SyntaxKind::TZ,
+                        SyntaxKind::NOW,
+                        SyntaxKind::UUID,
+                        SyntaxKind::STRUUID,
+                        SyntaxKind::MD5,
+                        SyntaxKind::SHA1,
+                        SyntaxKind::SHA256,
+                        SyntaxKind::SHA384,
+                        SyntaxKind::SHA512,
+                        SyntaxKind::COALESCE,
+                        SyntaxKind::IF,
+                        SyntaxKind::STRLANG,
+                        SyntaxKind::STRDT,
+                        SyntaxKind::sameTerm,
+                        SyntaxKind::isIRI,
+                        SyntaxKind::isURI,
+                        SyntaxKind::isBLANK,
+                        SyntaxKind::isLITERAL,
+                        SyntaxKind::isNUMERIC,
+                        SyntaxKind::REGEX,
+                        SyntaxKind::SUBSTR,
+                        SyntaxKind::REPLACE,
+                        SyntaxKind::EXISTS,
+                        SyntaxKind::COUNT,
+                        SyntaxKind::SUM,
+                        SyntaxKind::MIN,
+                        SyntaxKind::MAX,
+                        SyntaxKind::AVG,
+                        SyntaxKind::SAMPLE,
+                        SyntaxKind::GROUP_CONCAT,
+                        SyntaxKind::DECIMAL,
+                        SyntaxKind::DOUBLE,
+                        SyntaxKind::INTEGER_POSITIVE,
+                        SyntaxKind::DECIMAL_POSITIVE,
+                        SyntaxKind::DOUBLE_POSITIVE,
+                        SyntaxKind::INTEGER_NEGATIVE,
+                        SyntaxKind::DECIMAL_NEGATIVE,
+                        SyntaxKind::DOUBLE_NEGATIVE,
+                        SyntaxKind::True,
+                        SyntaxKind::False,
+                        SyntaxKind::STRING_LITERAL1,
+                        SyntaxKind::STRING_LITERAL2,
+                        SyntaxKind::STRING_LITERAL_LONG1,
+                        SyntaxKind::STRING_LITERAL_LONG2,
+                        SyntaxKind::PNAME_LN,
+                    ]);
                 }
             };
             p.expect(SyntaxKind::RParen);
@@ -4198,12 +5087,19 @@ pub(super) fn parse_Aggregate(p: &mut Parser) {
             p.expect(SyntaxKind::RParen);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::COUNT,
+                SyntaxKind::SUM,
+                SyntaxKind::MIN,
+                SyntaxKind::MAX,
+                SyntaxKind::AVG,
+                SyntaxKind::SAMPLE,
+                SyntaxKind::GROUP_CONCAT,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::Aggregate);
@@ -4287,12 +5183,16 @@ pub(super) fn parse_String(p: &mut Parser) {
             p.expect(SyntaxKind::STRING_LITERAL_LONG2);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::STRING_LITERAL1,
+                SyntaxKind::STRING_LITERAL2,
+                SyntaxKind::STRING_LITERAL_LONG1,
+                SyntaxKind::STRING_LITERAL_LONG2,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::String);
@@ -4311,12 +5211,15 @@ pub(super) fn parse_NumericLiteralUnsigned(p: &mut Parser) {
             p.expect(SyntaxKind::DOUBLE);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![
+                SyntaxKind::INTEGER,
+                SyntaxKind::DECIMAL,
+                SyntaxKind::DOUBLE,
+            ]);
         }
     };
     p.close(marker, SyntaxKind::NumericLiteralUnsigned);
@@ -4332,12 +5235,11 @@ pub(super) fn parse_PrefixedName(p: &mut Parser) {
             p.expect(SyntaxKind::PNAME_NS);
         }
         SyntaxKind::Eof => {
-            eprintln!("Unexpected Eof");
             p.close(marker, SyntaxKind::Error);
             return;
         }
         _ => {
-            p.advance_with_error("Expected ....");
+            p.advance_with_error(vec![SyntaxKind::PNAME_LN, SyntaxKind::PNAME_NS]);
         }
     };
     p.close(marker, SyntaxKind::PrefixedName);

@@ -98,7 +98,7 @@ mod tests {
     use super::*;
     use crate::server::lsp::textdocument::TextDocumentItem;
     use indoc::indoc;
-    use ll_sparql_parser::{ast::AstNode, parse_query};
+    use ll_sparql_parser::{ast::AstNode, parse, parse_query};
 
     fn setup_state(text: &str) -> ServerState {
         let mut state = ServerState::new();
@@ -108,7 +108,7 @@ mod tests {
     }
 
     fn find_var_by_name(text: &str, var_name: &str) -> Option<Var> {
-        let root = parse_query(text);
+        let (root, _) = parse(text);
         root.descendants()
             .filter_map(Var::cast)
             .find(|v| v.syntax().text().to_string() == var_name)

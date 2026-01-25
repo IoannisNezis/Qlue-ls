@@ -433,14 +433,14 @@ impl TriplesBlock {
     /// Get the Dot token that terminates the first triple in this block.
     /// Grammar: TriplesBlock = TriplesSameSubjectPath ( '.' TriplesBlock? )?
     pub fn trailing_dot(&self) -> Option<SyntaxToken> {
-        self.syntax.children_with_tokens().find_map(|child| {
-            match child {
+        self.syntax
+            .children_with_tokens()
+            .find_map(|child| match child {
                 rowan::NodeOrToken::Token(token) if token.kind() == SyntaxKind::Dot => {
                     Some(token.into())
                 }
                 _ => None,
-            }
-        })
+            })
     }
 }
 

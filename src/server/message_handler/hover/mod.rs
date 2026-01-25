@@ -4,7 +4,7 @@ mod iri;
 use std::rc::Rc;
 
 use futures::lock::Mutex;
-use ll_sparql_parser::{TokenAtOffset, parse_query, syntax_kind::SyntaxKind};
+use ll_sparql_parser::{TokenAtOffset, syntax_kind::SyntaxKind};
 
 use crate::server::{
     Server,
@@ -18,13 +18,17 @@ pub(super) async fn handle_hover_request(
     server_rc: Rc<Mutex<Server>>,
     request: HoverRequest,
 ) -> Result<(), LSPError> {
-    let document_text = {
+    let (root, document_text) = {
         let server = server_rc.lock().await;
         let document = server.state.get_document(request.get_document_uri())?;
-        document.text.clone()
+        (
+            server
+                .state
+                .get_cached_parse_tree(&request.get_document_uri())?,
+            document.text.clone(),
+        )
     };
     let mut hover_response = HoverResponse::new(request.get_id());
-    let root = parse_query(&document_text);
     let offset = request
         .get_position()
         .byte_index(&document_text)

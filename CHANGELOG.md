@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.1.18] - 2025-01-25
+
 ### Added
 
 - report syntax errors
@@ -14,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - variable completions use text_edits instead of insert_text
+
+### Changed
+
+- reduced footprint of WASM target
 
 ## [1.1.17] - 2025-01-24
 

@@ -1,3 +1,4 @@
+#![cfg(target_family = "wasm")]
 //! WASM entry point for the qlue-ls language server.
 //!
 //! This module provides the WebAssembly interface for running qlue-ls in browsers

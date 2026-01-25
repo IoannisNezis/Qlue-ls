@@ -24,7 +24,6 @@ integration-tests = []
 [dependencies]
 # logging
 log = "0.4.21"
-dirs-next = "2.0.0"
 
 # json
 serde = "1.0.203"
@@ -38,21 +37,35 @@ ll-sparql-parser = "2.0.1"
 # URI compression
 curies = "0.1.3"
 
-# CLI
-clap = { version = "4.5.16", features = ["derive"] }
-camino = "1.1.9"
-
 # Templating
 tera = { version = "1.20.0", default-features = false }
 
 # misc
 indoc = "2.0.5"
+text-size = "1.1.1"
+futures = "0.3.31"
+regex = "1.11.1"
+urlencoding = "2.1.3"
+unicode-width = "0.2.1"
+lazy-sparql-result-reader = { features = ["call_from_rust"], version = "2.0.3" }
+ntriples-parser = "0.1.1"
+
+# WASM (wasm-bindgen needed for both targets due to #[wasm_bindgen] attributes)
+wasm-bindgen = "0.2.95"
+
+# Native-only dependencies
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+log4rs = { version = "1.3.0" }
+tokio = { version = "1.44.1", features = ["full"] }
+dirs-next = "2.0.0"
+clap = { version = "4.5.16", features = ["derive"] }
+camino = "1.1.9"
 config = "0.15.0"
 notify = "8.0.0"
-text-size = "1.1.1"
+reqwest = { version = "0.12.15", features = ["json"] }
 
-# WASM
-wasm-bindgen = "0.2.95"
+# WASM-only dependencies
+[target.'cfg(target_family = "wasm")'.dependencies]
 wasm-logger = { version = "0.2.0" }
 wasm-bindgen-futures = "0.4.50"
 web-sys = { version = "0.3.76", features = [
@@ -76,23 +89,10 @@ js-sys = "0.3.77"
 console_error_panic_hook = { version = "0.1.7", optional = true }
 getrandom = { version = "0.3", features = ["wasm_js"] }
 serde-wasm-bindgen = "0.6.5"
-futures = "0.3.31"
 reqwest = { version = "0.12.15", features = ["json"] }
-regex = "1.11.1"
-urlencoding = "2.1.3"
-unicode-width = "0.2.1"
-# lazy-sparql-result-reader = { path = "../lazy-sparql-result-reader/", features = [
-# 	"call_from_rust",
-# ] }
-lazy-sparql-result-reader = { features = ["call_from_rust"], version = "2.0.3" }
-ntriples-parser = "0.1.1"
-
-[target.'cfg(not(target_family = "wasm"))'.dependencies]
-log4rs = { version = "1.3.0" }
-tokio = { version = "1.44.1", features = ["full"] }
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = false
+wasm-opt = ["-Oz"]
 
 [dev-dependencies]
 insta = { version = "1.40", features = ["json", "redactions"] }

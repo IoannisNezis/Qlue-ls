@@ -31,6 +31,7 @@
 
 use std::{collections::HashMap, fmt};
 
+#[cfg(not(target_arch = "wasm32"))]
 use config::{Config, ConfigError};
 use serde::{Deserialize, Serialize};
 
@@ -261,6 +262,7 @@ impl Default for Settings {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn load_user_configuration() -> Result<Settings, ConfigError> {
     Config::builder()
         .add_source(config::File::with_name("qlue-ls"))
@@ -270,6 +272,7 @@ fn load_user_configuration() -> Result<Settings, ConfigError> {
 
 impl Settings {
     pub fn new() -> Self {
+        #[cfg(not(target_arch = "wasm32"))]
         match load_user_configuration() {
             Ok(settings) => {
                 log::info!("Loaded user configuration!!");
@@ -283,6 +286,8 @@ impl Settings {
                 Settings::default()
             }
         }
+        #[cfg(target_arch = "wasm32")]
+        Settings::default()
     }
 }
 

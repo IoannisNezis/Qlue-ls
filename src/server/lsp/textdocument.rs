@@ -716,7 +716,6 @@ mod tests {
         };
 
         document.apply_text_edits(vec![edit]);
-        println!("{}", document.text);
 
         // Should not panic
         assert!(document.text.contains("?c"));

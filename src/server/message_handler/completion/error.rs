@@ -10,16 +10,13 @@ pub(super) enum CompletionError {
 
 pub(super) fn to_lsp_error(completion_error: CompletionError) -> LSPError {
     match completion_error {
-        CompletionError::Localization(message) => {
-            log::error!("Could not detect completion location\n{}", message);
-            LSPError::new(
-                ErrorCode::InternalError,
-                &format!(
-                    "Could not localize curor while handeling Completion-request:\n{}",
-                    message
-                ),
-            )
-        }
+        CompletionError::Localization(message) => LSPError::new(
+            ErrorCode::InternalError,
+            &format!(
+                "Could not localize cursor while handeling Completion-request:\n{}",
+                message
+            ),
+        ),
         CompletionError::Resolve(message) => {
             log::error!("Could not resolve completions\n{}", message);
             LSPError::new(ErrorCode::InternalError, &message)

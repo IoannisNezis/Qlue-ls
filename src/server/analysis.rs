@@ -63,12 +63,12 @@ pub(crate) fn find_all_prefix_declarations(
     document_uri: &str,
 ) -> Result<Vec<PrefixDeclaration>, LSPError> {
     let root = server_state.get_cached_parse_tree(document_uri)?;
-    Ok(
-        dbg!(root.first_child().and_then(|child| child.first_child()))
-            .and_then(Prologue::cast)
-            .map(|prologue| prologue.prefix_declarations())
-            .unwrap_or_default(),
-    )
+    Ok(root
+        .first_child()
+        .and_then(|child| child.first_child())
+        .and_then(Prologue::cast)
+        .map(|prologue| prologue.prefix_declarations())
+        .unwrap_or_default())
 }
 
 #[cfg(test)]

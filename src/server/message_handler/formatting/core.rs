@@ -323,10 +323,11 @@ impl<'a> Walker<'a> {
                                 " ",
                             ))
                         } else if idx > 0 && line_too_long {
-                            // NOTE: SELECT has a width of 6, plus one space the indentation is 7
+                            // NOTE: SELECT has a width of 6, plus one space, plus the indentation
+                            let indent = 7 + indentation*2;
                             Some(SimplifiedTextEdit::new(
                                 TextRange::empty(child.text_range().start()),
-                                &format!("\n{}", " ".repeat(7)),
+                                &format!("\n{}", " ".repeat(indent as usize)),
                             ))
                         } else {
                             Some(SimplifiedTextEdit::new(

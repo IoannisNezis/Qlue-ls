@@ -1,0 +1,4 @@
+SELECT *          # trailing comment
+WHERE {}
+
+    # non trailing comment

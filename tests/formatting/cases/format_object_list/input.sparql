@@ -1,0 +1,7 @@
+SELECT * WHERE {
+  <a>
+  <b>
+  <c>
+  ,
+  <d>
+}

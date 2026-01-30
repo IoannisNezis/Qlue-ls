@@ -1,0 +1,6 @@
+SELECT * {
+  ?s ?p ?o
+  OPTIONAL {
+    ?a ?c ?c
+  }
+}

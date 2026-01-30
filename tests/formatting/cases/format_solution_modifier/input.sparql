@@ -1,0 +1,14 @@
+SELECT * WHERE {
+   {
+     SELECT * WHERE {
+     }
+    GROUP by ( 2 AS ?a )
+  HAVING (2 > 2) (1 > 2)
+   order BY ASC (?c)
+ OFfSET 3 LiMIT 3
+   }
+}
+  GROUP by ( 2 AS ?a )
+ HAVING (2 > 2) (1 > 2)
+   order BY ASC (?c)
+OFfSET 3 LiMIT 3

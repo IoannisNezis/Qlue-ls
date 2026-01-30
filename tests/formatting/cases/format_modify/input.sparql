@@ -1,0 +1,7 @@
+With <a> delete
+               { 
+?a  ?b   ?C   
+ } insert { ?x ?y ?z } using <a> using named <b> where
+    {
+{ ?a ?b ?c  .  }
+}

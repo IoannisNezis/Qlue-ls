@@ -1,0 +1,6 @@
+INSERT {
+  ?v <a> <b>
+}
+WHERE {
+  VALUES ?v { 1 2 }
+}

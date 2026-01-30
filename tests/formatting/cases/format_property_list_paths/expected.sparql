@@ -1,0 +1,3 @@
+SELECT * WHERE {
+  ?a <iri>/^a/(!<>?)+ | (<iri> | ^a | a) ?b .
+}

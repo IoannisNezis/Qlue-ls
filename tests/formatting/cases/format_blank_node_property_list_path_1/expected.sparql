@@ -1,0 +1,6 @@
+SELECT * WHERE {
+  wd:Q11571 p:P166 [
+    ps:P166 ?entity ;
+    pq:P585 ?date
+  ]
+}

@@ -1,0 +1,6 @@
+SELECT * {
+?s ?p ?o
+    SERVICE <iri>
+    {
+    ?a ?c ?c}
+    }

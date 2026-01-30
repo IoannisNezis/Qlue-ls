@@ -1,0 +1,1 @@
+SELECT (MAX(?a + 2) AS ?max_a) (SAMPLE(DISTINCT ?x) AS ?dx) WHERE {}

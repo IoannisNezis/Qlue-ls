@@ -1,0 +1,4 @@
+PREFIX namespace: <iri>
+SELECT #1
+#2
+* WHERE {}

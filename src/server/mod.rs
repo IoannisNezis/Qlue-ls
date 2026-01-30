@@ -53,7 +53,10 @@ use message_handler::dispatch;
 // WARNING: This is a temporary soloution to export the format function directly
 // will remove soon (12.12.24)
 #[allow(unused_imports)]
-pub use message_handler::format_raw;
+pub use message_handler::{format_raw, format_with_settings};
+
+// Export FormatSettings for testing
+pub use configuration::FormatSettings;
 
 use serde::Serialize;
 use state::ServerState;

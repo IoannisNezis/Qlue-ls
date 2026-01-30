@@ -2,7 +2,7 @@ mod core;
 mod utils;
 use crate::server::{
     Server,
-    configuration::Settings,
+    configuration::{FormatSettings, Settings},
     lsp::{
         FormattingOptions, FormattingRequest, FormattingResponse, errors::LSPError,
         textdocument::TextDocumentItem,
@@ -51,5 +51,35 @@ pub fn format_raw(text: String) -> Result<String, String> {
     Ok(document.text)
 }
 
-#[cfg(test)]
-mod tests;
+/// Format SPARQL text with custom settings.
+///
+/// This function is intended for testing and allows specifying custom format settings.
+/// Also checks for edit collisions (overlapping edits) which would indicate a formatter bug.
+pub fn format_with_settings(text: String, format_settings: FormatSettings) -> Result<String, String> {
+    let mut document = TextDocumentItem::new("tmp", &text);
+    let (root, _) = parse(&text);
+    let edits = format_document(
+        &document,
+        root,
+        &FormattingOptions {
+            tab_size: format_settings.tab_size.unwrap_or(2),
+            insert_spaces: format_settings.insert_spaces.unwrap_or(true),
+        },
+        &format_settings,
+    )
+    .map_err(|err| err.message)?;
+
+    // Check for overlapping edits (indicates a formatter bug)
+    for idx1 in 0..edits.len() {
+        for idx2 in idx1 + 1..edits.len() {
+            let a = &edits[idx1];
+            let b = &edits[idx2];
+            if a.overlaps(b) {
+                return Err(format!("Edits overlap: {} vs {}", a, b));
+            }
+        }
+    }
+
+    document.apply_text_edits(edits);
+    Ok(document.text)
+}

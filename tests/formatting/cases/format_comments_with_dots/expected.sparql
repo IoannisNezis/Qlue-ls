@@ -1,0 +1,5 @@
+SELECT * WHERE {
+  ?s # First comment sentence. Second comment sentence.
+  ?p ?o .
+  ?s ?p ?o
+}

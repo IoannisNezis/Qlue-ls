@@ -1,0 +1,1 @@
+SELECT * {filter   (1>0)}

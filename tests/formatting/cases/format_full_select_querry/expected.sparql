@@ -1,0 +1,12 @@
+PREFIX namespace: <iri>
+SELECT ?var
+FROM <dataset>
+FROM <dataset>
+WHERE {
+  ?s ?p ?o
+}
+GROUP BY ?s
+HAVING (?p > 0)
+ORDER BY DESC(?o)
+LIMIT 12
+OFFSET 20

@@ -363,7 +363,6 @@ impl Range {
         }
     }
 
-    #[cfg(test)]
     pub(crate) fn overlaps(&self, other: &Range) -> bool {
         self.start < other.end && self.end > other.start
     }
@@ -401,7 +400,6 @@ impl TextEdit {
         }
     }
 
-    #[cfg(test)]
     pub fn overlaps(&self, other: &TextEdit) -> bool {
         self.range.overlaps(&other.range)
     }

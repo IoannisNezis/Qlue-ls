@@ -71,7 +71,7 @@ use textdocument_synchronization::{
 };
 use workspace::handle_workspace_edit_response;
 
-pub use formatting::format_raw;
+pub use formatting::{format_raw, format_with_settings};
 
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::task::spawn_local;

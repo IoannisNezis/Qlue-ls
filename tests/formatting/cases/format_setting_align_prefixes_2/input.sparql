@@ -1,0 +1,2 @@
+PREFIX namespace123: <iri> PREFIX namespace12: <iri> PREFIX namespace1: <iri>
+SELECT * WHERE {}

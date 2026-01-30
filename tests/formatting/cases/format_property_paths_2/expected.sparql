@@ -1,0 +1,4 @@
+SELECT * WHERE {
+  ?P foaf:givenName ?G ;
+     foaf:surname ?S ;
+}

@@ -1,0 +1,3 @@
+PREFIX namespace: <uri>
+PREFIX namespace: <uri>
+SELECT * {}

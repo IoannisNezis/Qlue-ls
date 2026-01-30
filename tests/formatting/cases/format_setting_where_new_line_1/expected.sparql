@@ -1,0 +1,4 @@
+SELECT *
+WHERE {
+  ?a ?b ?c
+}

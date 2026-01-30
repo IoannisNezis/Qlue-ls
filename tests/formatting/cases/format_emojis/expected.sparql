@@ -1,0 +1,6 @@
+PREFIX a:  <http://www.wikidata.org/entity/>
+PREFIX 🌠: <http://www.wikidata.org/prop/direct/>
+SELECT ?😀 ?🛰️ {
+  ?ä👨‍🌾 🌠:P31 🌌:Q1049294 ;
+       🌠:P487 ?😀 .
+}

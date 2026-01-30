@@ -1,0 +1,4 @@
+PREFIX a: <> load SIlENT <a> INTO graph <c> ;
+    LOAD    <b>; Clear Graph <b>          ;
+drop   graph<c>  ; ADD SILENT GRAPH <c> to DEFAULT ;MOVE default TO GRAPH <a> ;
+        create graph <d>

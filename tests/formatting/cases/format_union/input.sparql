@@ -1,0 +1,3 @@
+SELECT * { ?a ?b ?c
+{} UNION { {} UNION {} . ?a ?b ?c}
+  }

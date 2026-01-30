@@ -1,0 +1,7 @@
+SELECT * WHERE {
+  FILTER (?a)
+  ?a ?b ",,," .
+  FILTER (?a)
+  ?a ?b ?c . FILTER (?a)
+  ?a ?b ?c FILTER (?a)
+}

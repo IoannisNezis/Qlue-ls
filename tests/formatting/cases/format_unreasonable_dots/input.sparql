@@ -1,0 +1,3 @@
+SELECT * WHERE {
+  FILTER (?s) . FILTER (?o) . {} . {}
+}

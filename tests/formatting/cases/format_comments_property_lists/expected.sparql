@@ -1,0 +1,7 @@
+SELECT * WHERE {
+  ?rettore p:P106 [
+    pq:P642 wd:Q193510 ;
+    # of Padua Univerity
+    pq:P580 ?starttime ;
+  ]
+}

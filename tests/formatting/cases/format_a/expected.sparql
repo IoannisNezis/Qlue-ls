@@ -1,0 +1,3 @@
+SELECT * WHERE {
+  ?sub a ?ob
+}

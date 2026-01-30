@@ -26,6 +26,8 @@ mod sparql;
 
 // Re-export core server types for all targets (used by tests and native builds)
 pub use server::format_raw;
+pub use server::format_with_settings;
+pub use server::FormatSettings;
 pub use server::{Server as LspServer, handle_message as handle_lsp_message};
 
 // WASM-specific imports and exports

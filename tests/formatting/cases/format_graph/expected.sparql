@@ -1,0 +1,6 @@
+SELECT * {
+  {}
+  GRAPH ?a {
+    ?a ?b ?c
+  }
+}

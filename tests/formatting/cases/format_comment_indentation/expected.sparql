@@ -1,0 +1,6 @@
+SELECT * WHERE {
+    {}
+    UNION # comment
+    {}
+    # comment
+}

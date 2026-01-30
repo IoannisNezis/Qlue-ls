@@ -1,0 +1,9 @@
+#asd
+SELECT           # trailing comment
+ * 
+ # c1
+WHERE #c2
+{#3
+}#c3
+
+    # non trailing comment

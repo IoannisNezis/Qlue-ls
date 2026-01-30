@@ -1,0 +1,14 @@
+WITH <a>
+DELETE {
+  ?a ?b ?C
+}
+INSERT {
+  ?x ?y ?z
+}
+USING <a>
+USING NAMED <b>
+WHERE {
+  {
+    ?a ?b ?c .
+  }
+}

@@ -98,7 +98,7 @@ mod tests {
     use super::*;
     use crate::server::lsp::textdocument::TextDocumentItem;
     use indoc::indoc;
-    use ll_sparql_parser::{ast::AstNode, parse, parse_query};
+    use ll_sparql_parser::{ast::AstNode, parse};
 
     fn setup_state(text: &str) -> ServerState {
         let mut state = ServerState::new();

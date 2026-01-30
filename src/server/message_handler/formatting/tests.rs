@@ -4,8 +4,8 @@ use ll_sparql_parser::parse;
 use crate::server::{
     configuration::FormatSettings,
     lsp::{
-        FormattingOptions,
         textdocument::{TextDocumentItem, TextEdit},
+        FormattingOptions,
     },
     message_handler::formatting::format_document,
 };
@@ -1499,4 +1499,155 @@ fn select_line_star_no_break() {
     let ugly_query = "SELECT    *    WHERE { }\n";
     let pretty_query = "SELECT * WHERE {}\n";
     format_and_compare(ugly_query, pretty_query, &settings);
+}
+
+// Tests for contract_triples feature
+
+#[test]
+fn format_setting_contract_triples_basic() {
+    let format_settings = FormatSettings {
+        contract_triples: true,
+        ..Default::default()
+    };
+    let ugly_query = indoc!(
+        "SELECT * WHERE {
+           ?person <name> ?name .
+           ?person <age> ?age .
+         }
+        "
+    );
+    let pretty_query = indoc!(
+        "SELECT * WHERE {
+           ?person <name> ?name ;
+                   <age> ?age .
+         }
+         "
+    );
+    format_and_compare(ugly_query, pretty_query, &format_settings);
+}
+
+#[test]
+fn format_setting_contract_triples_multiple_subjects() {
+    // Only triples with the same subject should be contracted
+    let format_settings = FormatSettings {
+        contract_triples: true,
+        ..Default::default()
+    };
+    let ugly_query = indoc!(
+        "SELECT * WHERE {
+           ?person <name> ?name .
+           ?person <age> ?age .
+           ?company <name> ?companyName .
+           ?company <location> ?loc .
+         }
+        "
+    );
+    let pretty_query = indoc!(
+        "SELECT * WHERE {
+           ?person <name> ?name ;
+                   <age> ?age .
+           ?company <name> ?companyName ;
+                    <location> ?loc .
+         }
+         "
+    );
+    format_and_compare(ugly_query, pretty_query, &format_settings);
+}
+
+#[test]
+fn format_setting_contract_triples_with_comments() {
+    // Comments between triples should prevent contraction
+    let format_settings = FormatSettings {
+        contract_triples: true,
+        ..Default::default()
+    };
+    let ugly_query = indoc!(
+        "SELECT * WHERE {
+           ?person <name> ?name .
+           # This comment breaks contraction
+           ?person <age> ?age .
+         }
+        "
+    );
+    let pretty_query = indoc!(
+        "SELECT * WHERE {
+           ?person <name> ?name .
+           # This comment breaks contraction
+           ?person <age> ?age .
+         }
+         "
+    );
+    format_and_compare(ugly_query, pretty_query, &format_settings);
+}
+
+#[test]
+fn format_setting_contract_triples_disabled() {
+    // Default (false) should not contract triples
+    let format_settings = FormatSettings::default();
+    let ugly_query = indoc!(
+        "SELECT * WHERE {
+           ?person <name> ?name .
+           ?person <age> ?age .
+         }
+        "
+    );
+    let pretty_query = indoc!(
+        "SELECT * WHERE {
+           ?person <name> ?name .
+           ?person <age> ?age .
+         }
+         "
+    );
+    format_and_compare(ugly_query, pretty_query, &format_settings);
+}
+
+#[test]
+fn format_setting_contract_triples_with_align_predicates() {
+    // When align_predicates is false, use fixed indentation
+    let format_settings = FormatSettings {
+        contract_triples: true,
+        align_predicates: false,
+        ..Default::default()
+    };
+    let ugly_query = indoc!(
+        "SELECT * WHERE {
+           ?person <name> ?name .
+           ?person <age> ?age .
+         }
+        "
+    );
+    let pretty_query = indoc!(
+        "SELECT * WHERE {
+           ?person <name> ?name ;
+             <age> ?age .
+         }
+         "
+    );
+    format_and_compare(ugly_query, pretty_query, &format_settings);
+}
+
+#[test]
+fn format_setting_contract_triples_three_same_subject() {
+    // Three triples with same subject should all be contracted
+    let format_settings = FormatSettings {
+        contract_triples: true,
+        ..Default::default()
+    };
+    let ugly_query = indoc!(
+        "SELECT * WHERE {
+           ?person <name> ?name .
+           ?person <age> ?age .
+           ?person <email> ?email .
+         }
+        "
+    );
+    let pretty_query = indoc!(
+        "SELECT * WHERE {
+           ?person <name> ?name ;
+                   <age> ?age ;
+                   <email> ?email .
+         }
+         "
+    );
+    format_and_compare(ugly_query, pretty_query, &format_settings);
 }

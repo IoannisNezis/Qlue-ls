@@ -167,6 +167,7 @@ pub struct FormatSettings {
     pub filter_same_line: bool,
     pub compact: Option<u32>,
     pub line_length: u32,
+    pub contract_triples: bool,
 }
 
 impl Default for FormatSettings {
@@ -182,6 +183,7 @@ impl Default for FormatSettings {
             filter_same_line: true,
             compact: None,
             line_length: 120,
+            contract_triples: false,
         }
     }
 }

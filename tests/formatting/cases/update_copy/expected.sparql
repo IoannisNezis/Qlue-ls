@@ -1,0 +1,1 @@
+COPY SILENT GRAPH <http://example.org/source> TO GRAPH <http://example.org/target>

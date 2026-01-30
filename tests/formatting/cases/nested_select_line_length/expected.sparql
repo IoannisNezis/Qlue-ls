@@ -1,0 +1,10 @@
+SELECT * WHERE {
+  {
+    SELECT ?veryLongVariableName
+           ?anotherLongVariable
+           ?yetAnotherVar
+           ?moreVars WHERE {
+      ?a ?b ?c
+    }
+  }
+}

@@ -1,0 +1,85 @@
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
+SELECT ?person ?name ?age ?email ?friend ?friendName ?organization ?orgName ?position ?startDate ?endDate ?skill ?skillLevel ?project ?projectName ?role ?city ?country ?phone ?website ?bio
+WHERE {
+  ?person rdf:type foaf:Person ;
+          foaf:name ?name ;
+          foaf:age ?age ;
+          foaf:mbox ?email .
+  
+  OPTIONAL {
+    ?person foaf:knows ?friend .
+    ?friend foaf:name ?friendName .
+    OPTIONAL {
+      ?friend foaf:knows ?friendOfFriend .
+      ?friendOfFriend foaf:name ?fofName .
+    }
+  }
+  
+  OPTIONAL {
+    ?person foaf:member ?organization .
+    ?organization foaf:name ?orgName ;
+                  rdf:type foaf:Organization .
+    
+    OPTIONAL {
+      ?membership rdf:type foaf:Membership ;
+                  foaf:member ?person ;
+                  foaf:organization ?organization ;
+                  dct:valid ?validPeriod .
+      ?validPeriod dct:start ?startDate .
+      OPTIONAL { ?validPeriod dct:end ?endDate }
+    }
+  }
+  
+  OPTIONAL {
+    ?person foaf:topic_interest ?skill .
+    ?skill rdfs:label ?skillLabel ;
+           skos:prefLabel ?skillName .
+    OPTIONAL {
+      ?skillAssessment rdf:type <http://example.org/SkillAssessment> ;
+                       <http://example.org/person> ?person ;
+                       <http://example.org/skill> ?skill ;
+                       <http://example.org/level> ?skillLevel .
+    }
+  }
+  
+  OPTIONAL {
+    ?person <http://example.org/worksOn> ?project .
+    ?project dc:title ?projectName ;
+             rdf:type <http://example.org/Project> .
+    ?project <http://example.org/hasParticipant> ?participation .
+    ?participation <http://example.org/person> ?person ;
+                   <http://example.org/role> ?role .
+  }
+  
+  OPTIONAL {
+    ?person foaf:based_near ?location .
+    ?location <http://example.org/city> ?city ;
+              <http://example.org/country> ?country .
+  }
+  
+  OPTIONAL { ?person foaf:phone ?phone }
+  OPTIONAL { ?person foaf:homepage ?website }
+  OPTIONAL { ?person dc:description ?bio }
+  
+  FILTER (?age >= 18 && ?age <= 65)
+  FILTER (LANG(?name) = "en" || LANG(?name) = "")
+  FILTER NOT EXISTS {
+    ?person <http://example.org/status> "inactive" .
+  }
+  FILTER EXISTS {
+    ?person foaf:mbox ?anyEmail .
+  }
+}
+GROUP BY ?person ?name ?age ?email ?friend ?friendName ?organization ?orgName ?position ?startDate ?endDate ?skill ?skillLevel ?project ?projectName ?role ?city ?country ?phone ?website ?bio
+HAVING (COUNT(?friend) > 0)
+ORDER BY DESC(?age) ?name
+LIMIT 100
+OFFSET 0

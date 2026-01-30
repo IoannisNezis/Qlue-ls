@@ -1,0 +1,4 @@
+SELECT * WHERE {
+  ?person <http://name> "John" .
+  ?person <http://age> 30 .
+}

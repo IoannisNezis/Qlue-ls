@@ -1,0 +1,5 @@
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+clear graph <http://example.org/temp> ;
+INSERT DATA { <http://example.org/s> foaf:name "Test" } ;
+DELETE WHERE { ?s foaf:age ?o } ;
+LOAD <http://example.org/data.ttl> INTO GRAPH <http://example.org/loaded>

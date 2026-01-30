@@ -1,0 +1,7 @@
+SELECT * WHERE {
+  ?person <http://name> "John" ;
+          <http://age> 30 .
+  ?company <http://name> "Acme" ;
+           <http://city> "NYC" .
+  ?person <http://works> ?company .
+}

@@ -1,0 +1,9 @@
+SELECT * WHERE {
+        ?a ?b ?c .
+        OPTIONAL {
+                ?d ?e ?f .
+                OPTIONAL {
+                        ?g ?h ?i
+                }
+        }
+}

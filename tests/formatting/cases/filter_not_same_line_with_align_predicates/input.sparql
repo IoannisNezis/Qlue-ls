@@ -1,0 +1,1 @@
+SELECT * WHERE { ?longSubject <http://pred1> ?obj1 ; <http://pred2> ?obj2 . ?a ?b ?c FILTER (?a > 10) }

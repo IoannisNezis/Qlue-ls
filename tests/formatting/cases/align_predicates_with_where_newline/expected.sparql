@@ -1,0 +1,5 @@
+SELECT *
+WHERE {
+  ?subject <http://longPredicate> ?obj ;
+           <http://another> ?val
+}

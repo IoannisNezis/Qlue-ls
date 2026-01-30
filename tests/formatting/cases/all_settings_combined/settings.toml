@@ -1,0 +1,9 @@
+capitalizeKeywords = true
+alignPrefixes = true
+alignPredicates = true
+separatePrologue = true
+whereNewLine = true
+filterSameLine = false
+contractTriples = true
+tabSize = 4
+insertSpaces = true

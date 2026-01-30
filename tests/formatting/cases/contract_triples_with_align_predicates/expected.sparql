@@ -1,0 +1,4 @@
+SELECT * WHERE {
+  ?longSubjectName <http://predicate1> "value1" ;
+                   <http://predicate2> "value2" .
+}

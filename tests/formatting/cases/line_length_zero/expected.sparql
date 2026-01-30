@@ -1,0 +1,5 @@
+SELECT ?veryLongVariableName
+       ?anotherLongVariable
+       ?yetAnotherVar WHERE {
+  ?a ?b ?c
+}

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- contract triples on format (configurable)
+
 ## [1.1.18] - 2025-01-25
 
 ### Added

@@ -1,7 +1,11 @@
 use core::fmt;
 use std::vec;
 
-use ll_sparql_parser::{SyntaxElement, SyntaxNode, SyntaxToken, syntax_kind::SyntaxKind};
+use ll_sparql_parser::{
+    SyntaxElement, SyntaxNode, SyntaxToken,
+    ast::{AstNode, Triple},
+    syntax_kind::SyntaxKind,
+};
 use text_size::{TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
@@ -99,6 +103,12 @@ struct SimplifiedCommentMarker {
     trailing: bool,
 }
 
+/// Helper struct for contract_triples feature.
+struct TripleWithDot {
+    triple: Triple,
+    dot: Option<SyntaxToken>,
+}
+
 fn inc_indent(node: &SyntaxNode) -> u8 {
     match node.kind() {
         SyntaxKind::BlankNodePropertyListPath
@@ -117,56 +127,6 @@ fn inc_indent(node: &SyntaxNode) -> u8 {
         }
         _ => 0,
     }
-}
-
-/// Information about a triple for contraction purposes
-struct TripleInfo {
-    /// The subject text of this triple
-    subject_text: String,
-    /// The range of the entire triple node (TriplesSameSubjectPath)
-    triple_range: TextRange,
-    /// The range of the property list (predicate-object pairs)
-    property_list_range: TextRange,
-    /// The dot token following this triple (if any)
-    trailing_dot: Option<SyntaxToken>,
-}
-
-/// Check if there is a comment between two byte positions in the source
-fn has_comment_between(node: &SyntaxNode, start: TextSize, end: TextSize) -> bool {
-    node.children_with_tokens().any(|child| {
-        child.kind() == SyntaxKind::Comment
-            && child.text_range().start() >= start
-            && child.text_range().end() <= end
-    })
-}
-
-/// Extract triple information from a TriplesSameSubjectPath node
-fn extract_triple_info(
-    triple_node: &SyntaxNode,
-    following_dot: Option<SyntaxToken>,
-) -> Option<TripleInfo> {
-    let children: Vec<_> = triple_node
-        .children_with_tokens()
-        .filter(|c| !c.kind().is_trivia())
-        .collect();
-
-    let subject = children.first()?.as_node()?;
-    let prop_list = children.last()?.as_node()?;
-
-    // Ensure the property list is a valid type
-    if !matches!(
-        prop_list.kind(),
-        SyntaxKind::PropertyListPathNotEmpty | SyntaxKind::PropertyListNotEmpty
-    ) {
-        return None;
-    }
-
-    Some(TripleInfo {
-        subject_text: subject.to_string(),
-        triple_range: triple_node.text_range(),
-        property_list_range: prop_list.text_range(),
-        trailing_dot: following_dot,
-    })
 }
 
 struct Walker<'a> {
@@ -324,7 +284,7 @@ impl<'a> Walker<'a> {
                             ))
                         } else if idx > 0 && line_too_long {
                             // NOTE: SELECT has a width of 6, plus one space, plus the indentation
-                            let indent = 7 + indentation*2;
+                            let indent = 7 + indentation * 2;
                             Some(SimplifiedTextEdit::new(
                                 TextRange::empty(child.text_range().start()),
                                 &format!("\n{}", " ".repeat(indent as usize)),
@@ -441,12 +401,8 @@ impl<'a> Walker<'a> {
                 }
             }
 
-            SyntaxKind::TriplesBlock if self.settings.contract_triples => {
-                self.contract_triples_block(node, children, indentation)
-            }
-
-            SyntaxKind::TriplesBlock
-            | SyntaxKind::TriplesTemplate
+            SyntaxKind::TriplesBlock => self.handle_triples_block(node, children, indentation),
+            SyntaxKind::TriplesTemplate
             | SyntaxKind::ConstructTriples
             | SyntaxKind::Quads
             | SyntaxKind::GroupGraphPatternSub => children
@@ -659,10 +615,40 @@ impl<'a> Walker<'a> {
             | SyntaxKind::DatasetClause
             | SyntaxKind::TriplesTemplate
             | SyntaxKind::UNION => Some(self.get_linebreak(indentation)),
-            SyntaxKind::TriplesBlock => node
-                .as_node()
-                .is_some_and(|node| node.prev_sibling().is_some())
-                .then_some(self.get_linebreak(indentation)),
+            SyntaxKind::TriplesBlock => {
+                let syntax_node = node.as_node()?;
+                // Only add linebreak if this is a nested TriplesBlock
+                if syntax_node.prev_sibling().is_none() {
+                    return None;
+                }
+                // If contract_triples is enabled, check if this triple should be contracted
+                // (i.e., has same subject as previous triple) - if so, skip the linebreak
+                // as it's handled by the contraction edit
+                if self.settings.contract_triples {
+                    if let Some(parent) = syntax_node.parent() {
+                        if parent.kind() == SyntaxKind::TriplesBlock {
+                            // This is a nested TriplesBlock - check if it should be contracted
+                            let prev_triple = parent
+                                .children()
+                                .find(|c| c.kind() == SyntaxKind::TriplesSameSubjectPath)
+                                .and_then(Triple::cast);
+                            let curr_triple = syntax_node
+                                .children()
+                                .find(|c| c.kind() == SyntaxKind::TriplesSameSubjectPath)
+                                .and_then(Triple::cast);
+                            if let (Some(prev), Some(curr)) = (prev_triple, curr_triple) {
+                                let prev_subject = prev.subject().map(|s| s.syntax().to_string());
+                                let curr_subject = curr.subject().map(|s| s.syntax().to_string());
+                                if prev_subject == curr_subject {
+                                    // Same subject - contraction edit handles the formatting
+                                    return None;
+                                }
+                            }
+                        }
+                    }
+                }
+                Some(self.get_linebreak(indentation))
+            }
             SyntaxKind::GraphPatternNotTriples
                 if node
                     .as_node()
@@ -828,6 +814,184 @@ impl<'a> Walker<'a> {
         format!("\n{}", self.indent_base.repeat(indentation as usize))
     }
 
+    /// Handle TriplesBlock formatting, including contract_triples feature.
+    fn handle_triples_block(
+        &self,
+        node: &SyntaxElement,
+        children: &[SyntaxElement],
+        indentation: u8,
+    ) -> Vec<SimplifiedTextEdit> {
+        let mut edits = Vec::new();
+
+        if !self.settings.contract_triples {
+            // Just add spaces before dots
+            for child in children {
+                if child.kind() == SyntaxKind::Dot {
+                    edits.push(SimplifiedTextEdit::new(
+                        TextRange::empty(child.text_range().start()),
+                        " ",
+                    ));
+                }
+            }
+            return edits;
+        }
+
+        // contract_triples is enabled
+        let Some(syntax_node) = node.as_node() else {
+            return edits;
+        };
+
+        // Only process at the top-level TriplesBlock to avoid duplicate edits
+        if syntax_node
+            .parent()
+            .is_some_and(|p| p.kind() == SyntaxKind::TriplesBlock)
+        {
+            // Nested TriplesBlocks: edits are handled by the top-level block
+            // Return empty - the top-level handler generates all necessary edits
+            return edits;
+        }
+
+        // Collect all triples with their associated dots
+        let triples_with_dots: Vec<TripleWithDot> = self.collect_triples_with_dots(syntax_node);
+        if triples_with_dots.is_empty() {
+            return edits;
+        }
+
+        // Group consecutive triples by subject text
+        let groups: Vec<Vec<&TripleWithDot>> = self.group_triples_by_subject(&triples_with_dots);
+
+        // Generate edits for each group
+        for group in &groups {
+            if group.len() < 2 {
+                // Single triple - just add space before dot
+                if let Some(item) = group.first() {
+                    if let Some(ref dot) = item.dot {
+                        edits.push(SimplifiedTextEdit::new(
+                            TextRange::empty(dot.text_range().start()),
+                            " ",
+                        ));
+                    }
+                }
+            } else {
+                // Multiple triples with same subject - contract them
+                let first_subject_width = group
+                    .first()
+                    .and_then(|item| item.triple.subject())
+                    .map(|s| s.syntax().to_string().width())
+                    .unwrap_or(0);
+
+                for (idx, item) in group.iter().enumerate() {
+                    let is_last = idx == group.len() - 1;
+
+                    // Handle the dot
+                    if let Some(ref d) = item.dot {
+                        if is_last {
+                            // Last triple - keep as dot, add space before
+                            edits.push(SimplifiedTextEdit::new(
+                                TextRange::empty(d.text_range().start()),
+                                " ",
+                            ));
+                        } else {
+                            // Change dot to semicolon (just the dot token itself)
+                            edits.push(SimplifiedTextEdit::new(d.text_range(), " ;"));
+                        }
+                    }
+
+                    // Handle subject deletion for non-first triples in the group
+                    if idx > 0 {
+                        if let Some(subject) = item.triple.subject() {
+                            // NOTE: Determine indentation
+                            // We use first_subject_width (not +1) because the separation
+                            // edit between subject and property list will add a space
+                            let indent = if self.settings.align_predicates {
+                                " ".repeat(first_subject_width)
+                            } else {
+                                // Use one less space since separation will add one
+                                " ".to_string()
+                            };
+
+                            // Replace only the subject text (not the space after it)
+                            // The separation edit will handle the space between subject and property list
+                            edits.push(SimplifiedTextEdit::new(
+                                subject.syntax().text_range(),
+                                &format!("{}{}", self.get_linebreak(indentation), indent),
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+
+        edits
+    }
+
+    /// Collect all triples with their associated dots from a TriplesBlock.
+    fn collect_triples_with_dots(&self, triples_block: &SyntaxNode) -> Vec<TripleWithDot> {
+        let mut result = Vec::new();
+        let mut current = triples_block.clone();
+
+        loop {
+            // Get the triple from this TriplesBlock
+            let triple = current.first_child().and_then(Triple::cast);
+
+            // Get the dot token from this TriplesBlock
+            let dot: Option<SyntaxToken> = current
+                .children_with_tokens()
+                .filter(|child| !child.kind().is_trivia())
+                .nth(1)
+                .and_then(|child| {
+                    (child.kind() == SyntaxKind::Dot)
+                        .then_some(child.into_token())
+                        .flatten()
+                });
+
+            // Check if there's a comment between the dot and the next TriplesBlock
+
+            if let Some(t) = triple {
+                result.push(TripleWithDot { triple: t, dot });
+            }
+
+            // Get the nested TriplesBlock
+            let nested = current
+                .last_child()
+                .filter(|last| last.kind() == SyntaxKind::TriplesBlock);
+
+            match nested {
+                Some(n) => current = n,
+                None => break,
+            }
+        }
+
+        result
+    }
+
+    /// Group consecutive triples by subject text.
+    fn group_triples_by_subject<'b>(
+        &self,
+        triples_with_dots: &'b [TripleWithDot],
+    ) -> Vec<Vec<&'b TripleWithDot>> {
+        let mut groups: Vec<Vec<&'b TripleWithDot>> = Vec::new();
+
+        for item in triples_with_dots {
+            let subject_text = item.triple.subject().map(|s| s.syntax().to_string());
+
+            if let Some(current_group) = groups.last_mut() {
+                let prev_subject_text = current_group
+                    .last()
+                    .and_then(|prev_item| prev_item.triple.subject())
+                    .map(|s| s.syntax().to_string());
+
+                if subject_text == prev_subject_text {
+                    current_group.push(item);
+                    continue;
+                }
+            }
+            groups.push(vec![item]);
+        }
+
+        groups
+    }
+
     fn comment_marker(
         &self,
         comment_node: &SyntaxElement,
@@ -859,195 +1023,6 @@ impl<'a> Walker<'a> {
             trailing,
             indentation_level,
         }
-    }
-
-    /// Contract consecutive triples with the same subject in a TriplesBlock.
-    /// Returns edits that:
-    /// - Replace dots with semicolons for grouped triples
-    /// - Delete subjects from subsequent triples in a group
-    /// - Properly indent the property lists
-    fn contract_triples_block(
-        &self,
-        node: &SyntaxElement,
-        children: &[SyntaxElement],
-        indentation: u8,
-    ) -> Vec<SimplifiedTextEdit> {
-        let mut edits = Vec::new();
-
-        // Get the parent node to check for comments
-        let parent_node = match node.as_node() {
-            Some(n) => n,
-            None => {
-                // Fallback to default behavior
-                return children
-                    .iter()
-                    .filter_map(|child| match child.kind() {
-                        SyntaxKind::Dot => Some(SimplifiedTextEdit::new(
-                            TextRange::empty(child.text_range().start()),
-                            " ",
-                        )),
-                        _ => None,
-                    })
-                    .collect();
-            }
-        };
-
-        // Collect triples with their trailing dots
-        let mut triple_infos: Vec<TripleInfo> = Vec::new();
-        let mut children_iter = children.iter().peekable();
-
-        while let Some(child) = children_iter.next() {
-            if child.kind() == SyntaxKind::TriplesSameSubjectPath {
-                if let Some(triple_node) = child.as_node() {
-                    // Look for trailing dot
-                    let trailing_dot = children_iter.peek().and_then(|next| {
-                        if next.kind() == SyntaxKind::Dot {
-                            next.as_token().cloned()
-                        } else {
-                            None
-                        }
-                    });
-
-                    // If we found a dot, consume it
-                    if trailing_dot.is_some() {
-                        children_iter.next();
-                    }
-
-                    if let Some(info) = extract_triple_info(triple_node, trailing_dot) {
-                        triple_infos.push(info);
-                    }
-                }
-            } else if child.kind() == SyntaxKind::TriplesBlock {
-                // Nested TriplesBlock - will be handled recursively
-                // Just add space before any dots we encounter
-                if child.kind() == SyntaxKind::Dot {
-                    edits.push(SimplifiedTextEdit::new(
-                        TextRange::empty(child.text_range().start()),
-                        " ",
-                    ));
-                }
-            } else if child.kind() == SyntaxKind::Dot {
-                // Standalone dot not associated with a triple we processed
-                edits.push(SimplifiedTextEdit::new(
-                    TextRange::empty(child.text_range().start()),
-                    " ",
-                ));
-            }
-        }
-
-        if triple_infos.is_empty() {
-            return edits;
-        }
-
-        // Group consecutive triples by subject, breaking on comments
-        let mut groups: Vec<Vec<&TripleInfo>> = Vec::new();
-        let mut current_group: Vec<&TripleInfo> = Vec::new();
-
-        for (idx, info) in triple_infos.iter().enumerate() {
-            let should_break = if let Some(prev) = current_group.last() {
-                // Different subject
-                prev.subject_text != info.subject_text
-                    // Or there's a comment between the previous triple and this one
-                    || has_comment_between(
-                        parent_node,
-                        prev.triple_range.end(),
-                        info.triple_range.start(),
-                    )
-            } else {
-                false
-            };
-
-            if should_break {
-                if current_group.len() >= 2 {
-                    groups.push(std::mem::take(&mut current_group));
-                } else {
-                    current_group.clear();
-                }
-            }
-
-            current_group.push(info);
-
-            // If this is the last triple, finalize the group
-            if idx == triple_infos.len() - 1 && current_group.len() >= 2 {
-                groups.push(std::mem::take(&mut current_group));
-            }
-        }
-
-        // Track which triples are part of contraction groups
-        let contracted_triples: std::collections::HashSet<TextRange> = groups
-            .iter()
-            .flat_map(|g| g.iter().map(|t| t.triple_range))
-            .collect();
-
-        // Generate edits for contracted groups
-        for group in &groups {
-            if group.len() < 2 {
-                continue;
-            }
-
-            let first_triple = group[0];
-
-            // Calculate indentation for subsequent property lists
-            let indent_str = if self.settings.align_predicates {
-                " ".repeat(first_triple.subject_text.width() + 1)
-            } else {
-                "  ".to_string()
-            };
-
-            // For the first triple: replace its trailing dot with semicolon
-            if let Some(ref dot) = first_triple.trailing_dot {
-                edits.push(SimplifiedTextEdit::new(
-                    TextRange::new(first_triple.triple_range.end(), dot.text_range().end()),
-                    " ;",
-                ));
-            }
-
-            // For subsequent triples in the group
-            for (idx, triple) in group.iter().enumerate().skip(1) {
-                let is_last = idx == group.len() - 1;
-
-                // Delete from start of triple to start of property list
-                // (this removes the subject)
-                edits.push(SimplifiedTextEdit::new(
-                    TextRange::new(
-                        triple.triple_range.start(),
-                        triple.property_list_range.start(),
-                    ),
-                    &format!("{}{}", self.get_linebreak(indentation), indent_str),
-                ));
-
-                // Handle the trailing dot
-                if let Some(ref dot) = triple.trailing_dot {
-                    if is_last {
-                        // Last triple in group: keep the dot (with space before it)
-                        edits.push(SimplifiedTextEdit::new(
-                            TextRange::new(triple.triple_range.end(), dot.text_range().start()),
-                            " ",
-                        ));
-                    } else {
-                        // Not last: replace dot with semicolon
-                        edits.push(SimplifiedTextEdit::new(
-                            TextRange::new(triple.triple_range.end(), dot.text_range().end()),
-                            " ;",
-                        ));
-                    }
-                }
-            }
-        }
-
-        // For triples NOT in any contraction group, add space before their dots
-        for info in &triple_infos {
-            if !contracted_triples.contains(&info.triple_range) {
-                if let Some(ref dot) = info.trailing_dot {
-                    edits.push(SimplifiedTextEdit::new(
-                        TextRange::empty(dot.text_range().start()),
-                        " ",
-                    ));
-                }
-            }
-        }
-
-        edits
     }
 
     fn collect_edits_and_comments(self) -> (Vec<SimplifiedTextEdit>, Vec<SimplifiedCommentMarker>) {

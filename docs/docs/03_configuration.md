@@ -140,6 +140,31 @@ SELECT ?variable1
 WHERE {}
 ```
 
+### format.contract_triples
+
+| Type     | Default |
+| ---------| --------|
+| boolean  | false   |
+
+When enabled, automatically contracts consecutive triples with the same subject using semicolon notation.
+
+```sparql
+# Before (contract_triples = false)
+SELECT * WHERE {
+  ?person <name> ?name .
+  ?person <age> ?age .
+}
+
+# After (contract_triples = true)
+SELECT * WHERE {
+  ?person <name> ?name ;
+          <age> ?age .
+}
+```
+
+When `align_predicates = true` (default), the contracted predicates are aligned with the first predicate.
+When `align_predicates = false`, a fixed 2-space indentation is used.
+
 ## Completion settings
 
 ### completion.timeout_ms

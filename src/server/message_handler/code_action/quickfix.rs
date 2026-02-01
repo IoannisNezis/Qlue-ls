@@ -1,5 +1,3 @@
-mod same_subject;
-
 use super::Diagnostic;
 use crate::server::{
     Server,
@@ -11,7 +9,7 @@ use crate::server::{
         errors::{ErrorCode, LSPError},
         textdocument::{Range, TextEdit},
     },
-    message_handler::{code_action::quickfix::same_subject::contract_triples, diagnostic},
+    message_handler::{code_action::same_subject::contract_triples, diagnostic},
 };
 use ll_sparql_parser::syntax_kind::SyntaxKind;
 use log::error;

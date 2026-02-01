@@ -1,5 +1,6 @@
 mod iri;
 mod quickfix;
+mod same_subject;
 mod select;
 mod variable;
 use crate::server::{
@@ -77,23 +78,19 @@ fn generate_code_actions(
         .is_some_and(|iri| iri.is_uncompressed())
     {
         code_actions.extend(iri::code_actions(server, document.uri.clone()));
-    } else {
-        match selected_element.parent().and_then(Var::cast) {
-            Some(var) => code_actions.extend(variable::code_actions(var, &server.state, document)),
-            _ => {
-                if matches!(
-                    selected_element.kind(),
-                    SyntaxKind::SelectQuery | SyntaxKind::SELECT | SyntaxKind::SubSelect
-                ) {
-                    code_actions.extend(select::code_actions(
-                        selected_element,
-                        &document,
-                        server.settings.format.tab_size.unwrap_or(2),
-                    ));
-                }
-            }
-        }
+    } else if let Some(var) = selected_element.parent().and_then(Var::cast) {
+        code_actions.extend(variable::code_actions(var, &server.state, document));
+    } else if matches!(
+        selected_element.kind(),
+        SyntaxKind::SelectQuery | SyntaxKind::SELECT | SyntaxKind::SubSelect
+    ) {
+        code_actions.extend(select::code_actions(
+            selected_element,
+            &document,
+            server.settings.format.tab_size.unwrap_or(2),
+        ));
     }
+    // NOTE: Global code actions
 
     return Ok(code_actions);
 }

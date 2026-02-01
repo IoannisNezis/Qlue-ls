@@ -30,48 +30,52 @@ pub(super) fn diagnostics(
                     .map(|tb| tb.triples())
                     .flatten()
                     .collect();
-                let mut buckets: HashMap<String, Vec<Triple>> = HashMap::new();
+                let mut groups: HashMap<String, Vec<Triple>> = HashMap::new();
                 for triple in triples.into_iter().filter(|triple| !triple.has_error()) {
                     if let Some(subject) = triple.subject() {
-                        buckets
+                        groups
                             .entry(subject.text())
                             .and_modify(|bucket| bucket.push(triple.clone()))
                             .or_insert(vec![triple]);
                     }
                 }
-                buckets
+                groups
                     .into_values()
-                    .filter(|bucket| bucket.len() >= 2)
-                    .map(|bucket| {
-                        let ranges = LSPAny::LSPArray(
-                            bucket
-                                .iter()
-                                .map(|triple| {
-                                    let range = triple.syntax().text_range();
-                                    LSPAny::LSPObject(HashMap::from_iter([
-                                        (
-                                            "start".to_string(),
-                                            LSPAny::Uinteger(range.start().into()),
-                                        ),
-                                        ("end".to_string(), LSPAny::Uinteger(range.end().into())),
-                                    ]))
-                                })
-                                .collect(),
-                        );
-                        bucket.into_iter().map(move |triple| Diagnostic {
-                            range: Range::from_byte_offset_range(
-                                triple.syntax().text_range(),
-                                &document.text,
-                            )
-                            .expect("triple text range should be in text"),
-                            severity: DiagnosticSeverity::Information,
-                            code: Some((*CODE).clone()),
-                            source: None,
-                            message: format!(
-                                "Triple with same subject \"{}\" can be contracted",
-                                triple.subject().unwrap().text()
-                            ),
-                            data: Some(ranges.clone()),
+                    .filter_map(|group| {
+                        (group.len() >= 2).then_some({
+                            let ranges = LSPAny::LSPArray(
+                                group
+                                    .iter()
+                                    .map(|triple| {
+                                        let range = triple.syntax().text_range();
+                                        LSPAny::LSPObject(HashMap::from_iter([
+                                            (
+                                                "start".to_string(),
+                                                LSPAny::Uinteger(range.start().into()),
+                                            ),
+                                            (
+                                                "end".to_string(),
+                                                LSPAny::Uinteger(range.end().into()),
+                                            ),
+                                        ]))
+                                    })
+                                    .collect(),
+                            );
+                            group.into_iter().map(move |triple| Diagnostic {
+                                range: Range::from_byte_offset_range(
+                                    triple.syntax().text_range(),
+                                    &document.text,
+                                )
+                                .expect("triple text range should be in text"),
+                                severity: DiagnosticSeverity::Information,
+                                code: Some((*CODE).clone()),
+                                source: None,
+                                message: format!(
+                                    "Triple with same subject \"{}\" can be contracted",
+                                    triple.subject().unwrap().text()
+                                ),
+                                data: Some(ranges.clone()),
+                            })
                         })
                     })
                     .flatten()

@@ -1,10 +1,3 @@
-use ll_sparql_parser::{
-    ast::{AstNode, Triple},
-    syntax_kind::SyntaxKind,
-};
-use text_size::{TextRange, TextSize};
-use unicode_width::UnicodeWidthChar;
-
 use crate::server::{
     Server,
     lsp::{
@@ -15,6 +8,12 @@ use crate::server::{
         textdocument::{Position, Range, TextEdit},
     },
 };
+use ll_sparql_parser::{
+    ast::{AstNode, Triple},
+    syntax_kind::SyntaxKind,
+};
+use text_size::{TextRange, TextSize};
+use unicode_width::UnicodeWidthChar;
 
 type SameSubjectData = Vec<TextRange>;
 

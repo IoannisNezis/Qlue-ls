@@ -8,9 +8,7 @@ use crate::server::{
         errors::LSPError,
         textdocument::{Range, TextDocumentItem, TextEdit},
     },
-    message_handler::{
-        code_action::same_subject::contract_all_triple_groups,
-    },
+    message_handler::code_action::same_subject::contract_all_triple_groups,
 };
 use core::format_document as format_document_core;
 use futures::lock::Mutex;
@@ -86,7 +84,7 @@ fn format_with_contraction(
     // 5. Return single edit replacing entire document
     Ok(vec![TextEdit::new(
         Range::new(0, 0, u32::MAX, u32::MAX),
-        &formatted_doc.text,
+        formatted_doc.text.trim_end(),
     )])
 }
 

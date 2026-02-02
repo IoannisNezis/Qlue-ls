@@ -334,21 +334,31 @@ mod tests {
         assert_eq!(config.service.url, "https://example.com/sparql");
         assert!(!config.default);
         assert_eq!(config.queries.len(), 5);
-        assert!(config
-            .queries
-            .contains_key(&CompletionTemplate::SubjectCompletion));
-        assert!(config
-            .queries
-            .contains_key(&CompletionTemplate::PredicateCompletionContextSensitive));
-        assert!(config
-            .queries
-            .contains_key(&CompletionTemplate::PredicateCompletionContextInsensitive));
-        assert!(config
-            .queries
-            .contains_key(&CompletionTemplate::ObjectCompletionContextSensitive));
-        assert!(config
-            .queries
-            .contains_key(&CompletionTemplate::ObjectCompletionContextInsensitive));
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::SubjectCompletion)
+        );
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::PredicateCompletionContextSensitive)
+        );
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::PredicateCompletionContextInsensitive)
+        );
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::ObjectCompletionContextSensitive)
+        );
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::ObjectCompletionContextInsensitive)
+        );
     }
 
     #[test]
@@ -366,15 +376,21 @@ mod tests {
         let config: BackendConfiguration = parse_yaml(yaml);
 
         assert_eq!(config.queries.len(), 2);
-        assert!(config
-            .queries
-            .contains_key(&CompletionTemplate::SubjectCompletion));
-        assert!(config
-            .queries
-            .contains_key(&CompletionTemplate::ObjectCompletionContextInsensitive));
-        assert!(!config
-            .queries
-            .contains_key(&CompletionTemplate::PredicateCompletionContextSensitive));
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::SubjectCompletion)
+        );
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::ObjectCompletionContextInsensitive)
+        );
+        assert!(
+            !config
+                .queries
+                .contains_key(&CompletionTemplate::PredicateCompletionContextSensitive)
+        );
     }
 
     #[test]

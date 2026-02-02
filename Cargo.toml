@@ -91,8 +91,7 @@ getrandom = { version = "0.3", features = ["wasm_js"] }
 serde-wasm-bindgen = "0.6.5"
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = ["-Oz"]
-# wasm-opt = false
+wasm-opt = false
 
 [dev-dependencies]
 insta = { version = "1.40", features = ["json", "redactions"] }

@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::server::{
     Server,
     lsp::{
@@ -5,15 +7,65 @@ use crate::server::{
         base_types::LSPAny,
         diagnostic::Diagnostic,
         errors::{ErrorCode, LSPError},
-        textdocument::{Position, Range, TextEdit},
+        textdocument::{Position, Range, TextDocumentItem, TextEdit},
     },
+    message_handler::diagnostic,
 };
 use ll_sparql_parser::{
-    ast::{AstNode, Triple},
+    SyntaxNode,
+    ast::{AstNode, QueryUnit, Triple},
     syntax_kind::SyntaxKind,
 };
 use text_size::{TextRange, TextSize};
 use unicode_width::UnicodeWidthChar;
+
+pub(super) fn contract_all_triple_groups(
+    server: &Server,
+    document: &TextDocumentItem,
+    root: SyntaxNode,
+) -> Result<Option<CodeAction>, LSPError> {
+    let query_unit = {
+        match QueryUnit::cast(root) {
+            Some(x) => x,
+            None => return Ok(None),
+        }
+    };
+    let diagnostics = {
+        match diagnostic::same_subject::diagnostics(document, &query_unit, server) {
+            Some(x) => x,
+            None => return Ok(None),
+        }
+    };
+
+    let mut code_action = CodeAction::new("Contract all triples with same subject", None);
+    let mut empty = true;
+    let mut ranges: HashSet<Range> = HashSet::new();
+    for action in diagnostics
+        .into_iter()
+        .map(|diagnostic| contract_triples(server, &document.uri, diagnostic))
+    {
+        for edit in action?
+            .and_then(|action| action.edit.changes)
+            .map(|changes| {
+                changes
+                    .into_iter()
+                    .flat_map(|(uri, changes)| {
+                        assert_eq!(document.uri, uri);
+                        changes
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default()
+        {
+            if !ranges.contains(&edit.range) {
+                ranges.insert(edit.range.clone());
+                code_action.add_edit(&document.uri, edit);
+                empty = false;
+            }
+        }
+    }
+    Ok((!empty).then_some(code_action))
+}
 
 type SameSubjectData = Vec<TextRange>;
 

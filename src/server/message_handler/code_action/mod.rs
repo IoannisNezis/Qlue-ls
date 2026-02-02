@@ -91,6 +91,9 @@ fn generate_code_actions(
         ));
     }
     // NOTE: Global code actions
+    if let Some(code_action) = same_subject::contract_all_triple_groups(server, document, root)? {
+        code_actions.push(code_action);
+    }
 
     return Ok(code_actions);
 }

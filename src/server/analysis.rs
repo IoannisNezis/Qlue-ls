@@ -17,7 +17,7 @@ pub fn namespace_is_declared(
 }
 
 pub fn find_all_uncompacted_iris(
-    server: &mut Server,
+    server: &Server,
     document_uri: &str,
 ) -> Result<Vec<Iri>, LSPError> {
     let root = server.state.get_cached_parse_tree(document_uri)?;

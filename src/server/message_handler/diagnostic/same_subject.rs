@@ -13,7 +13,7 @@ use ll_sparql_parser::ast::{AstNode, GroupGraphPattern, QueryUnit, Triple};
 pub static CODE: LazyLock<DiagnosticCode> =
     LazyLock::new(|| DiagnosticCode::String("same-subject".to_string()));
 
-pub(super) fn diagnostics(
+pub(crate) fn diagnostics(
     document: &TextDocumentItem,
     query_unit: &QueryUnit,
     _server: &Server,

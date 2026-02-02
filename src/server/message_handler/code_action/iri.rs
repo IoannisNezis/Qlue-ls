@@ -11,18 +11,18 @@ use crate::server::{
     },
 };
 
-pub(super) fn code_actions(server: &mut Server, document_uri: String) -> Vec<CodeAction> {
+pub(super) fn code_actions(server: &Server, document_uri: String) -> Vec<CodeAction> {
     shorten_all_uris(server, &document_uri)
         .into_iter()
         .collect()
 }
 
 // TODO: Handle errors properly.
-fn shorten_all_uris(server: &mut Server, document_uri: &String) -> Option<CodeAction> {
+fn shorten_all_uris(server: &Server, document_uri: &String) -> Option<CodeAction> {
     let mut code_action = CodeAction::new("Shorten all URI's", Some(CodeActionKind::Refactor));
     let uncompacted_uris = find_all_uncompacted_iris(server, document_uri).ok()?;
     let mut declared_uri_prefix_set: HashSet<String> =
-        find_all_prefix_declarations(&mut server.state, document_uri)
+        find_all_prefix_declarations(&server.state, document_uri)
             .ok()?
             .into_iter()
             .filter_map(|prefix_declaration| prefix_declaration.raw_uri_prefix())

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - contract triples on format (configurable)
+- new code-action: contract all triples with same subject at once
 
 ## [1.1.18] - 2025-01-25
 

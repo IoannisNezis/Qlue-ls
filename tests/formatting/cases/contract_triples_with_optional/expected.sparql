@@ -1,5 +1,5 @@
 SELECT * WHERE {
   ?person <http://name> "John" ;
           <http://age> 30 ;
-          <http://city> "NYC" . # Person name # Person age
+          <http://city> "NYC" .
 }

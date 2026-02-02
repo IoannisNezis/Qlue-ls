@@ -9,7 +9,10 @@ use crate::server::{
         errors::{ErrorCode, LSPError},
         textdocument::{Range, TextEdit},
     },
-    message_handler::{code_action::same_subject::contract_triples, diagnostic},
+    message_handler::{
+        code_action::same_subject::{contract_triples_from_diagnostic},
+        diagnostic,
+    },
 };
 use ll_sparql_parser::syntax_kind::SyntaxKind;
 use log::error;
@@ -29,7 +32,7 @@ pub(super) fn get_quickfix(
         } else if code == &*diagnostic::unused_prefix_declaration::CODE {
             remove_prefix_declaration(server, document_uri, diagnostic)
         } else if code == &*diagnostic::same_subject::CODE {
-            contract_triples(server, document_uri, diagnostic)
+            contract_triples_from_diagnostic(server, document_uri, diagnostic)
         } else {
             log::warn!("Unknown diagnostic code: {:?}", code);
             Ok(None)

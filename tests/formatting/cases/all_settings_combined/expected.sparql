@@ -5,6 +5,6 @@ SELECT ?name ?age
 WHERE {
     ?person foaf:name ?name ;
             foaf:age ?age ;
-            rdf:type foaf:Person
+            rdf:type foaf:Person .
     FILTER (?age > 18)
 }

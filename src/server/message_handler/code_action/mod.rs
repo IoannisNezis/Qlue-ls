@@ -1,6 +1,6 @@
 mod iri;
 mod quickfix;
-mod same_subject;
+pub(crate) mod same_subject;
 mod select;
 mod variable;
 use crate::server::{
@@ -91,7 +91,9 @@ fn generate_code_actions(
         ));
     }
     // NOTE: Global code actions
-    if let Some(code_action) = same_subject::contract_all_triple_groups(server, document, root)? {
+    if let Some(code_action) =
+        same_subject::contract_all_triple_groups(document, root, &server.settings.format)?
+    {
         code_actions.push(code_action);
     }
 

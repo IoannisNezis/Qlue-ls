@@ -1,5 +1,20 @@
-SELECT * WHERE {
-  ?person <http://name> "John" .
-  ?person <http://age> 30 .
-  ?person <http://city> "NYC" .
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?monarch (SAMPLE(?image_) AS ?image) (MIN(?start_time_) AS ?start_time) (MAX(?end_time_) AS ?end_time) WHERE {
+  ?monarch p:P39 ?monarch_position_held .
+  ?monarch_position_held ps:P39 ?position_held .
+  ?position_held wdt:P361 wd:Q645968 .
+  ?monarch_position_held pq:P580 ?start_time_ .
+  OPTIONAL {
+    ?monarch_position_held pq:P582 ?end_time_
+  }
+  ?monarch wdt:P18 ?image_ .
+  ?monarch rdfs:label ?monarch_label .
+  FILTER (LANG(?monarch_label) = "en") .
 }
+GROUP BY ?monarch
+ORDER BY DESC(?start_time)

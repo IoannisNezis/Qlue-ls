@@ -1,15 +1,18 @@
 use std::collections::HashSet;
 
-use crate::server::{
-    Server,
-    lsp::{
-        CodeAction,
-        base_types::LSPAny,
-        diagnostic::Diagnostic,
-        errors::{ErrorCode, LSPError},
-        textdocument::{Position, Range, TextDocumentItem, TextEdit},
+use crate::{
+    FormatSettings,
+    server::{
+        Server,
+        lsp::{
+            CodeAction,
+            base_types::LSPAny,
+            diagnostic::Diagnostic,
+            errors::{ErrorCode, LSPError},
+            textdocument::{Position, Range, TextDocumentItem, TextEdit},
+        },
+        message_handler::diagnostic::same_subject::find_all_triple_groups,
     },
-    message_handler::diagnostic,
 };
 use ll_sparql_parser::{
     SyntaxNode,
@@ -19,10 +22,10 @@ use ll_sparql_parser::{
 use text_size::{TextRange, TextSize};
 use unicode_width::UnicodeWidthChar;
 
-pub(super) fn contract_all_triple_groups(
-    server: &Server,
+pub(crate) fn contract_all_triple_groups(
     document: &TextDocumentItem,
     root: SyntaxNode,
+    format_settings: &FormatSettings,
 ) -> Result<Option<CodeAction>, LSPError> {
     let query_unit = {
         match QueryUnit::cast(root) {
@@ -30,19 +33,14 @@ pub(super) fn contract_all_triple_groups(
             None => return Ok(None),
         }
     };
-    let diagnostics = {
-        match diagnostic::same_subject::diagnostics(document, &query_unit, server) {
-            Some(x) => x,
-            None => return Ok(None),
-        }
-    };
+    let groups = find_all_triple_groups(&query_unit);
 
     let mut code_action = CodeAction::new("Contract all triples with same subject", None);
     let mut empty = true;
     let mut ranges: HashSet<Range> = HashSet::new();
-    for action in diagnostics
+    for action in groups
         .into_iter()
-        .map(|diagnostic| contract_triples(server, &document.uri, diagnostic))
+        .map(|(_subject, group)| contract_triples(group, document, format_settings))
     {
         for edit in action?
             .and_then(|action| action.edit.changes)
@@ -69,9 +67,9 @@ pub(super) fn contract_all_triple_groups(
 
 type SameSubjectData = Vec<TextRange>;
 
-pub(crate) fn contract_triples(
+pub(super) fn contract_triples_from_diagnostic(
     server: &Server,
-    document_uri: &String,
+    document_uri: &str,
     diagnostic: Diagnostic,
 ) -> Result<Option<CodeAction>, LSPError> {
     let data = extract_data(&diagnostic).ok_or(LSPError::new(
@@ -107,6 +105,14 @@ pub(crate) fn contract_triples(
         }
         triples.push(triple);
     }
+    contract_triples(triples, document, &server.settings.format)
+}
+
+pub(crate) fn contract_triples(
+    triples: Vec<Triple>,
+    document: &TextDocumentItem,
+    format_settings: &FormatSettings,
+) -> Result<Option<CodeAction>, LSPError> {
     let mut code_action = CodeAction::new(
         "contract triples with same subject",
         Some(crate::server::lsp::CodeActionKind::QuickFix),
@@ -136,7 +142,7 @@ pub(crate) fn contract_triples(
             .map(|next| next.text_range().end())
             .unwrap_or(range.end());
         code_action.add_edit(
-            document_uri,
+            &document.uri,
             TextEdit::new(
                 Range::from_byte_offset_range(TextRange::new(start, end), &document.text).unwrap(),
                 "",
@@ -144,23 +150,36 @@ pub(crate) fn contract_triples(
         );
     }
     if let Some(triple) = triples.first() {
-        // NOTE: here the indentation is computed.
-        let offset = triple
-            .properties_list_path()
-            .unwrap()
-            .syntax()
-            .text_range()
-            .start();
+        let indent_string = {
+            let indentation = if format_settings.align_predicates {
+                let offset = triple
+                    .properties_list_path()
+                    .unwrap()
+                    .syntax()
+                    .text_range()
+                    .start();
+                document.text[..offset.into()]
+                    .chars()
+                    .rev()
+                    .take_while(|char| char != &'\n')
+                    .fold(0, |acc, char| acc + char.width().unwrap_or(0))
+            } else {
+                let offset = triple
+                    .subject()
+                    .map(|subject| subject.syntax().text_range().start().into())
+                    .unwrap_or(0);
+                let subject_indentation = document.text[..offset]
+                    .chars()
+                    .rev()
+                    .take_while(|char| char != &'\n')
+                    .fold(0, |acc, char| acc + char.width().unwrap_or(0));
+                subject_indentation + format_settings.tab_size.unwrap_or(2) as usize
+            };
 
-        let indentation = document.text[..offset.into()]
-            .chars()
-            .rev()
-            .take_while(|char| char != &'\n')
-            .fold(0, |acc, char| acc + char.width().unwrap_or(0));
-
-        let indent_string = " ".repeat(indentation);
+            " ".repeat(indentation)
+        };
         code_action.add_edit(
-            document_uri,
+            &document.uri,
             TextEdit::new(
                 Range::empty(
                     Position::from_byte_index(triple.syntax().text_range().end(), &document.text)

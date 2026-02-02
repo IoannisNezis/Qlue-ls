@@ -18,67 +18,69 @@ pub(crate) fn diagnostics(
     query_unit: &QueryUnit,
     _server: &Server,
 ) -> Option<Vec<Diagnostic>> {
+    let groups = find_all_triple_groups(query_unit);
     Some(
-        query_unit
-            .syntax()
-            .descendants()
-            .filter_map(GroupGraphPattern::cast)
-            .flat_map(|ggp| {
-                let triples: Vec<_> = ggp
-                    .triple_blocks()
-                    .into_iter()
-                    .flat_map(|tb| tb.triples())
-                    .collect();
-                let mut groups: HashMap<String, Vec<Triple>> = HashMap::new();
-                for triple in triples.into_iter().filter(|triple| !triple.has_error()) {
-                    if let Some(subject) = triple.subject() {
-                        groups
-                            .entry(subject.text())
-                            .and_modify(|bucket| bucket.push(triple.clone()))
-                            .or_insert(vec![triple]);
-                    }
-                }
-                groups
-                    .into_values()
-                    .filter_map(|group| {
-                        (group.len() >= 2).then_some({
-                            let ranges = LSPAny::LSPArray(
-                                group
-                                    .iter()
-                                    .map(|triple| {
-                                        let range = triple.syntax().text_range();
-                                        LSPAny::LSPObject(HashMap::from_iter([
-                                            (
-                                                "start".to_string(),
-                                                LSPAny::Uinteger(range.start().into()),
-                                            ),
-                                            (
-                                                "end".to_string(),
-                                                LSPAny::Uinteger(range.end().into()),
-                                            ),
-                                        ]))
-                                    })
-                                    .collect(),
-                            );
-                            group.into_iter().map(move |triple| Diagnostic {
-                                range: Range::from_byte_offset_range(
-                                    triple.syntax().text_range(),
-                                    &document.text,
-                                )
-                                .expect("triple text range should be in text"),
-                                severity: DiagnosticSeverity::Information,
-                                code: Some((*CODE).clone()),
-                                source: None,
-                                message: format!(
-                                    "Triple with same subject \"{}\" can be contracted",
-                                    triple.subject().unwrap().text()
-                                ),
-                                data: Some(ranges.clone()),
-                            })
+        groups
+            .into_iter()
+            .flat_map(|(subject, triples)| {
+                let ranges = LSPAny::LSPArray(
+                    triples
+                        .iter()
+                        .map(|triple| {
+                            let range = triple.syntax().text_range();
+                            LSPAny::LSPObject(HashMap::from_iter([
+                                ("start".to_string(), LSPAny::Uinteger(range.start().into())),
+                                ("end".to_string(), LSPAny::Uinteger(range.end().into())),
+                            ]))
                         })
-                    })
-                    .flatten()
+                        .collect(),
+                );
+                triples.into_iter().map(move |triple| Diagnostic {
+                    range: Range::from_byte_offset_range(
+                        triple.syntax().text_range(),
+                        &document.text,
+                    )
+                    .expect("triple text range should be in text"),
+                    severity: DiagnosticSeverity::Information,
+                    code: Some((*CODE).clone()),
+                    source: None,
+                    message: format!(
+                        "Triple with same subject \"{}\" can be contracted",
+                        subject
+                    ),
+                    data: Some(ranges.clone()),
+                })
             })
             .collect(),
     )
+}
+
+pub(crate) fn find_all_triple_groups(query_unit: &QueryUnit) -> Vec<(String, Vec<Triple>)> {
+    let mut result = Vec::new();
+    for ggp in query_unit
+        .syntax()
+        .descendants()
+        .filter_map(GroupGraphPattern::cast)
+    {
+        let triples: Vec<_> = ggp
+            .triple_blocks()
+            .into_iter()
+            .flat_map(|tb| tb.triples())
+            .collect();
+        let mut groups: HashMap<String, Vec<Triple>> = HashMap::new();
+        for triple in triples.into_iter().filter(|triple| !triple.has_error()) {
+            if let Some(subject) = triple.subject() {
+                groups
+                    .entry(subject.text())
+                    .and_modify(|group| group.push(triple.clone()))
+                    .or_insert(vec![triple]);
+            }
+        }
+        for (subject, triples) in groups.into_iter() {
+            if triples.len() >= 2 {
+                result.push((subject, triples));
+            }
+        }
+    }
+    result
 }

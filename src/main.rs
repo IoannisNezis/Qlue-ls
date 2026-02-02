@@ -22,8 +22,6 @@
 //! - [`server`]: Core server implementation
 //! - [`stdio_reader`]: LSP message framing for stdin
 
-mod server;
-mod sparql;
 mod stdio_reader;
 
 use std::{
@@ -35,6 +33,7 @@ use std::{
     rc::Rc,
 };
 
+use clap::{Parser, Subcommand};
 use futures::lock::Mutex;
 use log::LevelFilter;
 use log4rs::{
@@ -43,11 +42,11 @@ use log4rs::{
     config::{Appender, Root},
     encode::pattern::PatternEncoder,
 };
-use server::{Server, format_raw, handle_message};
-
-use clap::{Parser, Subcommand};
-use stdio_reader::StdioMessages;
 use tokio::{runtime, task::LocalSet};
+
+use qlue_ls::{format_raw, handle_message, Server};
+
+use crate::stdio_reader::StdioMessages;
 
 /// qlue-ls: An SPARQL language server and formatter
 #[derive(Debug, Parser)]

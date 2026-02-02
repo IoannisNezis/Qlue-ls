@@ -40,7 +40,7 @@ mod completion;
 mod diagnostic;
 mod execute;
 mod folding_range;
-mod formatting;
+pub(crate) mod formatting;
 mod hover;
 mod identification;
 mod jump;
@@ -71,8 +71,6 @@ use textdocument_synchronization::{
 };
 use workspace::handle_workspace_edit_response;
 
-pub use formatting::{format_raw, format_with_settings};
-
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::task::spawn_local;
 #[cfg(target_arch = "wasm32")]
@@ -94,8 +92,8 @@ use crate::server::{
 use self::formatting::handle_format_request;
 
 use super::{
-    lsp::{errors::LSPError, rpc::deserialize_message},
     Server,
+    lsp::{errors::LSPError, rpc::deserialize_message},
 };
 
 pub(super) async fn dispatch(

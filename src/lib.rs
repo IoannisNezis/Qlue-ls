@@ -6,9 +6,10 @@
 //! # Native Usage
 //!
 //! For native builds (including tests), use the re-exported server types:
-//! - [`LspServer`]: The main server struct
-//! - [`handle_lsp_message`]: Process incoming LSP messages
+//! - [`Server`] (or [`LspServer`]): The main server struct
+//! - [`handle_message`] (or [`handle_lsp_message`]): Process incoming LSP messages
 //! - [`format_raw`]: Format SPARQL queries directly
+//! - [`format_with_settings`]: Format with custom settings
 //!
 //! # WASM Usage
 //!
@@ -25,10 +26,12 @@ mod server;
 mod sparql;
 
 // Re-export core server types for all targets (used by tests and native builds)
-pub use server::format_raw;
-pub use server::format_with_settings;
-pub use server::FormatSettings;
-pub use server::{Server as LspServer, handle_message as handle_lsp_message};
+pub use crate::server::configuration::FormatSettings;
+pub use crate::server::message_handler::formatting::{format_raw, format_with_settings};
+pub use crate::server::{handle_message, Server};
+
+// Aliases for more descriptive names (for external consumers)
+pub use crate::server::{handle_message as handle_lsp_message, Server as LspServer};
 
 // WASM-specific imports and exports
 #[cfg(target_family = "wasm")]

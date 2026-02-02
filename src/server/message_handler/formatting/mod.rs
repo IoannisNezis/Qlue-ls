@@ -55,7 +55,10 @@ pub fn format_raw(text: String) -> Result<String, String> {
 ///
 /// This function is intended for testing and allows specifying custom format settings.
 /// Also checks for edit collisions (overlapping edits) which would indicate a formatter bug.
-pub fn format_with_settings(text: String, format_settings: FormatSettings) -> Result<String, String> {
+pub fn format_with_settings(
+    text: String,
+    format_settings: FormatSettings,
+) -> Result<String, String> {
     let mut document = TextDocumentItem::new("tmp", &text);
     let (root, _) = parse(&text);
     let edits = format_document(

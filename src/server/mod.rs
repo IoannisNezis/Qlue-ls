@@ -29,15 +29,13 @@
 mod analysis;
 mod capabilities;
 mod common;
-mod configuration;
+pub(crate) mod configuration;
 mod lsp;
 mod sparql_operations;
 mod state;
 mod tools;
 
-mod message_handler;
-
-use std::{any::type_name, fmt::Debug, rc::Rc};
+pub(crate) mod message_handler;
 
 use capabilities::create_capabilities;
 use configuration::Settings;
@@ -49,17 +47,9 @@ use lsp::{
     rpc::{RecoverId, ResponseMessage},
 };
 use message_handler::dispatch;
-
-// WARNING: This is a temporary soloution to export the format function directly
-// will remove soon (12.12.24)
-#[allow(unused_imports)]
-pub use message_handler::{format_raw, format_with_settings};
-
-// Export FormatSettings for testing
-pub use configuration::FormatSettings;
-
 use serde::Serialize;
 use state::ServerState;
+use std::{any::type_name, fmt::Debug, rc::Rc};
 use tools::Tools;
 use wasm_bindgen::prelude::wasm_bindgen;
 

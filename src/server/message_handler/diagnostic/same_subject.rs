@@ -23,12 +23,11 @@ pub(crate) fn diagnostics(
             .syntax()
             .descendants()
             .filter_map(GroupGraphPattern::cast)
-            .map(|ggp| {
+            .flat_map(|ggp| {
                 let triples: Vec<_> = ggp
                     .triple_blocks()
                     .into_iter()
-                    .map(|tb| tb.triples())
-                    .flatten()
+                    .flat_map(|tb| tb.triples())
                     .collect();
                 let mut groups: HashMap<String, Vec<Triple>> = HashMap::new();
                 for triple in triples.into_iter().filter(|triple| !triple.has_error()) {
@@ -80,7 +79,6 @@ pub(crate) fn diagnostics(
                     })
                     .flatten()
             })
-            .flatten()
             .collect(),
     )
 }

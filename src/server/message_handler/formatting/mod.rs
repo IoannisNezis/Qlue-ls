@@ -22,7 +22,7 @@ pub(super) async fn handle_format_request(
     let document = server.state.get_document(request.get_document_uri())?;
     let root = server
         .state
-        .get_cached_parse_tree(&request.get_document_uri())?;
+        .get_cached_parse_tree(request.get_document_uri())?;
     let edits = format_document(
         document,
         root,

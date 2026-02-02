@@ -105,7 +105,7 @@ fn shorten_uri(
                 serde_parse(data)?;
             let mut code_action = CodeAction::new("Shorten URI", Some(CodeActionKind::QuickFix));
             code_action.add_edit(document_uri, TextEdit::new(diagnostic.range, &curie));
-            if !namespace_is_declared(&mut server.state, document_uri, &prefix)? {
+            if !namespace_is_declared(&server.state, document_uri, &prefix)? {
                 code_action.add_edit(
                     document_uri,
                     TextEdit::new(

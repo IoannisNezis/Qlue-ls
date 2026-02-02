@@ -104,7 +104,7 @@ mod test {
              }"
         ));
         server.state = state;
-        let code_action = shorten_all_uris(&mut server, &"uri".to_string()).unwrap();
+        let code_action = shorten_all_uris(&server, &"uri".to_string()).unwrap();
         assert_eq!(
             code_action.edit.changes.unwrap().get("uri").unwrap(),
             &vec![
@@ -129,7 +129,7 @@ mod test {
              }"
         ));
         server.state = state;
-        let code_action = shorten_all_uris(&mut server, &"uri".to_string()).unwrap();
+        let code_action = shorten_all_uris(&server, &"uri".to_string()).unwrap();
         assert_eq!(
             code_action.edit.changes.unwrap().get("uri").unwrap(),
             &vec![

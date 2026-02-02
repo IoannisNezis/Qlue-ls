@@ -10,7 +10,7 @@
 
 use qlue_ls::FormatSettings;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Discovers all test case directories under tests/formatting/cases/
 fn discover_test_cases() -> Vec<PathBuf> {
@@ -41,7 +41,7 @@ fn discover_test_cases() -> Vec<PathBuf> {
 }
 
 /// Runs a single test case
-fn run_test_case(case_dir: &PathBuf) {
+fn run_test_case(case_dir: &Path) {
     let case_name = case_dir
         .file_name()
         .expect("Case dir has no name")

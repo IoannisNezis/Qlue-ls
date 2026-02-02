@@ -11,10 +11,10 @@ pub(super) async fn handle_workspace_edit_response(
     _server_rc: Rc<Mutex<Server>>,
     response: WorkspaceEditResponse,
 ) -> Result<(), LSPError> {
-    if let Some(result) = response.result {
-        if !result.applied {
-            log::warn!("Work space edit did not get applied");
-        }
+    if let Some(result) = response.result
+        && !result.applied
+    {
+        log::warn!("Work space edit did not get applied");
     }
     Ok(())
 }

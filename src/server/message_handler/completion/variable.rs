@@ -64,13 +64,12 @@ pub(super) async fn completions(
     if matches!(
         environment.location,
         CompletionLocation::Object(_) | CompletionLocation::BlankNodeObject(_)
-    ) {
-        if let Some(prefixed_name) = environment
-            .anchor_token
-            .clone()
-            .and_then(|token| token.parent())
-            .and_then(PrefixedName::cast)
-        {
+    ) && let Some(prefixed_name) = environment
+        .anchor_token
+        .clone()
+        .and_then(|token| token.parent())
+        .and_then(PrefixedName::cast)
+    {
             let mut object_name = server_rc
                 .lock()
                 .await
@@ -120,38 +119,36 @@ pub(super) async fn completions(
                     command: None,
                 },
             );
-            // NOTE: If subject is a variable:
-            // append ?[variable]_[object_name] as variable completion
-            if let CompletionLocation::Object(triple) = environment.location.clone() {
-                if let Some(var) = triple
-                    .subject()
-                    .map(|subject| subject.syntax().clone())
-                    .and_then(VarOrTerm::cast)
-                    .and_then(|var_or_term| var_or_term.var())
-                {
-                    let subject_var_name = var.var_name();
-                    suggestions.insert(
-                        0,
-                        CompletionItem {
-                            label: format!("?{}_{}", subject_var_name, variable),
-                            label_details: None,
-                            kind: CompletionItemKind::Variable,
-                            detail: None,
-                            documentation: None,
-                            sort_text: Some("00001".to_string()),
-                            filter_text: Some(format!("?{}_{}", subject_var_name, variable)),
-                            insert_text: None,
-                            text_edit: Some(TextEdit::new(
-                                environment.replace_range.clone(),
-                                &format!("?{}_{}", subject_var_name, variable),
-                            )),
-                            insert_text_format: Some(InsertTextFormat::PlainText),
-                            additional_text_edits: None,
-                            command: None,
-                        },
-                    );
-                }
-            }
+        // NOTE: If subject is a variable:
+        // append ?[variable]_[object_name] as variable completion
+        if let CompletionLocation::Object(triple) = environment.location.clone()
+            && let Some(var) = triple
+                .subject()
+                .map(|subject| subject.syntax().clone())
+                .and_then(VarOrTerm::cast)
+                .and_then(|var_or_term| var_or_term.var())
+        {
+            let subject_var_name = var.var_name();
+            suggestions.insert(
+                0,
+                CompletionItem {
+                    label: format!("?{}_{}", subject_var_name, variable),
+                    label_details: None,
+                    kind: CompletionItemKind::Variable,
+                    detail: None,
+                    documentation: None,
+                    sort_text: Some("00001".to_string()),
+                    filter_text: Some(format!("?{}_{}", subject_var_name, variable)),
+                    insert_text: None,
+                    text_edit: Some(TextEdit::new(
+                        environment.replace_range.clone(),
+                        &format!("?{}_{}", subject_var_name, variable),
+                    )),
+                    insert_text_format: Some(InsertTextFormat::PlainText),
+                    additional_text_edits: None,
+                    command: None,
+                },
+            );
         }
     }
 

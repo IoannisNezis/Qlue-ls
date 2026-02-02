@@ -65,7 +65,7 @@ pub(super) fn completions(
                 .into_iter()
                 .flatten(),
         );
-        let vars = if group_vars.len() == 0 {
+        let vars = if group_vars.is_empty() {
             &availible_vars
         } else {
             &group_vars
@@ -86,7 +86,7 @@ pub(super) fn completions(
             .and_then(|sq| sq.soulution_modifier())
             .and_then(|sm| sm.group_clause());
         // NOTE: If no variables are selected, implicit GROUP BY is allowed.
-        if group_by.is_some() || result_vars.len() == 0 {
+        if group_by.is_some() || result_vars.is_empty() {
             let grouped_vars: HashSet<String> =
                 HashSet::from_iter(group_by.into_iter().flat_map(|group_by| {
                     group_by
@@ -99,7 +99,7 @@ pub(super) fn completions(
             items.extend(
                 ["COUNT", "SUM", "MIN", "MAX", "AVG", "SAMPLE"]
                     .into_iter()
-                    .map(|aggregate| {
+                    .flat_map(|aggregate| {
                         vars.iter().map(move |var| CompletionItem {
                             label: format!(
                                 "({aggregate}({var}) AS ?{}_{})",
@@ -122,8 +122,7 @@ pub(super) fn completions(
                             additional_text_edits: None,
                             command: None,
                         })
-                    })
-                    .flatten(),
+                    }),
             );
 
             items.push(CompletionItem {

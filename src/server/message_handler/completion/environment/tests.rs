@@ -312,5 +312,5 @@ fn localize_order_condition() {
     //           0123456789012345678901234567
     let input = "SELECT * WHERE {} ORDER BY ";
     let (root, _) = parse_query(input);
-    assert!(matches!(get_trigger_token(&root, 27.into()), Some(_)));
+    assert!(get_trigger_token(&root, 27.into()).is_some());
 }

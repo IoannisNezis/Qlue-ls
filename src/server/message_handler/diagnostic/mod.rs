@@ -65,7 +65,7 @@ pub(super) async fn handle_diagnostic_request(
 fn declare_and_undeclare_prefixes(
     server: &mut Server,
     request: &DiagnosticRequest,
-    diagnostics: &Vec<Diagnostic>,
+    diagnostics: &[Diagnostic],
 ) {
     let document_uri = request.params.text_document.uri.clone();
     let mut prefixes = HashSet::<&str>::new();
@@ -81,7 +81,7 @@ fn declare_and_undeclare_prefixes(
                                     prefixes.add_missing.is_some_and(identity)
                                 }) =>
                         {
-                            declare_prefix(&server, &document_uri, diagnostic.clone())
+                            declare_prefix(server, &document_uri, diagnostic.clone())
                         }
                         Some(code)
                             if code == &*unused_prefix_declaration::CODE

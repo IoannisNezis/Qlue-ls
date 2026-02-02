@@ -23,7 +23,7 @@ pub(super) async fn completions(
 ) -> Result<CompletionList, CompletionError> {
     // NOTE: Compute template Context
     let mut template_context = environment.template_context().await;
-    template_context.extend(local_template_context(&environment)?);
+    template_context.extend(local_template_context(environment)?);
 
     let (sender, receiver) = oneshot::channel::<CompletionList>();
 
@@ -53,7 +53,7 @@ pub(super) async fn completions(
 
     match dispatch_completion_query(
         server_rc,
-        &environment,
+        environment,
         template_context,
         CompletionTemplate::PredicateCompletionContextSensitive,
         true,

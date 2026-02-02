@@ -41,8 +41,10 @@ pub(super) fn code_actions(
     );
     let suffix = format!("\n{}}}\n}}", indent);
     let text = select_query.text();
-    let indent_edits = text.char_indices().filter_map(|(idx, char)| {
-        (char == '\n').then(|| {
+    let indent_edits = text
+        .char_indices()
+        .filter(|(_, char)| *char == '\n')
+        .map(|(idx, _)| {
             TextEdit::new(
                 Range::from_byte_offset_range(
                     TextRange::empty(
@@ -54,12 +56,11 @@ pub(super) fn code_actions(
                 .unwrap(),
                 &indent.repeat(2),
             )
-        })
-    });
+        });
     let mut edits = Vec::new();
     edits.push(TextEdit::new(
         Range::empty(Position::from_byte_index(
-            select_query.syntax().text_range().end().into(),
+            select_query.syntax().text_range().end(),
             &document.text,
         )?),
         &suffix,
@@ -67,7 +68,7 @@ pub(super) fn code_actions(
     edits.extend(indent_edits);
     edits.push(TextEdit::new(
         Range::empty(Position::from_byte_index(
-            select_query.syntax().text_range().start().into(),
+            select_query.syntax().text_range().start(),
             &document.text,
         )?),
         &prefix,

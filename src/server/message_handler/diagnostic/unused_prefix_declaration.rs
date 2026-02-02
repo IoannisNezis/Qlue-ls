@@ -47,9 +47,7 @@ pub(super) fn diagnostics(
                             "'{}' is declared here, but was never used\n",
                             prefix_declaration.prefix().unwrap_or("prefix".to_string())
                         ),
-                        data: prefix_declaration
-                            .prefix()
-                            .map(|prefix| LSPAny::String(prefix)),
+                        data: prefix_declaration.prefix().map(LSPAny::String),
                     })
             })
             .collect(),

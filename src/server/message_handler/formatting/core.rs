@@ -241,7 +241,7 @@ impl<'a> Walker<'a> {
                     .map(|(position, length)| {
                         SimplifiedTextEdit::new(
                             TextRange::empty(position),
-                            &" ".repeat((max_length - length).into()),
+                            &" ".repeat(max_length - length),
                         )
                     })
                     .collect()
@@ -618,32 +618,29 @@ impl<'a> Walker<'a> {
             SyntaxKind::TriplesBlock => {
                 let syntax_node = node.as_node()?;
                 // Only add linebreak if this is a nested TriplesBlock
-                if syntax_node.prev_sibling().is_none() {
-                    return None;
-                }
+                syntax_node.prev_sibling()?;
                 // If contract_triples is enabled, check if this triple should be contracted
                 // (i.e., has same subject as previous triple) - if so, skip the linebreak
                 // as it's handled by the contraction edit
-                if self.settings.contract_triples {
-                    if let Some(parent) = syntax_node.parent() {
-                        if parent.kind() == SyntaxKind::TriplesBlock {
-                            // This is a nested TriplesBlock - check if it should be contracted
-                            let prev_triple = parent
-                                .children()
-                                .find(|c| c.kind() == SyntaxKind::TriplesSameSubjectPath)
-                                .and_then(Triple::cast);
-                            let curr_triple = syntax_node
-                                .children()
-                                .find(|c| c.kind() == SyntaxKind::TriplesSameSubjectPath)
-                                .and_then(Triple::cast);
-                            if let (Some(prev), Some(curr)) = (prev_triple, curr_triple) {
-                                let prev_subject = prev.subject().map(|s| s.syntax().to_string());
-                                let curr_subject = curr.subject().map(|s| s.syntax().to_string());
-                                if prev_subject == curr_subject {
-                                    // Same subject - contraction edit handles the formatting
-                                    return None;
-                                }
-                            }
+                if self.settings.contract_triples
+                    && let Some(parent) = syntax_node.parent()
+                    && parent.kind() == SyntaxKind::TriplesBlock
+                {
+                    // This is a nested TriplesBlock - check if it should be contracted
+                    let prev_triple = parent
+                        .children()
+                        .find(|c| c.kind() == SyntaxKind::TriplesSameSubjectPath)
+                        .and_then(Triple::cast);
+                    let curr_triple = syntax_node
+                        .children()
+                        .find(|c| c.kind() == SyntaxKind::TriplesSameSubjectPath)
+                        .and_then(Triple::cast);
+                    if let (Some(prev), Some(curr)) = (prev_triple, curr_triple) {
+                        let prev_subject = prev.subject().map(|s| s.syntax().to_string());
+                        let curr_subject = curr.subject().map(|s| s.syntax().to_string());
+                        if prev_subject == curr_subject {
+                            // Same subject - contraction edit handles the formatting
+                            return None;
                         }
                     }
                 }
@@ -864,13 +861,13 @@ impl<'a> Walker<'a> {
         for group in &groups {
             if group.len() < 2 {
                 // Single triple - just add space before dot
-                if let Some(item) = group.first() {
-                    if let Some(ref dot) = item.dot {
-                        edits.push(SimplifiedTextEdit::new(
-                            TextRange::empty(dot.text_range().start()),
-                            " ",
-                        ));
-                    }
+                if let Some(item) = group.first()
+                    && let Some(ref dot) = item.dot
+                {
+                    edits.push(SimplifiedTextEdit::new(
+                        TextRange::empty(dot.text_range().start()),
+                        " ",
+                    ));
                 }
             } else {
                 // Multiple triples with same subject - contract them
@@ -898,25 +895,25 @@ impl<'a> Walker<'a> {
                     }
 
                     // Handle subject deletion for non-first triples in the group
-                    if idx > 0 {
-                        if let Some(subject) = item.triple.subject() {
-                            // NOTE: Determine indentation
-                            // We use first_subject_width (not +1) because the separation
-                            // edit between subject and property list will add a space
-                            let indent = if self.settings.align_predicates {
-                                " ".repeat(first_subject_width)
-                            } else {
-                                // Use one less space since separation will add one
-                                " ".to_string()
-                            };
+                    if idx > 0
+                        && let Some(subject) = item.triple.subject()
+                    {
+                        // NOTE: Determine indentation
+                        // We use first_subject_width (not +1) because the separation
+                        // edit between subject and property list will add a space
+                        let indent = if self.settings.align_predicates {
+                            " ".repeat(first_subject_width)
+                        } else {
+                            // Use one less space since separation will add one
+                            " ".to_string()
+                        };
 
-                            // Replace only the subject text (not the space after it)
-                            // The separation edit will handle the space between subject and property list
-                            edits.push(SimplifiedTextEdit::new(
-                                subject.syntax().text_range(),
-                                &format!("{}{}", self.get_linebreak(indentation), indent),
-                            ));
-                        }
+                        // Replace only the subject text (not the space after it)
+                        // The separation edit will handle the space between subject and property list
+                        edits.push(SimplifiedTextEdit::new(
+                            subject.syntax().text_range(),
+                            &format!("{}{}", self.get_linebreak(indentation), indent),
+                        ));
                     }
                 }
             }

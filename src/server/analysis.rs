@@ -99,7 +99,7 @@ mod tests {
              }"
         ));
         server.state = state;
-        let uncompacted_iris = find_all_uncompacted_iris(&mut server, "uri").unwrap();
+        let uncompacted_iris = find_all_uncompacted_iris(&server, "uri").unwrap();
         assert_eq!(
             uncompacted_iris
                 .into_iter()

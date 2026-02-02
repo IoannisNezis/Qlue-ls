@@ -61,7 +61,7 @@ fn generate_code_actions(
 ) -> Result<Vec<CodeAction>, LSPError> {
     let document_uri = &params.text_document.uri;
     let document = server.state.get_document(document_uri)?;
-    let root = server.state.get_cached_parse_tree(&document_uri)?;
+    let root = server.state.get_cached_parse_tree(document_uri)?;
     let range = params
         .range
         .to_byte_index_range(&document.text)
@@ -86,7 +86,7 @@ fn generate_code_actions(
     ) {
         code_actions.extend(select::code_actions(
             selected_element,
-            &document,
+            document,
             server.settings.format.tab_size.unwrap_or(2),
         ));
     }
@@ -95,5 +95,5 @@ fn generate_code_actions(
         code_actions.push(code_action);
     }
 
-    return Ok(code_actions);
+    Ok(code_actions)
 }

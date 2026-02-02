@@ -319,7 +319,7 @@ impl CompletionEnvironment {
         let trigger_token = get_trigger_token(&tree, offset);
         let backend = trigger_token
             .as_ref()
-            .and_then(|token| resolve_backend(&server, &QueryUnit::cast(tree.clone())?, &token));
+            .and_then(|token| resolve_backend(&server, &QueryUnit::cast(tree.clone())?, token));
         let anchor_token = trigger_token.and_then(|token| get_anchor_token(token, offset));
         let search_term = get_search_term(&tree, &anchor_token, offset);
         let continuations = get_continuations(&tree, &anchor_token);
@@ -613,7 +613,7 @@ fn get_replace_range(trigger_pos: &Position, search_term: &Option<String>) -> Ra
                     })
                     .unwrap_or(0),
         ),
-        end: trigger_pos.clone(),
+        end: *trigger_pos,
     }
 }
 

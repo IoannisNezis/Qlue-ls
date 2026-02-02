@@ -162,7 +162,7 @@ impl TextDocumentItem {
             let chr = self.text[byte_offset..]
                 .chars()
                 .next()
-                .expect(&format!("{} should be a valid utf-8 char offset and there should be a next character, since there is an unapplied change", byte_offset));
+                .unwrap_or_else(|| panic!("{} should be a valid utf-8 char offset and there should be a next character, since there is an unapplied change", byte_offset));
             match chr {
                 '\n' => {
                     cursor.line += 1;
@@ -373,8 +373,8 @@ impl Range {
 
     pub(crate) fn from_byte_offset_range(range: text_size::TextRange, text: &str) -> Option<Range> {
         Some(Range {
-            start: Position::from_byte_index(range.start().into(), text)?,
-            end: Position::from_byte_index(range.end().into(), text)?,
+            start: Position::from_byte_index(range.start(), text)?,
+            end: Position::from_byte_index(range.end(), text)?,
         })
     }
 }
@@ -774,7 +774,7 @@ mod tests {
         document.apply_text_edits(edits);
 
         // Document should have some content left
-        assert!(document.text.len() > 0);
+        assert!(!document.text.is_empty());
     }
 
     #[test]

@@ -78,8 +78,8 @@ pub(crate) fn contract_triples(
         ErrorCode::InvalidParams,
         "The same-subject diagnostic should have a array of ranges as data",
     ))?;
-    let document = server.state.get_document(&document_uri)?;
-    let root = server.state.get_cached_parse_tree(&document_uri)?;
+    let document = server.state.get_document(document_uri)?;
+    let root = server.state.get_cached_parse_tree(document_uri)?;
     let mut triples = Vec::new();
     for range in data {
         if !root.text_range().contains_range(range) {
@@ -199,7 +199,7 @@ fn extract_data(diagnostic: &Diagnostic) -> Option<SameSubjectData> {
                 return None;
             }
         }
-        return Some(res);
+        Some(res)
     } else {
         None
     }

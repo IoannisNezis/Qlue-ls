@@ -12,6 +12,7 @@ use std::time::Duration;
 use tokio::time::timeout;
 use urlencoding::encode;
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) async fn execute_query(
     _server_rc: Rc<Mutex<Server>>,
     url: String,
@@ -126,15 +127,13 @@ fn add_limit_offset_to_query(query: &str, limit: Option<usize>, offset: usize) -
     };
     let syntax_tree = QueryUnit::cast(parse_query(query).0)?;
     let select_query = syntax_tree.select_query()?;
+    let limit_clause = limit.map_or(String::new(), |limit| format!("LIMIT {limit}\n"));
     Some(format!(
-        "{}{}{}",
+        "{}SELECT * WHERE {{\n{}\n}}\n{}OFFSET {}{}",
         &query[0..select_query.syntax().text_range().start().into()],
-        format!(
-            "SELECT * WHERE {{\n{}\n}}\n{}OFFSET {}",
-            select_query.text(),
-            limit.map_or(String::new(), |limit| format!("LIMIT {limit}\n")),
-            offset
-        ),
+        select_query.text(),
+        limit_clause,
+        offset,
         &query[select_query.syntax().text_range().end().into()..]
     ))
 }

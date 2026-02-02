@@ -32,12 +32,11 @@ pub(super) async fn completions(
                 items: variable_completions
                     .items
                     .into_iter()
-                    .map(|variable_completion| {
+                    .flat_map(|variable_completion| {
                         ["DESC", "ASC"]
                             .into_iter()
                             .map(move |order| (order, variable_completion.label.clone()))
                     })
-                    .flatten()
                     .enumerate()
                     .map(|(idx, (order, var))| CompletionItem {
                         label: format!("{order}({var})"),

@@ -24,7 +24,7 @@ pub(super) async fn handle_hover_request(
         (
             server
                 .state
-                .get_cached_parse_tree(&request.get_document_uri())?,
+                .get_cached_parse_tree(request.get_document_uri())?,
             document.text.clone(),
         )
     };
@@ -38,15 +38,15 @@ pub(super) async fn handle_hover_request(
                 "The hover position is not inside the text document",
             )
         })?;
-    if let TokenAtOffset::Single(token) = root.token_at_offset(offset) {
-        if let Some(content) = match token.kind() {
+    if let TokenAtOffset::Single(token) = root.token_at_offset(offset)
+        && let Some(content) = match token.kind() {
             SyntaxKind::PNAME_LN | SyntaxKind::PNAME_NS | SyntaxKind::IRIREF => {
                 iri::hover(server_rc.clone(), root, token).await?
             }
             other => documentation::get_docstring_for_kind(other),
-        } {
-            hover_response.set_markdown_content(content.to_string());
         }
+    {
+        hover_response.set_markdown_content(content.to_string());
     }
     server_rc.lock().await.send_message(hover_response)
 }

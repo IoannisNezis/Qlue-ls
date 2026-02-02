@@ -39,7 +39,7 @@ pub(super) fn code_action(var: &Var, document: &TextDocumentItem) -> Option<Code
             )
         });
     if !result_vars.contains(&var.text())
-        && group_vars.map_or(true, |vars| vars.contains(&var.text()))
+        && group_vars.is_none_or(|vars| vars.contains(&var.text()))
     {
         let (offset, at_end) = select_clause
             .syntax()

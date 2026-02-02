@@ -72,7 +72,7 @@ pub(super) fn code_action(
         })
         .filter(|next| matches!(next.kind(), SyntaxKind::Dot))
         .and_then(|next| Position::from_byte_index(next.text_range().end(), &document.text))
-        .unwrap_or(start.clone());
+        .unwrap_or(start);
     let mut edits = vec![TextEdit::new(Range { start, end }, &label_triple)];
 
     // Add rdfs prefix if not declared
@@ -111,7 +111,7 @@ mod tests {
         let (root, _) = parse(text);
         root.descendants()
             .filter_map(Var::cast)
-            .find(|v| v.syntax().text().to_string() == var_name)
+            .find(|v| v.syntax().text() == var_name)
     }
 
     #[test]

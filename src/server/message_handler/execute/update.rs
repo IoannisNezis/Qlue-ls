@@ -62,7 +62,7 @@ pub(super) async fn handle_execute_update_request(
                 .send_message(ExecuteOperationResponse::error(
                     request.get_id(),
                     ExecuteOperationErrorData::InvalidFormat {
-                        query: query,
+                        query,
                         message: error,
                     },
                 ));

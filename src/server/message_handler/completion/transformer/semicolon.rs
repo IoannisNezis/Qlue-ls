@@ -113,8 +113,8 @@ impl CompletionTransformer for SemicolonTransformer {
             // Replace from dot start to replace_range start with semicolon + newline + indent
             // This removes the dot and any whitespace between it and the cursor position
             let dot_to_cursor_range = Range {
-                start: self.dot_start.clone(),
-                end: self.replace_range.start.clone(),
+                start: self.dot_start,
+                end: self.replace_range.start,
             };
             item.additional_text_edits = Some(vec![TextEdit {
                 range: dot_to_cursor_range,

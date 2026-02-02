@@ -104,9 +104,9 @@ impl Display for RDFTerm {
     }
 }
 
-impl Into<RDFValue> for RDFTerm {
-    fn into(self) -> RDFValue {
-        match self {
+impl From<RDFTerm> for RDFValue {
+    fn from(term: RDFTerm) -> RDFValue {
+        match term {
             RDFTerm::Uri { value, curie } => RDFValue::Uri { value, curie },
             RDFTerm::Literal {
                 value,

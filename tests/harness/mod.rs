@@ -3,6 +3,8 @@
 //! This module provides a `TestClient` that wraps the LSP server and captures
 //! all outgoing messages for verification in tests.
 
+#![allow(dead_code)]
+
 pub mod helpers;
 pub mod runtime;
 

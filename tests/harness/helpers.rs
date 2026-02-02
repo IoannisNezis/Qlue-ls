@@ -3,6 +3,8 @@
 //! These methods provide a convenient API for interacting with the LSP server
 //! during tests.
 
+#![allow(dead_code)]
+
 use super::TestClient;
 use serde_json::{json, Value};
 

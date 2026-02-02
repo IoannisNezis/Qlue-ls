@@ -39,8 +39,7 @@ pub(super) fn code_actions(var: &Var, document: &TextDocumentItem) -> Option<Vec
                 .select_clause()?
                 .syntax()
                 .text_range()
-                .end()
-                .into(),
+                .end(),
             &document.text,
         )?;
         let last_child = select_query
@@ -92,7 +91,7 @@ pub(super) fn code_actions(var: &Var, document: &TextDocumentItem) -> Option<Vec
                             &document.uri,
                             TextEdit::new(
                                 Range::new(end.line, end.character - 1, end.line, end.character),
-                                &insert,
+                                insert,
                             ),
                         );
                     } else {

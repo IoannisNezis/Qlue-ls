@@ -180,10 +180,8 @@ impl ServerState {
         ))?;
         if let Some((cached_uri, cached_version, cached_root)) =
             self.parse_tree_cache.borrow().as_ref()
-        {
-            if uri == cached_uri && *cached_version == document.version() {
-                return Ok(cached_root.clone());
-            }
+        && uri == cached_uri && *cached_version == document.version() {
+            return Ok(cached_root.clone());
         }
 
         let (root, _) = parse(&document.text);
@@ -209,6 +207,7 @@ impl ServerState {
         self.running_requests.insert(id, cancel_fn);
     }
 
+    #[allow(clippy::borrowed_box)]
     pub(crate) fn get_running_request(&mut self, id: &str) -> Option<&Box<dyn Fn()>> {
         self.running_requests.get(id)
     }

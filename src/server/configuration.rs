@@ -120,6 +120,7 @@ impl fmt::Display for CompletionTemplate {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum RequestMethod {
     GET,
     POST,
@@ -331,7 +332,7 @@ mod tests {
 
         assert_eq!(config.service.name, "TestBackend");
         assert_eq!(config.service.url, "https://example.com/sparql");
-        assert_eq!(config.default, false);
+        assert!(!config.default);
         assert_eq!(config.queries.len(), 5);
         assert!(
             config
@@ -445,7 +446,7 @@ mod tests {
 
         assert_eq!(config.service.name, "WikidataBackend");
         assert_eq!(config.service.url, "https://query.wikidata.org/sparql");
-        assert_eq!(config.default, false);
+        assert!(!config.default);
         assert_eq!(config.prefix_map.len(), 3);
         assert_eq!(config.queries.len(), 3);
 
@@ -493,7 +494,7 @@ mod tests {
 
         let dbpedia = settings.backends.get("dbpedia").unwrap();
         assert_eq!(dbpedia.service.name, "DBpedia");
-        assert_eq!(dbpedia.default, true);
+        assert!(dbpedia.default);
     }
 
     #[test]
@@ -532,7 +533,7 @@ mod tests {
 
         let settings: Settings = parse_yaml(yaml);
 
-        assert_eq!(settings.format.align_predicates, true);
+        assert!(settings.format.align_predicates);
         assert_eq!(settings.completion.timeout_ms, 5000);
         assert!(settings.backends.is_some());
 
@@ -541,7 +542,7 @@ mod tests {
 
         let wikidata = backends.backends.get("wikidata").unwrap();
         assert_eq!(wikidata.service.name, "Wikidata");
-        assert_eq!(wikidata.default, true);
+        assert!(wikidata.default);
         assert_eq!(wikidata.queries.len(), 2);
     }
 }

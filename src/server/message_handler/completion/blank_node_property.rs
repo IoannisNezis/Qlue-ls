@@ -14,11 +14,11 @@ pub(super) async fn completions(
     environment: &CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
     let mut template_context = environment.template_context().await;
-    template_context.insert("local_context", &local_context(&environment));
+    template_context.insert("local_context", &local_context(environment));
 
     dispatch_completion_query(
         server_rc,
-        &environment,
+        environment,
         template_context,
         CompletionTemplate::PredicateCompletionContextInsensitive,
         true,

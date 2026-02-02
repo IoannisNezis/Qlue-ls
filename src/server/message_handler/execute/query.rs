@@ -204,7 +204,7 @@ async fn handle_construct_query(
             request.get_id(),
             ExecuteOperationResponseResult::QueryResult(ExecuteQueryResponseResult {
                 time_ms: 0,
-                result: result,
+                result,
             }),
         ))
 }

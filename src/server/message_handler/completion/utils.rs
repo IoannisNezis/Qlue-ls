@@ -344,7 +344,7 @@ pub(super) fn to_completion_items(
                 },
             )| {
                 CompletionItem {
-                    label: format!("{value}"),
+                    label: value.clone(),
                     label_details: Some(CompletionItemLabelDetails {
                         detail: format!(
                             "{}{}",

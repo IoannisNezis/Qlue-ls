@@ -42,7 +42,7 @@ pub(super) async fn completions(
     if environment
         .search_term
         .as_ref()
-        .is_some_and(|search_term| search_term.len() > trigger_threshold as usize)
+        .is_some_and(|search_term| search_term.len() >= trigger_threshold as usize)
         && [
             SyntaxKind::GroupGraphPatternSub,
             SyntaxKind::TriplesBlock,

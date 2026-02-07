@@ -47,28 +47,50 @@ pub(super) async fn completions(
     })
 }
 
+/// Determines the prefix to use for a backend's SERVICE clause and, if needed,
+/// generates a PREFIX declaration to insert at the top of the document.
+///
+/// Scans the query's existing PREFIX declarations looking for one whose IRI
+/// matches the backend URL. When a match is found, the existing prefix is
+/// reused and no additional text edit is produced. When no match is found (or
+/// no parse tree is available), a new prefix is synthesized from the backend
+/// name via [`normalize_backend_prefix`] and a text edit is returned to insert
+/// the corresponding PREFIX declaration at the start of the document.
+///
+/// # Returns
+///
+/// A tuple of:
+/// - The prefix string to insert into the SERVICE clause (e.g. `"dbpedia:"`)
+/// - An optional text edit that adds a PREFIX declaration at line 0, col 0.
+///   `None` when an existing declaration was reused.
 fn compute_service_prefix(
     query_unit: Option<&QueryUnit>,
     backend: &BackendConfiguration,
 ) -> (String, Option<Vec<TextEdit>>) {
     if let Some(query_unit) = query_unit {
+        // NOTE: try to find an existing PREFIX declaration whose IRI matches the backend URL
         if let Some(prefix_declaration) = query_unit.prologue().and_then(|prologue| {
             prologue
                 .prefix_declarations()
                 .into_iter()
                 .find(|prefix_declaration| {
                     prefix_declaration
-                        .uri_prefix()
+                        .raw_uri_prefix()
                         .is_some_and(|uri| uri == backend.url)
                 })
+                // INFO: extract just the prefix name (e.g. "dbpedia") from the declaration
                 .and_then(|prefix_declaration| prefix_declaration.prefix())
         }) {
+            // INFO: reuse the existing prefix — no text edit needed
             (format!("{}:", prefix_declaration), None)
         } else {
+            // NOTE: no matching prefix found — synthesize one and produce a text edit
             let prefix = normalize_backend_prefix(&backend.name);
             let prefix_declaration = format!("PREFIX {} <{}>\n", prefix, backend.url);
             (
                 prefix,
+                // INFO: insert the new PREFIX declaration at the very start of the document
+                // TODO: insert PREFIX declaration AFTER comments
                 Some(vec![TextEdit::new(
                     Range::new(0, 0, 0, 0),
                     &prefix_declaration,
@@ -76,6 +98,7 @@ fn compute_service_prefix(
             )
         }
     } else {
+        // NOTE: no parse tree available — always synthesize a new prefix declaration
         let prefix = normalize_backend_prefix(&backend.name);
         let prefix_declaration = format!("PREFIX {} <{}>\n", prefix, backend.url);
         (

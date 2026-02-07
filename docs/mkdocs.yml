@@ -17,3 +17,13 @@ markdown_extensions:
   - admonition
   - pymdownx.details
   - pymdownx.superfences
+nav:
+  - Home: index.md
+  - Getting Started: 01_getting_started.md
+  - Capabilities: 02_capabilities.md
+  - Configuration: 03_configuration.md
+  - Standalone Formatter: 04_standalone_formatter.md
+  - Completion Queries: 05_completion_queries.md
+  - Development: 06_development.md
+  - LSP Extensions: 07_lsp_extensions.md
+  - Migration Guide: migration.md

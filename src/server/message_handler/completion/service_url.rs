@@ -114,3 +114,94 @@ fn compute_service_prefix(
 fn normalize_backend_prefix(backend_name: &str) -> String {
     format!("{}-service:", backend_name.replace(" ", "_"))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ll_sparql_parser::parse_query;
+    use std::collections::HashMap;
+
+    fn make_backend(name: &str, url: &str) -> BackendConfiguration {
+        BackendConfiguration {
+            name: name.to_string(),
+            url: url.to_string(),
+            health_check_url: None,
+            engine: None,
+            request_method: None,
+            prefix_map: HashMap::new(),
+            default: false,
+            queries: HashMap::new(),
+            additional_data: None,
+        }
+    }
+
+    #[test]
+    fn reuses_existing_prefix_declaration() {
+        let sparql = "PREFIX db: <http://dbpedia.org/> SELECT * WHERE { ?s ?p ?o }";
+        let (tree, _) = parse_query(sparql);
+        let query_unit = QueryUnit::cast(tree).unwrap();
+        let backend = make_backend("dbpedia", "http://dbpedia.org/");
+
+        let (prefix, edit) = compute_service_prefix(Some(&query_unit), &backend);
+
+        assert_eq!(prefix, "db:");
+        assert!(edit.is_none());
+    }
+
+    #[test]
+    fn synthesizes_prefix_when_no_match() {
+        let sparql = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> SELECT * WHERE { ?s ?p ?o }";
+        let (tree, _) = parse_query(sparql);
+        let query_unit = QueryUnit::cast(tree).unwrap();
+        let backend = make_backend("dbpedia", "http://dbpedia.org/");
+
+        let (prefix, edit) = compute_service_prefix(Some(&query_unit), &backend);
+
+        assert_eq!(prefix, "dbpedia-service:");
+        let edits = edit.expect("should produce a text edit");
+        assert_eq!(edits.len(), 1);
+        assert_eq!(edits[0].new_text, "PREFIX dbpedia-service: <http://dbpedia.org/>\n");
+    }
+
+    #[test]
+    fn synthesizes_prefix_when_no_parse_tree() {
+        let backend = make_backend("my backend", "http://example.org/sparql");
+
+        let (prefix, edit) = compute_service_prefix(None, &backend);
+
+        assert_eq!(prefix, "my_backend-service:");
+        let edits = edit.expect("should produce a text edit");
+        assert_eq!(edits.len(), 1);
+        assert_eq!(
+            edits[0].new_text,
+            "PREFIX my_backend-service: <http://example.org/sparql>\n"
+        );
+    }
+
+    #[test]
+    fn synthesizes_prefix_when_no_prologue() {
+        let sparql = "SELECT * WHERE { ?s ?p ?o }";
+        let (tree, _) = parse_query(sparql);
+        let query_unit = QueryUnit::cast(tree).unwrap();
+        let backend = make_backend("wikidata", "http://wikidata.org/sparql");
+
+        let (prefix, edit) = compute_service_prefix(Some(&query_unit), &backend);
+
+        assert_eq!(prefix, "wikidata-service:");
+        assert!(edit.is_some());
+    }
+
+    #[test]
+    fn normalize_replaces_spaces_with_underscores() {
+        assert_eq!(normalize_backend_prefix("my backend"), "my_backend-service:");
+    }
+
+    #[test]
+    fn text_edit_targets_document_start() {
+        let backend = make_backend("test", "http://example.org/");
+        let (_, edit) = compute_service_prefix(None, &backend);
+
+        let text_edit = &edit.unwrap()[0];
+        assert_eq!(text_edit.range, Range::new(0, 0, 0, 0));
+    }
+}

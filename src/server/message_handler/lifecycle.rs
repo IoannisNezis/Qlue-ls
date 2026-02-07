@@ -92,12 +92,12 @@ pub(super) async fn handle_initialize_request(
                         .state
                         .load_prefix_map(backend_config.name.clone(), &backend_config.prefix_map)?;
                     server.load_templates(&backend_config.name, backend_config.queries.clone())?;
+                    server.state.add_backend(backend_config.clone());
                     if backend_config.default {
                         server
                             .state
                             .set_default_backend(backend_config.name.clone());
                     }
-                    server.state.add_backend(backend_config.clone());
                 }
 
                 let progress_report_1 = ProgressNotification::report_notification(

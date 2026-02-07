@@ -25,40 +25,55 @@ Register a SPARQL endpoint with the language server.
 
 ```ts
 interface AddBackendParams {
-    service: BackendService;
-    requestMethod?: "GET" | "POST";
-    default: boolean;
-    prefixMap?: Record<string, string>;
-    queries?: Record<string, string>;
-}
-
-interface BackendService {
     name: string;
     url: string;
     healthCheckUrl?: string;
     engine?: "QLever" | "GraphDB" | "Virtuoso" | "MillenniumDB" | "Blazegraph" | "Jena";
+    requestMethod?: "GET" | "POST";
+    default: boolean;
+    prefixMap?: Record<string, string>;
+    queries?: Record<string, string>;
+    additionalData?: any;
 }
 ```
 
 ### :mag: getBackend
 
-Get information about the currently active default backend.
+Get information about a backend. If `backend` is provided, returns that specific
+backend; otherwise returns the default backend.
 
 *Request*:
 
 - method: `qlueLs/getBackend`
-- params: none
+- params: `GetBackendParams` defined as follows:
+
+```ts
+interface GetBackendParams {
+    backend?: string;  // If omitted, returns the default backend
+}
+```
 
 *Response*:
 
-- result: `BackendService | null`
+- result: `BackendConfiguration | null`
+- error: `GetBackendError | null` — present when the requested backend is not found
 
 ```ts
-interface BackendService {
+interface BackendConfiguration {
     name: string;
     url: string;
     healthCheckUrl?: string;
     engine?: "QLever" | "GraphDB" | "Virtuoso" | "MillenniumDB" | "Blazegraph" | "Jena";
+    requestMethod?: "GET" | "POST";
+    prefixMap: Record<string, string>;
+    default: boolean;
+    queries: Record<string, string>;
+    additionalData?: any;
+}
+
+interface GetBackendError {
+    code: number;
+    message: string;
 }
 ```
 
@@ -73,7 +88,15 @@ List all registered backends.
 
 *Response*:
 
-- result: `BackendService[]`
+- result: `ListBackendsItem[]`
+
+```ts
+interface ListBackendsItem {
+    name: string;
+    url: string;
+    default: boolean;
+}
+```
 
 ### :arrows_counterclockwise: updateDefaultBackend
 

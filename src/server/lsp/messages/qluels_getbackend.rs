@@ -12,6 +12,13 @@ use serde::{Deserialize, Serialize};
 pub struct GetBackendRequest {
     #[serde(flatten)]
     pub base: RequestMessageBase,
+    #[serde(default)]
+    pub params: GetBackendParams,
+}
+
+#[derive(Debug, Default, Deserialize, PartialEq)]
+pub struct GetBackendParams {
+    pub backend: Option<String>,
 }
 
 impl GetBackendRequest {
@@ -31,7 +38,11 @@ pub struct GetBackendResponse {
 }
 
 impl GetBackendResponse {
-    pub(crate) fn new(id: &RequestId, backend: Option<&BackendConfiguration>) -> Self {
+    pub(crate) fn new(
+        id: &RequestId,
+        backend: Option<&BackendConfiguration>,
+        error_message: &str,
+    ) -> Self {
         if let Some(backend) = backend {
             Self {
                 base: ResponseMessageBase::success(id),
@@ -44,7 +55,7 @@ impl GetBackendResponse {
                 result: None,
                 error: Some(LSPError {
                     code: ErrorCode::InvalidParams,
-                    message: "No default backend is configured.".to_string(),
+                    message: error_message.to_string(),
                     data: None,
                 }),
             }

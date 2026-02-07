@@ -99,6 +99,11 @@ impl ServerState {
             .find_map(|(key, backend)| (backend.url == url).then(|| key.clone()))
     }
 
+    /// Sets the default backend by name.
+    ///
+    /// # Panics
+    ///
+    /// Panics if no backend with the given name has been registered.
     pub fn set_default_backend(&mut self, name: String) {
         assert!(self.backends.contains_key(&name));
         self.default_backend = Some(name)

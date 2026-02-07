@@ -3,7 +3,7 @@ use std::rc::Rc;
 use crate::server::{
     Server,
     lsp::errors::{ErrorCode, LSPError},
-    message_handler::misc::resolve_backend,
+    message_handler::misc::resolve_backend_at_token,
     sparql_operations::execute_query,
 };
 use futures::lock::Mutex;
@@ -29,10 +29,11 @@ pub(super) async fn hover(
         ErrorCode::InternalError,
         "Hover is currently only supported for Query operations",
     ))?;
-    let backend = resolve_backend(&server, &query_unit, &hovered_token).ok_or(LSPError::new(
-        ErrorCode::InternalError,
-        "Could not determine backend for hover location",
-    ))?;
+    let backend =
+        resolve_backend_at_token(&server, &query_unit, &hovered_token).ok_or(LSPError::new(
+            ErrorCode::InternalError,
+            "Could not determine backend for hover location",
+        ))?;
     if let Some(label) = server.state.label_memory.get(&iri.text()) {
         Ok(Some(label.clone()))
     } else {

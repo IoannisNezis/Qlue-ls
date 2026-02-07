@@ -3,15 +3,15 @@ use ll_sparql_parser::{
     ast::{AstNode, QueryUnit, ServiceGraphPattern},
 };
 
-use crate::server::{Server, lsp::BackendService};
+use crate::server::{Server, configuration::BackendConfiguration};
 
 /// Resolve which Backend to use at given token.
 /// Currently only works for Query operations.
-pub(super) fn resolve_backend(
+pub(super) fn resolve_backend_at_token(
     server: &Server,
     query_unit: &QueryUnit,
     token: &SyntaxToken,
-) -> Option<BackendService> {
+) -> Option<BackendConfiguration> {
     token
         .parent_ancestors()
         .find_map(ServiceGraphPattern::cast)

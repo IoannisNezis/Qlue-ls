@@ -44,7 +44,7 @@ use log4rs::{
 };
 use tokio::{runtime, task::LocalSet};
 
-use qlue_ls::{format_raw, handle_message, Server};
+use qlue_ls::{Server, format_raw, handle_message};
 
 use crate::stdio_reader::StdioMessages;
 

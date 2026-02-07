@@ -70,59 +70,34 @@ pub(super) async fn handle_initialize_request(
                 );
                 server.send_message(init_progress_begin_notification)?;
 
-                let mut backend_configs = Vec::new();
-                if let Some(config) = server.settings.backends.as_ref() {
-                    for backend_config in config.backends.iter().map(|x| x.1).cloned() {
-                        backend_configs.push(backend_config)
-                    }
-                }
-                for config in backend_configs.into_iter() {
-                    let BackendConfiguration {
-                        service,
-                        request_method,
-                        prefix_map,
-                        default,
-                        queries,
-                    } = config;
-
+                // NOTE: Load backends from configuration.
+                let backend_configs: Vec<BackendConfiguration> = server
+                    .settings
+                    .backends
+                    .as_ref()
+                    .map(|config| {
+                        config
+                            .backends
+                            .iter()
+                            .map(|x| {
+                                log::debug!("Loaded backend \"{}\" from configuration.", x.0);
+                                x.1
+                            })
+                            .cloned()
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                for backend_config in backend_configs.into_iter() {
                     server
                         .state
-                        .add_prefix_map(service.name.clone(), prefix_map)
-                        .await
-                        .map_err(|err| {
-                            log::error!("{}", err);
-                            LSPError::new(
-                                ErrorCode::InvalidParams,
-                                &format!("Could not load prefix map:\n\"{}\"", err),
-                            )
-                        })?;
-                    if let Some(method) = request_method {
+                        .load_prefix_map(backend_config.name.clone(), &backend_config.prefix_map)?;
+                    server.load_templates(&backend_config.name, backend_config.queries.clone())?;
+                    if backend_config.default {
                         server
                             .state
-                            .add_backend_request_method(&service.name, method);
-                    };
-
-                    for (key, value) in queries {
-                        server
-                            .tools
-                            .tera
-                            .add_raw_template(&format!("{}-{}", &service.name, &key), &value)
-                            .map_err(|err| {
-                                log::error!("{}", err);
-                                LSPError::new(
-                                    ErrorCode::InvalidParams,
-                                    &format!(
-                                        "Could not load template: {} of backend {}",
-                                        &key, &service.name
-                                    ),
-                                )
-                            })?;
+                            .set_default_backend(backend_config.name.clone());
                     }
-                    if default {
-                        server.state.set_default_backend(service.name.clone());
-                    }
-
-                    server.state.add_backend(service);
+                    server.state.add_backend(backend_config.clone());
                 }
 
                 let progress_report_1 = ProgressNotification::report_notification(

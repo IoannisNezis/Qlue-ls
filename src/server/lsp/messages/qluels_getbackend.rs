@@ -1,6 +1,10 @@
-use crate::server::lsp::{
-    BackendService, LspMessage,
-    rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
+use crate::server::{
+    configuration::BackendConfiguration,
+    lsp::{
+        LspMessage,
+        errors::{ErrorCode, LSPError},
+        rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
+    },
 };
 use serde::{Deserialize, Serialize};
 
@@ -22,15 +26,32 @@ impl LspMessage for GetBackendRequest {}
 pub struct GetBackendResponse {
     #[serde(flatten)]
     pub base: ResponseMessageBase,
-    pub result: Option<BackendService>,
+    pub result: Option<BackendConfiguration>,
+    pub error: Option<GetBackendError>,
 }
+
 impl GetBackendResponse {
-    pub(crate) fn new(id: &RequestId, backend: Option<BackendService>) -> Self {
-        Self {
-            base: ResponseMessageBase::success(id),
-            result: backend,
+    pub(crate) fn new(id: &RequestId, backend: Option<&BackendConfiguration>) -> Self {
+        if let Some(backend) = backend {
+            Self {
+                base: ResponseMessageBase::success(id),
+                result: Some(backend.clone()),
+                error: None,
+            }
+        } else {
+            Self {
+                base: ResponseMessageBase::success(id),
+                result: None,
+                error: Some(LSPError {
+                    code: ErrorCode::InvalidParams,
+                    message: "No default backend is configured.".to_string(),
+                    data: None,
+                }),
+            }
         }
     }
 }
 
 impl LspMessage for GetBackendResponse {}
+
+pub type GetBackendError = LSPError;

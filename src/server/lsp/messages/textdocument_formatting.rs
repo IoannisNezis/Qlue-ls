@@ -42,6 +42,32 @@ pub struct FormattingOptions {
     pub tab_size: u8,
     pub insert_spaces: bool,
     // TODO: further options
+    //
+    // /**
+    //  * Trim trailing whitespace on a line.
+    //  *
+    //  * @since 3.15.0
+    //  */
+    // trimTrailingWhitespace?: boolean;
+    //
+    // /**
+    //  * Insert a newline character at the end of the file if one does not exist.
+    //  *
+    //  * @since 3.15.0
+    //  */
+    // insertFinalNewline?: boolean;
+    //
+    // /**
+    //  * Trim all newlines after the final newline at the end of the file.
+    //  *
+    //  * @since 3.15.0
+    //  */
+    // trimFinalNewlines?: boolean;
+    //
+    // /**
+    //  * Signature for further properties.
+    //  */
+    // [key: string]: boolean | integer | string;
 }
 
 #[derive(Debug, Serialize, PartialEq)]

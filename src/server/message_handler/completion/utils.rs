@@ -11,9 +11,10 @@ use text_size::TextSize;
 use crate::{
     server::{
         Server,
+        configuration::BackendConfiguration,
         lsp::{
-            BackendService, Command, CompletionItem, CompletionItemKind,
-            CompletionItemLabelDetails, CompletionList,
+            Command, CompletionItem, CompletionItemKind, CompletionItemLabelDetails,
+            CompletionList,
             textdocument::{Range, TextEdit},
         },
         sparql_operations::execute_query,
@@ -80,7 +81,7 @@ pub(super) struct InternalCompletionItem {
 pub(super) async fn fetch_online_completions(
     server_rc: Rc<Mutex<Server>>,
     query_unit: &QueryUnit,
-    backend: &BackendService,
+    backend: &BackendConfiguration,
     query_template: &str,
     mut query_template_context: Context,
 ) -> Result<Vec<InternalCompletionItem>, CompletionError> {

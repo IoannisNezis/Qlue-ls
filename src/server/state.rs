@@ -26,14 +26,14 @@
 //! - [`super::Server`]: Owns the `ServerState` instance
 //! - [`super::lsp::textdocument`]: `TextDocumentItem` stored in documents map
 
-use crate::server::configuration::RequestMethod;
+use crate::server::configuration::{BackendConfiguration, RequestMethod};
 
 use super::lsp::{
-    BackendService, TextDocumentContentChangeEvent,
+    TextDocumentContentChangeEvent,
     errors::{ErrorCode, LSPError},
     textdocument::TextDocumentItem,
 };
-use curies::{Converter, CuriesError};
+use curies::Converter;
 use ll_sparql_parser::{SyntaxNode, parse};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -51,17 +51,23 @@ pub enum ClientType {
     Neovim,
 }
 
+#[derive(Debug)]
+pub struct CachedParseTree {
+    document_uri: String,
+    version: u32,
+    tree: SyntaxNode,
+}
+
 pub struct ServerState {
     pub status: ServerStatus,
     pub client_type: Option<ClientType>,
     documents: HashMap<String, TextDocumentItem>,
-    backends: HashMap<String, BackendService>,
-    request_method: HashMap<String, RequestMethod>,
+    backends: HashMap<String, BackendConfiguration>,
     uri_converter: HashMap<String, Converter>,
     default_backend: Option<String>,
-    parse_tree_cache: RefCell<Option<(String, u32, SyntaxNode)>>,
+    parse_tree_cache: RefCell<Option<CachedParseTree>>,
     request_id_counter: u32,
-    running_requests: HashMap<String, Box<dyn Fn()>>,
+    running_sparql_requests: HashMap<String, Box<dyn Fn()>>,
     pub label_memory: HashMap<String, String>,
 }
 
@@ -72,12 +78,11 @@ impl ServerState {
             client_type: None,
             documents: HashMap::new(),
             backends: HashMap::new(),
-            request_method: HashMap::new(),
             uri_converter: HashMap::new(),
             default_backend: None,
             parse_tree_cache: RefCell::new(None),
             request_id_counter: 0,
-            running_requests: HashMap::new(),
+            running_sparql_requests: HashMap::new(),
             label_memory: HashMap::new(),
         }
     }
@@ -95,55 +100,47 @@ impl ServerState {
     }
 
     pub fn set_default_backend(&mut self, name: String) {
+        assert!(self.backends.contains_key(&name));
         self.default_backend = Some(name)
     }
 
-    pub(super) fn get_default_backend(&self) -> Option<&BackendService> {
+    pub(super) fn get_default_backend(&self) -> Option<&BackendConfiguration> {
         self.backends.get(self.default_backend.as_ref()?)
     }
 
-    pub fn add_backend(&mut self, backend: BackendService) {
+    pub fn add_backend(&mut self, backend: BackendConfiguration) {
         self.backends.insert(backend.name.clone(), backend);
-    }
-
-    pub fn add_backend_request_method(&mut self, backend: &str, method: RequestMethod) {
-        self.request_method.insert(backend.to_string(), method);
     }
 
     /// Return the configured request method for given backend.
     /// Defaults to `GET`.
-    pub fn get_backend_request_method(&self, backend: &str) -> RequestMethod {
-        self.request_method
-            .get(backend)
-            .cloned()
+    pub fn get_backend_request_method(&self, backend_name: &str) -> RequestMethod {
+        self.backends
+            .get(backend_name)
+            .and_then(|backend| backend.request_method.clone())
             .unwrap_or(RequestMethod::GET)
     }
 
-    pub async fn add_prefix_map(
+    pub fn load_prefix_map(
         &mut self,
         backend: String,
-        map: HashMap<String, String>,
-    ) -> Result<(), CuriesError> {
-        self.uri_converter
-            .insert(backend, Converter::from_prefix_map(map).await?);
-        Ok(())
-    }
-
-    #[cfg(test)]
-    pub fn add_prefix_map_test(
-        &mut self,
-        backend: String,
-        map: HashMap<String, String>,
-    ) -> Result<(), CuriesError> {
-        let mut converter = Converter::new(":");
-        for (prefix, uri_prefix) in map.iter() {
-            converter.add_prefix(prefix, uri_prefix)?;
+        map: &HashMap<String, String>,
+    ) -> Result<(), LSPError> {
+        let mut converter = Converter::default();
+        for (prefix, uri_prefix) in map {
+            converter.add_prefix(prefix, uri_prefix).map_err(|err| {
+                log::error!("{}", err);
+                LSPError::new(
+                    ErrorCode::InvalidParams,
+                    &format!("Could not load prefix map:\n\"{}\"", err),
+                )
+            })?;
         }
         self.uri_converter.insert(backend, converter);
         Ok(())
     }
 
-    pub fn get_backend(&self, backend_name: &str) -> Option<&BackendService> {
+    pub fn get_backend(&self, backend_name: &str) -> Option<&BackendConfiguration> {
         self.backends.get(backend_name)
     }
 
@@ -178,15 +175,19 @@ impl ServerState {
             ErrorCode::InvalidRequest,
             &format!("Requested document \"{}\"could not be found", uri),
         ))?;
-        if let Some((cached_uri, cached_version, cached_root)) =
-            self.parse_tree_cache.borrow().as_ref()
-        && uri == cached_uri && *cached_version == document.version() {
-            return Ok(cached_root.clone());
+        if let Some(cached_parse_tree) = self.parse_tree_cache.borrow().as_ref()
+            && uri == cached_parse_tree.document_uri
+            && cached_parse_tree.version == document.version()
+        {
+            return Ok(cached_parse_tree.tree.clone());
         }
 
         let (root, _) = parse(&document.text);
-        *self.parse_tree_cache.borrow_mut() =
-            Some((uri.to_string(), document.version(), root.clone()));
+        *self.parse_tree_cache.borrow_mut() = Some(CachedParseTree {
+            document_uri: uri.to_string(),
+            version: document.version(),
+            tree: root.clone(),
+        });
         Ok(root)
     }
 
@@ -198,17 +199,17 @@ impl ServerState {
         self.uri_converter.get(backend_name)
     }
 
-    pub(crate) fn get_all_backends(&self) -> Vec<&BackendService> {
+    pub(crate) fn get_all_backends(&self) -> Vec<&BackendConfiguration> {
         self.backends.values().collect()
     }
 
     #[cfg(target_arch = "wasm32")]
     pub(crate) fn add_running_request(&mut self, id: String, cancel_fn: Box<dyn Fn()>) {
-        self.running_requests.insert(id, cancel_fn);
+        self.running_sparql_requests.insert(id, cancel_fn);
     }
 
     #[allow(clippy::borrowed_box)]
     pub(crate) fn get_running_request(&mut self, id: &str) -> Option<&Box<dyn Fn()>> {
-        self.running_requests.get(id)
+        self.running_sparql_requests.get(id)
     }
 }

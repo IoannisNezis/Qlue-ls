@@ -3,11 +3,12 @@ mod query_graph;
 use super::{error::CompletionError, utils::get_prefix_declarations};
 use crate::server::{
     Server,
+    configuration::BackendConfiguration,
     lsp::{
-        BackendService, CompletionRequest, CompletionTriggerKind,
+        CompletionRequest, CompletionTriggerKind,
         textdocument::{Position, Range},
     },
-    message_handler::misc::resolve_backend,
+    message_handler::misc::resolve_backend_at_token,
 };
 use context::{Context, context};
 use futures::lock::Mutex;
@@ -32,7 +33,7 @@ pub(super) struct CompletionEnvironment {
     pub(super) anchor_token: Option<SyntaxToken>,
     pub(super) search_term: Option<String>,
     pub(super) replace_range: Range,
-    pub(super) backend: Option<BackendService>,
+    pub(super) backend: Option<BackendConfiguration>,
     pub(super) context: Option<Context>,
 }
 
@@ -317,9 +318,9 @@ impl CompletionEnvironment {
             .get_cached_parse_tree(&document_position.text_document.uri)
             .map_err(|err| CompletionError::Localization(err.message))?;
         let trigger_token = get_trigger_token(&tree, offset);
-        let backend = trigger_token
-            .as_ref()
-            .and_then(|token| resolve_backend(&server, &QueryUnit::cast(tree.clone())?, token));
+        let backend = trigger_token.as_ref().and_then(|token| {
+            resolve_backend_at_token(&server, &QueryUnit::cast(tree.clone())?, token)
+        });
         let anchor_token = trigger_token.and_then(|token| get_anchor_token(token, offset));
         let search_term = get_search_term(&tree, &anchor_token, offset);
         let continuations = get_continuations(&tree, &anchor_token);

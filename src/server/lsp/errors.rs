@@ -31,7 +31,7 @@ pub struct LSPError {
      * A primitive or structured value that contains additional
      * information about the error. Can be omitted.
      */
-    data: Option<LSPAny>,
+    pub data: Option<LSPAny>,
 }
 
 impl LSPError {

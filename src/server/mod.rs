@@ -49,11 +49,11 @@ use lsp::{
 use message_handler::dispatch;
 use serde::Serialize;
 use state::ServerState;
-use std::{any::type_name, fmt::Debug, rc::Rc};
+use std::{any::type_name, collections::HashMap, fmt::Debug, rc::Rc};
 use tools::Tools;
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use crate::server::lsp::LspMessage;
+use crate::server::{configuration::CompletionTemplate, lsp::LspMessage};
 
 #[wasm_bindgen]
 pub struct Server {
@@ -115,27 +115,21 @@ impl Server {
 
     /// Shortens a raw URI into its CURIE (Compact URI) form and retrieves related metadata.
     ///
-    /// This method takes a raw URI as input, attempts to find its associated prefix and URI prefix
-    /// from the `uri_converter`, and shorten the URI into its CURIE form. If successful, it
-    /// returns a tuple containing:
-    /// - The prefix associated with the URI.
-    /// - The URI prefix corresponding to the namespace of the URI.
-    /// - The CURIE representation of the URI.
+    /// This method takes a raw URI as input, looks up a URI converter from the given backend
+    /// (or falls back to the default converter), and attempts to compress the URI into its
+    /// CURIE form.
     ///
     /// # Parameters
     /// - `uri`: A string slice representing the raw URI to be shortened.
+    /// - `backend_name`: An optional backend name whose converter should be used.
+    ///   If `None` or if the backend is not found, the default converter is used.
     ///
     /// # Returns
     /// - `Some((prefix, uri_prefix, curie))` if the URI can be successfully compacted:
     ///   - `prefix`: A `String` representing the prefix associated with the URI.
     ///   - `uri_prefix`: A `String` representing the URI namespace prefix.
     ///   - `curie`: A `String` representing the compact CURIE form of the URI.
-    /// - `None` if the URI cannot be found or shortened.
-    ///
-    /// # Errors
-    /// Returns `None` if:
-    /// - The `uri_converter` fails to find a record associated with the URI.
-    /// - The `uri_converter` fails to shorten the URI into a CURIE.
+    /// - `None` if no converter is available, or the URI cannot be found or shortened.
     pub(crate) fn shorten_uri(
         &self,
         uri: &str,
@@ -147,6 +141,29 @@ impl Server {
         let record = converter.find_by_uri(uri).ok()?;
         let curie = converter.compress(uri).ok()?;
         Some((record.prefix.clone(), record.uri_prefix.clone(), curie))
+    }
+
+    pub(crate) fn load_templates(
+        &mut self,
+        backend_name: &str,
+        templates: HashMap<CompletionTemplate, String>,
+    ) -> Result<(), LSPError> {
+        for (key, value) in templates {
+            self.tools
+                .tera
+                .add_raw_template(&format!("{}-{}", &backend_name, &key), &value)
+                .map_err(|err| {
+                    log::error!("{}", err);
+                    LSPError::new(
+                        ErrorCode::InvalidParams,
+                        &format!(
+                            "Could not load template: {} of backend {}",
+                            &key, &backend_name
+                        ),
+                    )
+                })?;
+        }
+        Ok(())
     }
 }
 

@@ -3,14 +3,14 @@ use std::rc::Rc;
 use futures::lock::Mutex;
 
 use crate::server::{
+    Server,
     lsp::{
-        errors::{ErrorCode, LSPError},
         AddBackendNotification, GetBackendRequest, GetBackendResponse, ListBackendsRequest,
         ListBackendsResponse, PingBackendRequest, PingBackendResponse,
         UpdateDefaultBackendNotification,
+        errors::{ErrorCode, LSPError},
     },
     sparql_operations::check_server_availability,
-    Server,
 };
 
 pub(super) async fn handle_update_backend_default_notification(
@@ -18,6 +18,7 @@ pub(super) async fn handle_update_backend_default_notification(
     notification: UpdateDefaultBackendNotification,
 ) -> Result<(), LSPError> {
     log::info!("new default backend: {}", notification.params.backend_name);
+    // TODO: update default fild in backends state
     let mut server = server_rc.lock().await;
     if server
         .state
@@ -69,48 +70,17 @@ pub(super) async fn handle_add_backend_notification(
     request: AddBackendNotification,
 ) -> Result<(), LSPError> {
     let mut server = server_rc.lock().await;
-    server.state.add_backend(request.params.service.clone());
+
+    server
+        .state
+        .load_prefix_map(request.params.name.clone(), &request.params.prefix_map)?;
+    server.load_templates(&request.params.name, request.params.queries.clone())?;
     if request.params.default {
         server
             .state
-            .set_default_backend(request.params.service.name.clone());
+            .set_default_backend(request.params.name.clone());
     }
-    if let Some(prefix_map) = request.params.prefix_map {
-        server
-            .state
-            .add_prefix_map(request.params.service.name.clone(), prefix_map)
-            .await
-            .map_err(|err| {
-                log::error!("{}", err);
-                LSPError::new(
-                    ErrorCode::InvalidParams,
-                    &format!("Could not load prefix map:\n\"{}\"", err),
-                )
-            })?;
-    };
-    if let Some(method) = request.params.request_method {
-        server
-            .state
-            .add_backend_request_method(&request.params.service.name, method);
-    };
-    if let Some(completion_queries) = request.params.queries {
-        for (query_name, query) in completion_queries.iter() {
-            server
-                .tools
-                .tera
-                .add_raw_template(
-                    &format!("{}-{}", request.params.service.name, query_name),
-                    query,
-                )
-                .map_err(|err| {
-                    log::error!("{}", err);
-                    LSPError::new(
-                        ErrorCode::InvalidParams,
-                        &format!("Could not load template:\n\"{query_name}\"\n{}", err),
-                    )
-                })?;
-        }
-    }
+    server.state.add_backend(request.params);
     Ok(())
 }
 
@@ -121,7 +91,7 @@ pub(super) async fn handle_get_backend_request(
     let server = server_rc.lock().await;
     server.send_message(GetBackendResponse::new(
         request.get_id(),
-        server.state.get_default_backend().cloned(),
+        server.state.get_default_backend(),
     ))
 }
 
@@ -132,11 +102,6 @@ pub(super) async fn handle_list_backends_request(
     let server = server_rc.lock().await;
     server.send_message(ListBackendsResponse::new(
         request.get_id(),
-        server
-            .state
-            .get_all_backends()
-            .into_iter()
-            .cloned()
-            .collect(),
+        server.state.get_all_backends(),
     ))
 }

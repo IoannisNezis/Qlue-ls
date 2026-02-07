@@ -1,8 +1,9 @@
 use super::{CompletionEnvironment, error::CompletionError};
 use crate::server::{
     Server,
+    configuration::BackendConfiguration,
     lsp::{
-        BackendService, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat,
+        CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat,
         textdocument::{Range, TextEdit},
     },
 };
@@ -26,7 +27,7 @@ pub(super) async fn completions(
             .into_iter()
             .filter(|backend| default_backend.is_none_or(|default| backend.name != default.name))
             .map(|backend| {
-                let (prefix, import_edit) = backend_prefix(query_unit.as_ref(), backend);
+                let (prefix, import_edit) = compute_service_prefix(query_unit.as_ref(), backend);
                 CompletionItem {
                     command: None,
                     label: backend.name.clone(),
@@ -46,9 +47,9 @@ pub(super) async fn completions(
     })
 }
 
-fn backend_prefix(
+fn compute_service_prefix(
     query_unit: Option<&QueryUnit>,
-    backend: &BackendService,
+    backend: &BackendConfiguration,
 ) -> (String, Option<Vec<TextEdit>>) {
     if let Some(query_unit) = query_unit {
         if let Some(prefix_declaration) = query_unit.prologue().and_then(|prologue| {
@@ -58,7 +59,7 @@ fn backend_prefix(
                 .find(|prefix_declaration| {
                     prefix_declaration
                         .uri_prefix()
-                        .is_some_and(|uri| uri.contains(&backend.url))
+                        .is_some_and(|uri| uri == backend.url)
                 })
                 .and_then(|prefix_declaration| prefix_declaration.prefix())
         }) {
@@ -88,5 +89,5 @@ fn backend_prefix(
 }
 
 fn normalize_backend_prefix(backend_name: &str) -> String {
-    format!("{}:", backend_name.replace(" ", "_"))
+    format!("{}-service:", backend_name.replace(" ", "_"))
 }

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- **BREAKING**: Backend configuration no longer uses a nested `service` object. The fields `name`, `url`, `healthCheckUrl`, and `engine` are now top-level properties of a backend configuration. This affects both the configuration file (`qlue-ls.toml`/`qlue-ls.yml`) and the `qlueLs/addBackend` notification params.
+- **BREAKING**: `qlueLs/getBackend` now returns the full backend configuration (including `requestMethod`, `prefixMap`, `default`, `queries`, `additionalData`) instead of only the service fields. It also returns an `error` field when no default backend is configured.
+- **BREAKING**: `qlueLs/listBackends` response items now contain `name`, `url`, and `default` only. The `healthCheckUrl` and `engine` fields are no longer included in list results.
+
+### Added
+
+- New optional `additionalData` field on backend configuration.
+
 ## [1.1.19] - 2025-02-01
 
 ### Added

@@ -35,7 +35,7 @@ use std::{collections::HashMap, fmt};
 use config::{Config, ConfigError};
 use serde::{Deserialize, Serialize};
 
-use super::lsp::BackendService;
+use crate::server::lsp::{SparqlEngine, base_types::LSPAny};
 
 #[derive(Debug, Serialize, Deserialize, Default, PartialEq)]
 #[serde(default)]
@@ -46,12 +46,18 @@ pub struct BackendsSettings {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct BackendConfiguration {
-    pub service: BackendService,
+    pub name: String,
+    pub url: String,
+    pub health_check_url: Option<String>,
+    pub engine: Option<SparqlEngine>,
     pub request_method: Option<RequestMethod>,
+    #[serde(default)]
     pub prefix_map: HashMap<String, String>,
     #[serde(default)]
     pub default: bool,
+    #[serde(default)]
     pub queries: HashMap<CompletionTemplate, String>,
+    pub additional_data: Option<LSPAny>,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
@@ -311,10 +317,9 @@ mod tests {
     #[test]
     fn test_backend_configuration_valid_queries_all_variants() {
         let yaml = r#"
-            service:
-              name: TestBackend
-              url: https://example.com/sparql
-              healthCheckUrl: https://example.com/health
+            name: TestBackend
+            url: https://example.com/sparql
+            healthCheckUrl: https://example.com/health
             requestMethod: GET
             prefixMap:
               rdf: http://www.w3.org/1999/02/22-rdf-syntax-ns#
@@ -330,8 +335,8 @@ mod tests {
 
         let config: BackendConfiguration = parse_yaml(yaml);
 
-        assert_eq!(config.service.name, "TestBackend");
-        assert_eq!(config.service.url, "https://example.com/sparql");
+        assert_eq!(config.name, "TestBackend");
+        assert_eq!(config.url, "https://example.com/sparql");
         assert!(!config.default);
         assert_eq!(config.queries.len(), 5);
         assert!(
@@ -364,9 +369,8 @@ mod tests {
     #[test]
     fn test_backend_configuration_queries_subset() {
         let yaml = r#"
-            service:
-              name: MinimalBackend
-              url: https://example.com/sparql
+            name: MinimalBackend
+            url: https://example.com/sparql
             prefixMap: {}
             queries:
               subjectCompletion: SELECT ?qlue_ls_entity WHERE { ?qlue_ls_entity ?p ?o }
@@ -397,9 +401,8 @@ mod tests {
     fn test_backend_configuration_rejects_invalid_query_key() {
         // This test ensures that invalid query keys are rejected
         let yaml = r#"
-            service:
-              name: TestBackend
-              url: https://example.com/sparql
+            name: TestBackend
+            url: https://example.com/sparql
             prefixMap: {}
             queries:
               invalidQueryType: SELECT ?qlue_ls_entity WHERE { ?s ?p ?o }
@@ -417,10 +420,9 @@ mod tests {
     #[test]
     fn test_backend_configuration_with_multiline_queries() {
         let yaml = r#"
-            service:
-              name: WikidataBackend
-              url: https://query.wikidata.org/sparql
-              healthCheckUrl: https://query.wikidata.org/
+            name: WikidataBackend
+            url: https://query.wikidata.org/sparql
+            healthCheckUrl: https://query.wikidata.org/
             prefixMap:
               wd: http://www.wikidata.org/entity/
               wdt: http://www.wikidata.org/prop/direct/
@@ -444,8 +446,8 @@ mod tests {
 
         let config: BackendConfiguration = parse_yaml(yaml);
 
-        assert_eq!(config.service.name, "WikidataBackend");
-        assert_eq!(config.service.url, "https://query.wikidata.org/sparql");
+        assert_eq!(config.name, "WikidataBackend");
+        assert_eq!(config.url, "https://query.wikidata.org/sparql");
         assert!(!config.default);
         assert_eq!(config.prefix_map.len(), 3);
         assert_eq!(config.queries.len(), 3);
@@ -464,17 +466,15 @@ mod tests {
         let yaml = r#"
             backends:
               wikidata:
-                service:
-                  name: Wikidata
-                  url: https://query.wikidata.org/sparql
+                name: Wikidata
+                url: https://query.wikidata.org/sparql
                 prefixMap:
                   wd: http://www.wikidata.org/entity/
                 queries:
                   subjectCompletion: SELECT ?qlue_ls_entity WHERE { ?qlue_ls_entity ?p ?o }
               dbpedia:
-                service:
-                  name: DBpedia
-                  url: https://dbpedia.org/sparql
+                name: DBpedia
+                url: https://dbpedia.org/sparql
                 prefixMap:
                   dbo: http://dbpedia.org/ontology/
                 default: true
@@ -489,11 +489,11 @@ mod tests {
         assert!(settings.backends.contains_key("dbpedia"));
 
         let wikidata = settings.backends.get("wikidata").unwrap();
-        assert_eq!(wikidata.service.name, "Wikidata");
+        assert_eq!(wikidata.name, "Wikidata");
         assert_eq!(wikidata.queries.len(), 1);
 
         let dbpedia = settings.backends.get("dbpedia").unwrap();
-        assert_eq!(dbpedia.service.name, "DBpedia");
+        assert_eq!(dbpedia.name, "DBpedia");
         assert!(dbpedia.default);
     }
 
@@ -515,10 +515,9 @@ mod tests {
             backends:
               backends:
                 wikidata:
-                  service:
-                    name: Wikidata
-                    url: https://query.wikidata.org/sparql
-                    healthCheckUrl: https://query.wikidata.org/
+                  name: Wikidata
+                  url: https://query.wikidata.org/sparql
+                  healthCheckUrl: https://query.wikidata.org/
                   prefixMap:
                     wd: http://www.wikidata.org/entity/
                     wdt: http://www.wikidata.org/prop/direct/
@@ -541,7 +540,7 @@ mod tests {
         assert_eq!(backends.backends.len(), 1);
 
         let wikidata = backends.backends.get("wikidata").unwrap();
-        assert_eq!(wikidata.service.name, "Wikidata");
+        assert_eq!(wikidata.name, "Wikidata");
         assert!(wikidata.default);
         assert_eq!(wikidata.queries.len(), 2);
     }

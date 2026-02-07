@@ -1,6 +1,9 @@
-use crate::server::lsp::{
-    rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
-    BackendService, LspMessage,
+use crate::server::{
+    configuration::BackendConfiguration,
+    lsp::{
+        LspMessage,
+        rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
+    },
 };
 use serde::{Deserialize, Serialize};
 
@@ -22,15 +25,30 @@ impl LspMessage for ListBackendsRequest {}
 pub struct ListBackendsResponse {
     #[serde(flatten)]
     pub base: ResponseMessageBase,
-    pub result: Vec<BackendService>,
+    pub result: Vec<ListBackendsItem>,
 }
+
 impl ListBackendsResponse {
-    pub(crate) fn new(id: &RequestId, backend: Vec<BackendService>) -> Self {
+    pub(crate) fn new(id: &RequestId, backends: Vec<&BackendConfiguration>) -> Self {
         Self {
             base: ResponseMessageBase::success(id),
-            result: backend,
+            result: backends
+                .iter()
+                .map(|backend| ListBackendsItem {
+                    name: backend.name.clone(),
+                    url: backend.url.clone(),
+                    default: backend.default.clone(),
+                })
+                .collect(),
         }
     }
 }
 
 impl LspMessage for ListBackendsResponse {}
+
+#[derive(Debug, Serialize, PartialEq)]
+pub struct ListBackendsItem {
+    pub name: String,
+    pub url: String,
+    pub default: bool,
+}

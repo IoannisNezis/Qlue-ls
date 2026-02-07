@@ -65,10 +65,8 @@ mod test {
 
     use crate::server::{
         Server,
-        lsp::{
-            BackendService,
-            textdocument::{Range, TextDocumentItem, TextEdit},
-        },
+        configuration::BackendConfiguration,
+        lsp::textdocument::{Range, TextDocumentItem, TextEdit},
         message_handler::code_action::iri::shorten_all_uris,
         state::ServerState,
     };
@@ -76,17 +74,22 @@ mod test {
 
     fn setup_state(text: &str) -> ServerState {
         let mut state = ServerState::new();
-        state.add_backend(BackendService {
+        state.add_backend(BackendConfiguration {
             name: "test".to_string(),
             url: "".to_string(),
             health_check_url: None,
             engine: None,
+            request_method: None,
+            prefix_map: HashMap::new(),
+            default: true,
+            queries: HashMap::new(),
+            additional_data: None,
         });
         state.set_default_backend("test".to_string());
         state
-            .add_prefix_map_test(
+            .load_prefix_map(
                 "test".to_string(),
-                HashMap::from_iter([("schema".to_string(), "https://schema.org/".to_string())]),
+                &HashMap::from_iter([("schema".to_string(), "https://schema.org/".to_string())]),
             )
             .unwrap();
         let document = TextDocumentItem::new("uri", text);

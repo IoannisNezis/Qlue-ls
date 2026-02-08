@@ -1,0 +1,12 @@
+[package]
+name = "ntriples-parser"
+description = "A parser for the rdf n-triples format."
+authors = ["Ioannis Nezis <ioannis@nezis.de>"]
+repository = "https://github.com/IoannisNezis/ntriples-parser"
+license-file = "LICENSE"
+keywords = ["rdf", "n-triples", "parser", "SPARQL"]
+edition = "2024"
+version = "1.0.1"
+
+[dependencies]
+logos = "0.16.0"

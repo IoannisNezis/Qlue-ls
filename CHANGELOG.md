@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [2.0.0] - 2026-02-08
+
 ### Changed
 
 - **BREAKING**: Backend configuration no longer uses a nested `service` object. The fields `name`, `url`, `healthCheckUrl`, and `engine` are now top-level properties of a backend configuration. This affects both the configuration file (`qlue-ls.toml`/`qlue-ls.yml`) and the `qlueLs/addBackend` notification params.
@@ -17,14 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - New optional `additionalData` field on backend configuration.
 
-## [1.1.19] - 2025-02-01
+## [1.1.19] - 2026-02-01
 
 ### Added
 
 - contract triples on format (configurable)
 - new code-action: contract all triples with same subject at once
 
-## [1.1.18] - 2025-01-25
+## [1.1.18] - 2026-01-25
 
 ### Added
 
@@ -38,32 +40,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - reduced footprint of WASM target
 
-## [1.1.17] - 2025-01-24
+## [1.1.17] - 2026-01-24
 
 ### Added
 
 - new configuration option `format.line_length` to control when SELECT clauses break across multiple lines
 
-## [1.1.16] - 2025-01-23
+## [1.1.16] - 2026-01-23
 
 ### Added
 
 - new configuration option `completion.same_subject_semicolon` to control whether subject completions matching the previous subject transform the trailing dot to a semicolon
 - experimental feature: compact formatting
 
-## [1.1.14] - 2025-01-22
+## [1.1.14] - 2026-01-22
 
 ### Changed
 
 - If no limit is provided for "qlueLs/executeOperation" request, the full result is returned
 
-## [1.1.13] - 2025-01-22
+## [1.1.13] - 2026-01-22
 
 ### Added
 
 - new "qlueLs/listBackends" method to list loaded SPARQL services
 
-## [1.1.12] - 2025-01-21
+## [1.1.12] - 2026-01-21
 
 ### Fixed
 
@@ -73,21 +75,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - renamed query template variable "qlue_ls_detail" to "qlue_ls_alias"
 
-## [1.1.11] - 2025-01-20
+## [1.1.11] - 2026-01-20
 
 ### Changed
 
 - remove "Rank" from completion item documentation
 - trigger completion after object completion if object_completion_suffix is enabled
 
-## [1.1.10] - 2025-01-19
+## [1.1.10] - 2026-01-19
 
 ### Added
 
 - option to add suffix " .\n" to object completion queries
 - option to have a minimum of chars before subject online completions are triggered
 
-## [1.1.9] - 2025-01-18
+## [1.1.9] - 2026-01-18
 
 ### Added
 
@@ -97,25 +99,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - use interior mutability for parse tree cache
 
-## [1.1.7] - 2025-01-17
+## [1.1.7] - 2026-01-17
 
 ### Fixed
 
 - lexer for blank node label
 
-## [1.1.5] - 2025-01-17
+## [1.1.5] - 2026-01-17
 
 ### Added
 
 - extra information in the documentation of completion items
 
-## [1.1.4] - 2025-01-16
+## [1.1.4] - 2026-01-16
 
 ### Changed
 
 - keyword completions (FILTER, BIND, OPTIONAL, etc.) are now filtered by search term prefix
 
-## [1.1.3] - 2025-01-16
+## [1.1.3] - 2026-01-16
 
 ### Added
 
@@ -130,13 +132,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - aggregate completion variable
 - completion trigger token detection at end of query with trailing empty nodes
 
-## [1.1.2] - 2025-01-13
+## [1.1.2] - 2026-01-13
 
 ### Fixed
 
 - spaces in variable name completions
 
-## [1.1.1] - 2025-01-13
+## [1.1.1] - 2026-01-13
 
 ### Changed
 

@@ -112,7 +112,6 @@ pub(crate) async fn execute_construct_query(
     })?
     .as_string()
     .unwrap();
-    log::info!("{}", text);
     // Return the text as a JsValue
     let triples = ntriples_parser::parse(text.as_bytes()).map_err(|_e| {
         SparqlRequestError::Deserialization("Could not read n-triples response".to_string())

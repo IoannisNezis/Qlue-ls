@@ -1596,9 +1596,9 @@ checksum = "5e0826a989adedc2a244799e823aece04662b66609d96af8dff7ac6df9a8925d"
 
 [[package]]
 name = "ntriples-parser"
-version = "1.0.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f8050a4a7fce0d4c1607f4143ff2aecda1549f30494cbdff8a852e754d6cb9b"
+checksum = "afcaa3c9319e7766d986961e3120d0d883c9fc1397a3ddfa20bd200782e29b53"
 dependencies = [
  "logos",
 ]

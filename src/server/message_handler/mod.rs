@@ -46,6 +46,7 @@ mod identification;
 mod jump;
 mod lifecycle;
 mod misc;
+mod parse_tree;
 mod settings;
 mod textdocument_synchronization;
 mod workspace;
@@ -85,6 +86,7 @@ use crate::server::{
         execute::handle_execute_request,
         folding_range::handle_folding_range_request,
         identification::handle_identify_request,
+        parse_tree::handle_parse_tree_request,
         settings::{handle_change_settings_notification, handle_default_settings_request},
     },
 };
@@ -144,6 +146,7 @@ pub(super) async fn dispatch(
         "qlueLs/updateDefaultBackend" => call!(handle_update_backend_default_notification),
         "qlueLs/pingBackend" => call_async!(handle_ping_backend_request),
         "qlueLs/jump" => call!(handle_jump_request),
+        "qlueLs/parseTree" => call!(handle_parse_tree_request),
         "qlueLs/identifyOperationType" => call!(handle_identify_request),
         "qlueLs/defaultSettings" => call!(handle_default_settings_request),
         "qlueLs/executeOperation" => call_async!(handle_execute_request),

@@ -291,6 +291,38 @@ interface JumpResult {
 }
 ```
 
+### :deciduous_tree: parseTree
+
+Get the full parse tree for a document. Each element is annotated with its LSP range.
+By default the tree is lossless — it contains every character from the source text, including whitespace and comments.
+Set `skipTrivia` to `true` to exclude whitespace and comment tokens.
+
+*Request*:
+
+- method: `qlueLs/parseTree`
+- params: `ParseTreeParams` defined as follows:
+
+```ts
+interface ParseTreeParams {
+    textDocument: TextDocumentIdentifier;
+    skipTrivia?: boolean;  // If true, excludes whitespace and comment tokens
+}
+```
+
+*Response*:
+
+- result: `ParseTreeElement` — the root node of the parse tree
+
+```ts
+type ParseTreeElement =
+    | { type: "node";  kind: string; range: Range; children: ParseTreeElement[] }
+    | { type: "token"; kind: string; range: Range; text: string };
+```
+
+Node elements represent syntax tree nodes (e.g. `SelectQuery`, `WhereClause`) and contain
+child elements. Token elements represent individual tokens (e.g. `SELECT`, `WHITESPACE`)
+and carry their source text.
+
 ### :question: identifyOperationType
 
 Determine if a SPARQL document is a query or update operation.

@@ -282,6 +282,29 @@ impl TestClient {
         .await
     }
 
+    /// Request parse tree for a document.
+    pub async fn parse_tree(&self, uri: &str) -> u32 {
+        self.send_request(
+            "qlueLs/parseTree",
+            json!({
+                "textDocument": { "uri": uri }
+            }),
+        )
+        .await
+    }
+
+    /// Request parse tree for a document with options.
+    pub async fn parse_tree_with(&self, uri: &str, skip_trivia: bool) -> u32 {
+        self.send_request(
+            "qlueLs/parseTree",
+            json!({
+                "textDocument": { "uri": uri },
+                "skipTrivia": skip_trivia
+            }),
+        )
+        .await
+    }
+
     /// Request jump navigation.
     pub async fn jump(&self, uri: &str, line: u32, character: u32, direction: &str) -> u32 {
         self.send_request(

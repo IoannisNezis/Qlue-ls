@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- `qlueLs/parseTree` request to retrieve the full parse tree for a document, with optional `skipTrivia` parameter to exclude whitespace and comment tokens.
+
 ## [2.0.1] - 2026-02-09
 
 ### Fixed

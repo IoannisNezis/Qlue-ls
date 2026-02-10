@@ -73,7 +73,9 @@ fn build_element(
         .children_with_tokens()
         .filter(|child| !skip_trivia || !child.kind().is_trivia())
         .map(|child| match child {
-            SyntaxElement::Node(child_node) => build_element(&child_node, text, skip_trivia, cursor),
+            SyntaxElement::Node(child_node) => {
+                build_element(&child_node, text, skip_trivia, cursor)
+            }
             SyntaxElement::Token(token) => {
                 let token_range = token.text_range();
                 let token_start = cursor.advance_to(token_range.start().into(), text);

@@ -115,14 +115,14 @@ pub(super) async fn dispatch(
         ($handler:ident) => {{
             let message_copy = message_string.to_string();
 
-            let task = spawn_local(async move {
+            let _task = spawn_local(async move {
                 let message = message.parse().unwrap();
                 if let Err(err) = $handler(server_rc.clone(), message).await {
                     handle_error(server_rc, &message_copy, err).await;
                 }
             });
             #[cfg(not(target_arch = "wasm32"))]
-            task.await.expect("local task should not crash");
+            _task.await.expect("local task should not crash");
             Ok(())
         }};
     }

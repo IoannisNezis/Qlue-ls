@@ -21,6 +21,7 @@ pub(crate) use wasm::*;
 #[cfg(target_arch = "wasm32")]
 #[derive(Debug)]
 pub(super) enum SparqlRequestError {
+    #[allow(dead_code)]
     Timeout,
     Connection(ConnectionError),
     Response(String),

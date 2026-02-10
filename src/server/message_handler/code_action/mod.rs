@@ -61,7 +61,7 @@ fn generate_code_actions(
 ) -> Result<Vec<CodeAction>, LSPError> {
     let document_uri = &params.text_document.uri;
     let document = server.state.get_document(document_uri)?;
-    let root = server.state.get_cached_parse_tree(document_uri)?;
+    let root = server.state.get_cached_parse_tree(document_uri)?.tree;
     let range = params
         .range
         .to_byte_index_range(&document.text)

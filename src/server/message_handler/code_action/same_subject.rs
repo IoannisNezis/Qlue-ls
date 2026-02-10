@@ -77,7 +77,7 @@ pub(super) fn contract_triples_from_diagnostic(
         "The same-subject diagnostic should have a array of ranges as data",
     ))?;
     let document = server.state.get_document(document_uri)?;
-    let root = server.state.get_cached_parse_tree(document_uri)?;
+    let root = server.state.get_cached_parse_tree(document_uri)?.tree;
     let mut triples = Vec::new();
     for range in data {
         if !root.text_range().contains_range(range) {

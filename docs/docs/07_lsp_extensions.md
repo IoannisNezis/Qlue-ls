@@ -311,9 +311,14 @@ interface ParseTreeParams {
 
 *Response*:
 
-- result: `ParseTreeElement` — the root node of the parse tree
+- result: `ParseTreeResult` defined as follows:
 
 ```ts
+interface ParseTreeResult {
+    tree: ParseTreeElement;
+    timeMs: number;  // Time spent parsing in milliseconds
+}
+
 type ParseTreeElement =
     | { type: "node";  kind: string; range: Range; children: ParseTreeElement[] }
     | { type: "token"; kind: string; range: Range; text: string };

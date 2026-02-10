@@ -24,7 +24,8 @@ pub(super) async fn handle_hover_request(
         (
             server
                 .state
-                .get_cached_parse_tree(request.get_document_uri())?,
+                .get_cached_parse_tree(request.get_document_uri())?
+                .tree,
             document.text.clone(),
         )
     };

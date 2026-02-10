@@ -26,18 +26,25 @@ pub struct ParseTreeParams {
 pub struct ParseTreeResponse {
     #[serde(flatten)]
     base: ResponseMessageBase,
-    result: ParseTreeElement,
+    result: ParseTreeResult,
 }
 
 impl LspMessage for ParseTreeResponse {}
 
 impl ParseTreeResponse {
-    pub fn new(id: &RequestId, result: ParseTreeElement) -> Self {
+    pub fn new(id: &RequestId, tree: ParseTreeElement, time_ms: f64) -> Self {
         Self {
             base: ResponseMessageBase::success(id),
-            result,
+            result: ParseTreeResult { tree, time_ms },
         }
     }
+}
+
+#[derive(Debug, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct ParseTreeResult {
+    tree: ParseTreeElement,
+    time_ms: f64,
 }
 
 #[derive(Debug, Serialize, PartialEq)]

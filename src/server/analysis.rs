@@ -20,7 +20,7 @@ pub fn find_all_uncompacted_iris(
     server: &Server,
     document_uri: &str,
 ) -> Result<Vec<Iri>, LSPError> {
-    let root = server.state.get_cached_parse_tree(document_uri)?;
+    let root = server.state.get_cached_parse_tree(document_uri)?.tree;
     let query_unit = QueryUnit::cast(root).ok_or(LSPError::new(
         ErrorCode::InternalError,
         "find_all_uncompacted_uris is not jet supported for update",
@@ -62,7 +62,7 @@ pub(crate) fn find_all_prefix_declarations(
     server_state: &ServerState,
     document_uri: &str,
 ) -> Result<Vec<PrefixDeclaration>, LSPError> {
-    let root = server_state.get_cached_parse_tree(document_uri)?;
+    let root = server_state.get_cached_parse_tree(document_uri)?.tree;
     Ok(root
         .first_child()
         .and_then(|child| child.first_child())

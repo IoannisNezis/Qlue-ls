@@ -34,7 +34,8 @@ pub(super) async fn handle_diagnostic_request(
         .get_document(&request.params.text_document.uri)?;
     let tree = server
         .state
-        .get_cached_parse_tree(&request.params.text_document.uri)?;
+        .get_cached_parse_tree(&request.params.text_document.uri)?
+        .tree;
     let ast = QueryUnit::cast(tree).ok_or(LSPError::new(
         crate::server::lsp::errors::ErrorCode::InternalError,
         "diagnostics are currently only supported for query operations",

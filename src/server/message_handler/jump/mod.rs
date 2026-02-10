@@ -23,7 +23,7 @@ pub(super) async fn handle_jump_request(
     let server = server_rc.lock().await;
     let document_uri = &request.params.base.text_document.uri;
     let document = server.state.get_document(document_uri)?;
-    let root = server.state.get_cached_parse_tree(document_uri)?;
+    let root = server.state.get_cached_parse_tree(document_uri)?.tree;
     let cursor_offset = request
         .params
         .base

@@ -17,10 +17,12 @@ fn test_parse_tree_returns_root_node() {
         let response = client.get_response(id).expect("Should receive parse tree response");
 
         let result = &response["result"];
-        assert_eq!(result["type"], "node", "Root should be a node");
-        assert!(result["kind"].is_string(), "Root should have a kind");
-        assert!(result["children"].is_array(), "Root node should have children");
-        assert!(result["range"].is_object(), "Root should have a range");
+        assert!(result["timeMs"].is_f64(), "Response should include timeMs");
+        let tree = &result["tree"];
+        assert_eq!(tree["type"], "node", "Root should be a node");
+        assert!(tree["kind"].is_string(), "Root should have a kind");
+        assert!(tree["children"].is_array(), "Root node should have children");
+        assert!(tree["range"].is_object(), "Root should have a range");
     });
 }
 
@@ -35,7 +37,7 @@ fn test_parse_tree_root_range_spans_document() {
 
         let id = client.parse_tree("file:///test.sparql").await;
         let response = client.get_response(id).unwrap();
-        let range = &response["result"]["range"];
+        let range = &response["result"]["tree"]["range"];
 
         assert_eq!(range["start"]["line"], 0);
         assert_eq!(range["start"]["character"], 0);
@@ -56,7 +58,7 @@ fn test_parse_tree_contains_tokens_with_text() {
         let id = client.parse_tree("file:///test.sparql").await;
         let response = client.get_response(id).unwrap();
 
-        let tokens = collect_tokens(&response["result"]);
+        let tokens = collect_tokens(&response["result"]["tree"]);
         let texts: Vec<&str> = tokens.iter().filter_map(|t| t["text"].as_str()).collect();
 
         assert!(
@@ -79,7 +81,7 @@ fn test_parse_tree_tokens_have_no_children() {
         let id = client.parse_tree("file:///test.sparql").await;
         let response = client.get_response(id).unwrap();
 
-        let tokens = collect_tokens(&response["result"]);
+        let tokens = collect_tokens(&response["result"]["tree"]);
         for token in &tokens {
             assert!(
                 token.get("children").is_none(),
@@ -102,7 +104,7 @@ fn test_parse_tree_nodes_have_no_text() {
         let id = client.parse_tree("file:///test.sparql").await;
         let response = client.get_response(id).unwrap();
 
-        let nodes = collect_nodes(&response["result"]);
+        let nodes = collect_nodes(&response["result"]["tree"]);
         for node in &nodes {
             assert!(
                 node.get("text").is_none(),
@@ -127,11 +129,11 @@ fn test_parse_tree_with_prefix() {
 
         let id = client.parse_tree("file:///test.sparql").await;
         let response = client.get_response(id).unwrap();
-        let result = &response["result"];
+        let tree = &response["result"]["tree"];
 
-        assert_eq!(result["type"], "node");
+        assert_eq!(tree["type"], "node");
 
-        let tokens = collect_tokens(result);
+        let tokens = collect_tokens(tree);
         let texts: Vec<&str> = tokens.iter().filter_map(|t| t["text"].as_str()).collect();
         assert!(texts.contains(&"PREFIX"), "Should contain PREFIX token");
         assert!(texts.contains(&"SELECT"), "Should contain SELECT token");
@@ -149,10 +151,10 @@ fn test_parse_tree_empty_document() {
 
         let id = client.parse_tree("file:///test.sparql").await;
         let response = client.get_response(id).expect("Should handle empty documents");
-        let result = &response["result"];
+        let tree = &response["result"]["tree"];
 
-        assert_eq!(result["type"], "node");
-        assert!(result["children"].is_array());
+        assert_eq!(tree["type"], "node");
+        assert!(tree["children"].is_array());
     });
 }
 
@@ -167,11 +169,11 @@ fn test_parse_tree_invalid_document() {
 
         let id = client.parse_tree("file:///test.sparql").await;
         let response = client.get_response(id).expect("Should handle invalid documents");
-        let result = &response["result"];
+        let tree = &response["result"]["tree"];
 
         // NOTE: the parser is resilient — it should still produce a tree
-        assert_eq!(result["type"], "node");
-        assert!(result["children"].is_array());
+        assert_eq!(tree["type"], "node");
+        assert!(tree["children"].is_array());
     });
 }
 
@@ -206,17 +208,17 @@ fn test_parse_tree_multiline_ranges() {
 
         let id = client.parse_tree("file:///test.sparql").await;
         let response = client.get_response(id).unwrap();
-        let result = &response["result"];
+        let tree = &response["result"]["tree"];
 
         // NOTE: root range should span from start to end of document
-        let range = &result["range"];
+        let range = &tree["range"];
         assert_eq!(range["start"]["line"], 0);
         assert_eq!(range["start"]["character"], 0);
         assert_eq!(range["end"]["line"], 3);
         assert_eq!(range["end"]["character"], 1);
 
         // NOTE: all tokens should have valid ranges with line >= 0
-        let tokens = collect_tokens(result);
+        let tokens = collect_tokens(tree);
         for token in &tokens {
             let start_line = token["range"]["start"]["line"].as_u64().unwrap();
             let end_line = token["range"]["end"]["line"].as_u64().unwrap();
@@ -241,7 +243,7 @@ fn test_parse_tree_skip_trivia_excludes_whitespace() {
         let id = client.parse_tree_with("file:///test.sparql", true).await;
         let response = client.get_response(id).unwrap();
 
-        let tokens = collect_tokens(&response["result"]);
+        let tokens = collect_tokens(&response["result"]["tree"]);
         let kinds: Vec<&str> = tokens.iter().filter_map(|t| t["kind"].as_str()).collect();
         assert!(
             !kinds.contains(&"WHITESPACE"),
@@ -263,7 +265,7 @@ fn test_parse_tree_skip_trivia_excludes_comments() {
         let id = client.parse_tree_with("file:///test.sparql", true).await;
         let response = client.get_response(id).unwrap();
 
-        let tokens = collect_tokens(&response["result"]);
+        let tokens = collect_tokens(&response["result"]["tree"]);
         let kinds: Vec<&str> = tokens.iter().filter_map(|t| t["kind"].as_str()).collect();
         assert!(
             !kinds.contains(&"Comment"),
@@ -285,7 +287,7 @@ fn test_parse_tree_skip_trivia_false_includes_whitespace() {
         let id = client.parse_tree_with("file:///test.sparql", false).await;
         let response = client.get_response(id).unwrap();
 
-        let tokens = collect_tokens(&response["result"]);
+        let tokens = collect_tokens(&response["result"]["tree"]);
         let kinds: Vec<&str> = tokens.iter().filter_map(|t| t["kind"].as_str()).collect();
         assert!(
             kinds.contains(&"WHITESPACE"),
@@ -308,7 +310,7 @@ fn test_parse_tree_default_includes_whitespace() {
         let id = client.parse_tree("file:///test.sparql").await;
         let response = client.get_response(id).unwrap();
 
-        let tokens = collect_tokens(&response["result"]);
+        let tokens = collect_tokens(&response["result"]["tree"]);
         let kinds: Vec<&str> = tokens.iter().filter_map(|t| t["kind"].as_str()).collect();
         assert!(
             kinds.contains(&"WHITESPACE"),
@@ -341,14 +343,14 @@ fn test_parse_tree_crlf_line_endings() {
 
         // NOTE: root ranges should be identical regardless of line ending style
         assert_eq!(
-            lf_response["result"]["range"],
-            crlf_response["result"]["range"],
+            lf_response["result"]["tree"]["range"],
+            crlf_response["result"]["tree"]["range"],
             "Root range should be the same for LF and CRLF"
         );
 
         // NOTE: all token ranges should match between the two documents
-        let lf_tokens = collect_tokens(&lf_response["result"]);
-        let crlf_tokens = collect_tokens(&crlf_response["result"]);
+        let lf_tokens = collect_tokens(&lf_response["result"]["tree"]);
+        let crlf_tokens = collect_tokens(&crlf_response["result"]["tree"]);
         assert_eq!(lf_tokens.len(), crlf_tokens.len());
         for (lf_tok, crlf_tok) in lf_tokens.iter().zip(crlf_tokens.iter()) {
             assert_eq!(

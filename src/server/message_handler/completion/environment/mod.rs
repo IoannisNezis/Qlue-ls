@@ -316,7 +316,8 @@ impl CompletionEnvironment {
         let tree = server
             .state
             .get_cached_parse_tree(&document_position.text_document.uri)
-            .map_err(|err| CompletionError::Localization(err.message))?;
+            .map_err(|err| CompletionError::Localization(err.message))?
+            .tree;
         let trigger_token = get_trigger_token(&tree, offset);
         let backend = trigger_token.as_ref().and_then(|token| {
             resolve_backend_at_token(&server, &QueryUnit::cast(tree.clone())?, token)

@@ -19,11 +19,15 @@ pub(super) async fn handle_parse_tree_request(
     let server = server_rc.lock().await;
     let document_uri = &request.params.text_document.uri;
     let document = server.state.get_document(document_uri)?;
-    let root = server.state.get_cached_parse_tree(document_uri)?;
+    let parse_result = server.state.get_cached_parse_tree(document_uri)?;
     let skip_trivia = request.params.skip_trivia.unwrap_or(false);
     let mut cursor = Cursor::new();
-    let result = build_element(&root, &document.text, skip_trivia, &mut cursor);
-    server.send_message(ParseTreeResponse::new(&request.base.id, result))
+    let tree = build_element(&parse_result.tree, &document.text, skip_trivia, &mut cursor);
+    server.send_message(ParseTreeResponse::new(
+        &request.base.id,
+        tree,
+        parse_result.parse_time_ms,
+    ))
 }
 
 /// Forward-only cursor that tracks the current byte offset and corresponding

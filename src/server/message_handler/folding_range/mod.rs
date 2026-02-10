@@ -20,7 +20,8 @@ pub(super) async fn handle_folding_range_request(
     let document = server.state.get_document(request.get_document_uri())?;
     let tree = server
         .state
-        .get_cached_parse_tree(request.get_document_uri())?;
+        .get_cached_parse_tree(request.get_document_uri())?
+        .tree;
     if let Some(prologue) = tree
         .first_child()
         .and_then(|child| child.first_child().and_then(Prologue::cast))

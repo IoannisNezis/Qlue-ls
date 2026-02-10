@@ -38,6 +38,32 @@ use ll_sparql_parser::{SyntaxNode, parse};
 use std::cell::RefCell;
 use std::collections::HashMap;
 
+#[cfg(not(target_arch = "wasm32"))]
+fn get_timestamp_ms() -> f64 {
+    use std::time::SystemTime;
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .expect("system time should be after epoch")
+        .as_secs_f64()
+        * 1000.0
+}
+
+#[cfg(target_arch = "wasm32")]
+fn get_timestamp_ms() -> f64 {
+    use wasm_bindgen::JsCast;
+    use web_sys::WorkerGlobalScope;
+    let worker_global: WorkerGlobalScope = js_sys::global().unchecked_into();
+    worker_global
+        .performance()
+        .expect("performance should be available")
+        .now()
+}
+
+pub struct TimedParseResult {
+    pub tree: SyntaxNode,
+    pub parse_time_ms: f64,
+}
+
 #[derive(Debug, PartialEq)]
 pub enum ServerStatus {
     Initializing,
@@ -56,6 +82,7 @@ pub struct CachedParseTree {
     document_uri: String,
     version: u32,
     tree: SyntaxNode,
+    parse_time_ms: f64,
 }
 
 pub struct ServerState {
@@ -175,7 +202,7 @@ impl ServerState {
         ))
     }
 
-    pub(super) fn get_cached_parse_tree(&self, uri: &str) -> Result<SyntaxNode, LSPError> {
+    pub(super) fn get_cached_parse_tree(&self, uri: &str) -> Result<TimedParseResult, LSPError> {
         let document = self.documents.get(uri).ok_or(LSPError::new(
             ErrorCode::InvalidRequest,
             &format!("Requested document \"{}\"could not be found", uri),
@@ -184,16 +211,25 @@ impl ServerState {
             && uri == cached_parse_tree.document_uri
             && cached_parse_tree.version == document.version()
         {
-            return Ok(cached_parse_tree.tree.clone());
+            return Ok(TimedParseResult {
+                tree: cached_parse_tree.tree.clone(),
+                parse_time_ms: cached_parse_tree.parse_time_ms,
+            });
         }
 
+        let start = get_timestamp_ms();
         let (root, _) = parse(&document.text);
+        let parse_time_ms = get_timestamp_ms() - start;
         *self.parse_tree_cache.borrow_mut() = Some(CachedParseTree {
             document_uri: uri.to_string(),
             version: document.version(),
             tree: root.clone(),
+            parse_time_ms,
         });
-        Ok(root)
+        Ok(TimedParseResult {
+            tree: root,
+            parse_time_ms,
+        })
     }
 
     pub(crate) fn get_default_converter(&self) -> Option<&Converter> {

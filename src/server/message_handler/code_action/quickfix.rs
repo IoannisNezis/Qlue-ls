@@ -51,7 +51,8 @@ pub(crate) fn remove_prefix_declaration(
         .state
         .get_cached_parse_tree(document_uri)
         .ok()
-        .and_then(|tree| {
+        .and_then(|result| {
+            let tree = result.tree;
             server
                 .state
                 .get_document(document_uri)

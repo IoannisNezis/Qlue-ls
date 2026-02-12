@@ -1,5 +1,5 @@
-use super::{
-    error::CompletionError, utils::matches_search_term, CompletionEnvironment, CompletionLocation,
+use super::super::{
+    CompletionEnvironment, CompletionLocation, error::CompletionError, utils::matches_search_term,
 };
 use crate::server::lsp::{
     CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
@@ -7,9 +7,7 @@ use crate::server::lsp::{
 use ll_sparql_parser::{ast::AstNode, syntax_kind::SyntaxKind};
 use std::collections::HashSet;
 
-pub(super) fn completions(
-    context: &CompletionEnvironment,
-) -> Result<CompletionList, CompletionError> {
+pub fn completions(context: &CompletionEnvironment) -> Result<CompletionList, CompletionError> {
     if let CompletionLocation::SelectBinding(select_clause) = &context.location {
         let mut items = Vec::new();
         let search_term = context.search_term.as_deref();

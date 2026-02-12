@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use super::{
+use super::super::{
     CompletionEnvironment,
     error::CompletionError,
     utils::{CompletionTemplate, dispatch_completion_query, matches_search_term},
@@ -12,7 +12,7 @@ use crate::server::{
 use futures::lock::Mutex;
 use ll_sparql_parser::syntax_kind::SyntaxKind;
 
-pub(super) async fn completions(
+pub async fn completions(
     server_rc: Rc<Mutex<Server>>,
     environment: &CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {

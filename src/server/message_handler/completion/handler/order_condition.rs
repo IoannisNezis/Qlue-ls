@@ -6,10 +6,10 @@ use ll_sparql_parser::syntax_kind::SyntaxKind;
 use crate::server::{
     Server,
     lsp::{CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults},
-    message_handler::completion::{CompletionEnvironment, CompletionError, variable},
+    message_handler::completion::{CompletionEnvironment, CompletionError, handler::variable},
 };
 
-pub(super) async fn completions(
+pub async fn completions(
     server_rc: Rc<Mutex<Server>>,
     environment: &CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {

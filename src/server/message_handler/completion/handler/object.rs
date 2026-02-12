@@ -1,4 +1,4 @@
-use super::{
+use super::super::{
     CompletionEnvironment,
     error::CompletionError,
     utils::{CompletionTemplate, dispatch_completion_query},
@@ -16,7 +16,7 @@ use tokio::task::spawn_local;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_futures::spawn_local;
 
-pub(super) async fn completions(
+pub async fn completions(
     server_rc: Rc<Mutex<Server>>,
     environment: &CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {

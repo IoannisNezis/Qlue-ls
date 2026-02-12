@@ -1,6 +1,6 @@
 use std::{collections::HashSet, rc::Rc};
 
-use super::{CompletionEnvironment, CompletionLocation, error::CompletionError};
+use super::super::{CompletionEnvironment, CompletionLocation, error::CompletionError};
 use crate::server::{
     Server,
     configuration::Replacement,
@@ -13,7 +13,7 @@ use futures::lock::Mutex;
 use ll_sparql_parser::ast::{AstNode, PrefixedName, Var, VarOrTerm};
 use regex::Regex;
 
-pub(super) async fn completions(
+pub async fn completions(
     server_rc: Rc<Mutex<Server>>,
     environment: &CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
@@ -70,55 +70,55 @@ pub(super) async fn completions(
         .and_then(|token| token.parent())
         .and_then(PrefixedName::cast)
     {
-            let mut object_name = server_rc
-                .lock()
-                .await
-                .state
-                .label_memory
-                .get(&prefixed_name.text())
-                .cloned()
-                .unwrap_or(prefixed_name.name());
+        let mut object_name = server_rc
+            .lock()
+            .await
+            .state
+            .label_memory
+            .get(&prefixed_name.text())
+            .cloned()
+            .unwrap_or(prefixed_name.name());
 
-            if let Some(replacements) = server_rc
-                .lock()
-                .await
-                .settings
-                .replacements
-                .as_ref()
-                .map(|replacements| &replacements.object_variable)
+        if let Some(replacements) = server_rc
+            .lock()
+            .await
+            .settings
+            .replacements
+            .as_ref()
+            .map(|replacements| &replacements.object_variable)
+        {
+            for Replacement {
+                pattern,
+                replacement,
+            } in replacements.iter()
             {
-                for Replacement {
-                    pattern,
-                    replacement,
-                } in replacements.iter()
-                {
-                    object_name = Regex::new(pattern)
-                        .unwrap()
-                        .replace_all(&object_name, replacement)
-                        .to_string();
-                }
+                object_name = Regex::new(pattern)
+                    .unwrap()
+                    .replace_all(&object_name, replacement)
+                    .to_string();
             }
-            let variable = to_sparql_variable(&object_name);
-            suggestions.insert(
-                0,
-                CompletionItem {
-                    label: format!("?{variable}"),
-                    label_details: None,
-                    kind: CompletionItemKind::Variable,
-                    detail: None,
-                    documentation: None,
-                    sort_text: Some("00000".to_string()),
-                    filter_text: Some(format!("?{variable}")),
-                    insert_text: None,
-                    text_edit: Some(TextEdit::new(
-                        environment.replace_range.clone(),
-                        &format!("?{variable}"),
-                    )),
-                    insert_text_format: Some(InsertTextFormat::PlainText),
-                    additional_text_edits: None,
-                    command: None,
-                },
-            );
+        }
+        let variable = to_sparql_variable(&object_name);
+        suggestions.insert(
+            0,
+            CompletionItem {
+                label: format!("?{variable}"),
+                label_details: None,
+                kind: CompletionItemKind::Variable,
+                detail: None,
+                documentation: None,
+                sort_text: Some("00000".to_string()),
+                filter_text: Some(format!("?{variable}")),
+                insert_text: None,
+                text_edit: Some(TextEdit::new(
+                    environment.replace_range.clone(),
+                    &format!("?{variable}"),
+                )),
+                insert_text_format: Some(InsertTextFormat::PlainText),
+                additional_text_edits: None,
+                command: None,
+            },
+        );
         // NOTE: If subject is a variable:
         // append ?[variable]_[object_name] as variable completion
         if let CompletionLocation::Object(triple) = environment.location.clone()

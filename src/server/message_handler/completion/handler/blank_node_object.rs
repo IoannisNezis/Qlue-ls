@@ -1,14 +1,14 @@
 use super::{
-    environment::{CompletionEnvironment, CompletionLocation},
-    error::CompletionError,
-    utils::{CompletionTemplate, dispatch_completion_query},
+    super::environment::{CompletionEnvironment, CompletionLocation},
+    super::error::CompletionError,
+    super::utils::{CompletionTemplate, dispatch_completion_query},
 };
 use crate::server::{Server, lsp::CompletionList};
 use futures::lock::Mutex;
 use ll_sparql_parser::ast::AstNode;
 use std::rc::Rc;
 
-pub(super) async fn completions(
+pub async fn completions(
     server_rc: Rc<Mutex<Server>>,
     environment: &CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {

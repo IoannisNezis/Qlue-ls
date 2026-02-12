@@ -1,4 +1,4 @@
-use super::{CompletionEnvironment, error::CompletionError};
+use super::super::{CompletionEnvironment, error::CompletionError};
 use crate::server::{
     Server,
     configuration::BackendConfiguration,
@@ -11,7 +11,7 @@ use futures::lock::Mutex;
 use ll_sparql_parser::ast::{AstNode, QueryUnit};
 use std::rc::Rc;
 
-pub(super) async fn completions(
+pub async fn completions(
     server_rc: Rc<Mutex<Server>>,
     environment: &CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
@@ -150,7 +150,8 @@ mod tests {
 
     #[test]
     fn synthesizes_prefix_when_no_match() {
-        let sparql = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> SELECT * WHERE { ?s ?p ?o }";
+        let sparql =
+            "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> SELECT * WHERE { ?s ?p ?o }";
         let (tree, _) = parse_query(sparql);
         let query_unit = QueryUnit::cast(tree).unwrap();
         let backend = make_backend("dbpedia", "http://dbpedia.org/");
@@ -160,7 +161,10 @@ mod tests {
         assert_eq!(prefix, "dbpedia-service:");
         let edits = edit.expect("should produce a text edit");
         assert_eq!(edits.len(), 1);
-        assert_eq!(edits[0].new_text, "PREFIX dbpedia-service: <http://dbpedia.org/>\n");
+        assert_eq!(
+            edits[0].new_text,
+            "PREFIX dbpedia-service: <http://dbpedia.org/>\n"
+        );
     }
 
     #[test]
@@ -193,7 +197,10 @@ mod tests {
 
     #[test]
     fn normalize_replaces_spaces_with_underscores() {
-        assert_eq!(normalize_backend_prefix("my backend"), "my_backend-service:");
+        assert_eq!(
+            normalize_backend_prefix("my backend"),
+            "my_backend-service:"
+        );
     }
 
     #[test]

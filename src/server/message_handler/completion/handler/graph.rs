@@ -1,10 +1,8 @@
 use crate::server::lsp::{CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat};
 
-use super::{environment::CompletionEnvironment, error::CompletionError};
+use super::{super::environment::CompletionEnvironment, super::error::CompletionError};
 
-pub(super) fn completions(
-    _context: &CompletionEnvironment,
-) -> Result<CompletionList, CompletionError> {
+pub fn completions(_context: &CompletionEnvironment) -> Result<CompletionList, CompletionError> {
     Ok(CompletionList {
         is_incomplete: false,
         item_defaults: None,

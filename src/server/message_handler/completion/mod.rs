@@ -1,19 +1,8 @@
-mod blank_node_object;
-mod blank_node_property;
 mod environment;
 mod error;
-mod graph;
-mod object;
-mod order_condition;
-mod predicate;
-mod select_binding;
-mod service_url;
-mod solution_modifier;
-mod start;
-mod subject;
+mod handler;
 mod transformer;
 mod utils;
-mod variable;
 
 use std::rc::Rc;
 
@@ -49,7 +38,7 @@ pub(super) async fn handle_completion_request(
             .is_some_and(|search_term| search_term.starts_with("?"))
     {
         Some(
-            variable::completions(server_rc.clone(), &env)
+            handler::variable::completions(server_rc.clone(), &env)
                 .await
                 .map_err(to_lsp_error)?,
         )
@@ -62,34 +51,44 @@ pub(super) async fn handle_completion_request(
                 | CompletionLocation::BlankNodeProperty(_)
                 | CompletionLocation::BlankNodeObject(_)
         )
-        .then_some(variable::completions(server_rc.clone(), &env).await.ok())
+        .then_some(
+            handler::variable::completions(server_rc.clone(), &env)
+                .await
+                .ok(),
+        )
         .flatten();
         let completion_list = (env.location != CompletionLocation::Unknown).then_some(
             match env.location {
-                CompletionLocation::Start => start::completions(&env).await,
-                CompletionLocation::SelectBinding(_) => select_binding::completions(&env),
-                CompletionLocation::Subject => subject::completions(server_rc.clone(), &env).await,
-                CompletionLocation::Predicate(_) => {
-                    predicate::completions(server_rc.clone(), &env).await
+                CompletionLocation::Start => handler::start::completions(&env).await,
+                CompletionLocation::SelectBinding(_) => handler::select_binding::completions(&env),
+                CompletionLocation::Subject => {
+                    handler::subject::completions(server_rc.clone(), &env).await
                 }
-                CompletionLocation::Object(_) => object::completions(server_rc.clone(), &env).await,
-                CompletionLocation::SolutionModifier => solution_modifier::completions(&env),
-                CompletionLocation::Graph => graph::completions(&env),
+                CompletionLocation::Predicate(_) => {
+                    handler::predicate::completions(server_rc.clone(), &env).await
+                }
+                CompletionLocation::Object(_) => {
+                    handler::object::completions(server_rc.clone(), &env).await
+                }
+                CompletionLocation::SolutionModifier => {
+                    handler::solution_modifier::completions(&env)
+                }
+                CompletionLocation::Graph => handler::graph::completions(&env),
                 CompletionLocation::BlankNodeProperty(_) => {
-                    blank_node_property::completions(server_rc.clone(), &env).await
+                    handler::blank_node_property::completions(server_rc.clone(), &env).await
                 }
                 CompletionLocation::BlankNodeObject(_) => {
-                    blank_node_object::completions(server_rc.clone(), &env).await
+                    handler::blank_node_object::completions(server_rc.clone(), &env).await
                 }
                 CompletionLocation::ServiceUrl => {
-                    service_url::completions(server_rc.clone(), &env).await
+                    handler::service_url::completions(server_rc.clone(), &env).await
                 }
                 CompletionLocation::FilterConstraint | CompletionLocation::GroupCondition => {
                     env.replace_range = Range::empty(env.trigger_textdocument_position);
-                    variable::completions(server_rc.clone(), &env).await
+                    handler::variable::completions(server_rc.clone(), &env).await
                 }
                 CompletionLocation::OrderCondition => {
-                    order_condition::completions(server_rc.clone(), &env).await
+                    handler::order_condition::completions(server_rc.clone(), &env).await
                 }
                 ref location => Err(CompletionError::Localization(format!(
                     "Unknown location \"{:?}\"",

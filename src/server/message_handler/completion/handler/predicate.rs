@@ -1,4 +1,4 @@
-use super::{CompletionEnvironment, error::CompletionError, utils::reduce_path};
+use super::super::{CompletionEnvironment, error::CompletionError, utils::reduce_path};
 use crate::server::{
     Server,
     lsp::CompletionList,
@@ -17,7 +17,7 @@ use tokio::task::spawn_local;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_futures::spawn_local;
 
-pub(super) async fn completions(
+pub async fn completions(
     server_rc: Rc<Mutex<Server>>,
     environment: &CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {

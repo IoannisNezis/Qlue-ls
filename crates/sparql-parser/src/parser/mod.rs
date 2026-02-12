@@ -123,7 +123,7 @@ impl Parser {
         Self {
             tokens: input,
             pos: 0,
-            fuel: 256.into(),
+            fuel: 1024.into(),
             events: Vec::new(),
         }
     }
@@ -159,7 +159,7 @@ impl Parser {
 
     fn advance(&mut self) {
         assert!(!self.eof());
-        self.fuel.set(256);
+        self.fuel.set(1024);
         self.events.push(Event::Advance);
         self.pos += 1;
     }
@@ -183,7 +183,8 @@ impl Parser {
     }
 
     fn at_any(&self, kinds: &[SyntaxKind]) -> bool {
-        kinds.iter().any(|kind| self.at(*kind))
+        let current = self.nth(0);
+        kinds.contains(&current)
     }
 
     fn eat(&mut self, kind: SyntaxKind) -> bool {

@@ -69,6 +69,8 @@ pub(crate) enum CompletionTemplate {
     PredicateCompletionContextInsensitive,
     ObjectCompletionContextSensitive,
     ObjectCompletionContextInsensitive,
+    ValuesCompletionContextSensitive,
+    ValuesCompletionContextInsensitive,
 }
 
 #[derive(Debug)]
@@ -87,17 +89,23 @@ impl TryFrom<String> for CompletionTemplate {
         match s.as_str() {
             "hover" => Ok(CompletionTemplate::Hover),
             "subjectCompletion" => Ok(CompletionTemplate::SubjectCompletion),
-            "predicateCompletion" | "predicateCompletionContextInsensitive" => {
+            "predicateCompletionContextInsensitive" => {
                 Ok(CompletionTemplate::PredicateCompletionContextInsensitive)
             }
             "predicateCompletionContextSensitive" => {
                 Ok(CompletionTemplate::PredicateCompletionContextSensitive)
             }
-            "objectCompletion" | "objectCompletionContextInsensitive" => {
+            "objectCompletionContextInsensitive" => {
                 Ok(CompletionTemplate::ObjectCompletionContextInsensitive)
             }
             "objectCompletionContextSensitive" => {
                 Ok(CompletionTemplate::ObjectCompletionContextSensitive)
+            }
+            "valuesCompletionContextSensitive" => {
+                Ok(CompletionTemplate::ValuesCompletionContextSensitive)
+            }
+            "valuesCompletionContextInsensitive" => {
+                Ok(CompletionTemplate::ValuesCompletionContextInsensitive)
             }
             _ => Err(UnknownTemplateError(s.to_string())),
         }
@@ -120,6 +128,12 @@ impl fmt::Display for CompletionTemplate {
             }
             CompletionTemplate::ObjectCompletionContextInsensitive => {
                 write!(f, "objectCompletionContextInsensitive")
+            }
+            CompletionTemplate::ValuesCompletionContextSensitive => {
+                write!(f, "valuesCompletionContextSensitive")
+            }
+            CompletionTemplate::ValuesCompletionContextInsensitive => {
+                write!(f, "valuesCompletionContextInsensitive")
             }
         }
     }
@@ -331,6 +345,8 @@ mod tests {
               predicateCompletionContextInsensitive: SELECT ?qlue_ls_entity WHERE { [] ?qlue_ls_entity [] }
               objectCompletionContextSensitive: SELECT ?qlue_ls_entity WHERE { ?s ?p ?qlue_ls_entity }
               objectCompletionContextInsensitive: SELECT ?qlue_ls_entity WHERE { [] [] ?qlue_ls_entity }
+              valuesCompletionContextSensitive: SELECT ?qlue_ls_entity WHERE { ?qlue_ls_entity ?p ?o }
+              valuesCompletionContextInsensitive: SELECT ?qlue_ls_entity WHERE { ?qlue_ls_entity ?p ?o }
         "#;
 
         let config: BackendConfiguration = parse_yaml(yaml);
@@ -338,7 +354,7 @@ mod tests {
         assert_eq!(config.name, "TestBackend");
         assert_eq!(config.url, "https://example.com/sparql");
         assert!(!config.default);
-        assert_eq!(config.queries.len(), 5);
+        assert_eq!(config.queries.len(), 7);
         assert!(
             config
                 .queries
@@ -363,6 +379,16 @@ mod tests {
             config
                 .queries
                 .contains_key(&CompletionTemplate::ObjectCompletionContextInsensitive)
+        );
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::ValuesCompletionContextSensitive)
+        );
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::ValuesCompletionContextInsensitive)
         );
     }
 

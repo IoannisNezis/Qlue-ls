@@ -118,7 +118,7 @@ impl SelectQuery {
                         triple_block
                             .triples()
                             .iter()
-                            .flat_map(|triple| triple.variables())
+                            .flat_map(|triple| triple.visible_variables())
                             .collect::<Vec<Var>>()
                     })
                     .collect();
@@ -314,7 +314,7 @@ pub struct Bind {
     syntax: SyntaxNode,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct InlineData {
     syntax: SyntaxNode,
 }
@@ -463,8 +463,8 @@ impl Triple {
         PropertyListPath::cast(self.syntax.children().nth(1)?)
     }
 
-    /// Get the `TriplesBlock` this Triple is part of.
-    /// **Note** that this refers to the topmost TriplesBlock and not the next.
+    /// Get the outer `TriplesBlock` this Triple is part of.
+    /// NOTE: TriplesBlock is defined recursivly
     pub fn triples_block(&self) -> Option<TriplesBlock> {
         let mut parent = self.syntax.parent()?;
         if parent.kind() != SyntaxKind::TriplesBlock {
@@ -478,16 +478,6 @@ impl Triple {
             }
         }
         Some(TriplesBlock::cast(parent).expect("parent should be a TriplesBlock"))
-    }
-
-    pub fn variables(&self) -> Vec<Var> {
-        self.syntax
-            .preorder()
-            .filter_map(|walk_event| match walk_event {
-                rowan::WalkEvent::Enter(node) => Var::cast(node),
-                rowan::WalkEvent::Leave(_) => None,
-            })
-            .collect()
     }
 }
 
@@ -1306,7 +1296,24 @@ impl AstNode for InlineData {
     }
 
     fn visible_variables(&self) -> Vec<Var> {
-        self.syntax().descendants().filter_map(Var::cast).collect()
+        self.syntax()
+            .last_child()
+            .and_then(|data_block| data_block.first_child())
+            .and_then(|inline_data| match inline_data.kind() {
+                SyntaxKind::InlineDataOneVar => inline_data
+                    .first_child()
+                    .and_then(Var::cast)
+                    .map(|var| vec![var]),
+                SyntaxKind::InlineDataFull => Some(
+                    inline_data
+                        .children_with_tokens()
+                        .take_while(|child| child.kind() != SyntaxKind::RParen)
+                        .filter_map(|child| child.into_node().and_then(Var::cast))
+                        .collect(),
+                ),
+                _ => None,
+            })
+            .unwrap_or_default()
     }
 }
 

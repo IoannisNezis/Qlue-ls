@@ -31,8 +31,8 @@ serde_json = "1.0.145"
 serde_repr = "0.1.19"
 
 # custom SPARQL parser
-ll-sparql-parser = "2.0.2"
-# ll-sparql-parser = { path = "crates/parser" }
+ll-sparql-parser = "2.0.3"
+# ll-sparql-parser = { path = "./crates/sparql-parser/" }
 
 # URI compression
 curies = "0.1.3"

@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use ll_sparql_parser::{
     SyntaxNode,
-    ast::{AstNode, GraphPatternNotTriples, GroupGraphPattern, PrefixedName, Triple},
+    ast::{AstNode, GraphPatternNotTriples, GroupGraphPattern, PrefixedName},
 };
 use serde::Serialize;
 use text_size::TextSize;
@@ -55,32 +55,52 @@ pub(super) fn context(location: &CompletionLocation) -> Option<Context> {
         CompletionLocation::Predicate(triple) | CompletionLocation::Object(triple) => {
             compute_context(triple)
         }
+        CompletionLocation::InlineData(inline_data) => compute_context(inline_data),
         _ => None,
     }
 }
 
-fn compute_context(triple: &Triple) -> Option<Context> {
+/// Compute the "context" for a given triple.
+/// The context are all elements of the query are connected to the input node.
+/// This is discribed in the "query graph".
+/// The nodes are all syntactic elements of the query.
+/// 2 Nodes are connect if they share a visible variable, that is visible from outside the node.
+/// A select node for example can have variables that are invisible from outsied the node:
+/// ```sparql
+/// SELECT ?x WHERE {
+///     ?x ?y ?z
+/// }
+/// ```
+/// here ?y and ?z are not visible.
+///
+/// The Context then is the connected component of the input node.
+fn compute_context(trigger_node: &impl AstNode) -> Option<Context> {
     let mut graph = QueryGraph::new();
-    // NOTE: this ensures that the trigger triple is node no. 0
+    // NOTE: this ensures that the trigger triple is the first node in the query graph
     graph.add_node(
-        triple.syntax().clone(),
-        triple.variables().iter().map(|var| var.text()).collect(),
+        trigger_node.syntax().clone(),
+        trigger_node
+            .visible_variables()
+            .iter()
+            .map(|var| var.text())
+            .collect(),
     );
-
-    collect_nodes(
-        &mut graph,
-        triple.triples_block()?.group_graph_pattern()?,
-        triple.syntax().text_range().start(),
-    );
+    let ggp = trigger_node
+        .syntax()
+        .ancestors()
+        .find_map(GroupGraphPattern::cast)?;
+    collect_nodes(&mut graph, ggp, trigger_node.syntax().text_range().start());
     // NOTE: compute edges based on visible variables of each pattern
     graph.connect();
 
+    // NOTE: compute connected component of the input node.
     let mut nodes: Vec<SyntaxNode> = graph
         .component(0)
         .into_iter()
-        .filter(|node| node.text_range() != triple.syntax().text_range())
+        .filter(|node| node.text_range() != trigger_node.syntax().text_range())
         .collect();
     nodes.sort_by_key(|node| node.text_range().start());
+    // NOTE: Some nodes may use prefixes, these are needed later for the completion query.
     let prefixes: HashSet<String> = nodes
         .iter()
         .flat_map(|node| {
@@ -89,6 +109,7 @@ fn compute_context(triple: &Triple) -> Option<Context> {
                 .map(|prefixed_name| prefixed_name.prefix())
         })
         .collect();
+
     Some(Context {
         nodes,
         prefixes,
@@ -108,7 +129,11 @@ fn collect_nodes(graph: &mut QueryGraph, group_graph_pattern: GroupGraphPattern,
     {
         graph.add_node(
             triple.syntax().clone(),
-            triple.variables().iter().map(|var| var.text()).collect(),
+            triple
+                .visible_variables()
+                .iter()
+                .map(|var| var.text())
+                .collect(),
         );
     }
 
@@ -165,7 +190,7 @@ mod test {
 
     use super::{Context, context};
 
-    fn location_at(input: &str, cursor: Position) -> Context {
+    fn compute_context_from_cursor_position(input: &str, cursor: Position) -> Context {
         let (root, _) = parse_query(input);
         let offset = cursor.byte_index(input).unwrap();
         let trigger_token = get_trigger_token(&root, offset).unwrap();
@@ -186,7 +211,7 @@ mod test {
             "
         };
         let position = Position::new(3, 6);
-        let context = location_at(input, position);
+        let context = compute_context_from_cursor_position(input, position);
         assert_eq!(
             serde_json::to_value(&context).unwrap().as_str().unwrap(),
             indoc! {
@@ -207,7 +232,7 @@ mod test {
             "
         };
         let position = Position::new(3, 6);
-        let context = location_at(input, position);
+        let context = compute_context_from_cursor_position(input, position);
         assert_eq!(
             serde_json::to_value(&context).unwrap().as_str().unwrap(),
             indoc! {
@@ -227,7 +252,7 @@ mod test {
             "
         };
         let position = Position::new(3, 6);
-        let context = location_at(input, position);
+        let context = compute_context_from_cursor_position(input, position);
         assert_eq!(
             serde_json::to_value(&context).unwrap().as_str().unwrap(),
             indoc! {
@@ -254,7 +279,7 @@ mod test {
             "
         };
         let position = Position::new(8, 6);
-        let context = location_at(input, position);
+        let context = compute_context_from_cursor_position(input, position);
         assert_eq!(
             serde_json::to_value(&context).unwrap().as_str().unwrap(),
             indoc! {
@@ -302,7 +327,7 @@ mod test {
              }"
         };
         let position = Position::new(31, 4);
-        let context = location_at(input, position);
+        let context = compute_context_from_cursor_position(input, position);
         assert_eq!(
             serde_json::to_value(&context).unwrap().as_str().unwrap(),
             indoc! {
@@ -342,7 +367,7 @@ mod test {
             "#
         };
         let position = Position::new(9, 6);
-        let context = location_at(input, position);
+        let context = compute_context_from_cursor_position(input, position);
         assert_eq!(
             serde_json::to_value(&context).unwrap().as_str().unwrap(),
             indoc! {
@@ -352,6 +377,27 @@ mod test {
                  ?n4 <> ?n9 .
                  ?n5 ?n6 "dings" .
                  ?n4 <> ?n2}"#
+            }
+        );
+    }
+
+    #[test]
+    fn inline_data_context() {
+        let input = indoc! {
+            r#"SELECT * WHERE {
+                 ?a ?b ?s .
+                 ?s ?p ?o
+                 VALUES ?s {  }
+               }
+              "#
+        };
+        let position = Position::new(3, 14);
+        let context = compute_context_from_cursor_position(input, position);
+        assert_eq!(
+            serde_json::to_value(&context).unwrap().as_str().unwrap(),
+            indoc! {
+              r#"{?a ?b ?s .
+                 ?s ?p ?o}"#
             }
         );
     }

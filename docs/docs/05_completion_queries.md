@@ -20,13 +20,15 @@ Optionally, you can include `?qlue_ls_count` to provide a relevance score (e.g.,
 
 There are five completion query types that can be configured:
 
-| Query Type                              | Purpose                                         |
-| --------------------------------------- | ----------------------------------------------- |
-| `subjectCompletion`                     | Find subject entities                           |
-| `predicateCompletionContextSensitive`   | Find predicates using surrounding query context |
-| `predicateCompletionContextInsensitive` | Find predicates without using context           |
-| `objectCompletionContextSensitive`      | Find objects using surrounding query context    |
-| `objectCompletionContextInsensitive`    | Find objects without using context              |
+| Query Type                              | Purpose                                          |
+| --------------------------------------- | ------------------------------------------------ |
+| `subjectCompletion`                     | Find subject entities                            |
+| `predicateCompletionContextSensitive`   | Find predicates using surrounding query context  |
+| `predicateCompletionContextInsensitive` | Find predicates without using context            |
+| `objectCompletionContextSensitive`      | Find objects using surrounding query context     |
+| `objectCompletionContextInsensitive`    | Find objects without using context               |
+| `valuesCompletionContextSensitive`      | Find VALUES entries using surrounding context    |
+| `valuesCompletionContextInsensitive`    | Find VALUES entries without using context        |
 
 Additionally, `hover` queries can be configured to fetch entity information for tooltips. These are not completion queries and have different result variable requirements (see [Hover Query](#hover-query)).
 
@@ -186,6 +188,74 @@ SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
 ```
 
 ### Object Completion (Context-Insensitive)
+
+```sparql
+{% for prefix in prefixes %}
+PREFIX {{prefix.0}}: <{{prefix.1}}>
+{% endfor %}
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
+  {
+    SELECT ?qlue_ls_entity (COUNT(*) AS ?qlue_ls_count) WHERE {
+      {{ local_context }}
+    }
+    GROUP BY ?qlue_ls_entity
+    ORDER BY DESC(?qlue_ls_count)
+    LIMIT {{ limit }}
+  }
+  OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label }
+  OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_alias }
+  {% if search_term %}
+  FILTER(CONTAINS(LCASE(STR(?qlue_ls_label)), LCASE("{{ search_term }}")))
+  {% endif %}
+}
+```
+
+### VALUES Completion (Context-Sensitive)
+
+VALUES completions trigger inside `VALUES ?var { ... }` blocks. The `local_context` is a `BIND` expression that connects the VALUES variable to `?qlue_ls_entity`:
+
+```
+BIND(?var AS ?qlue_ls_entity)
+```
+
+This allows the context-sensitive query to use surrounding triple patterns that reference the same variable to narrow results. For example, given:
+
+```sparql
+SELECT * WHERE {
+  ?s rdf:type <Book> .
+  ?s <title> ?title
+  VALUES ?s { | }
+}
+```
+
+The `context` will contain the connected triples `?s rdf:type <Book> . ?s <title> ?title`, and `local_context` will be `BIND(?s AS ?qlue_ls_entity)`, so the query effectively finds all `?s` that match the surrounding patterns.
+
+```sparql
+{% for prefix in prefixes %}
+PREFIX {{prefix.0}}: <{{prefix.1}}>
+{% endfor %}
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
+  {
+    SELECT ?qlue_ls_entity (COUNT(*) AS ?qlue_ls_count) WHERE {
+      {{ context }} {{ local_context }}
+    }
+    GROUP BY ?qlue_ls_entity
+    ORDER BY DESC(?qlue_ls_count)
+    LIMIT {{ limit }}
+  }
+  OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label }
+  OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_alias }
+  {% if search_term %}
+  FILTER(CONTAINS(LCASE(STR(?qlue_ls_label)), LCASE("{{ search_term }}")))
+  {% endif %}
+}
+```
+
+### VALUES Completion (Context-Insensitive)
+
+The context-insensitive variant uses only the `local_context` (the `BIND` expression), providing broader results when context isn't available.
 
 ```sparql
 {% for prefix in prefixes %}

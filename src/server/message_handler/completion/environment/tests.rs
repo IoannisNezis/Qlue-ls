@@ -314,3 +314,114 @@ fn localize_order_condition() {
     let (root, _) = parse_query(input);
     assert!(get_trigger_token(&root, 27.into()).is_some());
 }
+
+// --- InlineData (VALUES) location tests ---
+
+#[test]
+fn localize_inline_data_one_var() {
+    //           0         1         2
+    //           0123456789012345678901234
+    let input = "SELECT * { VALUES ?x {  } }";
+    assert!(matches!(
+        location(input, 23),
+        CompletionLocation::InlineData((_, 0)),
+    ));
+}
+
+#[test]
+fn localize_inline_data_one_var_with_existing_value() {
+    //           0         1         2         3
+    //           0123456789012345678901234567890123
+    let input = "SELECT * { VALUES ?x { <a>  } }";
+    assert!(matches!(
+        location(input, 27),
+        CompletionLocation::InlineData((_, 0)),
+    ));
+}
+
+#[test]
+fn localize_inline_data_full_first_slot() {
+    //           0         1         2         3
+    //           01234567890123456789012345678901234
+    let input = "SELECT * { VALUES (?x ?y) { (  ) } }";
+    assert!(matches!(
+        location(input, 30),
+        CompletionLocation::InlineData((_, 0)),
+    ));
+}
+
+#[test]
+fn localize_inline_data_full_second_slot() {
+    //           0         1         2         3         4
+    //           01234567890123456789012345678901234567890123
+    let input = "SELECT * { VALUES (?x ?y) { (<a>  ) } }";
+    assert!(matches!(
+        location(input, 33),
+        CompletionLocation::InlineData((_, 1)),
+    ));
+}
+
+#[test]
+fn localize_inline_data_full_third_slot() {
+    //           0         1         2         3         4         5
+    //           012345678901234567890123456789012345678901234567890123
+    let input = "SELECT * { VALUES (?x ?y ?z) { (<a> <b>  ) } }";
+    assert!(matches!(
+        location(input, 40),
+        CompletionLocation::InlineData((_, 2)),
+    ));
+}
+
+#[test]
+fn localize_inline_data_full_second_row_resets_index() {
+    //           0         1         2         3         4         5
+    //           0123456789012345678901234567890123456789012345678901234567
+    let input = "SELECT * { VALUES (?x ?y) { (<a> <b>) (  ) } }";
+    // NOTE: cursor in second row, first slot — index should reset to 0
+    assert!(matches!(
+        location(input, 40),
+        CompletionLocation::InlineData((_, 0)),
+    ));
+}
+
+#[test]
+fn localize_inline_data_full_second_row_second_slot() {
+    //           0         1         2         3         4         5         6
+    //           0123456789012345678901234567890123456789012345678901234567890123
+    let input = "SELECT * { VALUES (?x ?y) { (<a> <b>) (<c>  ) } }";
+    // NOTE: cursor in second row, second slot
+    assert!(matches!(
+        location(input, 44),
+        CompletionLocation::InlineData((_, 1)),
+    ));
+}
+
+#[test]
+fn localize_inline_data_empty_multi_var_block_is_unknown() {
+    //           0         1         2         3
+    //           01234567890123456789012345678901
+    let input = "SELECT * { VALUES (?x ?y) {  } }";
+    // NOTE: cursor in empty block without a parenthesized row — no DataBlockValue continuation
+    assert!(matches!(location(input, 28), CompletionLocation::Unknown));
+}
+
+#[test]
+fn localize_inline_data_post_query_is_unknown() {
+    //           0         1         2         3
+    //           01234567890123456789012345
+    let input = "SELECT * {} VALUES ?x {  }";
+    // NOTE: post-query VALUES clause (ValuesClause) is not handled as InlineData
+    assert!(matches!(location(input, 24), CompletionLocation::Unknown));
+}
+
+#[test]
+fn localize_inline_data_index_beyond_declared_vars() {
+    //           0         1         2         3         4         5
+    //           012345678901234567890123456789012345678901234567890123
+    let input = "SELECT * { VALUES (?x ?y) { (<a> <b> |) } }";
+    // NOTE: cursor after two DataBlockValues — index 2 exceeds the two declared variables
+    assert!(matches!(
+        location(input, 38),
+        CompletionLocation::InlineData((_, 2)),
+    ));
+}

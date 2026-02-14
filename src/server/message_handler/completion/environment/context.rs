@@ -189,7 +189,7 @@ mod test {
         },
     };
 
-    use super::{Context, context};
+    use super::{super::CompletionLocation, Context, context};
 
     fn compute_context_from_cursor_position(input: &str, cursor: Position) -> Context {
         let (root, _) = parse_query(input);
@@ -421,6 +421,183 @@ mod test {
             indoc! {
               r#"{?a ?b ?s}"#
             }
+        );
+    }
+
+    #[test]
+    fn inline_data_multi_variable_second_slot() {
+        let input = indoc! {
+            r#"SELECT * WHERE {
+                 ?a ?b ?s .
+                 ?x <p1> <o1>
+                 VALUES (?s ?x) { (<urn:a> | ) }
+               }
+              "#
+        };
+        // NOTE: cursor at index 1 → the ?x slot
+        let position = Position::new(3, 29);
+        let context = compute_context_from_cursor_position(input, position);
+        assert_eq!(
+            serde_json::to_value(&context).unwrap().as_str().unwrap(),
+            indoc! {
+              r#"{?x <p1> <o1>}"#
+            }
+        );
+    }
+
+    #[test]
+    fn inline_data_three_variables_middle_slot() {
+        let input = indoc! {
+            r#"SELECT * WHERE {
+                 ?a <p> ?b .
+                 ?b <q> ?c .
+                 ?d <r> <s>
+                 VALUES (?a ?b ?d) { (<urn:a> | <urn:d>) }
+               }
+              "#
+        };
+        // NOTE: cursor at index 1 → the ?b slot, which connects to both ?a and ?c triples
+        let position = Position::new(4, 34);
+        let context = compute_context_from_cursor_position(input, position);
+        assert_eq!(
+            serde_json::to_value(&context).unwrap().as_str().unwrap(),
+            indoc! {
+              r#"{?a <p> ?b .
+                 ?b <q> ?c}"#
+            }
+        );
+    }
+
+    #[test]
+    fn inline_data_variable_no_connected_triples() {
+        let input = indoc! {
+            r#"SELECT * WHERE {
+                 ?a <p> ?b
+                 VALUES (?a ?x) { (<urn:a> | ) }
+               }
+              "#
+        };
+        // NOTE: cursor at index 1 → the ?x slot, which has no connected triples
+        let position = Position::new(2, 29);
+        let context = compute_context_from_cursor_position(input, position);
+        assert!(
+            context.nodes.is_empty(),
+            "Expected no connected triples for ?x, but got: {:?}",
+            context.nodes
+        );
+    }
+
+    #[test]
+    fn inline_data_second_row_resets_index() {
+        let input = indoc! {
+            r#"SELECT * WHERE {
+                 ?a <p1> ?b .
+                 ?c <p2> <o2>
+                 VALUES (?a ?c) { (<urn:1> <urn:2>) ( | ) }
+               }
+              "#
+        };
+        // NOTE: cursor in the second row, index 0 → the ?a slot
+        let position = Position::new(3, 42);
+        let context = compute_context_from_cursor_position(input, position);
+        assert_eq!(
+            serde_json::to_value(&context).unwrap().as_str().unwrap(),
+            indoc! {
+              r#"{?a <p1> ?b}"#
+            }
+        );
+    }
+
+    #[test]
+    fn inline_data_second_row_second_slot() {
+        let input = indoc! {
+            r#"SELECT * WHERE {
+                 ?a <p1> ?b .
+                 ?c <p2> <o2>
+                 VALUES (?a ?c) { (<urn:1> <urn:2>) (<urn:3> | ) }
+               }
+              "#
+        };
+        // NOTE: cursor in the second row, index 1 → the ?c slot
+        let position = Position::new(3, 50);
+        let context = compute_context_from_cursor_position(input, position);
+        assert_eq!(
+            serde_json::to_value(&context).unwrap().as_str().unwrap(),
+            indoc! {
+              r#"{?c <p2> <o2>}"#
+            }
+        );
+    }
+
+    #[test]
+    fn inline_data_one_var_context_unchanged() {
+        let input = indoc! {
+            r#"SELECT * WHERE {
+                 ?s <p1> <o1> .
+                 ?s <p2> <o2>
+                 VALUES ?s {  }
+               }
+              "#
+        };
+        // NOTE: single-variable VALUES, should still connect to both triples
+        let position = Position::new(3, 14);
+        let context = compute_context_from_cursor_position(input, position);
+        assert_eq!(
+            serde_json::to_value(&context).unwrap().as_str().unwrap(),
+            indoc! {
+              r#"{?s <p1> <o1> .
+                 ?s <p2> <o2>}"#
+            }
+        );
+    }
+
+    #[test]
+    fn inline_data_context_with_sub_select() {
+        let input = indoc! {
+            r#"SELECT * WHERE {
+                 { SELECT ?x WHERE { ?x <p> <o> } }
+                 ?a <q> ?b
+                 VALUES (?x ?a) { ( | ) }
+               }
+              "#
+        };
+        // NOTE: cursor at index 0 → the ?x slot, connected to the sub-select
+        let position = Position::new(3, 24);
+        let context = compute_context_from_cursor_position(input, position);
+        assert_eq!(
+            serde_json::to_value(&context).unwrap().as_str().unwrap(),
+            indoc! {
+              r#"{{ SELECT ?x WHERE { ?x <p> <o> } }}"#
+            }
+        );
+    }
+
+    #[test]
+    fn inline_data_index_beyond_declared_vars_returns_none() {
+        let input = indoc! {
+            r#"SELECT * WHERE {
+                 ?a <p> ?b
+                 VALUES (?a ?b) { (<urn:1> <urn:2> | ) }
+               }
+              "#
+        };
+        // NOTE: cursor after two DataBlockValues — index 2 has no corresponding variable,
+        // so context() should return None.
+        let (root, _) = parse_query(input);
+        let position = Position::new(2, 36);
+        let offset = position.byte_index(input).unwrap();
+        let trigger_token = get_trigger_token(&root, offset).unwrap();
+        let anchor = get_anchor_token(trigger_token, offset);
+        let continuations = get_continuations(&root, &anchor);
+        let location = get_location(&anchor, &continuations, offset);
+        assert!(
+            matches!(&location, CompletionLocation::InlineData((_, 2))),
+            "Expected InlineData with index 2, got {:?}",
+            location
+        );
+        assert!(
+            context(&location).is_none(),
+            "Expected None context for out-of-bounds variable index"
         );
     }
 

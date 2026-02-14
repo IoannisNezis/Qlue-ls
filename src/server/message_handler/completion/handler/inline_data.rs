@@ -24,7 +24,7 @@ pub async fn completions(
     environment: &CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
     let mut template_context = environment.template_context().await;
-    template_context.insert("local_context", &local_context(environment));
+    template_context.insert("local_context", &local_context(environment)?);
 
     let (sender, receiver) = oneshot::channel::<CompletionList>();
 
@@ -69,13 +69,19 @@ pub async fn completions(
     }
 }
 
-fn local_context(environment: &CompletionEnvironment) -> String {
-    if let CompletionLocation::InlineData(ref inline_data) = environment.location {
-        format!(
-            "BIND({} AS ?qlue_ls_entity)",
-            inline_data.visible_variables().first().unwrap().text(),
-        )
+fn local_context(environment: &CompletionEnvironment) -> Result<String, CompletionError> {
+    if let CompletionLocation::InlineData((ref inline_data, index)) = environment.location {
+        let var = inline_data
+            .visible_variables()
+            .get(index)
+            .ok_or(CompletionError::Resolve(
+                "VALUES clause has no variable at index".to_string(),
+            ))?
+            .text();
+        Ok(format!("BIND({} AS ?qlue_ls_entity)", var))
     } else {
-        panic!()
+        Err(CompletionError::Resolve(
+            "inline_data completion called for non InlineData location".to_string(),
+        ))
     }
 }

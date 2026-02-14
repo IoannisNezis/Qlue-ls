@@ -15,7 +15,7 @@ use futures::lock::Mutex;
 use indoc::indoc;
 use ll_sparql_parser::{
     SyntaxNode, SyntaxToken, TokenAtOffset,
-    ast::{AstNode, BlankPropertyList, QueryUnit, SelectClause, Triple},
+    ast::{AstNode, BlankPropertyList, InlineData, QueryUnit, SelectClause, Triple},
     continuations_at,
     syntax_kind::SyntaxKind,
 };
@@ -242,6 +242,18 @@ pub(super) enum CompletionLocation {
     /// ORDER BY >here<
     /// ```
     OrderCondition,
+
+    /// Inline Data (aka VALUES clause)
+    ///
+    /// ---
+    ///
+    /// **Example**
+    /// ```sparql
+    /// SELECT * WHERE {
+    ///   VALUES ?x {>here<}
+    /// }
+    /// ```
+    InlineData((InlineData, usize)),
 }
 
 impl CompletionEnvironment {
@@ -452,7 +464,6 @@ fn get_location(
             SyntaxKind::GroupGraphPatternSub,
             SyntaxKind::TriplesBlock,
             SyntaxKind::GraphPatternNotTriples,
-            SyntaxKind::DataBlockValue,
             SyntaxKind::GraphNodePath
         ]) {
             CompletionLocation::Subject
@@ -526,12 +537,59 @@ fn get_location(
                 && child_of!([SyntaxKind::OrderCondition]))
         {
             CompletionLocation::OrderCondition
+        }
+        // NOTE: InlineData
+        else if continues_with!([SyntaxKind::DataBlockValue]) {
+            match anchor.parent_ancestors().find_map(InlineData::cast) {
+                Some(inline_data) => {
+                    let index = inline_data_variable_index(&inline_data, offset);
+                    CompletionLocation::InlineData((inline_data, index))
+                }
+                None => CompletionLocation::Unknown,
+            }
         } else {
             CompletionLocation::Unknown
         }
     } else {
         CompletionLocation::Start
     }
+}
+
+/// Compute which variable position the cursor is at inside an InlineData (VALUES) clause.
+/// For `VALUES (?x ?y) { (<a> |) }` with cursor at `|`, returns 1 (the ?y slot).
+fn inline_data_variable_index(inline_data: &InlineData, offset: TextSize) -> usize {
+    // NOTE: InlineData → DataBlock → InlineDataOneVar | InlineDataFull
+    let Some(data_block) = inline_data.syntax().last_child() else {
+        return 0;
+    };
+    let Some(inner) = data_block.first_child() else {
+        return 0;
+    };
+    if inner.kind() != SyntaxKind::InlineDataFull {
+        return 0;
+    }
+    let mut past_lcurly = false;
+    let mut counter = 0;
+    for child in inner.children_with_tokens() {
+        if child.kind() == SyntaxKind::LCurly {
+            past_lcurly = true;
+            continue;
+        }
+        if !past_lcurly {
+            continue;
+        }
+        if child.kind() == SyntaxKind::LParen {
+            counter = 0;
+        } else if child.kind() == SyntaxKind::DataBlockValue
+            && child.text_range().end() <= offset
+        {
+            counter += 1;
+        }
+        if child.text_range().start() >= offset {
+            return counter;
+        }
+    }
+    counter
 }
 
 fn get_continuations(root: &SyntaxNode, anchor_token: &Option<SyntaxToken>) -> HashSet<SyntaxKind> {

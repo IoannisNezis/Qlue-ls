@@ -3,12 +3,10 @@ mod error;
 mod handler;
 mod transformer;
 mod utils;
-
-use std::rc::Rc;
-
 use environment::{CompletionEnvironment, CompletionLocation};
 use error::{CompletionError, to_lsp_error};
 use futures::lock::Mutex;
+use std::rc::Rc;
 
 use crate::server::{
     Server,
@@ -89,6 +87,9 @@ pub(super) async fn handle_completion_request(
                 }
                 CompletionLocation::OrderCondition => {
                     handler::order_condition::completions(server_rc.clone(), &env).await
+                }
+                CompletionLocation::InlineData(..) => {
+                    handler::inline_data::completions(server_rc.clone(), &env).await
                 }
                 ref location => Err(CompletionError::Localization(format!(
                     "Unknown location \"{:?}\"",

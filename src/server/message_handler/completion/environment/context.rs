@@ -53,9 +53,17 @@ impl Serialize for Context {
 pub(super) fn context(location: &CompletionLocation) -> Option<Context> {
     match location {
         CompletionLocation::Predicate(triple) | CompletionLocation::Object(triple) => {
-            compute_context(triple)
+            let variables = triple
+                .visible_variables()
+                .iter()
+                .map(|var| var.text())
+                .collect();
+            compute_context(triple, variables)
         }
-        CompletionLocation::InlineData(inline_data) => compute_context(inline_data),
+        CompletionLocation::InlineData((inline_data, index)) => {
+            let var = inline_data.visible_variables().get(*index)?.text();
+            compute_context(inline_data, HashSet::from([var]))
+        }
         _ => None,
     }
 }
@@ -74,17 +82,10 @@ pub(super) fn context(location: &CompletionLocation) -> Option<Context> {
 /// here ?y and ?z are not visible.
 ///
 /// The Context then is the connected component of the input node.
-fn compute_context(trigger_node: &impl AstNode) -> Option<Context> {
+fn compute_context(trigger_node: &impl AstNode, variables: HashSet<String>) -> Option<Context> {
     let mut graph = QueryGraph::new();
     // NOTE: this ensures that the trigger triple is the first node in the query graph
-    graph.add_node(
-        trigger_node.syntax().clone(),
-        trigger_node
-            .visible_variables()
-            .iter()
-            .map(|var| var.text())
-            .collect(),
-    );
+    graph.add_node(trigger_node.syntax().clone(), variables);
     let ggp = trigger_node
         .syntax()
         .ancestors()
@@ -398,6 +399,27 @@ mod test {
             indoc! {
               r#"{?a ?b ?s .
                  ?s ?p ?o}"#
+            }
+        );
+    }
+
+    #[test]
+    fn inline_data_multi_variable_context() {
+        let input = indoc! {
+            r#"SELECT * WHERE {
+                 ?a ?b ?s .
+                 ?x <p1> <o1>
+                 VALUES (?s ?x) { ( | ) }
+               }
+              "#
+        };
+        // NOTE: cursor at index 0 → the ?s slot
+        let position = Position::new(3, 22);
+        let context = compute_context_from_cursor_position(input, position);
+        assert_eq!(
+            serde_json::to_value(&context).unwrap().as_str().unwrap(),
+            indoc! {
+              r#"{?a ?b ?s}"#
             }
         );
     }

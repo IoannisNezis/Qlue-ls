@@ -1,6 +1,7 @@
 pub(super) mod blank_node_object;
 pub(super) mod blank_node_property;
 pub(super) mod graph;
+pub(super) mod inline_data;
 pub(super) mod object;
 pub(super) mod order_condition;
 pub(super) mod predicate;

@@ -182,7 +182,7 @@ SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
   OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label }
   OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_alias }
   {% if search_term %}
-  FILTER(CONTAINS(LCASE(STR(?qlue_ls_label)), LCASE("{{ search_term }}")))
+  FILTER(CONTAINS(LCASE(STR(?qlue_ls_label)), LCASE("{{ search_term }}")) || CONTAINS(LCASE(STR(?alias)), LCASE("{{ search_term }}")))
   {% endif %}
 }
 ```
@@ -206,7 +206,7 @@ SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
   OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label }
   OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_alias }
   {% if search_term %}
-  FILTER(CONTAINS(LCASE(STR(?qlue_ls_label)), LCASE("{{ search_term }}")))
+  FILTER(CONTAINS(LCASE(STR(?qlue_ls_label)), LCASE("{{ search_term }}")) || CONTAINS(LCASE(STR(?alias)), LCASE("{{ search_term }}")))
   {% endif %}
 }
 ```
@@ -236,21 +236,20 @@ The `context` will contain the connected triples `?s rdf:type <Book> . ?s <title
 PREFIX {{prefix.0}}: <{{prefix.1}}>
 {% endfor %}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
-  {
-    SELECT ?qlue_ls_entity (COUNT(*) AS ?qlue_ls_count) WHERE {
-      {{ context }} {{ local_context }}
-    }
-    GROUP BY ?qlue_ls_entity
-    ORDER BY DESC(?qlue_ls_count)
-    LIMIT {{ limit }}
-  }
-  OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label }
-  OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_alias }
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+SELECT ?qlue_ls_entity ?qlue_ls_label (GROUP_CONCAT(DISTINCT ?alias; SEPARATOR=", ") AS ?qlue_ls_alias) ?qlue_ls_count WHERE {
+  {{ context }} {{ local_context }}
+  ?qlue_ls_entity wikibase:sitelinks ?qlue_ls_count .
+  OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label . FILTER(LANG(?qlue_ls_label) = "en") }
+  OPTIONAL { ?qlue_ls_entity skos:altLabel ?alias . FILTER(LANG(?alias) = "en") }
   {% if search_term %}
-  FILTER(CONTAINS(LCASE(STR(?qlue_ls_label)), LCASE("{{ search_term }}")))
+  FILTER(CONTAINS(LCASE(STR(?qlue_ls_label)), LCASE("{{ search_term }}")) || CONTAINS(LCASE(STR(?alias)), LCASE("{{ search_term }}")))
   {% endif %}
 }
+GROUP BY ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_count
+ORDER BY DESC(?qlue_ls_count)
+LIMIT {{ limit }}
 ```
 
 ### VALUES Completion (Context-Insensitive)
@@ -262,21 +261,20 @@ The context-insensitive variant uses only the `local_context` (the `BIND` expres
 PREFIX {{prefix.0}}: <{{prefix.1}}>
 {% endfor %}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
-  {
-    SELECT ?qlue_ls_entity (COUNT(*) AS ?qlue_ls_count) WHERE {
-      {{ local_context }}
-    }
-    GROUP BY ?qlue_ls_entity
-    ORDER BY DESC(?qlue_ls_count)
-    LIMIT {{ limit }}
-  }
-  OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label }
-  OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_alias }
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+SELECT ?qlue_ls_entity ?qlue_ls_label (GROUP_CONCAT(DISTINCT ?alias; SEPARATOR=", ") AS ?qlue_ls_alias) ?qlue_ls_count WHERE {
+  {{ local_context }}
+  ?qlue_ls_entity wikibase:sitelinks ?qlue_ls_count .
+  OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label . FILTER(LANG(?qlue_ls_label) = "en") }
+  OPTIONAL { ?qlue_ls_entity skos:altLabel ?alias . FILTER(LANG(?alias) = "en") }
   {% if search_term %}
-  FILTER(CONTAINS(LCASE(STR(?qlue_ls_label)), LCASE("{{ search_term }}")))
+  FILTER(CONTAINS(LCASE(STR(?qlue_ls_label)), LCASE("{{ search_term }}")) || CONTAINS(LCASE(STR(?alias)), LCASE("{{ search_term }}")))
   {% endif %}
 }
+GROUP BY ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_count
+ORDER BY DESC(?qlue_ls_count)
+LIMIT {{ limit }}
 ```
 
 **Note**: The `{{ context }}` variable renders to an empty string when not available, so explicit `{% if context %}` checks are only needed when you want fundamentally different query structures based on context presence.

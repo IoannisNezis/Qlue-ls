@@ -282,6 +282,12 @@ impl CompletionEnvironment {
             prefixes.extend(context.prefixes.clone());
         }
         let prefix_declarations = get_prefix_declarations(&self.tree).await;
+        let prefix_declarations_rendered: String = prefix_declarations
+            .iter()
+            .map(|(name, uri)| format!("PREFIX {}: <{}>", name, uri))
+            .collect::<Vec<_>>()
+            .join("\n");
+        template_context.insert("prefix_declarations", &prefix_declarations_rendered);
         template_context.insert("prefixes", &prefix_declarations);
         template_context.insert("search_term", &self.search_term);
         if let Some(search_term) = self.search_term.as_ref() {

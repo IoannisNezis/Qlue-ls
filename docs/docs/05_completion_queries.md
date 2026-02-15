@@ -43,6 +43,7 @@ Each template has the following variables available:
 
 | Variable                   | Type   | Description                                                   | Example                                                                                                       |
 | -------------------------- | ------ | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `prefix_declarations`      | string | Pre-rendered PREFIX declarations ready to insert              | `"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"` |
 | `prefixes`                 | list   | PREFIX declarations from the document and configuration       | `[("rdfs", "http://www.w3.org/2000/01/rdf-schema#"), ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")]`  |
 | `subject`                  | string | Subject of the current triple                                 | `"?sub"` or `"<http://example.org/entity>"`                                                                   |
 | `local_context`            | string | Triple pattern for the completion location                    | `"?sub ?qlue_ls_entity []"`                                                                                   |
@@ -99,9 +100,7 @@ Below are simplified, generic examples for each query type. These can be adapted
 ### Subject Completion
 
 ```sparql
-{% for prefix in prefixes %}
-PREFIX {{prefix.0}}: <{{prefix.1}}>
-{% endfor %}
+{{ prefix_declarations }}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
   {
@@ -124,9 +123,7 @@ SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
 ### Predicate Completion (Context-Sensitive)
 
 ```sparql
-{% for prefix in prefixes %}
-PREFIX {{prefix.0}}: <{{prefix.1}}>
-{% endfor %}
+{{ prefix_declarations }}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
   {
@@ -145,9 +142,7 @@ SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
 ### Predicate Completion (Context-Insensitive)
 
 ```sparql
-{% for prefix in prefixes %}
-PREFIX {{prefix.0}}: <{{prefix.1}}>
-{% endfor %}
+{{ prefix_declarations }}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
   {
@@ -166,9 +161,7 @@ SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
 ### Object Completion (Context-Sensitive)
 
 ```sparql
-{% for prefix in prefixes %}
-PREFIX {{prefix.0}}: <{{prefix.1}}>
-{% endfor %}
+{{ prefix_declarations }}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
   {
@@ -190,9 +183,7 @@ SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
 ### Object Completion (Context-Insensitive)
 
 ```sparql
-{% for prefix in prefixes %}
-PREFIX {{prefix.0}}: <{{prefix.1}}>
-{% endfor %}
+{{ prefix_declarations }}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
   {
@@ -232,9 +223,7 @@ SELECT * WHERE {
 The `context` will contain the connected triples `?s rdf:type <Book> . ?s <title> ?title`, and `local_context` will be `BIND(?s AS ?qlue_ls_entity)`, so the query effectively finds all `?s` that match the surrounding patterns.
 
 ```sparql
-{% for prefix in prefixes %}
-PREFIX {{prefix.0}}: <{{prefix.1}}>
-{% endfor %}
+{{ prefix_declarations }}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX wikibase: <http://wikiba.se/ontology#>
@@ -257,9 +246,7 @@ LIMIT {{ limit }}
 The context-insensitive variant uses only the `local_context` (the `BIND` expression), providing broader results when context isn't available.
 
 ```sparql
-{% for prefix in prefixes %}
-PREFIX {{prefix.0}}: <{{prefix.1}}>
-{% endfor %}
+{{ prefix_declarations }}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX wikibase: <http://wikiba.se/ontology#>
@@ -289,9 +276,7 @@ Hover queries fetch information about an entity for display in tooltips. Unlike 
 | `?qlue_ls_alias` | Description or additional details  |
 
 ```sparql
-{% for prefix in prefixes %}
-PREFIX {{prefix.0}}: <{{prefix.1}}>
-{% endfor %}
+{{ prefix_declarations }}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 SELECT ?qlue_ls_label ?qlue_ls_alias WHERE {
   {{ entity }} rdfs:label ?qlue_ls_label .
@@ -304,12 +289,10 @@ LIMIT 1
 
 ### Prefix Declarations
 
-Always include the prefix loop to inherit prefixes from the document and configuration:
+Use `{{ prefix_declarations }}` to inherit prefixes from the document and configuration:
 
 ```tera
-{% for prefix in prefixes %}
-PREFIX {{prefix.0}}: <{{prefix.1}}>
-{% endfor %}
+{{ prefix_declarations }}
 ```
 
 ### Search Term Filtering

@@ -586,9 +586,7 @@ fn inline_data_variable_index(inline_data: &InlineData, offset: TextSize) -> usi
         }
         if child.kind() == SyntaxKind::LParen {
             counter = 0;
-        } else if child.kind() == SyntaxKind::DataBlockValue
-            && child.text_range().end() <= offset
-        {
+        } else if child.kind() == SyntaxKind::DataBlockValue && child.text_range().end() <= offset {
             counter += 1;
         }
         if child.text_range().start() >= offset {
@@ -647,6 +645,7 @@ fn get_anchor_token(
             | SyntaxKind::Slash
             | SyntaxKind::Zirkumflex
             | SyntaxKind::ANON
+            | SyntaxKind::LParen
     ) {
         trigger_token = trigger_token.prev_token()?;
     }

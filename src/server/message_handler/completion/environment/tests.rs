@@ -415,6 +415,18 @@ fn localize_inline_data_post_query_is_unknown() {
 }
 
 #[test]
+fn localize_inline_data_full_no_space_after_lparen() {
+    //           0         1         2         3
+    //           0123456789012345678901234567890123
+    let input = "SELECT * { VALUES (?x ?y) { (|) } }";
+    // NOTE: cursor right after '(' with no space — should still be first slot
+    assert!(matches!(
+        location(input, 29),
+        CompletionLocation::InlineData((_, 0)),
+    ));
+}
+
+#[test]
 fn localize_inline_data_index_beyond_declared_vars() {
     //           0         1         2         3         4         5
     //           012345678901234567890123456789012345678901234567890123

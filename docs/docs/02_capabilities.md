@@ -54,6 +54,30 @@ Format SPARQL queries to ensure consistent and readable syntax.
 Customizable options to align with preferred query styles are also implemented.
 
 
+## ⌨️ On-type Formatting
+
+When the trigger character `\n` (Enter) is pressed, Qlue-ls adjusts the indentation of the new line automatically.
+
+The most useful case is after a **semicolon** in a triple pattern.
+After typing `;` and pressing Enter, the cursor lands at the column of the first predicate, ready to continue the property list:
+
+```sparql
+SELECT * WHERE {
+  ?person rdf:type foaf:Person ;
+          rdfs:label ?label .
+#  ^ cursor lands here after Enter
+}
+```
+
+The indentation strategy is controlled by `format.align_predicates`:
+
+| `align_predicates` | New line is indented to…                             |
+|:-------------------|:-----------------------------------------------------|
+| `true` (default)   | Column of the first predicate in the current triple  |
+| `false`            | Brace-depth indent + one tab unit                    |
+
+Outside of a `;` continuation, pressing Enter always produces the plain brace-depth indent.
+
 ## 🩺 Diagnostics
 
 Diagnostics provide feadback on the query.

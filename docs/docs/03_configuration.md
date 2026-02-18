@@ -58,6 +58,9 @@ Indent predicates in a property list s.t. they align:
          rdfs:label label
 ```
 
+This setting also controls on-type formatting: when pressing Enter after `;`, the new line is indented to the predicate column when `true`, or to depth + one tab when `false`.
+See [On-type Formatting](02_capabilities.md#on-type-formatting).
+
 
 ### format.separate_prolouge
 

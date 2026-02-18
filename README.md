@@ -43,6 +43,7 @@ See [LSP Extensions](https://docs.qlue-ls.com/07_lsp_extensions/) for more.
 
 - Auto-formats SPARQL queries for consistency and readability
 - Fully customizable to match your preferred coding style
+- On-type formatting: pressing Enter after `;` in a triple pattern auto-indents to the predicate column
 
 <div align="left">
    <p>https://github.com/user-attachments/assets/9d80ae33-8ff0-4bdd-8a9d-fb95a632673e</p>

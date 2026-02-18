@@ -98,6 +98,7 @@ where_new_line = true
 filter_same_line = true
 line_length = 120
 contract_triples = false
+auto_line_break = false
 
 [completion]
 timeout_ms = 5000

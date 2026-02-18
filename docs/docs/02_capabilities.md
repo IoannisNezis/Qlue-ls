@@ -56,6 +56,10 @@ Customizable options to align with preferred query styles are also implemented.
 
 ## ⌨️ On-type Formatting
 
+Qlue-ls supports on-type formatting with three trigger characters: `\n` (Enter), `;`, and `.`.
+
+### Enter key
+
 When the trigger character `\n` (Enter) is pressed, Qlue-ls adjusts the indentation of the new line automatically.
 
 The most useful case is after a **semicolon** in a triple pattern.
@@ -77,6 +81,27 @@ The indentation strategy is controlled by `format.align_predicates`:
 | `false`            | Brace-depth indent + one tab unit                    |
 
 Outside of a `;` continuation, pressing Enter always produces the plain brace-depth indent.
+
+### Auto line break (`;` and `.` triggers)
+
+When the `auto_line_break` setting is enabled, typing `;` or `.` after a **valid** triple automatically inserts a newline with correct indentation:
+
+- **Semicolon (`;`)**: Inserts a newline indented to the predicate column (when `align_predicates = true`) or base indent + one tab (when `align_predicates = false`).
+- **Dot (`.`)**: Inserts a newline at the base brace-depth indent, ready for a new triple.
+
+```sparql
+# With auto_line_break = true, typing ";" after "?o" produces:
+?s ?p ?o;
+   |  # cursor here, ready for next predicate
+
+# Typing "." after "?o" produces:
+?s ?p ?o.
+|  # cursor here, ready for new triple
+```
+
+This feature only activates when the triple is syntactically valid (has subject, predicate, and object). Invalid or incomplete triples are ignored.
+
+See [Configuration](03_configuration.md#auto_line_break) for details.
 
 ## 🩺 Diagnostics
 

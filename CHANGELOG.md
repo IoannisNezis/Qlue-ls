@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `textDocument/onTypeFormatting`: pressing Enter after a `;` in a triple pattern automatically indents the new line to align with the first predicate (when `align_predicates = true`), or one tab unit beyond the brace-depth indent (when `align_predicates = false`).
+- New `auto_line_break` setting: when enabled, typing `;` or `.` after a valid triple automatically inserts a newline with correct indentation. Disabled by default.
 
 ## [2.2.1] - 2026-02-15
 

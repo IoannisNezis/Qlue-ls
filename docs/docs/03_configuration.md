@@ -25,6 +25,8 @@ object_completion_suffix = true
 variable_completion_limit = 10
 same_subject_semicolon = true
 
+auto_line_break = false
+
 [prefixes]
 add_missing = true
 remove_unused = false
@@ -238,6 +240,23 @@ And you complete `?person` as the next subject, it will transform to:
 ```
 
 Where `|` represents your cursor position, ready to add another predicate.
+
+## On-type formatting settings
+
+### auto_line_break
+
+| Type     | Default |
+| ---------| --------|
+| boolean  | false   |
+
+When enabled, typing `;` or `.` after a valid triple automatically inserts a newline with correct indentation.
+
+- After `;`: new line indented to predicate column (or base + tab when `align_predicates = false`)
+- After `.`: new line at base brace-depth indent
+
+This only applies when the preceding triple is syntactically complete (has subject, predicate, and object). Incomplete triples are ignored.
+
+See [On-type Formatting](02_capabilities.md#on-type-formatting) for more details.
 
 ## Prefix settings
 

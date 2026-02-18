@@ -1,8 +1,7 @@
-use ll_sparql_parser::{SyntaxToken, syntax_kind::SyntaxKind};
-
 use crate::server::{
     Server,
     lsp::{Command, CompletionList, InsertTextFormat, InsertTextMode, ItemDefaults},
+    message_handler::indent::brace_nesting_depth,
 };
 
 use super::super::environment::{CompletionEnvironment, CompletionLocation};
@@ -32,32 +31,10 @@ impl ObjectSuffixTransformer {
             return None;
         }
         let indent = " "
-            .repeat(get_indentation(env.anchor_token.as_ref()?))
+            .repeat(brace_nesting_depth(env.anchor_token.as_ref()?))
             .repeat(server.settings.format.tab_size.unwrap_or(2) as usize);
         Some(Self { indent })
     }
-}
-
-/// Returns the indentation level for a syntax token based on its nesting depth
-/// within `GroupGraphPattern` nodes.
-///
-/// # Limitations
-///
-/// This function only considers `GroupGraphPattern` for indentation. Other
-/// brace-delimited constructs like `QuadPattern`, `QuadData`, `ConstructTemplate`,
-/// `QuadsNotTriples`, `InlineDataOneVar`, and `InlineDataFull` are not counted.
-///
-/// This is sufficient for tokens inside WHERE clauses and graph patterns, but
-/// will not produce correct indentation for tokens in UPDATE data blocks or
-/// CONSTRUCT templates.
-fn get_indentation(syntax_token: &SyntaxToken) -> usize {
-    syntax_token.parent_ancestors().fold(0, |acc, node| {
-        if matches!(node.kind(), SyntaxKind::GroupGraphPattern) {
-            acc + 1
-        } else {
-            acc
-        }
-    })
 }
 
 impl CompletionTransformer for ObjectSuffixTransformer {

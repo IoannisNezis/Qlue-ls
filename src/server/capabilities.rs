@@ -22,8 +22,9 @@
 //! - [`super::message_handler::lifecycle`]: Sends capabilities in `initialize` response
 
 use super::lsp::capabilities::{
-    CompletionOptions, DiagnosticOptions, DocumentFormattingOptions, ExecuteCommandOptions,
-    ServerCapabilities, TextDocumentSyncKind, WorkDoneProgressOptions,
+    CompletionOptions, DiagnosticOptions, DocumentFormattingOptions,
+    DocumentOnTypeFormattingOptions, ExecuteCommandOptions, ServerCapabilities,
+    TextDocumentSyncKind, WorkDoneProgressOptions,
 };
 
 pub(super) fn create_capabilities() -> ServerCapabilities {
@@ -46,6 +47,10 @@ pub(super) fn create_capabilities() -> ServerCapabilities {
             trigger_characters: vec!["?".to_string(), " ".to_string()],
         },
         document_formatting_provider: DocumentFormattingOptions {},
+        document_on_type_formatting_provider: DocumentOnTypeFormattingOptions {
+            first_trigger_character: "\n".to_string(),
+            more_trigger_character: None,
+        },
         folding_range_provider: true,
     }
 }

@@ -11,7 +11,10 @@ use crate::{
             errors::{ErrorCode, LSPError},
             textdocument::{Position, Range, TextDocumentItem, TextEdit},
         },
-        message_handler::diagnostic::same_subject::find_all_triple_groups,
+        message_handler::{
+            diagnostic::same_subject::find_all_triple_groups,
+            indent::{column_at_offset, predicate_alignment_column},
+        },
     },
 };
 use ll_sparql_parser::{
@@ -20,7 +23,6 @@ use ll_sparql_parser::{
     syntax_kind::SyntaxKind,
 };
 use text_size::{TextRange, TextSize};
-use unicode_width::UnicodeWidthChar;
 
 pub(crate) fn contract_all_triple_groups(
     document: &TextDocumentItem,
@@ -152,28 +154,18 @@ pub(crate) fn contract_triples(
     if let Some(triple) = triples.first() {
         let indent_string = {
             let indentation = if format_settings.align_predicates {
-                let offset = triple
-                    .properties_list_path()
-                    .unwrap()
+                triple
                     .syntax()
-                    .text_range()
-                    .start();
-                document.text[..offset.into()]
-                    .chars()
-                    .rev()
-                    .take_while(|char| char != &'\n')
-                    .fold(0, |acc, char| acc + char.width().unwrap_or(0))
+                    .first_token()
+                    .and_then(|tok| predicate_alignment_column(&tok, &document.text))
+                    .expect("valid triple has a predicate alignment column")
             } else {
-                let offset = triple
+                let offset: usize = triple
                     .subject()
                     .map(|subject| subject.syntax().text_range().start().into())
                     .unwrap_or(0);
-                let subject_indentation = document.text[..offset]
-                    .chars()
-                    .rev()
-                    .take_while(|char| char != &'\n')
-                    .fold(0, |acc, char| acc + char.width().unwrap_or(0));
-                subject_indentation + format_settings.tab_size.unwrap_or(2) as usize
+                column_at_offset(&document.text, offset)
+                    + format_settings.tab_size.unwrap_or(2) as usize
             };
 
             " ".repeat(indentation)

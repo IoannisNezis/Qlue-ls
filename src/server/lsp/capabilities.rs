@@ -8,6 +8,7 @@ pub struct ServerCapabilities {
     pub hover_provider: bool,
     pub completion_provider: CompletionOptions,
     pub document_formatting_provider: DocumentFormattingOptions,
+    pub document_on_type_formatting_provider: DocumentOnTypeFormattingOptions,
     pub diagnostic_provider: DiagnosticOptions,
     pub code_action_provider: bool,
     pub execute_command_provider: ExecuteCommandOptions,
@@ -56,6 +57,17 @@ pub struct DocumentFormattingOptions {
     // WARNING: This could also inherit WorkDoneProgressOptions (not implemented yet).
 }
 
+// https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#documentOnTypeFormattingOptions
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct DocumentOnTypeFormattingOptions {
+    /// A character on which formatting should be triggered, like `{`.
+    pub first_trigger_character: String,
+    /// More trigger characters.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub more_trigger_character: Option<Vec<String>>,
+}
+
 // https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#clientCapabilities
 #[derive(Debug, Deserialize, PartialEq, Clone)]
 pub struct ClientCapabilities {
@@ -82,8 +94,9 @@ pub struct WorkspaceEditClientCapabilities {
 mod tests {
 
     use crate::server::lsp::capabilities::{
-        CompletionOptions, DiagnosticOptions, DocumentFormattingOptions, ExecuteCommandOptions,
-        TextDocumentSyncKind, WorkDoneProgressOptions,
+        CompletionOptions, DiagnosticOptions, DocumentFormattingOptions,
+        DocumentOnTypeFormattingOptions, ExecuteCommandOptions, TextDocumentSyncKind,
+        WorkDoneProgressOptions,
     };
 
     use super::ServerCapabilities;
@@ -97,6 +110,10 @@ mod tests {
                 trigger_characters: vec!["?".to_string()],
             },
             document_formatting_provider: DocumentFormattingOptions {},
+            document_on_type_formatting_provider: DocumentOnTypeFormattingOptions {
+                first_trigger_character: "\n".to_string(),
+                more_trigger_character: None,
+            },
             diagnostic_provider: DiagnosticOptions {
                 identifier: "my-ls".to_string(),
                 inter_file_dependencies: false,
@@ -116,7 +133,7 @@ mod tests {
 
         assert_eq!(
             serialized,
-            r#"{"textDocumentSync":1,"hoverProvider":true,"completionProvider":{"triggerCharacters":["?"]},"documentFormattingProvider":{},"diagnosticProvider":{"identifier":"my-ls","interFileDependencies":false,"workspaceDiagnostics":false},"codeActionProvider":true,"executeCommandProvider":{"workDoneProgress":true,"commands":["foo"]},"foldingRangeProvider":true}"#
+            r#"{"textDocumentSync":1,"hoverProvider":true,"completionProvider":{"triggerCharacters":["?"]},"documentFormattingProvider":{},"documentOnTypeFormattingProvider":{"firstTriggerCharacter":"\n"},"diagnosticProvider":{"identifier":"my-ls","interFileDependencies":false,"workspaceDiagnostics":false},"codeActionProvider":true,"executeCommandProvider":{"workDoneProgress":true,"commands":["foo"]},"foldingRangeProvider":true}"#
         );
     }
 }

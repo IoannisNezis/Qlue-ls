@@ -37,10 +37,12 @@ mod backend;
 mod cancel;
 mod code_action;
 mod completion;
+pub(crate) mod indent;
 mod diagnostic;
 mod execute;
 mod folding_range;
 pub(crate) mod formatting;
+mod on_type_formatting;
 mod hover;
 mod identification;
 mod jump;
@@ -92,6 +94,7 @@ use crate::server::{
 };
 
 use self::formatting::handle_format_request;
+use self::on_type_formatting::handle_on_type_format_request;
 
 use super::{
     Server,
@@ -134,6 +137,7 @@ pub(super) async fn dispatch(
         "initialize" => call!(handle_initialize_request),
         "shutdown" => call!(handle_shutdown_request),
         "textDocument/formatting" => call!(handle_format_request),
+        "textDocument/onTypeFormatting" => call!(handle_on_type_format_request),
         "textDocument/diagnostic" => call!(handle_diagnostic_request),
         "textDocument/codeAction" => call!(handle_codeaction_request),
         "textDocument/hover" => call_async!(handle_hover_request),

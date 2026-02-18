@@ -49,7 +49,7 @@ pub(super) fn create_capabilities() -> ServerCapabilities {
         document_formatting_provider: DocumentFormattingOptions {},
         document_on_type_formatting_provider: DocumentOnTypeFormattingOptions {
             first_trigger_character: "\n".to_string(),
-            more_trigger_character: None,
+            more_trigger_character: Some(vec![";".to_string(), ".".to_string()]),
         },
         folding_range_provider: true,
     }

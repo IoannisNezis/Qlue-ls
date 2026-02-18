@@ -6,7 +6,7 @@
 #![allow(dead_code)]
 
 use super::TestClient;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 impl TestClient {
     // ========== Lifecycle Methods ==========
@@ -129,6 +129,26 @@ impl TestClient {
         .await
     }
 
+    /// Request on-type formatting after a character is typed.
+    pub async fn on_type_format(&self, uri: &str, line: u32, character: u32, ch: &str) -> u32 {
+        self.send_request(
+            "textDocument/onTypeFormatting",
+            json!({
+                "textDocument": { "uri": uri },
+                "position": {
+                    "line": line,
+                    "character": character
+                },
+                "ch": ch,
+                "options": {
+                    "tabSize": 2,
+                    "insertSpaces": true
+                }
+            }),
+        )
+        .await
+    }
+
     /// Request completion at a position.
     pub async fn complete(&self, uri: &str, line: u32, character: u32) -> u32 {
         self.send_request(
@@ -148,7 +168,13 @@ impl TestClient {
     }
 
     /// Request completion with trigger character.
-    pub async fn complete_triggered(&self, uri: &str, line: u32, character: u32, trigger: &str) -> u32 {
+    pub async fn complete_triggered(
+        &self,
+        uri: &str,
+        line: u32,
+        character: u32,
+        trigger: &str,
+    ) -> u32 {
         self.send_request(
             "textDocument/completion",
             json!({
@@ -193,7 +219,14 @@ impl TestClient {
     }
 
     /// Request code actions for a range.
-    pub async fn code_actions(&self, uri: &str, start_line: u32, start_char: u32, end_line: u32, end_char: u32) -> u32 {
+    pub async fn code_actions(
+        &self,
+        uri: &str,
+        start_line: u32,
+        start_char: u32,
+        end_line: u32,
+        end_char: u32,
+    ) -> u32 {
         self.send_request(
             "textDocument/codeAction",
             json!({
@@ -261,14 +294,12 @@ impl TestClient {
     }
 
     /// Change server settings.
+    ///
+    /// NOTE: This replaces all settings, so you must provide a complete Settings object.
+    /// All fields except `auto_line_break` require values (format, completion, etc.).
     pub async fn change_settings(&self, settings: Value) {
-        self.send_notification(
-            "qlueLs/changeSettings",
-            json!({
-                "settings": settings
-            }),
-        )
-        .await;
+        self.send_notification("qlueLs/changeSettings", settings)
+            .await;
     }
 
     /// Identify the operation type (query vs update) of a document.
@@ -333,7 +364,9 @@ impl<'a> DocumentHandle<'a> {
     /// Change the document content
     pub async fn change(&mut self, text: &str) {
         self.version += 1;
-        self.client.change_document(&self.uri, self.version, text).await;
+        self.client
+            .change_document(&self.uri, self.version, text)
+            .await;
     }
 
     /// Request formatting

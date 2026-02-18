@@ -37,17 +37,17 @@ mod backend;
 mod cancel;
 mod code_action;
 mod completion;
-pub(crate) mod indent;
 mod diagnostic;
 mod execute;
 mod folding_range;
 pub(crate) mod formatting;
-mod on_type_formatting;
 mod hover;
 mod identification;
+pub(crate) mod indent;
 mod jump;
 mod lifecycle;
 mod misc;
+mod on_type_formatting;
 mod parse_tree;
 mod settings;
 mod textdocument_synchronization;
@@ -106,7 +106,7 @@ pub(super) async fn dispatch(
     message_string: &str,
 ) -> Result<(), LSPError> {
     let message = deserialize_message(message_string)?;
-    let method = message.get_method().unwrap_or("response");
+    let method = dbg!(message.get_method().unwrap_or("response"));
     macro_rules! call {
         ($handler:ident) => {{
             let message = message.parse()?;
@@ -130,6 +130,7 @@ pub(super) async fn dispatch(
         }};
     }
 
+    print!("{method}");
     log::debug!("{method}");
 
     match method {

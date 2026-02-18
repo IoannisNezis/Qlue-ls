@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::server::lsp::{
-    FormattingOptions, LspMessage,
     rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
     textdocument::{Position, TextDocumentIdentifier, TextEdit},
+    FormattingOptions, LspMessage,
 };
 
 #[derive(Debug, Deserialize, PartialEq)]
@@ -52,7 +52,7 @@ struct DocumentOnTypeFormattingParams {
 pub struct OnTypeFormattingResponse {
     #[serde(flatten)]
     base: ResponseMessageBase,
-    result: Vec<TextEdit>,
+    result: Option<Vec<TextEdit>>,
 }
 
 impl LspMessage for OnTypeFormattingResponse {}
@@ -61,7 +61,14 @@ impl OnTypeFormattingResponse {
     pub(crate) fn new(id: &RequestId, text_edits: Vec<TextEdit>) -> Self {
         Self {
             base: ResponseMessageBase::success(id),
-            result: text_edits,
+            result: Some(text_edits),
+        }
+    }
+
+    pub(crate) fn null(id: &RequestId) -> Self {
+        Self {
+            base: ResponseMessageBase::success(id),
+            result: None,
         }
     }
 }

@@ -86,15 +86,18 @@ pub(super) async fn handle_on_type_format_request(
 
     // NOTE: Walk backwards through tokens, skipping trivia, to find the last meaningful token
     // before the newline. If it is a Semicolon, the new line needs predicate-continuation indent.
-    let prev_non_trivia = std::iter::successors(trigger_token.prev_token(), |t| t.prev_token())
-        .find(|t| !t.kind().is_trivia());
-    let after_semicolon = prev_non_trivia.is_some_and(|t| t.kind() == SyntaxKind::Semicolon);
+    // NOTE: The semicolon token itself is passed to predicate_alignment_column because the
+    // trigger (whitespace) token lives outside the TriplesSameSubjectPath in the parse tree —
+    // the semicolon is always inside it.
+    let prev_semicolon = std::iter::successors(trigger_token.prev_token(), |t| t.prev_token())
+        .find(|t| !t.kind().is_trivia())
+        .filter(|t| t.kind() == SyntaxKind::Semicolon);
 
-    let final_indent = if after_semicolon {
+    let final_indent = if let Some(ref semicolon) = prev_semicolon {
         if server.settings.format.align_predicates {
             // Align with the column of the first predicate in this triple.
             // Falls back to indent + tab_unit if the triple ancestor cannot be found.
-            let col = indent::predicate_alignment_column(&trigger_token, &document.text);
+            let col = indent::predicate_alignment_column(semicolon, &document.text);
             match col {
                 Some(col) => " ".repeat(col),
                 None => indent + &tab_unit,

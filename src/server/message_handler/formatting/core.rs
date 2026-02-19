@@ -48,16 +48,16 @@
 use core::fmt;
 use std::vec;
 
-use ll_sparql_parser::{syntax_kind::SyntaxKind, SyntaxElement, SyntaxNode};
+use ll_sparql_parser::{SyntaxElement, SyntaxNode, syntax_kind::SyntaxKind};
 use text_size::{TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use crate::server::{
     configuration::FormatSettings,
     lsp::{
+        FormattingOptions,
         errors::LSPError,
         textdocument::{Position, Range, TextDocumentItem, TextEdit},
-        FormattingOptions,
     },
     message_handler::formatting::utils::subtree_width,
 };
@@ -77,7 +77,13 @@ pub(super) fn format_document(
     };
     let walker = Walker::new(root, &document.text, settings, indent_string.clone());
 
-    let (simplified_edits, simpified_comments) = walker.collect_edits_and_comments();
+    let (simplified_edits, simpified_comments, simplified_empty_lines) =
+        walker.collect_edits_and_comments();
+    let simplified_edits = if settings.keep_empty_lines {
+        merge_empty_lines(simplified_edits, simplified_empty_lines)
+    } else {
+        simplified_edits
+    };
     let comments = transform_comments(simpified_comments, &document.text);
     let mut edits = transform_edits(simplified_edits, &document.text);
     edits.sort_by(|a, b| {
@@ -90,6 +96,42 @@ pub(super) fn format_document(
     edits = merge_comments(consolidated_edits, comments, &document.text, &indent_string)?;
 
     Ok(edits)
+}
+
+fn merge_empty_lines(
+    mut simplified_edits: Vec<SimplifiedTextEdit>,
+    mut simplified_empty_lines: Vec<SimplifiedEmptyLineMarker>,
+) -> Vec<SimplifiedTextEdit> {
+    simplified_edits.sort_by(|a, b| {
+        a.range
+            .start()
+            .cmp(&b.range.start())
+            .then_with(|| a.range.end().cmp(&b.range.end()))
+    });
+    simplified_empty_lines.sort_by(|a, b| a.position.cmp(&b.position));
+    let mut empty_lines_itter = simplified_empty_lines.into_iter().peekable();
+    for idx in 0..simplified_edits.len() {
+        if let Some(next) = empty_lines_itter.peek() {
+            if next.position <= simplified_edits[idx].range.start() {
+                // NOTE: Scan following consecutive edits for newlines
+                let mut prev_end = simplified_edits[idx].range.end();
+                let has_newline_in_consecutive = simplified_edits[idx].text.contains('\n')
+                    || simplified_edits[idx + 1..]
+                        .iter()
+                        .take_while(|e| {
+                            let consecutive = e.range.start() == prev_end;
+                            prev_end = e.range.end();
+                            consecutive
+                        })
+                        .any(|e| e.text.contains('\n'));
+                if has_newline_in_consecutive {
+                    simplified_edits[idx].text.insert(0, '\n');
+                }
+                empty_lines_itter.next();
+            }
+        }
+    }
+    simplified_edits
 }
 
 #[derive(Debug)]
@@ -113,6 +155,7 @@ struct CommentMarker {
     position: Position,
     indentation_level: u8,
     trailing: bool,
+    prepend_empty_line: bool,
 }
 
 impl CommentMarker {
@@ -144,6 +187,15 @@ struct SimplifiedCommentMarker {
     position: TextSize,
     indentation_level: u8,
     trailing: bool,
+    prepend_empty_line: bool,
+}
+
+/// Marks a position where one or more empty lines existed in the original document.
+/// An "empty line" is defined as two or more consecutive newlines (i.e., `\n\n` or `\r\n\r\n`).
+#[derive(Debug)]
+struct SimplifiedEmptyLineMarker {
+    /// The byte position where the empty line(s) occurred (end of preceding non-trivia token)
+    position: TextSize,
 }
 
 fn inc_indent(node: &SyntaxNode) -> u8 {
@@ -833,11 +885,19 @@ impl<'a> Walker<'a> {
     ) -> SimplifiedCommentMarker {
         assert_eq!(comment_node.kind(), SyntaxKind::Comment);
         let mut maybe_attach = Some(comment_node.clone());
-        while let Some(kind) = maybe_attach.as_ref().map(|node| node.kind()) {
-            if !kind.is_trivia() {
+        let mut after_empty_line = false;
+        while let Some(ref node) = maybe_attach {
+            if !node.kind().is_trivia() {
                 break;
+            } else if self.settings.keep_empty_lines
+                && after_empty_line == false
+                && node.kind() == SyntaxKind::WHITESPACE
+            {
+                if Self::empty_line_marker(node, self.text).is_some() {
+                    after_empty_line = true;
+                }
             }
-            maybe_attach = maybe_attach.and_then(|node| node.prev_sibling_or_token())
+            maybe_attach = node.prev_sibling_or_token();
         }
         let attach = maybe_attach
             .or(comment_node.parent().map(SyntaxElement::Node))
@@ -853,36 +913,68 @@ impl<'a> Walker<'a> {
                 SyntaxKind::QueryUnit | SyntaxKind::UpdateUnit => TextSize::new(0),
                 _ => attach.text_range().end(),
             },
-
-            trailing,
             indentation_level,
+            trailing,
+            prepend_empty_line: after_empty_line,
         }
     }
 
-    fn collect_edits_and_comments(self) -> (Vec<SimplifiedTextEdit>, Vec<SimplifiedCommentMarker>) {
+    fn collect_edits_and_comments(
+        self,
+    ) -> (
+        Vec<SimplifiedTextEdit>,
+        Vec<SimplifiedCommentMarker>,
+        Vec<SimplifiedEmptyLineMarker>,
+    ) {
         let mut res_edits = Vec::new();
         let mut res_comments = Vec::new();
-        for (edits, comments) in self.into_iter() {
+        let mut res_empty_lines = Vec::new();
+        for (edits, comments, empty_lines) in self.into_iter() {
             res_edits.extend(edits);
             res_comments.extend(comments);
+            res_empty_lines.extend(empty_lines);
         }
-        (res_edits, res_comments)
+        (res_edits, res_comments, res_empty_lines)
+    }
+
+    fn empty_line_marker(
+        whitespace_node: &SyntaxElement,
+        text: &str,
+    ) -> Option<SimplifiedEmptyLineMarker> {
+        let range = whitespace_node.text_range();
+        let whitespace_text = text.get(range.start().into()..range.end().into())?;
+        let count = whitespace_text.chars().filter(|&c| c == '\n').count();
+        (count > 1).then_some(SimplifiedEmptyLineMarker {
+            position: range.start(),
+        })
     }
 }
 
 impl Iterator for Walker<'_> {
-    type Item = (Vec<SimplifiedTextEdit>, Vec<SimplifiedCommentMarker>);
+    type Item = (
+        Vec<SimplifiedTextEdit>,
+        Vec<SimplifiedCommentMarker>,
+        Vec<SimplifiedEmptyLineMarker>,
+    );
 
     fn next(&mut self) -> Option<Self::Item> {
         let (element, indentation) = self.queue.pop()?;
-        // NOTE: Extract comments
-        let (children, comments): (Vec<SyntaxElement>, Vec<SimplifiedCommentMarker>) = element
+        // NOTE: Extract comments and empty lines from trivia
+        let (children, comments, empty_lines): (
+            Vec<SyntaxElement>,
+            Vec<SimplifiedCommentMarker>,
+            Vec<SimplifiedEmptyLineMarker>,
+        ) = element
             .as_node()
             .map(|node| {
                 node.children_with_tokens()
-                    .fold((vec![], vec![]), |mut acc, child| {
+                    .fold((vec![], vec![], vec![]), |mut acc, child| {
                         match child.kind() {
-                            SyntaxKind::WHITESPACE => {}
+                            SyntaxKind::WHITESPACE => {
+                                if let Some(marker) = Self::empty_line_marker(&child, self.text) {
+                                    acc.2.push(marker);
+                                }
+                            }
                             SyntaxKind::Comment if node.kind() != SyntaxKind::Error => acc
                                 .1
                                 .push(self.comment_marker(&child, indentation + inc_indent(node))),
@@ -939,6 +1031,7 @@ impl Iterator for Walker<'_> {
                 .chain(seperation_edits)
                 .collect(),
             comments,
+            empty_lines,
         ))
     }
 }
@@ -1073,6 +1166,7 @@ fn transform_comments(
                 position,
                 indentation_level: next_comment.indentation_level,
                 trailing: next_comment.trailing,
+                prepend_empty_line: next_comment.prepend_empty_line,
             });
             next_comment = if let Some(comment) = comments.next() {
                 comment
@@ -1263,7 +1357,6 @@ fn merge_comments(
                     let comment = comment_iter
                         .next()
                         .expect("comment itterator should not be empty");
-
                     // NOTE: In some Edgecase the comment is in the middle of a (consolidated)
                     // edit. For Example
                     // Select #comment
@@ -1272,7 +1365,7 @@ fn merge_comments(
                     let (previous_edit, next_edit) = consolidated_edit.split_at(comment.position);
                     let (mut previous_edit, mut next_edit) = (previous_edit, next_edit.fuse());
                     // WARNING: This could cause issues.
-                    // The amout of chars is neccesarily equal to the amout of
+                    // The amout of chars is not neccesarily equal to the amout of
                     // utf-8 bytes. Here i assume that all whispace is 1 utf8 byte long.
                     match next_edit
                         .new_text
@@ -1282,11 +1375,21 @@ fn merge_comments(
                             (!char.is_whitespace() || char == '\n').then_some((idx, char))
                         }) {
                         Some((idx, '\n')) => {
-                            next_edit.new_text = format!(
-                                "{}{}",
-                                comment.to_edit(indent_base).new_text,
-                                &next_edit.new_text[idx..]
-                            )
+                            if comment.prepend_empty_line && next_edit.new_text.starts_with("\n\n")
+                            {
+                                // NOTE: steal the newline from the next edit and prepend it here
+                                next_edit.new_text = format!(
+                                    "\n{}{}",
+                                    comment.to_edit(indent_base).new_text,
+                                    &next_edit.new_text[idx + 1..]
+                                )
+                            } else {
+                                next_edit.new_text = format!(
+                                    "{}{}",
+                                    comment.to_edit(indent_base).new_text,
+                                    &next_edit.new_text[idx..]
+                                )
+                            }
                         }
                         Some((idx, _char)) => {
                             next_edit.new_text = format!(
@@ -1311,8 +1414,9 @@ fn merge_comments(
                                 }
                                 None => comment.indentation_level,
                             };
+                            let prefix = if comment.prepend_empty_line { "\n" } else { "" };
                             next_edit.new_text = format!(
-                                "{}\n{}",
+                                "{prefix}{}\n{}",
                                 comment.to_edit(indent_base).new_text,
                                 indent_base.repeat(indent as usize)
                             )

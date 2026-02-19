@@ -189,6 +189,10 @@ pub struct FormatSettings {
     pub compact: Option<u32>,
     pub line_length: u32,
     pub contract_triples: bool,
+    /// When enabled, preserves intentional blank lines from the original source.
+    /// Consecutive blank lines are collapsed into a single empty line.
+    /// Disabled by default to preserve current behavior.
+    pub keep_empty_lines: bool,
 }
 
 impl Default for FormatSettings {
@@ -205,6 +209,7 @@ impl Default for FormatSettings {
             compact: None,
             line_length: 120,
             contract_triples: false,
+            keep_empty_lines: false,
         }
     }
 }

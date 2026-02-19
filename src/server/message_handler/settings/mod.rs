@@ -29,7 +29,6 @@ pub(super) async fn handle_change_settings_notification(
     request: ChangeSettingsNotification,
 ) -> Result<(), LSPError> {
     // TODO: Merge settings instead of replaceing everything
-    dbg!(&request);
     server_rc.lock().await.settings = request.params;
     Ok(())
 }

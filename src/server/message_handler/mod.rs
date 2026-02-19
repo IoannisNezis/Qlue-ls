@@ -106,7 +106,7 @@ pub(super) async fn dispatch(
     message_string: &str,
 ) -> Result<(), LSPError> {
     let message = deserialize_message(message_string)?;
-    let method = dbg!(message.get_method().unwrap_or("response"));
+    let method = message.get_method().unwrap_or("response");
     macro_rules! call {
         ($handler:ident) => {{
             let message = message.parse()?;

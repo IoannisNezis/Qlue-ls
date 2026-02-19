@@ -25,7 +25,7 @@ pub(super) async fn handle_on_type_format_request(
     let server = server_rc.lock().await;
     let document_uri = request.get_document_uri();
     let document = server.state.get_document(document_uri)?;
-    let editor_position = request.get_position().clone();
+    let editor_position = request.get_position();
     let byte_offset_position: usize = editor_position
         .byte_index(&document.text)
         .ok_or(LSPError::new(
@@ -41,26 +41,26 @@ pub(super) async fn handle_on_type_format_request(
             &server,
             &request,
             document,
-            &tree,
+            tree,
             byte_offset_position,
-            &editor_position,
+            editor_position,
         ),
         ";" => handle_terminator_trigger(
             &server,
             &request,
             document,
-            &tree,
+            tree,
             byte_offset_position,
-            &editor_position,
+            editor_position,
             SyntaxKind::Semicolon,
         ),
         "." => handle_terminator_trigger(
             &server,
             &request,
             document,
-            &tree,
+            tree,
             byte_offset_position,
-            &editor_position,
+            editor_position,
             SyntaxKind::Dot,
         ),
         _ => Err(LSPError::new(
@@ -76,7 +76,7 @@ fn handle_newline_trigger(
     server: &Server,
     request: &OnTypeFormattingRequest,
     document: &TextDocumentItem,
-    tree: &SyntaxNode,
+    tree: SyntaxNode,
     byte_offset_position: usize,
     editor_position: &Position,
 ) -> Result<(), LSPError> {
@@ -174,7 +174,7 @@ fn handle_terminator_trigger(
     server: &Server,
     request: &OnTypeFormattingRequest,
     document: &TextDocumentItem,
-    tree: &SyntaxNode,
+    tree: SyntaxNode,
     byte_offset_position: usize,
     editor_position: &Position,
     expected_kind: SyntaxKind,

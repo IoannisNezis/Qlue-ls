@@ -37,7 +37,7 @@ impl ListBackendsResponse {
                 .map(|backend| ListBackendsItem {
                     name: backend.name.clone(),
                     url: backend.url.clone(),
-                    default: backend.default.clone(),
+                    default: backend.default,
                 })
                 .collect(),
         }

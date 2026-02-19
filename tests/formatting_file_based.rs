@@ -97,13 +97,24 @@ fn run_test_case(case_dir: &Path) {
 
 #[test]
 fn test_all_formatting_cases() {
-    let cases = discover_test_cases();
+    let mut cases = discover_test_cases();
 
-    if cases.is_empty() {
-        panic!("No test cases found in tests/formatting/cases/");
+    // Filter cases if FILTER env var is set
+    if let Ok(filter) = std::env::var("FILTER") {
+        cases.retain(|case_dir| {
+            case_dir
+                .file_name()
+                .map(|name| name.to_string_lossy().contains(&filter))
+                .unwrap_or(false)
+        });
+        println!("Filtering test cases with: '{}'", filter);
     }
 
-    println!("Found {} formatting test cases", cases.len());
+    if cases.is_empty() {
+        panic!("No test cases found (check tests/formatting/cases/ or FILTER env var)");
+    }
+
+    println!("Running {} formatting test cases", cases.len());
 
     let mut failures = Vec::new();
 

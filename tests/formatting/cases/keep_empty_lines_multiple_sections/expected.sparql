@@ -2,12 +2,9 @@ PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 
 SELECT ?name ?age WHERE {
-  # Section 1: Type checking
   ?person rdf:type foaf:Person .
 
-  # Section 2: Name retrieval
   ?person foaf:name ?name .
 
-  # Section 3: Age retrieval
   ?person foaf:age ?age .
 }

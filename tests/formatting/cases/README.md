@@ -13,6 +13,7 @@ cases/
     input.sparql
     expected.sparql
     settings.toml     # Optional: custom FormatSettings
+  ...
 ```
 
 ## Adding a New Test Case
@@ -59,7 +60,8 @@ All settings are optional - defaults are used for any unspecified fields.
 | `filterSameLine` | bool | true | Keep FILTER on same line as triple |
 | `compact` | u32 | (none) | Compact formatting threshold |
 | `lineLength` | u32 | 120 | Line length for SELECT wrapping |
-| `contractTriples` | bool | true | Contract triples with same subject |
+| `contractTriples` | bool | false | Contract triples with same subject |
+| `keepEmptyLines` | bool | false | Preserve intentional blank lines (consecutive lines collapsed) |
 
 ## Running Tests
 
@@ -67,9 +69,12 @@ All settings are optional - defaults are used for any unspecified fields.
 # Run all file-based formatting tests
 cargo test --test formatting_file_based
 
-# Run a specific test case
-cargo test --test formatting_file_based basic
+# Run specific test case(s) using FILTER env var
+FILTER=basic cargo test --test formatting_file_based
 
 # Run with verbose output
 cargo test --test formatting_file_based -- --nocapture
 ```
+
+The `FILTER` environment variable filters test cases by name (substring match).
+For example, `FILTER=basic` runs all cases containing "basic" in their directory name.

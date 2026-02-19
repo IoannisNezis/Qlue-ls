@@ -51,7 +51,8 @@ lazy-sparql-result-reader = { features = ["call_from_rust"], version = "2.0.3" }
 # lazy-sparql-result-reader = { path = "/home/ianni/code/lazy-sparql-result-reader/", features = [
 # "call_from_rust",
 # ] }
-ntriples-parser = "1.0.1"
+ntriples-parser = "2.0.0"
+# ntriples-parser = { path = "./crates/ntriples-parser/" }
 
 # WASM (wasm-bindgen needed for both targets due to #[wasm_bindgen] attributes)
 wasm-bindgen = "0.2.108"

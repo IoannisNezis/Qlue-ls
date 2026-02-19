@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [2.5.0] - 2026-02-19
+
+### Added
+
+- New `format.keep_empty_lines` setting: when enabled, preserves intentional blank lines from the original source. Consecutive blank lines are collapsed into a single empty line. Disabled by default.
+
 ### Fixed
 
 - removed newline generation in construct formattig

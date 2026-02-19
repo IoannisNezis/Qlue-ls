@@ -1,7 +1,7 @@
 mod harness;
 
-use harness::runtime::run_lsp_test;
 use harness::TestClient;
+use harness::runtime::run_lsp_test;
 use serde_json::Value;
 
 #[test]
@@ -14,14 +14,19 @@ fn test_parse_tree_returns_root_node() {
             .await;
 
         let id = client.parse_tree("file:///test.sparql").await;
-        let response = client.get_response(id).expect("Should receive parse tree response");
+        let response = client
+            .get_response(id)
+            .expect("Should receive parse tree response");
 
         let result = &response["result"];
         assert!(result["timeMs"].is_f64(), "Response should include timeMs");
         let tree = &result["tree"];
         assert_eq!(tree["type"], "node", "Root should be a node");
         assert!(tree["kind"].is_string(), "Root should have a kind");
-        assert!(tree["children"].is_array(), "Root node should have children");
+        assert!(
+            tree["children"].is_array(),
+            "Root node should have children"
+        );
         assert!(tree["range"].is_object(), "Root should have a range");
     });
 }
@@ -62,7 +67,7 @@ fn test_parse_tree_contains_tokens_with_text() {
         let texts: Vec<&str> = tokens.iter().filter_map(|t| t["text"].as_str()).collect();
 
         assert!(
-            texts.contains(&"SELECT"),
+            texts.contains(&"\"SELECT\""),
             "Should contain SELECT token, got: {:?}",
             texts
         );
@@ -135,8 +140,8 @@ fn test_parse_tree_with_prefix() {
 
         let tokens = collect_tokens(tree);
         let texts: Vec<&str> = tokens.iter().filter_map(|t| t["text"].as_str()).collect();
-        assert!(texts.contains(&"PREFIX"), "Should contain PREFIX token");
-        assert!(texts.contains(&"SELECT"), "Should contain SELECT token");
+        assert!(texts.contains(&"\"PREFIX\""), "Should contain PREFIX token");
+        assert!(texts.contains(&"\"SELECT\""), "Should contain SELECT token");
     });
 }
 
@@ -145,12 +150,12 @@ fn test_parse_tree_empty_document() {
     run_lsp_test(|| async {
         let client = TestClient::new();
         client.initialize().await;
-        client
-            .open_document("file:///test.sparql", "")
-            .await;
+        client.open_document("file:///test.sparql", "").await;
 
         let id = client.parse_tree("file:///test.sparql").await;
-        let response = client.get_response(id).expect("Should handle empty documents");
+        let response = client
+            .get_response(id)
+            .expect("Should handle empty documents");
         let tree = &response["result"]["tree"];
 
         assert_eq!(tree["type"], "node");
@@ -168,7 +173,9 @@ fn test_parse_tree_invalid_document() {
             .await;
 
         let id = client.parse_tree("file:///test.sparql").await;
-        let response = client.get_response(id).expect("Should handle invalid documents");
+        let response = client
+            .get_response(id)
+            .expect("Should handle invalid documents");
         let tree = &response["result"]["tree"];
 
         // NOTE: the parser is resilient — it should still produce a tree
@@ -200,10 +207,7 @@ fn test_parse_tree_multiline_ranges() {
         let client = TestClient::new();
         client.initialize().await;
         client
-            .open_document(
-                "file:///test.sparql",
-                "SELECT *\nWHERE {\n  ?s ?p ?o\n}",
-            )
+            .open_document("file:///test.sparql", "SELECT *\nWHERE {\n  ?s ?p ?o\n}")
             .await;
 
         let id = client.parse_tree("file:///test.sparql").await;
@@ -329,12 +333,8 @@ fn test_parse_tree_crlf_line_endings() {
         let lf_text = "SELECT *\nWHERE {\n  ?s ?p ?o\n}";
         let crlf_text = "SELECT *\r\nWHERE {\r\n  ?s ?p ?o\r\n}";
 
-        client
-            .open_document("file:///lf.sparql", lf_text)
-            .await;
-        client
-            .open_document("file:///crlf.sparql", crlf_text)
-            .await;
+        client.open_document("file:///lf.sparql", lf_text).await;
+        client.open_document("file:///crlf.sparql", crlf_text).await;
 
         let lf_id = client.parse_tree("file:///lf.sparql").await;
         let crlf_id = client.parse_tree("file:///crlf.sparql").await;
@@ -343,8 +343,7 @@ fn test_parse_tree_crlf_line_endings() {
 
         // NOTE: root ranges should be identical regardless of line ending style
         assert_eq!(
-            lf_response["result"]["tree"]["range"],
-            crlf_response["result"]["tree"]["range"],
+            lf_response["result"]["tree"]["range"], crlf_response["result"]["tree"]["range"],
             "Root range should be the same for LF and CRLF"
         );
 

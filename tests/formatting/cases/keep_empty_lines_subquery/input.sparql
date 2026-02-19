@@ -1,0 +1,13 @@
+SELECT ?a ?b WHERE {
+  ?a ?b ?c .
+
+  {
+    SELECT ?x WHERE {
+      ?x ?y ?z .
+
+      ?w ?v ?u .
+    }
+  }
+
+  ?d ?e ?f .
+}

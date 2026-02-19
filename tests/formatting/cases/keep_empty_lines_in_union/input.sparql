@@ -1,0 +1,12 @@
+SELECT ?a WHERE {
+  {
+    ?a ?b ?c .
+
+    ?d ?e ?f .
+  }
+  UNION {
+    ?g ?h ?i .
+
+    ?j ?k ?l .
+  }
+}

@@ -1,0 +1,11 @@
+SELECT ?a ?b ?c WHERE {
+  ?a ?b ?c .
+
+  OPTIONAL {
+    ?a ?x ?y
+  }
+
+  OPTIONAL {
+    ?a ?z ?w
+  }
+}

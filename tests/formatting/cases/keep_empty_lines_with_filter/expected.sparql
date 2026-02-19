@@ -1,0 +1,7 @@
+SELECT ?a ?b WHERE {
+  ?a ?b ?c .
+
+  FILTER (?c > 10)
+
+  ?d ?e ?f .
+}

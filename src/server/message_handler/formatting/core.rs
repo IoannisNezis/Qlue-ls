@@ -791,13 +791,16 @@ impl<'a> Walker<'a> {
                     _ => None,
                 }
             }
-            // SyntaxKind::TriplesTemplate => match node.parent().map(|parent| parent.kind()) {
-            //     Some(SyntaxKind::TriplesTemplateBlock) => {
-            //         Some(get_linebreak(&indentation.saturating_sub(1), indent_base))
-            //     }
-            //     _ => None,
-            // },
-            SyntaxKind::ConstructTriples => Some(self.get_linebreak(indentation.saturating_sub(1))),
+            // NOTE: The ConstructTriples is defined with an (imediate) recursion.
+            // Thats an important difference to GroupGraphPatternSub.
+            // Strategy: only insert trainling newline if its is the FIRST ConstructTriples.
+            SyntaxKind::ConstructTriples
+                if node
+                    .parent()
+                    .is_some_and(|parent| parent.kind() != SyntaxKind::ConstructTriples) =>
+            {
+                Some(self.get_linebreak(indentation.saturating_sub(1)))
+            }
 
             SyntaxKind::GroupGraphPatternSub | SyntaxKind::SubSelect => {
                 self.settings

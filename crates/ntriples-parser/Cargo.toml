@@ -6,7 +6,7 @@ repository = "https://github.com/IoannisNezis/ntriples-parser"
 license-file = "LICENSE"
 keywords = ["rdf", "n-triples", "parser", "SPARQL"]
 edition = "2024"
-version = "1.0.1"
+version = "2.0.0"
 
 [dependencies]
 logos = "0.16.0"

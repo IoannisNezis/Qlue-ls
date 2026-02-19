@@ -1,19 +1,63 @@
+// NOTE: Formatter Architecture
+//
+// This module implements a syntax-tree-based formatter that generates targeted TextEdit
+// operations rather than regenerating the entire document. The approach preserves document
+// context, enables cursor preservation, and follows LSP conventions.
+//
+// ## Core Mechanism: Walker Iterator
+//
+// The `Walker` struct traverses the CST (Concrete Syntax Tree) via an iterator pattern.
+// For each node, two operations are performed:
+//
+// 1. **Separation** — Determines spacing between sibling children via `get_separator()`.
+//    Each `SyntaxKind` maps to a `Separator` enum variant:
+//    - `LineBreak`: Insert newline + indentation
+//    - `Space`: Insert single space
+//    - `Empty`: Remove all whitespace
+//    - `Unknown`: Leave unchanged
+//
+// 2. **Augmentation** — Applies node-specific formatting rules via three phases:
+//    - `pre_node_augmentation()`: Edits before the node (e.g., linebreak before WHERE)
+//    - `in_node_augmentation()`: Edits within node children (e.g., comma spacing, alignment)
+//    - `post_node_augmentation()`: Edits after the node (e.g., linebreak after prologue)
+//
+// ## Comment Handling
+//
+// Comments are extracted during traversal and tracked separately with metadata:
+// - Position (byte offset of attachment point)
+// - Indentation level
+// - Whether the comment is trailing (on same line as code)
+//
+// After all formatting edits are generated, comments are merged back into the edit stream
+// via `merge_comments()`, which inserts them at the correct positions with proper indentation.
+//
+// ## Coordinate Systems
+//
+// Two coordinate systems are used:
+// - **Byte-based** (`TextRange`, `TextSize`): Used internally during traversal for efficiency
+// - **Line/Column** (`Position`, `Range`): LSP output format
+//
+// The `transform_edits()` and `transform_comments()` functions convert between them.
+//
+// ## Edit Consolidation
+//
+// Adjacent edits are consolidated via `ConsolidatedTextEdit` to reduce edit count and
+// handle overlapping/adjacent ranges correctly. This also supports `split_at()` for
+// inserting comments in the middle of a consolidated edit.
+
 use core::fmt;
 use std::vec;
 
-use ll_sparql_parser::{
-    SyntaxElement, SyntaxNode,
-    syntax_kind::SyntaxKind,
-};
+use ll_sparql_parser::{syntax_kind::SyntaxKind, SyntaxElement, SyntaxNode};
 use text_size::{TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use crate::server::{
     configuration::FormatSettings,
     lsp::{
-        FormattingOptions,
         errors::LSPError,
         textdocument::{Position, Range, TextDocumentItem, TextEdit},
+        FormattingOptions,
     },
     message_handler::formatting::utils::subtree_width,
 };

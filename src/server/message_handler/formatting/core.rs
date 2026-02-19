@@ -111,24 +111,24 @@ fn merge_empty_lines(
     simplified_empty_lines.sort_by(|a, b| a.position.cmp(&b.position));
     let mut empty_lines_itter = simplified_empty_lines.into_iter().peekable();
     for idx in 0..simplified_edits.len() {
-        if let Some(next) = empty_lines_itter.peek() {
-            if next.position <= simplified_edits[idx].range.start() {
-                // NOTE: Scan following consecutive edits for newlines
-                let mut prev_end = simplified_edits[idx].range.end();
-                let has_newline_in_consecutive = simplified_edits[idx].text.contains('\n')
-                    || simplified_edits[idx + 1..]
-                        .iter()
-                        .take_while(|e| {
-                            let consecutive = e.range.start() == prev_end;
-                            prev_end = e.range.end();
-                            consecutive
-                        })
-                        .any(|e| e.text.contains('\n'));
-                if has_newline_in_consecutive {
-                    simplified_edits[idx].text.insert(0, '\n');
-                }
-                empty_lines_itter.next();
+        if let Some(next) = empty_lines_itter.peek()
+            && next.position <= simplified_edits[idx].range.start()
+        {
+            // NOTE: Scan following consecutive edits for newlines
+            let mut prev_end = simplified_edits[idx].range.end();
+            let has_newline_in_consecutive = simplified_edits[idx].text.contains('\n')
+                || simplified_edits[idx + 1..]
+                    .iter()
+                    .take_while(|e| {
+                        let consecutive = e.range.start() == prev_end;
+                        prev_end = e.range.end();
+                        consecutive
+                    })
+                    .any(|e| e.text.contains('\n'));
+            if has_newline_in_consecutive {
+                simplified_edits[idx].text.insert(0, '\n');
             }
+            empty_lines_itter.next();
         }
     }
     simplified_edits
@@ -890,12 +890,11 @@ impl<'a> Walker<'a> {
             if !node.kind().is_trivia() {
                 break;
             } else if self.settings.keep_empty_lines
-                && after_empty_line == false
+                && !after_empty_line
                 && node.kind() == SyntaxKind::WHITESPACE
+                && Self::empty_line_marker(node, self.text).is_some()
             {
-                if Self::empty_line_marker(node, self.text).is_some() {
-                    after_empty_line = true;
-                }
+                after_empty_line = true;
             }
             maybe_attach = node.prev_sibling_or_token();
         }

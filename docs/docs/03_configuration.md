@@ -12,7 +12,7 @@ separate_prologue = false
 capitalize_keywords = true
 insert_spaces = true
 tab_size = 2
-where_new_line = true
+where_new_line = false
 filter_same_line = true
 line_length = 120
 contract_triples = false
@@ -32,7 +32,7 @@ add_missing = true
 remove_unused = false
 ```
 
-## Formatt settings
+## Format settings
 
 ### format.align_prefixes
 
@@ -64,13 +64,13 @@ This setting also controls on-type formatting: when pressing Enter after `;`, th
 See [On-type Formatting](02_capabilities.md#on-type-formatting).
 
 
-### format.separate_prolouge
+### format.separate_prologue
 
 | Type     | Default |
 | ---------| --------|
 | boolean  | false   |
 
-Separate Prolouge from query with a line break:
+Separate Prologue from query with a line break:
 
 ```sparql
 PREFIX rdf:      <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -171,6 +171,15 @@ SELECT * WHERE {
 When `align_predicates = true` (default), the contracted predicates are aligned with the first predicate.
 When `align_predicates = false`, a fixed 2-space indentation is used.
 
+### format.keep_empty_lines
+
+| Type     | Default |
+| ---------| --------|
+| boolean  | false   |
+
+When enabled, preserves intentional blank lines from the original source.
+Consecutive blank lines are collapsed into a single empty line.
+
 ## Completion settings
 
 ### completion.timeout_ms
@@ -260,7 +269,7 @@ See [On-type Formatting](02_capabilities.md#on-type-formatting) for more details
 
 ## Prefix settings
 
-### prefix.add_missing
+### prefixes.add_missing
 
 | Type     | Default |
 | ---------| --------|
@@ -268,7 +277,7 @@ See [On-type Formatting](02_capabilities.md#on-type-formatting) for more details
 
 Define missing prefix declarations as soon as they are needed.
 
-### prefix.remove_unused
+### prefixes.remove_unused
 
 | Type     | Default |
 | ---------| --------|

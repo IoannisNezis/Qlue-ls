@@ -6,7 +6,6 @@ use crate::SyntaxKind;
 use grammar::{parse_QueryUnit, parse_UpdateUnit};
 use logos::Logos;
 use rowan::{GreenNode, GreenNodeBuilder, TextRange, TextSize};
-use wasm_bindgen::prelude::wasm_bindgen;
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -266,16 +265,6 @@ pub fn guess_operation_type(input: &str) -> Option<TopEntryPoint> {
         | SyntaxKind::DELETE_WHERE => Some(TopEntryPoint::UpdateUnit),
         _ => None,
     })
-}
-
-#[wasm_bindgen]
-pub fn determine_operation_type(input: &str) -> String {
-    match guess_operation_type(input) {
-        Some(TopEntryPoint::QueryUnit) => "Query",
-        Some(TopEntryPoint::UpdateUnit) => "Update",
-        None => "Unknown",
-    }
-    .to_string()
 }
 
 #[cfg(test)]

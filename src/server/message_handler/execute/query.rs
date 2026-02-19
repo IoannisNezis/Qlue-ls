@@ -146,7 +146,7 @@ async fn handle_construct_query(
     query: String,
     engine: Option<SparqlEngine>,
 ) -> Result<(), LSPError> {
-    let result = match execute_construct_query(
+    let res = execute_construct_query(
         server_rc.clone(),
         &url,
         &query,
@@ -154,8 +154,9 @@ async fn handle_construct_query(
         engine,
         request.params.lazy.unwrap_or(false),
     )
-    .await
-    {
+    .await;
+
+    let result = match res {
         Ok(res) => res,
         #[cfg(target_arch = "wasm32")]
         Err(SparqlRequestError::QLeverException(exception)) => {
@@ -177,13 +178,24 @@ async fn handle_construct_query(
                 ));
         }
         Err(SparqlRequestError::_Canceled(error)) => {
-            log::info!("Sending cancel error");
             return server_rc
                 .lock()
                 .await
                 .send_message(ExecuteOperationResponse::error(
                     request.get_id(),
                     ExecuteOperationErrorData::Canceled(error),
+                ));
+        }
+        Err(SparqlRequestError::Deserialization(error)) => {
+            return server_rc
+                .lock()
+                .await
+                .send_message(ExecuteOperationResponse::error(
+                    request.get_id(),
+                    ExecuteOperationErrorData::Deserialization {
+                        query,
+                        message: error,
+                    },
                 ));
         }
         Err(_err) => {

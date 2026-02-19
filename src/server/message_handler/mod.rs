@@ -130,9 +130,6 @@ pub(super) async fn dispatch(
         }};
     }
 
-    print!("{method}");
-    log::debug!("{method}");
-
     match method {
         // NOTE: Requests
         "initialize" => call!(handle_initialize_request),

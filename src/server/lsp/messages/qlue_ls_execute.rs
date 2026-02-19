@@ -67,7 +67,23 @@ impl ExecuteOperationResponse {
             error: Some(ExecuteOperationError {
                 base: LSPErrorBase {
                     code: ErrorCode::RequestFailed,
-                    message: "The Query was rejected by the SPARQL endpoint".to_string(),
+                    message: match &error {
+                        ExecuteOperationErrorData::QLeverException(_) => "Qlever threw an error.",
+                        ExecuteOperationErrorData::Connection(_) => {
+                            "The connection to the endpoint failed."
+                        }
+                        ExecuteOperationErrorData::Canceled(_) => "The query was canceled.",
+                        ExecuteOperationErrorData::InvalidFormat {
+                            query: _,
+                            message: _,
+                        } => "Update result could not be deserialized.",
+                        ExecuteOperationErrorData::Deserialization {
+                            query: _,
+                            message: _,
+                        } => "The result of the query could not be deserialized.",
+                        ExecuteOperationErrorData::Unknown => "An unknown error occured",
+                    }
+                    .to_string(),
                 },
                 data: error,
             }),
@@ -165,6 +181,7 @@ pub enum ExecuteOperationErrorData {
     Connection(ConnectionError),
     Canceled(CanceledError),
     InvalidFormat { query: String, message: String },
+    Deserialization { query: String, message: String },
     Unknown,
 }
 

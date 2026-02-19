@@ -8,7 +8,7 @@ pub enum SyntaxKind {
     Error,
     #[regex(r"[ \t\n\r\f]+")]
     WHITESPACE,
-    #[regex(r"#[^\n]*", allow_greedy = true)]
+    #[regex(r"#[^\r\n]*", allow_greedy = true)]
     Comment,
     #[token("BASE", ignore(case))]
     BASE,

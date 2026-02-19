@@ -90,7 +90,7 @@ fn build_element(
                         start: token_start,
                         end: token_end,
                     },
-                    text: token.text().to_string(),
+                    text: format!("{:?}", token.text().to_string()),
                 }
             }
         })

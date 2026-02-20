@@ -101,7 +101,7 @@ wasm-opt = false
 insta = { version = "1.40", features = ["json", "redactions"] }
 wiremock = "0.6"
 pretty_assertions = "1.4"
-toml = "0.9.11"
+toml = "1.0.0"
 
 [profile.release]
 # Tell `rustc` to optimize for small code size.

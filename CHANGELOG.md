@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- object variable completions based on subject AND predicate labels.
+  For example `<Albert> <has_lastname> |` -> `?alber_lastname`
+
 ### Fixed
 
 - idempotence of formatting with seperate_prologue + keep_empty_lines options enabled

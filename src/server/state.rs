@@ -38,32 +38,6 @@ use ll_sparql_parser::{SyntaxNode, parse};
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-#[cfg(not(target_arch = "wasm32"))]
-fn get_timestamp_ms() -> f64 {
-    use std::time::SystemTime;
-    SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .expect("system time should be after epoch")
-        .as_secs_f64()
-        * 1000.0
-}
-
-#[cfg(target_arch = "wasm32")]
-fn get_timestamp_ms() -> f64 {
-    use wasm_bindgen::JsCast;
-    use web_sys::WorkerGlobalScope;
-    let worker_global: WorkerGlobalScope = js_sys::global().unchecked_into();
-    worker_global
-        .performance()
-        .expect("performance should be available")
-        .now()
-}
-
-pub struct TimedParseResult {
-    pub tree: SyntaxNode,
-    pub parse_time_ms: f64,
-}
-
 #[derive(Debug, PartialEq)]
 pub enum ServerStatus {
     Initializing,
@@ -253,4 +227,30 @@ impl ServerState {
     pub(crate) fn get_running_request(&mut self, id: &str) -> Option<&Box<dyn Fn()>> {
         self.running_sparql_requests.get(id)
     }
+}
+
+pub struct TimedParseResult {
+    pub tree: SyntaxNode,
+    pub parse_time_ms: f64,
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn get_timestamp_ms() -> f64 {
+    use std::time::SystemTime;
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .expect("system time should be after epoch")
+        .as_secs_f64()
+        * 1000.0
+}
+
+#[cfg(target_arch = "wasm32")]
+fn get_timestamp_ms() -> f64 {
+    use wasm_bindgen::JsCast;
+    use web_sys::WorkerGlobalScope;
+    let worker_global: WorkerGlobalScope = js_sys::global().unchecked_into();
+    worker_global
+        .performance()
+        .expect("performance should be available")
+        .now()
 }

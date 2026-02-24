@@ -35,7 +35,7 @@ use std::{collections::HashMap, fmt};
 use config::{Config, ConfigError};
 use serde::{Deserialize, Serialize};
 
-use crate::server::lsp::{base_types::LSPAny, SparqlEngine};
+use crate::server::lsp::{SparqlEngine, base_types::LSPAny};
 
 #[derive(Debug, Serialize, Deserialize, Default, PartialEq)]
 #[serde(default)]
@@ -255,7 +255,6 @@ impl Default for Replacements {
         Self {
             object_variable: vec![
                 Replacement::new(r"^has (\w+)", "$1"),
-                Replacement::new(r"\s", "_"),
                 Replacement::new(r"^has([A-Z]\w*)", "$1"),
                 Replacement::new(r"^(\w+)edBy", "$1"),
                 Replacement::new(r"([^a-zA-Z0-9_])", ""),
@@ -367,27 +366,41 @@ mod tests {
         assert_eq!(config.url, "https://example.com/sparql");
         assert!(!config.default);
         assert_eq!(config.queries.len(), 7);
-        assert!(config
-            .queries
-            .contains_key(&CompletionTemplate::SubjectCompletion));
-        assert!(config
-            .queries
-            .contains_key(&CompletionTemplate::PredicateCompletionContextSensitive));
-        assert!(config
-            .queries
-            .contains_key(&CompletionTemplate::PredicateCompletionContextInsensitive));
-        assert!(config
-            .queries
-            .contains_key(&CompletionTemplate::ObjectCompletionContextSensitive));
-        assert!(config
-            .queries
-            .contains_key(&CompletionTemplate::ObjectCompletionContextInsensitive));
-        assert!(config
-            .queries
-            .contains_key(&CompletionTemplate::ValuesCompletionContextSensitive));
-        assert!(config
-            .queries
-            .contains_key(&CompletionTemplate::ValuesCompletionContextInsensitive));
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::SubjectCompletion)
+        );
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::PredicateCompletionContextSensitive)
+        );
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::PredicateCompletionContextInsensitive)
+        );
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::ObjectCompletionContextSensitive)
+        );
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::ObjectCompletionContextInsensitive)
+        );
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::ValuesCompletionContextSensitive)
+        );
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::ValuesCompletionContextInsensitive)
+        );
     }
 
     #[test]
@@ -404,15 +417,21 @@ mod tests {
         let config: BackendConfiguration = parse_yaml(yaml);
 
         assert_eq!(config.queries.len(), 2);
-        assert!(config
-            .queries
-            .contains_key(&CompletionTemplate::SubjectCompletion));
-        assert!(config
-            .queries
-            .contains_key(&CompletionTemplate::ObjectCompletionContextInsensitive));
-        assert!(!config
-            .queries
-            .contains_key(&CompletionTemplate::PredicateCompletionContextSensitive));
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::SubjectCompletion)
+        );
+        assert!(
+            config
+                .queries
+                .contains_key(&CompletionTemplate::ObjectCompletionContextInsensitive)
+        );
+        assert!(
+            !config
+                .queries
+                .contains_key(&CompletionTemplate::PredicateCompletionContextSensitive)
+        );
     }
 
     #[test]

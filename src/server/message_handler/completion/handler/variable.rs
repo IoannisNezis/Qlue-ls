@@ -17,6 +17,8 @@ pub async fn completions(
     server_rc: Rc<Mutex<Server>>,
     environment: &CompletionEnvironment,
 ) -> Result<CompletionList, CompletionError> {
+    let server = server_rc.lock().await;
+
     let suffix = match environment.location {
         CompletionLocation::Object(_)
         | CompletionLocation::Subject
@@ -60,7 +62,7 @@ pub async fn completions(
         },
     })
     .collect();
-    // NOTE: predicate based object variable completions:
+    // NOTE: augmented object variable completions:
     if matches!(
         environment.location,
         CompletionLocation::Object(_) | CompletionLocation::BlankNodeObject(_)
@@ -70,18 +72,20 @@ pub async fn completions(
         .and_then(|token| token.parent())
         .and_then(PrefixedName::cast)
     {
-        let mut object_name = server_rc
-            .lock()
-            .await
+        // NOTE: what should the variable be called based on the predicate.
+        let mut object_name = server
             .state
             .label_memory
             .get(&prefixed_name.text())
             .cloned()
             .unwrap_or(prefixed_name.name());
 
-        if let Some(replacements) = server_rc
-            .lock()
-            .await
+        // NOTE: Apply "replacements.
+        // For example:
+        // "has_author" -> "author"
+        // These replacements are configurable.
+        // snace_case conversion is build in.
+        if let Some(replacements) = server
             .settings
             .replacements
             .as_ref()
@@ -121,7 +125,7 @@ pub async fn completions(
         );
         // NOTE: If subject is a variable:
         // append ?[variable]_[object_name] as variable completion
-        if let CompletionLocation::Object(triple) = environment.location.clone()
+        if let CompletionLocation::Object(ref triple) = environment.location
             && let Some(var) = triple
                 .subject()
                 .map(|subject| subject.syntax().clone())
@@ -150,15 +154,42 @@ pub async fn completions(
                 },
             );
         }
+
+        // NOTE: If subject has a known label:
+        // append ?[label]_[object_name] as variable completion,
+        // where label is rewritten in snake_case.
+        if let CompletionLocation::Object(ref triple) = environment.location
+            && let Some(subject_label) = triple
+                .subject()
+                .map(|subject| subject.syntax().to_string())
+                .and_then(|subject| server.state.label_memory.get(&subject))
+        {
+            let subject_label = to_sparql_variable(subject_label);
+            suggestions.insert(
+                0,
+                CompletionItem {
+                    label: format!("?{}_{}", subject_label, variable),
+                    label_details: None,
+                    kind: CompletionItemKind::Variable,
+                    detail: None,
+                    documentation: None,
+                    sort_text: Some("00001".to_string()),
+                    filter_text: Some(format!("?{}_{}", subject_label, variable)),
+                    insert_text: None,
+                    text_edit: Some(TextEdit::new(
+                        environment.replace_range.clone(),
+                        &format!("?{}_{}", subject_label, variable),
+                    )),
+                    insert_text_format: Some(InsertTextFormat::PlainText),
+                    additional_text_edits: None,
+                    command: None,
+                },
+            );
+        }
     }
 
     // Apply variable completion limit if configured
-    let limit = server_rc
-        .lock()
-        .await
-        .settings
-        .completion
-        .variable_completion_limit;
+    let limit = server.settings.completion.variable_completion_limit;
     if let Some(limit) = limit {
         suggestions.truncate(limit as usize);
     }
@@ -193,11 +224,14 @@ fn to_sparql_variable(s: &str) -> String {
         return "var".to_string();
     }
 
-    // Remove leading '?' or '$' if present
-    let s = s
-        .strip_prefix('?')
-        .or_else(|| s.strip_prefix('$'))
-        .unwrap_or(s);
+    // NOTE: first pass: convert into snace_case
+    let s = &s
+        .trim()
+        .to_lowercase()
+        .replace([' ', '-', ',', '.', '(', ')', '$', '?'], " ")
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join("_");
 
     let mut result = String::new();
     let mut chars = s.chars();

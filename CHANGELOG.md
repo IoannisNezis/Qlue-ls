@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- idempotence of formatting with seperate_prologue + keep_empty_lines options enabled
+
 ## [2.5.0] - 2026-02-19
 
 ### Added

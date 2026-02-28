@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- formatting with `separate_prologue: true` and `keep_empty_lines: false`: the linebreak
+  after the prologue was not inserted when the source contained extra blank lines
+
+## [2.5.1] - 2026-02-28
+
 ### Added
 
 - object variable completions based on subject AND predicate labels.
@@ -14,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- idempotence of formatting with seperate_prologue + keep_empty_lines options enabled
+- idempotence of formatting with `separate_prologue` + `keep_empty_lines` options enabled
 
 ## [2.5.0] - 2026-02-19
 

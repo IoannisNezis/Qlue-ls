@@ -815,13 +815,14 @@ impl<'a> Walker<'a> {
             SyntaxKind::UNION => Some(" ".to_string()),
             SyntaxKind::Prologue
                 if self.settings.separate_prologue
-                    && node.as_node().is_some_and(|node| {
-                        node.next_sibling().is_some()
-                            && node.next_sibling_or_token().is_none_or(|next| {
-                                next.kind() != SyntaxKind::WHITESPACE
-                                    || Self::empty_line_marker(&next, self.text).is_none()
-                            })
-                    }) =>
+                    && (!self.settings.keep_empty_lines
+                        || node.as_node().is_some_and(|node| {
+                            node.next_sibling().is_some()
+                                && node.next_sibling_or_token().is_none_or(|next| {
+                                    next.kind() != SyntaxKind::WHITESPACE
+                                        || Self::empty_line_marker(&next, self.text).is_none()
+                                })
+                        })) =>
             {
                 Some(self.get_linebreak(indentation))
             }

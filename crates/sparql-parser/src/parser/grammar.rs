@@ -5,9 +5,13 @@ use crate::SyntaxKind;
 pub(super) fn parse_QueryUnit(p: &mut Parser) {
     let marker = p.open();
     parse_Query(p);
-    // Add remaining tokens as error.
-    while !p.at(SyntaxKind::Eof) {
-        p.advance_with_error(Vec::new());
+    // Add remaining tokens as a single error node.
+    if !p.at(SyntaxKind::Eof) {
+        let error_marker = p.open();
+        while !p.at(SyntaxKind::Eof) {
+            p.advance();
+        }
+        p.close(error_marker, SyntaxKind::Error);
     }
     p.close(marker, SyntaxKind::QueryUnit);
 }
@@ -241,9 +245,13 @@ pub(super) fn parse_UpdateUnit(p: &mut Parser) {
     }
     let marker = p.open();
     parse_Update(p);
-    // Add remaining tokens as error.
-    while !p.at(SyntaxKind::Eof) {
-        p.advance_with_error(Vec::new());
+    // Add remaining tokens as a single error node.
+    if !p.at(SyntaxKind::Eof) {
+        let error_marker = p.open();
+        while !p.at(SyntaxKind::Eof) {
+            p.advance();
+        }
+        p.close(error_marker, SyntaxKind::Error);
     }
     p.close(marker, SyntaxKind::UpdateUnit);
 }

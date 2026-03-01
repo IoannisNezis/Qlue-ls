@@ -811,6 +811,35 @@ impl<'a> Walker<'a> {
         node: &SyntaxElement,
         indentation: u8,
     ) -> Option<SimplifiedTextEdit> {
+        // NOTE: Suppress trailing linebreaks before Error nodes to avoid inserting
+        // formatting whitespace into incomplete/invalid syntax. The kind guard mirrors
+        // the match arms below — only nodes that can actually produce a linebreak need
+        // this check, so we avoid the tree traversal for all others.
+        if matches!(
+            node.kind(),
+            SyntaxKind::Prologue
+                | SyntaxKind::PropertyListPathNotEmpty
+                | SyntaxKind::PropertyListNotEmpty
+                | SyntaxKind::ConstructTriples
+                | SyntaxKind::GroupGraphPatternSub
+                | SyntaxKind::SubSelect
+        ) && node
+            .as_node()
+            .and_then(|node| node.last_token())
+            .and_then(|last_token| last_token.next_token())
+            .and_then(|t| {
+                // skip trivia
+                let mut tok = t;
+                while tok.kind().is_trivia() {
+                    tok = tok.next_token()?;
+                }
+                Some(tok)
+            })
+            .and_then(|next_token| next_token.parent())
+            .is_some_and(|next_node| next_node.kind() == SyntaxKind::Error)
+        {
+            return None;
+        }
         let insert = match node.kind() {
             SyntaxKind::UNION => Some(" ".to_string()),
             SyntaxKind::Prologue
@@ -1048,8 +1077,7 @@ enum Seperator {
 
 fn get_separator(kind: SyntaxKind) -> Seperator {
     match kind {
-        SyntaxKind::QueryUnit
-        | SyntaxKind::Query
+        SyntaxKind::Query
         | SyntaxKind::Prologue
         | SyntaxKind::SolutionModifier
         | SyntaxKind::LimitOffsetClauses => Seperator::LineBreak,

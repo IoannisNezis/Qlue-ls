@@ -370,7 +370,7 @@ fn get_search_term(
         // A token "overlaps" if its range contains trigger_pos or ends at trigger_pos
         while let Some(next) = current_token.next_token() {
             // Stop if this token starts after the trigger position
-            if next.text_range().start() > trigger_pos {
+            if next.text_range().start() >= trigger_pos {
                 break;
             }
             // Include Error tokens and their siblings under the same Error parent

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [2.5.3] - 2026-03-01
+
+### Changed
+
+- improved parser error handling
+
+### Fixed
+
+- formatting no longer inserts trailing linebreaks before `Error` nodes in incomplete/invalid syntax
+
 ## [2.5.2] - 2026-02-28
 
 ### Fixed

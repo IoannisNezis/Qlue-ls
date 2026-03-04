@@ -8,66 +8,28 @@ on:
     types: [published]
 
 jobs:
-  build-native:
-    name: 🏗️ build Rust 🦀
+  build-and-test:
+    name: 🏗️ build & test
     runs-on: ubuntu-latest
     steps:
       - name: Clone repository
         uses: actions/checkout@v6
-      - name: Cache target dir
-        id: cache-primes
-        uses: actions/cache@v5
-        with:
-          path: target/
-          key: target-${{  github.run_number }}-${{ github.run_attempt }}
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: cargo build
-        run: cargo build --release --bin qlue-ls
-
-  test-native:
-    name: 🔍 run tests
-    needs: build-native
-    runs-on: ubuntu-latest
-    steps:
-      - name: Clone repository
-        uses: actions/checkout@v6
-      - name: Restore cargo build
-        uses: actions/cache/restore@v5
-        with:
-          path: target/
-          key: target-${{  github.run_number }}-${{ github.run_attempt }}
+        run: cargo build --release
       - name: cargo test
-        run: cargo test --release --bin qlue-ls
+        run: cargo test --release
 
-  build-python:
-    name: 🏗️ build python 🐍
-    if: github.event_name == 'release' && github.event.action == 'published'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Clone repository
-        uses: actions/checkout@v6
-      - name: maturin build
-        uses: PyO3/maturin-action@v1
-        with:
-          command: build
-          args: --release
-
-  publish-createsio:
+  publish-cratesio:
     name: 📦 Publish to crates.io
     if: github.event_name == 'release' && github.event.action == 'published'
-    needs:
-      - build-native
-      - test-native
+    needs: build-and-test
     runs-on: ubuntu-latest
     steps:
       - name: Clone repository
         uses: actions/checkout@v6
-      - name: Restore cargo build
-        uses: actions/cache/restore@v5
-        with:
-          path: target/
-          key: target-${{  github.run_number }}-${{ github.run_attempt }}
-      - run: ls
-      - name: publish to crate.io
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: publish to crates.io
         run: cargo publish --no-verify --token ${{ secrets.CRATEIO_TOKEN }}

@@ -13,7 +13,7 @@ It's written in Rust and build for the web.
 
     [:octicons-arrow-right-24: capabilities](02_capabilities.md)
 
--   :material-connection:{ .lg .middle } __Collect to a backend__
+-   :material-connection:{ .lg .middle } __Connect to a backend__
 
     ---
 

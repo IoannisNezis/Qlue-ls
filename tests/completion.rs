@@ -4,8 +4,8 @@
 
 mod harness;
 
-use harness::runtime::run_lsp_test;
 use harness::TestClient;
+use harness::runtime::run_lsp_test;
 use serde_json::Value;
 
 /// Helper to extract completion labels from a completion response
@@ -35,12 +35,15 @@ fn test_completion_filter_prefix_returns_filter() {
         // Open a document with "FI" typed in subject position
         // The cursor is at the end of "FI"
         client
+            //                                     012345678901234567890
             .open_document("file:///test.sparql", "SELECT * WHERE { FI }")
             .await;
 
-        // Request completion at position after "FI" (line 0, character 17)
-        let id = client.complete("file:///test.sparql", 0, 17).await;
-        let response = client.get_response(id).expect("Should receive completion response");
+        // Request completion at position after "FI" (line 0, character 19)
+        let id = client.complete("file:///test.sparql", 0, 19).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
 
         assert!(
             response.get("result").is_some(),
@@ -79,12 +82,16 @@ fn test_completion_non_keyword_prefix_excludes_keywords() {
 
         // Open a document with "Germany" typed in subject position
         client
+            //                                     0000000000111111111122222222223
+            //                                     0123456789012345678901234567890
             .open_document("file:///test.sparql", "SELECT * WHERE { Germany }")
             .await;
 
         // Request completion at position after "Germany" (line 0, character 24)
         let id = client.complete("file:///test.sparql", 0, 24).await;
-        let response = client.get_response(id).expect("Should receive completion response");
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
 
         assert!(
             response.get("result").is_some(),
@@ -132,12 +139,16 @@ fn test_completion_optional_prefix_returns_optional() {
 
         // Open a document with "OP" typed in subject position
         client
+            //                                     0000000000111111111122222222223
+            //                                     0123456789012345678901234567890
             .open_document("file:///test.sparql", "SELECT * WHERE { OP }")
             .await;
 
-        // Request completion at position after "OP" (line 0, character 18)
-        let id = client.complete("file:///test.sparql", 0, 18).await;
-        let response = client.get_response(id).expect("Should receive completion response");
+        // Request completion at position after "OP" (line 0, character 19)
+        let id = client.complete("file:///test.sparql", 0, 19).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
 
         assert!(
             response.get("result").is_some(),
@@ -172,12 +183,16 @@ fn test_completion_case_insensitive_prefix() {
 
         // Open a document with lowercase "fi" typed in subject position
         client
+            //                                     0000000000111111111122222222223
+            //                                     0123456789012345678901234567890
             .open_document("file:///test.sparql", "SELECT * WHERE { fi }")
             .await;
 
-        // Request completion at position after "fi" (line 0, character 18)
-        let id = client.complete("file:///test.sparql", 0, 18).await;
-        let response = client.get_response(id).expect("Should receive completion response");
+        // Request completion at position after "fi" (line 0, character 19)
+        let id = client.complete("file:///test.sparql", 0, 19).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
 
         assert!(
             response.get("result").is_some(),
@@ -202,12 +217,16 @@ fn test_completion_bind_prefix_returns_bind() {
 
         // Open a document with "BI" typed in subject position
         client
+            //                                     0000000000111111111122222222223
+            //                                     0123456789012345678901234567890
             .open_document("file:///test.sparql", "SELECT * WHERE { BI }")
             .await;
 
-        // Request completion at position after "BI" (line 0, character 18)
-        let id = client.complete("file:///test.sparql", 0, 18).await;
-        let response = client.get_response(id).expect("Should receive completion response");
+        // Request completion at position after "BI" (line 0, character 19)
+        let id = client.complete("file:///test.sparql", 0, 19).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
 
         assert!(
             response.get("result").is_some(),
@@ -242,12 +261,16 @@ fn test_completion_s_prefix_returns_service_and_sub_select() {
 
         // Open a document with "S" typed in subject position
         client
+            //                                     0000000000111111111122222222223
+            //                                     0123456789012345678901234567890
             .open_document("file:///test.sparql", "SELECT * WHERE { S }")
             .await;
 
-        // Request completion at position after "S" (line 0, character 17)
-        let id = client.complete("file:///test.sparql", 0, 17).await;
-        let response = client.get_response(id).expect("Should receive completion response");
+        // Request completion at position after "S" (line 0, character 18)
+        let id = client.complete("file:///test.sparql", 0, 18).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
 
         assert!(
             response.get("result").is_some(),
@@ -287,12 +310,16 @@ fn test_completion_solution_modifier_group_prefix() {
 
         // Open a document with "GR" after the WHERE clause (solution modifier position)
         client
+            //                                     0000000000111111111122222222223
+            //                                     0123456789012345678901234567890
             .open_document("file:///test.sparql", "SELECT * WHERE { ?s ?p ?o } GR")
             .await;
 
         // Request completion at position after "GR" (line 0, character 30)
         let id = client.complete("file:///test.sparql", 0, 30).await;
-        let response = client.get_response(id).expect("Should receive completion response");
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
 
         assert!(
             response.get("result").is_some(),
@@ -327,12 +354,16 @@ fn test_completion_solution_modifier_non_keyword_excludes_all() {
 
         // Open a document with "xyz" after the WHERE clause (solution modifier position)
         client
+            //                                     00000000001111111111222222222233
+            //                                     01234567890123456789012345678901
             .open_document("file:///test.sparql", "SELECT * WHERE { ?s ?p ?o } xyz")
             .await;
 
         // Request completion at position after "xyz" (line 0, character 31)
         let id = client.complete("file:///test.sparql", 0, 31).await;
-        let response = client.get_response(id).expect("Should receive completion response");
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
 
         assert!(
             response.get("result").is_some(),

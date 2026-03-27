@@ -164,7 +164,6 @@ pub(crate) async fn execute_construct_query(
             results,
             prefixes: _prefixes,
         } = result;
-        log::info!("lock aquired");
         server
             .send_message(PartialSparqlResultNotification::new(PartialResult::Header(
                 Header {

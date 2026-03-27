@@ -18,6 +18,13 @@ impl QueryUnit {
         )
     }
 
+    pub fn strip_prologue(&self) -> Option<SyntaxNode> {
+        self.syntax
+            .children()
+            .skip_while(|node| node.kind() == SyntaxKind::Prologue)
+            .next()
+    }
+
     pub fn prologue(&self) -> Option<Prologue> {
         Prologue::cast(
             self.syntax

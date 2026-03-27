@@ -19,16 +19,15 @@ pub(super) fn diagnostics(
 ) -> Option<Vec<Diagnostic>> {
     let prefix_declarations = query_unit.prologue()?.prefix_declarations();
     let used_prefixes: HashSet<String> =
-        query_unit
-            .select_query()
-            .map_or(HashSet::new(), |select_query| {
-                HashSet::from_iter(
-                    select_query
-                        .collect_decendants(&PrefixedName::can_cast)
-                        .into_iter()
-                        .map(|node| PrefixedName::cast(node).unwrap().prefix()),
-                )
-            });
+        query_unit.strip_prologue().map_or(HashSet::new(), |query| {
+            HashSet::from_iter(
+                query
+                    .descendants()
+                    .flat_map(&PrefixedName::cast)
+                    .into_iter()
+                    .map(|node| node.prefix()),
+            )
+        });
     Some(
         prefix_declarations
             .into_iter()

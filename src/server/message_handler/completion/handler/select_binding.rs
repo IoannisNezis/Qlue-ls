@@ -2,7 +2,8 @@ use super::super::{
     CompletionEnvironment, CompletionLocation, error::CompletionError, utils::matches_search_term,
 };
 use crate::server::lsp::{
-    CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
+    CompletionItem, CompletionItemBuilder, CompletionItemKind, CompletionList, InsertTextFormat,
+    ItemDefaults,
 };
 use ll_sparql_parser::{ast::AstNode, syntax_kind::SyntaxKind};
 use std::collections::HashSet;
@@ -98,45 +99,33 @@ pub fn completions(context: &CompletionEnvironment) -> Result<CompletionList, Co
                 ["COUNT", "SUM", "MIN", "MAX", "AVG", "SAMPLE"]
                     .into_iter()
                     .flat_map(|aggregate| {
-                        vars.iter().map(move |var| CompletionItem {
-                            label: format!(
-                                "({aggregate}({var}) AS ?{}_{})",
-                                aggregate.to_lowercase(),
-                                var.split_at(1).1
-                            ),
-                            label_details: None,
-                            kind: CompletionItemKind::Snippet,
-                            detail: None,
-                            documentation: None,
-                            sort_text: None,
-                            filter_text: None,
-                            insert_text: Some(format!(
-                                "({aggregate}({var}) AS ?${{0:{}_{}}})",
-                                aggregate.to_lowercase(),
-                                var.split_at(1).1
-                            )),
-                            text_edit: None,
-                            insert_text_format: Some(InsertTextFormat::Snippet),
-                            additional_text_edits: None,
-                            command: None,
+                        vars.iter().map(move |var| {
+                            CompletionItemBuilder::new()
+                                .label(&format!(
+                                    "({aggregate}({var}) AS ?{}_{})",
+                                    aggregate.to_lowercase(),
+                                    var.split_at(1).1
+                                ))
+                                .kind(CompletionItemKind::Snippet)
+                                .insert_text(&format!(
+                                    "({aggregate}({var}) AS ?${{0:{}_{}}})",
+                                    aggregate.to_lowercase(),
+                                    var.split_at(1).1
+                                ))
+                                .insert_text_format(InsertTextFormat::Snippet)
+                                .build()
                         })
                     }),
             );
 
-            items.push(CompletionItem {
-                label: "(COUNT(*) AS ?count)".to_string(),
-                label_details: None,
-                kind: CompletionItemKind::Snippet,
-                detail: None,
-                documentation: None,
-                sort_text: None,
-                filter_text: None,
-                insert_text: Some("(COUNT(*) AS ?${0:count})".to_string()),
-                text_edit: None,
-                insert_text_format: Some(InsertTextFormat::Snippet),
-                additional_text_edits: None,
-                command: None,
-            });
+            items.push(
+                CompletionItemBuilder::new()
+                    .label("(COUNT(*) AS ?count)")
+                    .kind(CompletionItemKind::Snippet)
+                    .insert_text("(COUNT(*) AS ?count)")
+                    .insert_text_format(InsertTextFormat::Snippet)
+                    .build(),
+            );
         }
 
         Ok(CompletionList {

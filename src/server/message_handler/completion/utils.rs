@@ -374,7 +374,7 @@ pub(super) fn to_completion_items(
                         range: range.clone(),
                         new_text: format!("{} ", value),
                     }),
-                    kind: CompletionItemKind::Value,
+                    kind: Some(CompletionItemKind::Value),
                     insert_text_format: None,
                     additional_text_edits: import_edit.map(|edit| vec![edit]),
                     command: command.map(|command| Command {

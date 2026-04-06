@@ -5,7 +5,10 @@ use ll_sparql_parser::syntax_kind::SyntaxKind;
 
 use crate::server::{
     Server,
-    lsp::{CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults},
+    lsp::{
+        CompletionItemBuilder, CompletionItemKind, CompletionList,
+        InsertTextFormat, ItemDefaults,
+    },
     message_handler::completion::{CompletionEnvironment, CompletionError, handler::variable},
 };
 
@@ -38,19 +41,14 @@ pub async fn completions(
                             .map(move |order| (order, variable_completion.label.clone()))
                     })
                     .enumerate()
-                    .map(|(idx, (order, var))| CompletionItem {
-                        label: format!("{order}({var})"),
-                        label_details: None,
-                        kind: CompletionItemKind::Method,
-                        detail: Some(format!("Order by descending {}", var)),
-                        documentation: None,
-                        sort_text: Some(format!("{idx:0>5}")),
-                        filter_text: None,
-                        insert_text: Some(format!("{order}({var})")),
-                        text_edit: None,
-                        insert_text_format: None,
-                        additional_text_edits: None,
-                        command: None,
+                    .map(|(idx, (order, var))| {
+                        CompletionItemBuilder::new()
+                            .label(&format!("{order}({var})"))
+                            .kind(CompletionItemKind::Method)
+                            .detail(&format!("Order by descending {}", var))
+                            .sort_text(&format!("{idx:0>5}"))
+                            .insert_text(&format!("{order}({var})"))
+                            .build()
                     })
                     .collect(),
             }

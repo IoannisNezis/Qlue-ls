@@ -7,7 +7,10 @@ use super::super::{
 };
 use crate::server::{
     Server,
-    lsp::{Command, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat},
+    lsp::{
+        Command, CompletionItem, CompletionItemBuilder, CompletionItemKind, CompletionList,
+        InsertTextFormat,
+    },
 };
 use futures::lock::Mutex;
 use ll_sparql_parser::syntax_kind::SyntaxKind;
@@ -79,123 +82,77 @@ pub async fn completions(
 }
 
 fn static_completions() -> Vec<CompletionItem> {
+    let trigger_completion_command = Command {
+        title: "triggerNewCompletion".to_string(),
+        command: "triggerNewCompletion".to_string(),
+        arguments: None,
+    };
     vec![
-        CompletionItem {
-            label: "FILTER".to_string(),
-            label_details: None,
-            kind: CompletionItemKind::Snippet,
-            detail: Some("Filter the results".to_string()),
-            documentation: None,
-            sort_text: Some("00001".to_string()),
-            filter_text: None,
-            insert_text: Some("FILTER ($0)".to_string()),
-            text_edit: None,
-            insert_text_format: Some(InsertTextFormat::Snippet),
-            additional_text_edits: None,
-            command: Some(Command {
-                title: "triggerNewCompletion".to_string(),
-                command: "triggerNewCompletion".to_string(),
-                arguments: None,
-            }),
-        },
-        CompletionItem {
-            command: None,
-            label: "BIND".to_string(),
-            label_details: None,
-            kind: CompletionItemKind::Snippet,
-            detail: Some("Bind a new variable".to_string()),
-            documentation: None,
-            sort_text: Some("00002".to_string()),
-            filter_text: None,
-            insert_text: Some("BIND ($1 AS ?$0)".to_string()),
-            text_edit: None,
-            insert_text_format: Some(InsertTextFormat::Snippet),
-            additional_text_edits: None,
-        },
-        CompletionItem {
-            command: None,
-            label: "VALUES".to_string(),
-            label_details: None,
-            kind: CompletionItemKind::Snippet,
-            detail: Some("Inline data definition".to_string()),
-            documentation: None,
-            sort_text: Some("00003".to_string()),
-            filter_text: None,
-            insert_text: Some("VALUES ?$1 { $0 }".to_string()),
-            text_edit: None,
-            insert_text_format: Some(InsertTextFormat::Snippet),
-            additional_text_edits: None,
-        },
-        CompletionItem {
-            command: None,
-            label: "SERVICE".to_string(),
-            label_details: None,
-            kind: CompletionItemKind::Snippet,
-            detail: Some("Collect data from a fedarated SPARQL endpoint".to_string()),
-            documentation: None,
-            sort_text: Some("00004".to_string()),
-            filter_text: None,
-            insert_text: Some("SERVICE $1 {\n  $0\n}".to_string()),
-            text_edit: None,
-            insert_text_format: Some(InsertTextFormat::Snippet),
-            additional_text_edits: None,
-        },
-        CompletionItem {
-            command: None,
-            label: "MINUS".to_string(),
-            label_details: None,
-            kind: CompletionItemKind::Snippet,
-            detail: Some("Subtract data".to_string()),
-            documentation: None,
-            sort_text: Some("00005".to_string()),
-            filter_text: None,
-            insert_text: Some("MINUS { $0 }".to_string()),
-            text_edit: None,
-            insert_text_format: Some(InsertTextFormat::Snippet),
-            additional_text_edits: None,
-        },
-        CompletionItem {
-            command: None,
-            label: "OPTIONAL".to_string(),
-            label_details: None,
-            kind: CompletionItemKind::Snippet,
-            detail: Some("Optional graphpattern".to_string()),
-            documentation: None,
-            sort_text: Some("00006".to_string()),
-            filter_text: None,
-            insert_text: Some("OPTIONAL { $0 }".to_string()),
-            text_edit: None,
-            insert_text_format: Some(InsertTextFormat::Snippet),
-            additional_text_edits: None,
-        },
-        CompletionItem {
-            command: None,
-            label: "UNION".to_string(),
-            label_details: None,
-            kind: CompletionItemKind::Snippet,
-            detail: Some("Union of two results".to_string()),
-            documentation: None,
-            sort_text: Some("00007".to_string()),
-            filter_text: None,
-            insert_text: Some("{\n  $1\n}\nUNION\n{\n  $0\n}".to_string()),
-            text_edit: None,
-            insert_text_format: Some(InsertTextFormat::Snippet),
-            additional_text_edits: None,
-        },
-        CompletionItem {
-            command: None,
-            label: "Sub select".to_string(),
-            label_details: None,
-            kind: CompletionItemKind::Snippet,
-            detail: Some("Sub select query".to_string()),
-            documentation: None,
-            sort_text: Some("00008".to_string()),
-            filter_text: None,
-            insert_text: Some("{\n  SELECT * WHERE {\n    $0\n  }\n}".to_string()),
-            text_edit: None,
-            insert_text_format: Some(InsertTextFormat::Snippet),
-            additional_text_edits: None,
-        },
+        CompletionItemBuilder::new()
+            .label("FILTER")
+            .kind(CompletionItemKind::Snippet)
+            .detail("Filter the results")
+            .sort_text("00001")
+            .insert_text("FILTER ($0)")
+            .insert_text_format(InsertTextFormat::Snippet)
+            .command(trigger_completion_command.clone())
+            .build(),
+        CompletionItemBuilder::new()
+            .label("BIND")
+            .kind(CompletionItemKind::Snippet)
+            .detail("Bind a new variable")
+            .sort_text("00002")
+            .insert_text("BIND ($1 AS ?$0)")
+            .insert_text_format(InsertTextFormat::Snippet)
+            .build(),
+        CompletionItemBuilder::new()
+            .label("VALUES")
+            .kind(CompletionItemKind::Snippet)
+            .detail("Inline data definition")
+            .sort_text("00003")
+            .insert_text("VALUES ?$1 { $0 }")
+            .insert_text_format(InsertTextFormat::Snippet)
+            .build(),
+        CompletionItemBuilder::new()
+            .label("SERVICE")
+            .kind(CompletionItemKind::Snippet)
+            .detail("Collect data from a fedarated SPARQL endpoint")
+            .sort_text("00004")
+            .insert_text("SERVICE $1 {\n  $0\n}")
+            .insert_text_format(InsertTextFormat::Snippet)
+            .build(),
+        CompletionItemBuilder::new()
+            .label("MINUS")
+            .kind(CompletionItemKind::Snippet)
+            .detail("Subtract data")
+            .sort_text("00005")
+            .insert_text("MINUS { $0 }")
+            .insert_text_format(InsertTextFormat::Snippet)
+            .build(),
+        CompletionItemBuilder::new()
+            .label("OPTIONAL")
+            .kind(CompletionItemKind::Snippet)
+            .detail("Optional graphpattern")
+            .sort_text("00006")
+            .insert_text("OPTIONAL { $0 }")
+            .insert_text_format(InsertTextFormat::Snippet)
+            .build(),
+        CompletionItemBuilder::new()
+            .label("UNION")
+            .kind(CompletionItemKind::Snippet)
+            .detail("Union of two results")
+            .sort_text("00007")
+            .insert_text("{\n  $1\n}\nUNION\n{\n  $0\n}")
+            .insert_text_format(InsertTextFormat::Snippet)
+            .build(),
+        CompletionItemBuilder::new()
+            .label("Sub select")
+            .kind(CompletionItemKind::Snippet)
+            .detail("Sub select query")
+            .sort_text("00008")
+            .insert_text("{\n  SELECT * WHERE {\n    $0\n  }\n}")
+            .insert_text_format(InsertTextFormat::Snippet)
+            .build(),
     ]
 }
 

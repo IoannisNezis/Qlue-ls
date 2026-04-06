@@ -24,7 +24,6 @@ pub(super) fn diagnostics(
                 query
                     .descendants()
                     .flat_map(&PrefixedName::cast)
-                    .into_iter()
                     .map(|node| node.prefix()),
             )
         });

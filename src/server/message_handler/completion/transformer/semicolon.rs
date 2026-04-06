@@ -83,7 +83,11 @@ impl SemicolonTransformer {
 impl CompletionTransformer for SemicolonTransformer {
     fn transform(&self, list: &mut CompletionList) {
         for item in list.items.iter_mut() {
-            if item.kind != CompletionItemKind::Variable {
+            if item
+                .kind
+                .as_ref()
+                .is_none_or(|kind| kind != &CompletionItemKind::Variable)
+            {
                 continue;
             }
             let item_value = item
@@ -92,7 +96,12 @@ impl CompletionTransformer for SemicolonTransformer {
                 .map(|te| te.new_text.trim().to_string())
                 .or_else(|| item.insert_text.as_ref().map(|s| s.trim().to_string()))
                 .map(|insert_text| {
-                    if item.kind == CompletionItemKind::Variable && !insert_text.starts_with("?") {
+                    if item
+                        .kind
+                        .as_ref()
+                        .is_some_and(|kind| kind == &CompletionItemKind::Variable)
+                        && !insert_text.starts_with("?")
+                    {
                         format!("?{}", insert_text)
                     } else {
                         insert_text

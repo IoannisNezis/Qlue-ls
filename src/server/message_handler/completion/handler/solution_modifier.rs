@@ -1,6 +1,7 @@
 use super::super::{CompletionEnvironment, error::CompletionError, utils::matches_search_term};
 use crate::server::lsp::{
-    Command, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
+    Command, CompletionItemBuilder, CompletionList,
+    InsertTextFormat, ItemDefaults,
 };
 use ll_sparql_parser::syntax_kind::SyntaxKind::*;
 
@@ -10,106 +11,73 @@ pub fn completions(context: &CompletionEnvironment) -> Result<CompletionList, Co
     if context.continuations.contains(&SolutionModifier)
         && matches_search_term("GROUP BY", search_term)
     {
-        items.push(CompletionItem {
-            label: "GROUP BY".to_string(),
-            label_details: None,
-            kind: CompletionItemKind::Snippet,
-            detail: Some("Group the results".to_string()),
-            documentation: None,
-            sort_text: None,
-            filter_text: None,
-            insert_text: Some("GROUP BY $0".to_string()),
-            text_edit: None,
-            insert_text_format: None,
-            additional_text_edits: None,
-            command: Some(Command {
-                title: "triggerNewCompletion".to_string(),
-                command: "triggerNewCompletion".to_string(),
-                arguments: None,
-            }),
-        });
+        items.push(
+            CompletionItemBuilder::new()
+                .label("GROUP BY")
+                .detail("Group the results")
+                .insert_text("GROUP BY $0")
+                .command(Command {
+                    title: "triggerNewCompletion".to_string(),
+                    command: "triggerNewCompletion".to_string(),
+                    arguments: None,
+                })
+                .build(),
+        );
     }
     if (context.continuations.contains(&SolutionModifier)
         || context.continuations.contains(&HavingClause))
         && matches_search_term("HAVING", search_term)
     {
-        items.push(CompletionItem {
-            command: None,
-            label: "HAVING".to_string(),
-            label_details: None,
-            kind: CompletionItemKind::Snippet,
-            detail: Some("Filter Groups".to_string()),
-            documentation: None,
-            sort_text: None,
-            filter_text: None,
-            insert_text: Some("HAVING $0".to_string()),
-            text_edit: None,
-            insert_text_format: None,
-            additional_text_edits: None,
-        });
+        items.push(
+            CompletionItemBuilder::new()
+                .label("HAVING")
+                .detail("Filter Groups")
+                .insert_text("HAVING $0")
+                .build(),
+        );
     }
     if (context.continuations.contains(&SolutionModifier)
         || context.continuations.contains(&OrderClause))
         && matches_search_term("ORDER BY", search_term)
     {
-        items.push(CompletionItem {
-            label: "ORDER BY".to_string(),
-            label_details: None,
-            kind: CompletionItemKind::Keyword,
-            detail: Some("Sort the results".to_string()),
-            documentation: None,
-            sort_text: None,
-            filter_text: None,
-            insert_text: Some("ORDER BY ".to_string()),
-            text_edit: None,
-            insert_text_format: None,
-            additional_text_edits: None,
-            command: Some(Command {
-                title: "triggerNewCompletion".to_string(),
-                command: "triggerNewCompletion".to_string(),
-                arguments: None,
-            }),
-        });
+        items.push(
+            CompletionItemBuilder::new()
+                .label("ORDER BY")
+                .detail("sort the results")
+                .insert_text("ORDER BY $0")
+                .command(Command {
+                    title: "triggerNewCompletion".to_string(),
+                    command: "triggerNewCompletion".to_string(),
+                    arguments: None,
+                })
+                .build(),
+        );
     }
     if (context.continuations.contains(&SolutionModifier)
         || context.continuations.contains(&LimitClause)
         || context.continuations.contains(&LimitOffsetClauses))
         && matches_search_term("LIMIT", search_term)
     {
-        items.push(CompletionItem {
-            label: "LIMIT".to_string(),
-            label_details: None,
-            kind: CompletionItemKind::Snippet,
-            detail: Some("Limit the results".to_string()),
-            documentation: None,
-            filter_text: None,
-            sort_text: None,
-            insert_text: Some("LIMIT ${0:50}".to_string()),
-            text_edit: None,
-            insert_text_format: None,
-            additional_text_edits: None,
-            command: None,
-        });
+        items.push(
+            CompletionItemBuilder::new()
+                .label("LIMIT")
+                .detail("Limit the amount of results")
+                .insert_text("LIMMIT ${0:50}")
+                .build(),
+        );
     }
     if (context.continuations.contains(&SolutionModifier)
         || context.continuations.contains(&OffsetClause)
         || context.continuations.contains(&LimitOffsetClauses))
         && matches_search_term("OFFSET", search_term)
     {
-        items.push(CompletionItem {
-            label: "OFFSET".to_string(),
-            label_details: None,
-            kind: CompletionItemKind::Snippet,
-            detail: Some("OFFSET the results".to_string()),
-            documentation: None,
-            sort_text: None,
-            filter_text: None,
-            insert_text: Some("OFFSET ${0:50}".to_string()),
-            text_edit: None,
-            insert_text_format: None,
-            additional_text_edits: None,
-            command: None,
-        });
+        items.push(
+            CompletionItemBuilder::new()
+                .label("OFFSET")
+                .detail("Drop the first n results")
+                .insert_text("OFFSET ${0:50}")
+                .build(),
+        );
     }
     Ok(CompletionList {
         is_incomplete: false,

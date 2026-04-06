@@ -3,7 +3,8 @@ use crate::server::{
     Server,
     configuration::BackendConfiguration,
     lsp::{
-        CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat,
+        CompletionItemBuilder, CompletionItemKind, CompletionList,
+        InsertTextFormat,
         textdocument::{Range, TextEdit},
     },
 };
@@ -28,20 +29,14 @@ pub async fn completions(
             .filter(|backend| default_backend.is_none_or(|default| backend.name != default.name))
             .map(|backend| {
                 let (prefix, import_edit) = compute_service_prefix(query_unit.as_ref(), backend);
-                CompletionItem {
-                    command: None,
-                    label: backend.name.clone(),
-                    label_details: None,
-                    kind: CompletionItemKind::Value,
-                    detail: Some(backend.url.clone()),
-                    documentation: None,
-                    sort_text: None,
-                    filter_text: None,
-                    insert_text: Some(prefix),
-                    text_edit: None,
-                    insert_text_format: Some(InsertTextFormat::PlainText),
-                    additional_text_edits: import_edit,
-                }
+                CompletionItemBuilder::new()
+                    .label(&backend.name)
+                    .kind(CompletionItemKind::Value)
+                    .detail(&backend.url)
+                    .insert_text(&prefix)
+                    .insert_text_format(InsertTextFormat::PlainText)
+                    .additional_text_edits(import_edit.unwrap_or_default())
+                    .build()
             })
             .collect(),
     })

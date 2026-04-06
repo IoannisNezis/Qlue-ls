@@ -5,8 +5,8 @@ use crate::server::{
     Server,
     configuration::Replacement,
     lsp::{
-        Command, CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat,
-        ItemDefaults, textdocument::TextEdit,
+        Command, CompletionItem, CompletionItemBuilder, CompletionItemKind, CompletionList,
+        InsertTextFormat, ItemDefaults, textdocument::TextEdit,
     },
 };
 use futures::lock::Mutex;
@@ -35,31 +35,32 @@ pub async fn completions(
             .map(|var| format!("?{}", var.var_name())),
     )
     .into_iter()
-    .map(|var| CompletionItem {
-        label: var.clone(),
-        label_details: None,
-        kind: CompletionItemKind::Variable,
-        detail: Some("Variable".to_string()),
-        documentation: None,
-        sort_text: Some(format!("{:0>4}0", 1)),
-        filter_text: Some(var.clone()),
-        insert_text: None,
-        text_edit: Some(TextEdit::new(
-            environment.replace_range.clone(),
-            &format!("{var}{suffix}"),
-        )),
-        insert_text_format: Some(InsertTextFormat::PlainText),
-        additional_text_edits: None,
-        command: match environment.location {
+    .map(|var| {
+        let mut item = CompletionItemBuilder::new()
+            .label(&var)
+            .kind(CompletionItemKind::Variable)
+            .detail("Variable")
+            .sort_text(&format!("{:0>4}0", 1))
+            .filter_text(&var)
+            .text_edit(TextEdit::new(
+                environment.replace_range.clone(),
+                &format!("{var}{suffix}"),
+            ))
+            .insert_text_format(InsertTextFormat::PlainText)
+            .build();
+        match environment.location {
             CompletionLocation::Subject
             | CompletionLocation::Predicate(_)
-            | CompletionLocation::BlankNodeProperty(_) => Some(Command {
-                title: "triggerNewCompletion".to_string(),
-                command: "triggerNewCompletion".to_string(),
-                arguments: None,
-            }),
-            _ => None,
-        },
+            | CompletionLocation::BlankNodeProperty(_) => {
+                item.command = Some(Command {
+                    title: "triggerNewCompletion".to_string(),
+                    command: "triggerNewCompletion".to_string(),
+                    arguments: None,
+                });
+            }
+            _ => {}
+        }
+        item
     })
     .collect();
     // NOTE: augmented object variable completions:
@@ -105,23 +106,17 @@ pub async fn completions(
         let variable = to_sparql_variable(&object_name);
         suggestions.insert(
             0,
-            CompletionItem {
-                label: format!("?{variable}"),
-                label_details: None,
-                kind: CompletionItemKind::Variable,
-                detail: None,
-                documentation: None,
-                sort_text: Some("00000".to_string()),
-                filter_text: Some(format!("?{variable}")),
-                insert_text: None,
-                text_edit: Some(TextEdit::new(
+            CompletionItemBuilder::new()
+                .label(&format!("?{variable}"))
+                .kind(CompletionItemKind::Variable)
+                .sort_text("00000")
+                .filter_text(&format!("?{variable}"))
+                .text_edit(TextEdit::new(
                     environment.replace_range.clone(),
                     &format!("?{variable}"),
-                )),
-                insert_text_format: Some(InsertTextFormat::PlainText),
-                additional_text_edits: None,
-                command: None,
-            },
+                ))
+                .insert_text_format(InsertTextFormat::PlainText)
+                .build(),
         );
         // NOTE: If subject is a variable:
         // append ?[variable]_[object_name] as variable completion
@@ -135,23 +130,17 @@ pub async fn completions(
             let subject_var_name = var.var_name();
             suggestions.insert(
                 0,
-                CompletionItem {
-                    label: format!("?{}_{}", subject_var_name, variable),
-                    label_details: None,
-                    kind: CompletionItemKind::Variable,
-                    detail: None,
-                    documentation: None,
-                    sort_text: Some("00001".to_string()),
-                    filter_text: Some(format!("?{}_{}", subject_var_name, variable)),
-                    insert_text: None,
-                    text_edit: Some(TextEdit::new(
+                CompletionItemBuilder::new()
+                    .label(&format!("?{}_{}", subject_var_name, variable))
+                    .kind(CompletionItemKind::Variable)
+                    .sort_text("00001")
+                    .filter_text(&format!("?{}_{}", subject_var_name, variable))
+                    .text_edit(TextEdit::new(
                         environment.replace_range.clone(),
                         &format!("?{}_{}", subject_var_name, variable),
-                    )),
-                    insert_text_format: Some(InsertTextFormat::PlainText),
-                    additional_text_edits: None,
-                    command: None,
-                },
+                    ))
+                    .insert_text_format(InsertTextFormat::PlainText)
+                    .build(),
             );
         }
 
@@ -167,23 +156,17 @@ pub async fn completions(
             let subject_label = to_sparql_variable(subject_label);
             suggestions.insert(
                 0,
-                CompletionItem {
-                    label: format!("?{}_{}", subject_label, variable),
-                    label_details: None,
-                    kind: CompletionItemKind::Variable,
-                    detail: None,
-                    documentation: None,
-                    sort_text: Some("00001".to_string()),
-                    filter_text: Some(format!("?{}_{}", subject_label, variable)),
-                    insert_text: None,
-                    text_edit: Some(TextEdit::new(
+                CompletionItemBuilder::new()
+                    .label(&format!("?{}_{}", subject_label, variable))
+                    .kind(CompletionItemKind::Variable)
+                    .sort_text("00001")
+                    .filter_text(&format!("?{}_{}", subject_label, variable))
+                    .text_edit(TextEdit::new(
                         environment.replace_range.clone(),
                         &format!("?{}_{}", subject_label, variable),
-                    )),
-                    insert_text_format: Some(InsertTextFormat::PlainText),
-                    additional_text_edits: None,
-                    command: None,
-                },
+                    ))
+                    .insert_text_format(InsertTextFormat::PlainText)
+                    .build(),
             );
         }
     }

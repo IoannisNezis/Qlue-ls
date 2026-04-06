@@ -2,7 +2,7 @@ use serde::Serialize;
 
 use crate::server::lsp::base_types::LSPAny;
 
-#[derive(Debug, Serialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq, Clone)]
 pub struct Command {
     /// Title of the command, like `save`.
     pub title: String,

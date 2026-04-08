@@ -232,7 +232,7 @@ fn ast_triple() {
     println!(
         "{:?}",
         triple
-            .variables()
+            .visible_variables()
             .iter()
             .map(|var| var.syntax().text().to_string())
             .collect::<Vec<String>>()

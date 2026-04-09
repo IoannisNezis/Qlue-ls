@@ -1,8 +1,8 @@
-use crate::server::lsp::{
-    CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
-};
-
 use super::super::{CompletionEnvironment, error::CompletionError};
+use crate::server::lsp::{
+    CompletionItem, CompletionItemBuilder, CompletionItemKind, CompletionList, InsertTextFormat,
+    ItemDefaults,
+};
 
 pub async fn completions(
     _context: &CompletionEnvironment,
@@ -17,14 +17,14 @@ pub async fn completions(
             insert_text_mode: None,
         }),
         items: vec![
-            CompletionItem::new(
-                "SELECT",
-                Some("Select query".to_string()),
-                None,
-                "SELECT ${1:*} WHERE {\n\t${0:?s ?p ?o}\n}",
-                CompletionItemKind::Snippet,
-                None,
-            ),
+            CompletionItemBuilder::new()
+                .label("SELECT")
+                .detail("Select query")
+                .filter_text("SELECT")
+                .kind(CompletionItemKind::Snippet)
+                .insert_text("SELECT ${1:*} WHERE {\n\t${0:?s ?p ?o}\n}")
+                .insert_text_format(InsertTextFormat::Snippet)
+                .build(),
             CompletionItem::new(
                 "CONSTRUCT",
                 Some("Construct query".to_string()),

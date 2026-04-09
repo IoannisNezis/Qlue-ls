@@ -11,7 +11,7 @@ fn match_location_at_offset(input: &str, matcher: CompletionLocation, offset: u3
 fn location(input: &str, offset: u32) -> CompletionLocation {
     let (root, _) = parse_query(input);
     let trigger_token = get_trigger_token(&root, offset.into());
-    let anchor = trigger_token.and_then(|token| get_anchor_token(token, offset.into()));
+    let anchor = trigger_token.and_then(|token| get_anchor_token(token));
     let continuations = get_continuations(&root, &anchor);
     get_location(&anchor, &continuations, offset.into())
 }
@@ -21,7 +21,7 @@ fn find_anchor_path() {
     let (root, _) = parse_query("Select * {?s ^}");
     let trigger_token = get_trigger_token(&root, 14.into());
     let anchor = trigger_token
-        .and_then(|token| get_anchor_token(token, 14.into()))
+        .and_then(|token| get_anchor_token(token))
         .unwrap();
     assert_eq!(anchor.kind(), SyntaxKind::Zirkumflex)
 }
@@ -287,7 +287,7 @@ fn search_term_includes_all_error_tokens() {
 
     // Position 12: cursor is between "E" and "x"
     let trigger_token_12 = get_trigger_token(&root, 12.into());
-    let anchor_12 = trigger_token_12.and_then(|t| get_anchor_token(t, 12.into()));
+    let anchor_12 = trigger_token_12.and_then(|t| get_anchor_token(t));
     let search_term_12 = get_search_term(&root, &anchor_12, 12.into());
     assert_eq!(
         search_term_12,
@@ -298,7 +298,7 @@ fn search_term_includes_all_error_tokens() {
     // Position 13: cursor is after "Ex" (after the "x")
     // This is the typical position when completion is triggered after typing
     let trigger_token_13 = get_trigger_token(&root, 13.into());
-    let anchor_13 = trigger_token_13.and_then(|t| get_anchor_token(t, 13.into()));
+    let anchor_13 = trigger_token_13.and_then(|t| get_anchor_token(t));
     let search_term_13 = get_search_term(&root, &anchor_13, 13.into());
     assert_eq!(
         search_term_13,

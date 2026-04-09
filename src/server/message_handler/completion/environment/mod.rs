@@ -48,6 +48,7 @@ impl Display for CompletionEnvironment {
                  continuations:                 {:?}
                  anchor_token:                  {:?}
                  search_term:                   {:?}
+                 replace_range:                 {}
                  backend:                       {:?}
                 "
             },
@@ -57,6 +58,7 @@ impl Display for CompletionEnvironment {
             self.continuations,
             self.anchor_token,
             self.search_term,
+            self.replace_range,
             self.backend.as_ref().map(|backend| &backend.name)
         )
     }
@@ -315,7 +317,7 @@ impl CompletionEnvironment {
             .state
             .get_document(&document_position.text_document.uri)
             .map_err(|err| CompletionError::Localization(err.message))?;
-        let offset = document_position
+        let trigger_offset = document_position
             .position
             .byte_index(&document.text)
             .ok_or(CompletionError::Localization(format!(
@@ -330,14 +332,17 @@ impl CompletionEnvironment {
             .get_cached_parse_tree(&document_position.text_document.uri)
             .map_err(|err| CompletionError::Localization(err.message))?
             .tree;
-        let trigger_token = get_trigger_token(&tree, offset);
-        let backend = trigger_token.as_ref().and_then(|token| {
-            resolve_backend_at_token(&server, &QueryUnit::cast(tree.clone())?, token)
-        });
-        let anchor_token = trigger_token.and_then(|token| get_anchor_token(token, offset));
-        let search_term = get_search_term(&tree, &anchor_token, offset);
+        let trigger_token = get_trigger_token(&tree, trigger_offset);
+        let backend = trigger_token
+            .as_ref()
+            .and_then(|token| {
+                resolve_backend_at_token(&server, &QueryUnit::cast(tree.clone())?, token)
+            })
+            });
+        let anchor_token = trigger_token.and_then(get_anchor_token);
+        let search_term = get_search_term(&tree, &anchor_token, trigger_offset);
         let continuations = get_continuations(&tree, &anchor_token);
-        let location = get_location(&anchor_token, &continuations, offset);
+        let location = get_location(&anchor_token, &continuations, trigger_offset);
         let context = context(&location);
         let replace_range = get_replace_range(&document_position.position, &search_term);
         Ok(Self {
@@ -361,46 +366,33 @@ fn get_search_term(
     anchor_token: &Option<SyntaxToken>,
     trigger_pos: TextSize,
 ) -> Option<String> {
-    anchor_token.as_ref().and_then(|anchor| {
-        // Walk forward from anchor to collect all consecutive Error tokens
-        let mut end_pos = trigger_pos;
-        let mut current_token = anchor.clone();
-
-        // Find the last Error token that overlaps with trigger_pos
-        // A token "overlaps" if its range contains trigger_pos or ends at trigger_pos
-        while let Some(next) = current_token.next_token() {
-            // Stop if this token starts after the trigger position
-            if next.text_range().start() >= trigger_pos {
-                break;
-            }
-            // Include Error tokens and their siblings under the same Error parent
-            if matches!(next.kind(), SyntaxKind::Error)
-                || next.parent().is_some_and(|p| p.kind() == SyntaxKind::Error)
-            {
-                // Extend end_pos to include this Error token
-                end_pos = end_pos.max(next.text_range().end());
-            }
-            current_token = next;
-        }
-
-        let range = if anchor.text_range().end() > end_pos {
-            TextRange::new(end_pos, end_pos)
+    let range = if let Some(anchor_token) = anchor_token {
+        if anchor_token.text_range().end() > trigger_pos {
+            TextRange::new(trigger_pos, trigger_pos)
         } else {
-            TextRange::new(anchor.text_range().end(), end_pos)
-        };
-        root.text_range()
-            .contains_range(range)
-            .then_some({
-                root.text()
-                    .slice(range)
-                    .to_string()
-                    .trim_start()
-                    .to_string()
-            })
-            .filter(|search_term|
+            TextRange::new(anchor_token.text_range().end(), trigger_pos)
+        }
+    } else {
+        // NOTE: if the anchor token is None:
+        // - either the trigger_token was None -> triggered at start
+        // - or there is no non-trivia token before (including) the trigger token
+        // That means the completion was triggered at the start
+        TextRange::new(0.into(), trigger_pos)
+    };
+    log::info!("range: {range:?}");
+
+    root.text_range()
+        .contains_range(range)
+        .then_some({
+            root.text()
+                .slice(range)
+                .to_string()
+                .trim_start()
+                .to_string()
+        })
+        .filter(|search_term|
                 // NOTE: If the search term contains just is_whitespace
                 search_term.chars().any(|char| !char.is_whitespace()))
-    })
 }
 
 fn get_location(
@@ -591,21 +583,45 @@ fn inline_data_variable_index(inline_data: &InlineData, offset: TextSize) -> usi
 }
 
 fn get_continuations(root: &SyntaxNode, anchor_token: &Option<SyntaxToken>) -> HashSet<SyntaxKind> {
-    if let Some(anchor) = anchor_token.as_ref() {
-        if let Some(continuations) = continuations_at(root, anchor.text_range().end()) {
-            HashSet::from_iter(continuations)
+    // NOTE: The anchor token might be a comment token.
+    // I this case: search for the previous non-trivia token.
+    let mut start_token = anchor_token.clone();
+    loop {
+        if let Some(token) = start_token.as_ref() {
+            if token.kind().is_trivia() {
+                start_token = token.prev_token();
+            } else {
+                break;
+            }
         } else {
-            HashSet::new()
+            return HashSet::new();
         }
+    }
+    if let Some(continuations) = continuations_at(
+        root,
+        start_token
+            .expect("Start token should exist")
+            .text_range()
+            .end(),
+    ) {
+        HashSet::from_iter(continuations)
     } else {
         HashSet::new()
     }
 }
 
+/// Get the last token before the trigger offset.
+/// There are 3 options.
+/// - the trigger offset is infront of any non-trivia token -> return None
+/// - the trigger offset is within a token span -> return this token
+/// - the trigger offset is between two tokens -> return left token
+/// - the trigger offset is not withing the parse tree span -> fallback to last token (or None).
+///
+/// **Important:** if the result is None, the completion is triggered at the start
 fn get_trigger_token(root: &SyntaxNode, offset: TextSize) -> Option<SyntaxToken> {
-    if offset == 0.into() || root.text_range().end() < offset {
+    if offset == 0.into() {
         None
-    } else if root.text_range().end() == offset {
+    } else if root.text_range().end() <= offset {
         // last_token() can return None if the tree ends with an empty node (e.g., Error@27..27).
         // In that case, fall back to iterating through all tokens.
         root.last_token().or_else(|| {
@@ -622,10 +638,7 @@ fn get_trigger_token(root: &SyntaxNode, offset: TextSize) -> Option<SyntaxToken>
     }
 }
 
-fn get_anchor_token(
-    mut trigger_token: SyntaxToken,
-    _trigger_offset: TextSize,
-) -> Option<SyntaxToken> {
+fn get_anchor_token(mut trigger_token: SyntaxToken) -> Option<SyntaxToken> {
     // NOTE: Skip first token in some cases:
     if !matches!(
         trigger_token.kind(),

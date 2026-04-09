@@ -195,7 +195,7 @@ mod test {
         let (root, _) = parse_query(input);
         let offset = cursor.byte_index(input).unwrap();
         let trigger_token = get_trigger_token(&root, offset).unwrap();
-        let anchor = get_anchor_token(trigger_token, offset);
+        let anchor = get_anchor_token(trigger_token);
         let continuations = get_continuations(&root, &anchor);
         let location = get_location(&anchor, &continuations, offset);
         context(&location).unwrap()
@@ -587,7 +587,7 @@ mod test {
         let position = Position::new(2, 36);
         let offset = position.byte_index(input).unwrap();
         let trigger_token = get_trigger_token(&root, offset).unwrap();
-        let anchor = get_anchor_token(trigger_token, offset);
+        let anchor = get_anchor_token(trigger_token);
         let continuations = get_continuations(&root, &anchor);
         let location = get_location(&anchor, &continuations, offset);
         assert!(

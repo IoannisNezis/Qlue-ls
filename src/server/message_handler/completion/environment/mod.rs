@@ -338,7 +338,7 @@ impl CompletionEnvironment {
             .and_then(|token| {
                 resolve_backend_at_token(&server, &QueryUnit::cast(tree.clone())?, token)
             })
-            });
+            .or_else(|| server.state.get_default_backend().cloned());
         let anchor_token = trigger_token.and_then(get_anchor_token);
         let search_term = get_search_term(&tree, &anchor_token, trigger_offset);
         let continuations = get_continuations(&tree, &anchor_token);

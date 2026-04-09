@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### Enhanced
+## [2.5.4] - 2026-04-09
+
+### Changed
 
 - fall back to default backend for completions
 

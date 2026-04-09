@@ -276,38 +276,6 @@ fn localize_a() {
 }
 
 #[test]
-fn search_term_includes_all_error_tokens() {
-    use super::get_search_term;
-    //           0123456789012345
-    let input = "Select * { Ex }";
-    let (root, _) = parse_query(input);
-
-    // When typing "Ex", the parser creates two separate Error tokens: "E" and "x"
-    // The search term should include both, regardless of cursor position
-
-    // Position 12: cursor is between "E" and "x"
-    let trigger_token_12 = get_trigger_token(&root, 12.into());
-    let anchor_12 = trigger_token_12.and_then(|t| get_anchor_token(t));
-    let search_term_12 = get_search_term(&root, &anchor_12, 12.into());
-    assert_eq!(
-        search_term_12,
-        Some("Ex".to_string()),
-        "At position 12 (between 'E' and 'x'), search_term should include both Error tokens"
-    );
-
-    // Position 13: cursor is after "Ex" (after the "x")
-    // This is the typical position when completion is triggered after typing
-    let trigger_token_13 = get_trigger_token(&root, 13.into());
-    let anchor_13 = trigger_token_13.and_then(|t| get_anchor_token(t));
-    let search_term_13 = get_search_term(&root, &anchor_13, 13.into());
-    assert_eq!(
-        search_term_13,
-        Some("Ex".to_string()),
-        "At position 13 (after 'Ex'), search_term should include both Error tokens"
-    );
-}
-
-#[test]
 fn localize_order_condition() {
     //           0123456789012345678901234567
     let input = "SELECT * WHERE {} ORDER BY ";

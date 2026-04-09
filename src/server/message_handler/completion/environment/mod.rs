@@ -379,7 +379,6 @@ fn get_search_term(
         // That means the completion was triggered at the start
         TextRange::new(0.into(), trigger_pos)
     };
-    log::info!("range: {range:?}");
 
     root.text_range()
         .contains_range(range)

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Enhanced
+
+- fall back to default backend for completions
+
+### Fixed
+
+- completion search term computation
+- collect prefix usages for all query types
+
 ## [2.5.3] - 2026-03-01
 
 ### Changed

@@ -12,7 +12,7 @@ use crate::server::{
     Server,
     lsp::{
         CompletionList, CompletionRequest, CompletionResponse, CompletionTriggerKind,
-        errors::LSPError, textdocument::Range,
+        errors::LSPError,
     },
     message_handler::completion::transformer::{
         CompletionTransformer, ObjectSuffixTransformer, SemicolonTransformer,
@@ -23,10 +23,10 @@ pub(super) async fn handle_completion_request(
     server_rc: Rc<Mutex<Server>>,
     request: CompletionRequest,
 ) -> Result<(), LSPError> {
-    let mut env = CompletionEnvironment::from_completion_request(server_rc.clone(), &request)
+    let env = CompletionEnvironment::from_completion_request(server_rc.clone(), &request)
         .await
         .map_err(to_lsp_error)?;
-    // log::info!("Completion env:\n{}", env);
+    // log::debug!("Completion env:\n{}", env);
 
     let mut completion_list = if env.trigger_kind == CompletionTriggerKind::TriggerCharacter
         && env.trigger_character.as_ref().is_some_and(|tc| tc == "?")
@@ -81,16 +81,13 @@ pub(super) async fn handle_completion_request(
                 CompletionLocation::ServiceUrl => {
                     handler::service_url::completions(server_rc.clone(), &env).await
                 }
-                CompletionLocation::FilterConstraint | CompletionLocation::GroupCondition => {
-                    env.replace_range = Range::empty(env.trigger_textdocument_position);
-                    handler::variable::completions(server_rc.clone(), &env).await
-                }
                 CompletionLocation::OrderCondition => {
                     handler::order_condition::completions(server_rc.clone(), &env).await
                 }
                 CompletionLocation::InlineData(..) => {
                     handler::inline_data::completions(server_rc.clone(), &env).await
                 }
+                CompletionLocation::BuiltInCall => handler::built_in_call::completions().await,
                 ref location => Err(CompletionError::Localization(format!(
                     "Unknown location \"{:?}\"",
                     location

@@ -211,28 +211,6 @@ pub(super) enum CompletionLocation {
     ///   SERVICE >here< {}
     /// }
     ServiceUrl,
-    /// Filter Constraint
-    ///
-    /// ---
-    ///
-    /// **Example**
-    /// ```sparql
-    /// SELECT * WHERE {
-    ///   FILTER(>here<)
-    /// }
-    /// ```
-    FilterConstraint,
-    /// Group Condition
-    ///
-    /// ---
-    ///
-    /// **Example**
-    /// ```sparql
-    /// SELECT * WHERE {
-    /// }
-    /// GROUP BY >here<
-    /// ```
-    GroupCondition,
     /// Order Condition
     ///
     /// ---
@@ -256,6 +234,18 @@ pub(super) enum CompletionLocation {
     /// }
     /// ```
     InlineData((InlineData, usize)),
+
+    /// BuiltInCall
+    ///
+    /// ---
+    ///
+    /// **Example**
+    /// ```sparql
+    /// SELECT * WHERE {
+    ///   FILTER(>here<)
+    /// }
+    /// ```
+    BuiltInCall,
 }
 
 impl CompletionEnvironment {
@@ -399,6 +389,7 @@ fn get_location(
     continuations: &HashSet<SyntaxKind>,
     offset: TextSize,
 ) -> CompletionLocation {
+    log::debug!("{continuations:?}");
     if let Some(anchor) = anchor_token {
         macro_rules! continues_with {
                     ([$($kind:expr_2021),*]) => {
@@ -515,14 +506,6 @@ fn get_location(
                 }
                 _ => CompletionLocation::Unknown,
             }
-        }
-        // NOTE: FilterConstraint
-        else if continues_with!([SyntaxKind::Constraint]) && child_of!([SyntaxKind::Filter]) {
-            CompletionLocation::FilterConstraint
-        }
-        // NOTE: GroupCondition
-        else if continues_with!([SyntaxKind::GroupCondition]) {
-            CompletionLocation::GroupCondition
         } else if continues_with!([SyntaxKind::OrderCondition])
             | (continues_with!([SyntaxKind::BrackettedExpression])
                 && child_of!([SyntaxKind::OrderCondition]))
@@ -538,6 +521,14 @@ fn get_location(
                 }
                 None => CompletionLocation::Unknown,
             }
+        }
+        //NOTE: BuiltInCall
+        else if continues_with!([
+            SyntaxKind::Constraint,
+            SyntaxKind::Expression,
+            SyntaxKind::GroupCondition
+        ]) {
+            CompletionLocation::BuiltInCall
         } else {
             CompletionLocation::Unknown
         }

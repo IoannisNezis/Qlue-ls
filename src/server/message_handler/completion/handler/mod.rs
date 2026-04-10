@@ -1,5 +1,6 @@
 pub(super) mod blank_node_object;
 pub(super) mod blank_node_property;
+pub(super) mod built_in_call;
 pub(super) mod graph;
 pub(super) mod inline_data;
 pub(super) mod object;

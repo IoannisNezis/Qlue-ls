@@ -1,5 +1,7 @@
 use serde::Deserialize;
 
+use super::super::{BoolOrEmpty, FullCapability};
+
 /// Capabilities specific to the various semantic token requests.
 ///
 /// https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#semanticTokensClientCapabilities
@@ -58,25 +60,6 @@ pub struct SemanticTokensClientCapabilities {
     ///
     /// @since 3.17.0
     pub augments_syntax_tokens: Option<bool>,
-}
-
-#[derive(Debug, Deserialize, PartialEq, Clone)]
-#[serde(untagged)]
-pub enum BoolOrEmpty {
-    Bool(bool),
-    Object {},
-}
-
-#[derive(Debug, Deserialize, PartialEq, Clone)]
-#[serde(untagged)]
-pub enum FullCapability {
-    Bool(bool),
-    Object(FullCapabilityOptions),
-}
-
-#[derive(Debug, Deserialize, PartialEq, Clone)]
-pub struct FullCapabilityOptions {
-    pub delta: Option<bool>,
 }
 
 #[derive(Debug, Deserialize, PartialEq, Clone)]

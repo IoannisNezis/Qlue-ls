@@ -49,6 +49,7 @@ mod lifecycle;
 mod misc;
 mod on_type_formatting;
 mod parse_tree;
+pub(crate) mod semantic_tokens;
 mod settings;
 mod textdocument_synchronization;
 mod workspace;
@@ -89,6 +90,9 @@ use crate::server::{
         folding_range::handle_folding_range_request,
         identification::handle_identify_request,
         parse_tree::handle_parse_tree_request,
+        semantic_tokens::{
+            handle_semantic_tokens_full_request, handle_semantic_tokens_range_request,
+        },
         settings::{handle_change_settings_notification, handle_default_settings_request},
     },
 };
@@ -141,6 +145,8 @@ pub(super) async fn dispatch(
         "textDocument/hover" => call_async!(handle_hover_request),
         "textDocument/completion" => call_async!(handle_completion_request),
         "textDocument/foldingRange" => call!(handle_folding_range_request),
+        "textDocument/semanticTokens/full" => call!(handle_semantic_tokens_full_request),
+        "textDocument/semanticTokens/range" => call!(handle_semantic_tokens_range_request),
         // NOTE: LSP extensions Requests
         "qlueLs/addBackend" => call!(handle_add_backend_notification),
         "qlueLs/getBackend" => call!(handle_get_backend_request),

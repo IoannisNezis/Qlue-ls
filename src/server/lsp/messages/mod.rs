@@ -24,6 +24,7 @@ mod textdocument_folding_range;
 mod textdocument_formatting;
 mod textdocument_hover;
 mod textdocument_on_type_formatting;
+mod textdocument_semantic_tokens;
 mod utils;
 mod window_showmessage;
 mod workspace;
@@ -54,6 +55,7 @@ pub use textdocument_folding_range::*;
 pub use textdocument_formatting::*;
 pub use textdocument_hover::*;
 pub use textdocument_on_type_formatting::*;
+pub use textdocument_semantic_tokens::*;
 pub use workspace::*;
 pub use workspace_applyedit::*;
 

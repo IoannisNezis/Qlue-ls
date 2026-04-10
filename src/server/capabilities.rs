@@ -21,6 +21,11 @@
 //! - [`super::lsp::capabilities`]: Type definitions for capability structs
 //! - [`super::message_handler::lifecycle`]: Sends capabilities in `initialize` response
 
+use crate::server::lsp::capabilities::{
+    BoolOrEmpty, FullCapability,
+    server::{SemanticTokenModifiers, SemanticTokensOptions},
+};
+
 use super::lsp::capabilities::server::{
     CompletionOptions, DiagnosticOptions, DocumentFormattingOptions,
     DocumentOnTypeFormattingOptions, ExecuteCommandOptions, ServerCapabilities,
@@ -52,5 +57,16 @@ pub(super) fn create_capabilities() -> ServerCapabilities {
             more_trigger_character: Some(vec![";".to_string(), ".".to_string()]),
         },
         folding_range_provider: true,
+        semantic_tokens_provider: SemanticTokensOptions {
+            work_done_progress_options: WorkDoneProgressOptions {
+                work_done_progress: true,
+            },
+            legend: crate::server::lsp::capabilities::server::SemanticTokensLegend {
+                token_types: crate::server::message_handler::semantic_tokens::TOKEN_TYPES.to_vec(),
+                token_modifiers: vec![SemanticTokenModifiers::Async],
+            },
+            range: Some(BoolOrEmpty::Bool(true)),
+            full: Some(FullCapability::Bool(true)),
+        },
     }
 }

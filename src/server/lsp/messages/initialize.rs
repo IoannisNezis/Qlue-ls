@@ -1,6 +1,6 @@
 use crate::server::lsp::{
     LspMessage,
-    capabilities::{ClientCapabilities, ServerCapabilities},
+    capabilities::{client::ClientCapabilities, server::ServerCapabilities},
     rpc::{NotificationMessageBase, RequestId, RequestMessageBase, ResponseMessageBase},
     workdoneprogress::WorkDoneProgressParams,
 };
@@ -96,7 +96,7 @@ impl LspMessage for InitializedNotification {}
 mod tests {
     use crate::server::lsp::{
         ClientInfo, ProcessId,
-        capabilities::ClientCapabilities,
+        capabilities::client::ClientCapabilities,
         rpc::{Message, RequestId, RequestMessageBase},
         workdoneprogress::{ProgressToken, WorkDoneProgressParams},
     };
@@ -123,7 +123,10 @@ mod tests {
                         name: "dings".to_string(),
                         version: Some("42.1".to_string())
                     }),
-                    capabilities: ClientCapabilities { workspace: None },
+                    capabilities: ClientCapabilities {
+                        workspace: None,
+                        text_document: None,
+                    },
                     progress_params: WorkDoneProgressParams {
                         work_done_token: Some(ProgressToken::Text("1".to_string()))
                     }

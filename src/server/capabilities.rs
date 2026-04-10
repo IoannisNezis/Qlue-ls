@@ -21,7 +21,7 @@
 //! - [`super::lsp::capabilities`]: Type definitions for capability structs
 //! - [`super::message_handler::lifecycle`]: Sends capabilities in `initialize` response
 
-use super::lsp::capabilities::{
+use super::lsp::capabilities::server::{
     CompletionOptions, DiagnosticOptions, DocumentFormattingOptions,
     DocumentOnTypeFormattingOptions, ExecuteCommandOptions, ServerCapabilities,
     TextDocumentSyncKind, WorkDoneProgressOptions,

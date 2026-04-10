@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- model `TextDocumentClientCapabilities` and all sub-capability types (LSP 3.17)
+
 ## [2.5.4] - 2026-04-09
 
 ### Changed

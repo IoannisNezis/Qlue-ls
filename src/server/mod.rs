@@ -59,8 +59,8 @@ use crate::server::{configuration::CompletionTemplate, lsp::LspMessage};
 pub struct Server {
     pub(crate) state: ServerState,
     pub(crate) settings: Settings,
-    pub(crate) capabilities: lsp::capabilities::ServerCapabilities,
-    pub(crate) client_capabilities: Option<lsp::capabilities::ClientCapabilities>,
+    pub(crate) capabilities: lsp::capabilities::server::ServerCapabilities,
+    pub(crate) client_capabilities: Option<lsp::capabilities::client::ClientCapabilities>,
     pub(crate) server_info: ServerInfo,
     tools: Tools,
     send_message_closure: Box<dyn Fn(String)>,

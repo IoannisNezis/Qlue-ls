@@ -1,7 +1,6 @@
 use super::super::{CompletionEnvironment, error::CompletionError, utils::matches_search_term};
 use crate::server::lsp::{
-    Command, CompletionItemBuilder, CompletionList,
-    InsertTextFormat, ItemDefaults,
+    Command, CompletionItemBuilder, CompletionList, InsertTextFormat, ItemDefaults,
 };
 use ll_sparql_parser::syntax_kind::SyntaxKind::*;
 
@@ -15,6 +14,7 @@ pub fn completions(context: &CompletionEnvironment) -> Result<CompletionList, Co
             CompletionItemBuilder::new()
                 .label("GROUP BY")
                 .detail("Group the results")
+                .documentation("Group results by one or more expressions. Used with aggregate functions like COUNT, SUM, AVG, MIN, MAX, and GROUP_CONCAT. Each unique combination of the grouped expressions produces one result row.")
                 .insert_text("GROUP BY $0")
                 .command(Command {
                     title: "triggerNewCompletion".to_string(),
@@ -32,6 +32,7 @@ pub fn completions(context: &CompletionEnvironment) -> Result<CompletionList, Co
             CompletionItemBuilder::new()
                 .label("HAVING")
                 .detail("Filter Groups")
+                .documentation("Filter grouped results by applying a condition to aggregated values. HAVING is to GROUP BY what FILTER is to WHERE — it eliminates groups that don't satisfy the condition.")
                 .insert_text("HAVING $0")
                 .build(),
         );

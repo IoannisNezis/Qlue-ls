@@ -80,8 +80,7 @@ fn collect_semantic_tokens(
         if range
             .as_ref()
             .is_none_or(|range| token_range.overlaps(range))
-        {
-            if let Some(semantic_token_type) = match token.kind() {
+            && let Some(semantic_token_type) = match token.kind() {
             // Keywords
             SyntaxKind::SELECT
             | SyntaxKind::ASK
@@ -251,14 +250,13 @@ fn collect_semantic_tokens(
 
             _ => None,
         } {
-                semantic_tokens.push(InternalSemanticToken {
-                    line,
-                    start_char: char,
-                    length,
-                    token_type: semantic_token_type,
-                    token_modifier: Vec::new(),
-                });
-            }
+            semantic_tokens.push(InternalSemanticToken {
+                line,
+                start_char: char,
+                length,
+                token_type: semantic_token_type,
+                token_modifier: Vec::new(),
+            });
         }
 
         line = end_line;

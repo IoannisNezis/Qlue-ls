@@ -26,7 +26,7 @@ pub(super) async fn handle_completion_request(
     let env = CompletionEnvironment::from_completion_request(server_rc.clone(), &request)
         .await
         .map_err(to_lsp_error)?;
-    // log::debug!("Completion env:\n{}", env);
+    // tracing::debug!("Completion env:\n{}", env);
 
     let mut completion_list = if env.trigger_kind == CompletionTriggerKind::TriggerCharacter
         && env.trigger_character.as_ref().is_some_and(|tc| tc == "?")

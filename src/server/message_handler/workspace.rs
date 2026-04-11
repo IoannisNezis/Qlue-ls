@@ -14,7 +14,7 @@ pub(super) async fn handle_workspace_edit_response(
     if let Some(result) = response.result
         && !result.applied
     {
-        log::warn!("Work space edit did not get applied");
+        tracing::warn!("Work space edit did not get applied");
     }
     Ok(())
 }

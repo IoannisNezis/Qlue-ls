@@ -71,7 +71,7 @@ pub(crate) async fn execute_construct_query(
     let resp_value = JsFuture::from(worker_global.fetch_with_request(&request))
         .await
         .map_err(|err| {
-            log::error!("error: {err:?}");
+            tracing::error!("error: {err:?}");
             SparqlRequestError::Connection(ConnectionError {
                 status_text: format!("{err:?}"),
                 query: query.to_string(),
@@ -425,7 +425,7 @@ pub(crate) async fn execute_query(
                 if let Err(err) =
                     server.send_message(PartialSparqlResultNotification::new(partial_result))
                 {
-                    log::error!(
+                    tracing::error!(
                         "Could not send Partial-Sparql-Result-Notification:\n{:?}",
                         err
                     );

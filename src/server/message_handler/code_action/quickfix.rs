@@ -12,7 +12,6 @@ use crate::server::{
     message_handler::{code_action::same_subject::contract_triples_from_diagnostic, diagnostic},
 };
 use ll_sparql_parser::syntax_kind::SyntaxKind;
-use log::error;
 use std::collections::HashMap;
 use text_size::TextRange;
 
@@ -121,7 +120,7 @@ fn shorten_uri(
             Ok(Some(code_action))
         }
         None => {
-            error!("Data-field is missing in \"uncompacted-uri\" diagnostic");
+            tracing::error!("Data-field is missing in \"uncompacted-uri\" diagnostic");
             Err(LSPError::new(
                 ErrorCode::InvalidRequest,
                 "Data-field is missing in \"uncompacted-uri\" diagnostic",

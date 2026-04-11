@@ -309,11 +309,11 @@ impl Settings {
         #[cfg(not(target_arch = "wasm32"))]
         match load_user_configuration() {
             Ok(settings) => {
-                log::info!("Loaded user configuration!!");
+                tracing::info!("Loaded user configuration!!");
                 settings
             }
             Err(error) => {
-                log::info!(
+                tracing::info!(
                     "Did not load user-configuration:\n{}\n falling back to default values",
                     error
                 );

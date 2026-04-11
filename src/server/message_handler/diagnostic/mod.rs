@@ -112,7 +112,7 @@ fn declare_and_undeclare_prefixes(
             request_id,
             HashMap::from_iter([(document_uri, edits)]),
         )) {
-            log::error!("Sending \"workspace/applyEdit\" request failed:\n{:?}", err);
+            tracing::error!("Sending \"workspace/applyEdit\" request failed:\n{:?}", err);
         }
     }
 }

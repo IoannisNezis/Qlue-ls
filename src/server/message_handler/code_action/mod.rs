@@ -44,7 +44,7 @@ fn generate_quickfixes(server: &mut Server, request: CodeActionRequest) -> Vec<C
             match get_quickfix(server, &request.params.text_document.uri, diagnostic) {
                 Ok(code_action) => code_action,
                 Err(err) => {
-                    log::error!(
+                    tracing::error!(
                         "Encountered Error while computing quickfix:\n{}\nDropping error!",
                         err.message
                     );

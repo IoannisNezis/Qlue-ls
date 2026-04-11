@@ -69,7 +69,7 @@ pub async fn completions(
                 items.extend(online_completions.items);
             }
             Err(err) => {
-                log::error!("Completion query failed: {err:?}");
+                tracing::error!("Completion query failed: {err:?}");
             }
         }
     }

@@ -46,7 +46,7 @@ pub async fn completions(
                 }
             }
             Err(err) => {
-                log::error!("Context insensitive completion query failed:\n{:?}", err);
+                tracing::error!("Context insensitive completion query failed:\n{:?}", err);
             }
         };
     });
@@ -62,7 +62,7 @@ pub async fn completions(
     {
         Ok(res) => Ok(res),
         Err(err) => {
-            log::error!("Context sensitive completion query failed:\n{:?}", err);
+            tracing::error!("Context sensitive completion query failed:\n{:?}", err);
             receiver.await.map_err(|_e| err)
         }
     }

@@ -40,7 +40,6 @@ pub(crate) mod message_handler;
 use capabilities::create_capabilities;
 use configuration::Settings;
 use futures::lock::Mutex;
-use log::{error, info};
 use lsp::{
     ServerInfo,
     errors::{ErrorCode, LSPError},
@@ -51,6 +50,7 @@ use serde::Serialize;
 use state::ServerState;
 use std::{any::type_name, collections::HashMap, fmt::Debug, rc::Rc};
 use tools::Tools;
+use tracing::{error, info};
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::server::{configuration::CompletionTemplate, lsp::LspMessage};
@@ -153,7 +153,7 @@ impl Server {
                 .tera
                 .add_raw_template(&format!("{}-{}", &backend_name, &key), &value)
                 .map_err(|err| {
-                    log::error!("{}", err);
+                    tracing::error!("{}", err);
                     LSPError::new(
                         ErrorCode::InvalidParams,
                         &format!(
@@ -168,7 +168,7 @@ impl Server {
 }
 
 async fn handle_error(server_rc: Rc<Mutex<Server>>, message: &str, error: LSPError) {
-    log::error!(
+    tracing::error!(
         "Error occurred while handling message:\n\"{}\"\n\n{:?}\n{}",
         message,
         error.code,

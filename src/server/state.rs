@@ -135,7 +135,7 @@ impl ServerState {
         let mut converter = Converter::default();
         for (prefix, uri_prefix) in map {
             converter.add_prefix(prefix, uri_prefix).map_err(|err| {
-                log::error!("{}", err);
+                tracing::error!("{}", err);
                 LSPError::new(
                     ErrorCode::InvalidParams,
                     &format!("Could not load prefix map:\n\"{}\"", err),

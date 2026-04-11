@@ -63,7 +63,7 @@ pub(super) async fn dispatch_completion_query(
             ))
         }
         _ => {
-            log::info!("No Backend for completion query found");
+            tracing::info!("No Backend for completion query found");
             Err(CompletionError::Resolve("No Backend defined".to_string()))
         }
     }
@@ -101,7 +101,7 @@ pub(super) async fn fetch_online_completions(
         (url, query, timeout_ms, method)
     };
 
-    log::debug!("Completion Query: \"{query_template}\"\n{query}");
+    tracing::debug!("Completion Query: \"{query_template}\"\n{query}");
 
     let result = execute_query(
         server_rc.clone(),
@@ -138,7 +138,7 @@ pub(super) async fn fetch_online_completions(
         }
     })?
     .expect("Non-lazy request should always return a result.");
-    log::info!("Result size: {}", result.results.bindings.len());
+    tracing::info!("Result size: {}", result.results.bindings.len());
 
     let mut server = server_rc.lock().await;
     Ok(result

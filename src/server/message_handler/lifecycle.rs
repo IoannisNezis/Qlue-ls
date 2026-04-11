@@ -18,7 +18,7 @@ pub(super) async fn handle_shutdown_request(
     request: ShutdownRequest,
 ) -> Result<(), LSPError> {
     let mut server = server_rc.lock().await;
-    log::info!("Received shutdown request, preparing to shut down");
+    tracing::info!("Received shutdown request, preparing to shut down");
     match server.state.status {
         ServerStatus::Initializing => Err(LSPError::new(
             ErrorCode::InvalidRequest,
@@ -43,7 +43,7 @@ pub(super) async fn handle_initialize_request(
     match server.state.status {
         ServerStatus::Initializing => {
             if let Some(ref client_info) = initialize_request.params.client_info {
-                log::info!(
+                tracing::info!(
                     "Connected to: {} {}",
                     client_info.name,
                     client_info
@@ -80,7 +80,7 @@ pub(super) async fn handle_initialize_request(
                             .backends
                             .iter()
                             .map(|x| {
-                                log::debug!("Loaded backend \"{}\" from configuration.", x.0);
+                                tracing::debug!("Loaded backend \"{}\" from configuration.", x.0);
                                 x.1
                             })
                             .cloned()
@@ -140,7 +140,7 @@ pub(super) async fn handle_initialized_notification(
     server_rc: Rc<Mutex<Server>>,
     _initialized_notification: InitializedNotification,
 ) -> Result<(), LSPError> {
-    log::info!("initialization completed");
+    tracing::info!("initialization completed");
     server_rc.lock().await.state.status = ServerStatus::Running;
     Ok(())
 }
@@ -149,6 +149,6 @@ pub(super) async fn handle_exit_notification(
     _server_rc: Rc<Mutex<Server>>,
     _initialized_notification: ExitNotification,
 ) -> Result<(), LSPError> {
-    log::info!("Received exit notification, shutting down!");
+    tracing::info!("Received exit notification, shutting down!");
     exit(0);
 }

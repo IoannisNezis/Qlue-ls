@@ -42,7 +42,7 @@ pub(super) async fn handle_execute_request(
             handle_execute_update_request(server_rc, request, url, query).await
         }
         None => {
-            log::warn!("Could not determine operation type.\nFalling back to Query.");
+            tracing::warn!("Could not determine operation type.\nFalling back to Query.");
             handle_execute_query_request(server_rc, request, url, query, engine).await
         }
     }

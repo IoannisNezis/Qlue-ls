@@ -1,7 +1,7 @@
 use std::{any::type_name, collections::HashMap, fmt::Display};
 
-use log::error;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use tracing::error;
 
 use crate::server::lsp::LspMessage;
 

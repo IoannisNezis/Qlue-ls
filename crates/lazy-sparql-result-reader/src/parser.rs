@@ -64,13 +64,6 @@ impl Parser {
                 && self.binding_counter >= self.offset && self .limit
                         .is_none_or(|limit| self.binding_counter - self.offset < limit))
         };
-        // println!("{}", self.input_buffer);
-        // log::info!(
-        //     "limit: {:?}, offset: {}, count: {}, store: {store_char}",
-        //     self.limit,
-        //     self.offset,
-        //     self.binding_counter
-        // );
         if store_char {
             self.input_buffer.push(byte);
         }

@@ -17,7 +17,7 @@ pub(super) async fn handle_cancel_notification(
     {
         abort_fn();
     } else {
-        log::error!(
+        tracing::error!(
             "Received cancel notification for unknown query: {}",
             notification.params.query_id
         );

@@ -26,7 +26,7 @@ pub(crate) async fn execute_query(
     lazy: bool,
 ) -> Result<Option<SparqlResult>, SparqlRequestError> {
     if lazy {
-        log::warn!("Lazy Query execution is not implemented for non wasm targets");
+        tracing::warn!("Lazy Query execution is not implemented for non wasm targets");
     }
     if let Some(new_query) = add_limit_offset_to_query(&query, limit, offset) {
         query = new_query;
@@ -69,7 +69,7 @@ pub(crate) async fn execute_query(
         })?
         .error_for_status()
         .map_err(|err| {
-            log::debug!("Error: {:?}", err.status());
+            tracing::debug!("Error: {:?}", err.status());
             SparqlRequestError::Response("failed".to_string())
         })?;
 

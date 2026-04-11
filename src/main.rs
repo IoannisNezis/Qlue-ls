@@ -35,14 +35,8 @@ use std::{
 
 use clap::{Parser, Subcommand};
 use futures::lock::Mutex;
-use log::LevelFilter;
-use log4rs::{
-    Config,
-    append::file::FileAppender,
-    config::{Appender, Root},
-    encode::pattern::PatternEncoder,
-};
 use tokio::{runtime, task::LocalSet};
+use tracing_subscriber::EnvFilter;
 
 use qlue_ls::{Server, format_raw, handle_message};
 
@@ -85,30 +79,19 @@ fn get_logfile_path() -> PathBuf {
 }
 
 fn configure_logging() {
-    let level = env::var("LOG_LEVEL")
-        .unwrap_or_else(|_| "info".to_string())
-        .to_lowercase();
-
-    let level_filter = match level.as_str() {
-        "trace" => LevelFilter::Trace,
-        "debug" => LevelFilter::Debug,
-        "info" => LevelFilter::Info,
-        "warn" => LevelFilter::Warn,
-        "error" => LevelFilter::Error,
-        _ => LevelFilter::Info,
-    };
+    let level = env::var("LOG_LEVEL").unwrap_or_else(|_| "info".to_string());
     let logfile_path = get_logfile_path();
-    let logfile = FileAppender::builder()
-        .encoder(Box::new(PatternEncoder::new("{l} - {m}{n}")))
-        .build(logfile_path)
-        .expect("Failed to create logfile");
+    let file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&logfile_path)
+        .expect("Failed to open logfile");
 
-    let config = Config::builder()
-        .appender(Appender::builder().build("file", Box::new(logfile)))
-        .build(Root::builder().appender("file").build(level_filter))
-        .unwrap();
-
-    log4rs::init_config(config).expect("Failed to configure logger");
+    tracing_subscriber::fmt()
+        .with_writer(std::sync::Mutex::new(file))
+        .with_env_filter(EnvFilter::new(level))
+        .with_ansi(false)
+        .init();
 }
 
 fn send_message(message: String) {

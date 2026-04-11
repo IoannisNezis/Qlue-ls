@@ -1,7 +1,7 @@
 use std::{any::type_name, fmt};
 
-use log::error;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use tracing::error;
 
 use super::lsp::errors::{ErrorCode, LSPError};
 

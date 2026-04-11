@@ -56,7 +56,7 @@ pub(super) async fn hover(
             .tera
             .render(&format!("{}-hover", backend.name), &context)
             .map_err(|err| {
-                log::error!("{}", err);
+                tracing::error!("{}", err);
                 LSPError::new(ErrorCode::InternalError, &err.to_string())
             })?;
         let method = server.state.get_backend_request_method(&backend.name);

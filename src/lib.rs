@@ -28,19 +28,19 @@ mod sparql;
 // Re-export core server types for all targets (used by tests and native builds)
 pub use crate::server::configuration::FormatSettings;
 pub use crate::server::message_handler::formatting::{format_raw, format_with_settings};
-pub use crate::server::{handle_message, Server};
+pub use crate::server::{Server, handle_message};
 
 // Aliases for more descriptive names (for external consumers)
-pub use crate::server::{handle_message as handle_lsp_message, Server as LspServer};
+pub use crate::server::{Server as LspServer, handle_message as handle_lsp_message};
 
 // WASM-specific imports and exports
 #[cfg(target_family = "wasm")]
 mod wasm {
     use super::server::{Server, handle_message};
     use futures::lock::Mutex;
-    use log::error;
     use std::panic;
     use std::rc::Rc;
+    use tracing::error;
     use wasm_bindgen::prelude::*;
     use wasm_bindgen_futures::JsFuture;
     use web_sys::js_sys;
@@ -51,13 +51,13 @@ mod wasm {
 
     #[wasm_bindgen]
     pub fn init_language_server(writer: web_sys::WritableStreamDefaultWriter) -> Server {
-        wasm_logger::init(wasm_logger::Config::default());
         panic::set_hook(Box::new(|info| {
             let msg = info.to_string();
             web_sys::console::error_1(&msg.into());
             let _ = js_sys::Function::new_with_args("msg", "self.postMessage({type:'crash'});")
                 .call0(&JsValue::NULL);
         }));
+        wasm_tracing::set_as_global_default();
         Server::new(move |message| send_message(&writer, message))
     }
 

@@ -48,7 +48,7 @@ impl StdioMessages {
                     self.buffer.push(byte);
                 }
                 Err(error) => {
-                    log::error!("Error while reading byte: {}", error);
+                    tracing::error!("Error while reading byte: {}", error);
                     return None;
                 }
             }
@@ -70,7 +70,7 @@ impl StdioMessages {
                             self.buffer.push(byte);
                         }
                         Err(err) => {
-                            log::error!(
+                            tracing::error!(
                                 "Error {} occured while reading byte {} of {}, clearing buffer",
                                 err,
                                 ele,

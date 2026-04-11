@@ -17,7 +17,7 @@ pub(super) async fn handle_update_backend_default_notification(
     server_rc: Rc<Mutex<Server>>,
     notification: UpdateDefaultBackendNotification,
 ) -> Result<(), LSPError> {
-    log::info!("new default backend: {}", notification.params.backend_name);
+    tracing::info!("new default backend: {}", notification.params.backend_name);
     // TODO: update default fild in backends state
     let mut server = server_rc.lock().await;
     if server

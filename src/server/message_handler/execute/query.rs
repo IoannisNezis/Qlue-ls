@@ -31,7 +31,7 @@ pub(super) async fn handle_execute_query_request(
             handle_construct_query(server_rc, request, url, query, engine).await
         }
         None => {
-            log::warn!("Cound not determine Query-type, falling back to SelectQuery");
+            tracing::warn!("Cound not determine Query-type, falling back to SelectQuery");
             handle_normal_query(server_rc, request, url, query, engine).await
         }
     }
@@ -81,7 +81,7 @@ async fn handle_normal_query(
                 ));
         }
         Err(SparqlRequestError::_Canceled(error)) => {
-            log::info!("Sending cancel error");
+            tracing::info!("Sending cancel error");
             return server_rc
                 .lock()
                 .await

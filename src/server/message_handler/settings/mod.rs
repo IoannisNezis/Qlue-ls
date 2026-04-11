@@ -11,6 +11,7 @@ use crate::server::{
     },
 };
 
+#[tracing::instrument(skip_all, fields(id = %request.base.id))]
 pub(super) async fn handle_default_settings_request(
     server_rc: Rc<Mutex<Server>>,
     request: DefaultSettingsRequest,
@@ -24,6 +25,7 @@ pub(super) async fn handle_default_settings_request(
         ))
 }
 
+#[tracing::instrument(skip_all)]
 pub(super) async fn handle_change_settings_notification(
     server_rc: Rc<Mutex<Server>>,
     request: ChangeSettingsNotification,

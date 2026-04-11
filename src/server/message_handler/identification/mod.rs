@@ -11,6 +11,7 @@ use crate::server::{
     },
 };
 
+#[tracing::instrument(skip_all, fields(id = %request.base.id, uri = %request.params.text_document.uri))]
 pub(super) async fn handle_identify_request(
     server_rc: Rc<Mutex<Server>>,
     request: IdentifyOperationTypeRequest,

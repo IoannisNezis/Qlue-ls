@@ -36,7 +36,7 @@ impl CompletionRequest {
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct CompletionParams {
     #[serde(flatten)]
-    base: TextDocumentPositionParams,
+    pub base: TextDocumentPositionParams,
     pub context: CompletionContext,
 }
 

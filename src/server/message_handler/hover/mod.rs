@@ -6,6 +6,8 @@ use std::rc::Rc;
 use futures::lock::Mutex;
 use ll_sparql_parser::{TokenAtOffset, syntax_kind::SyntaxKind};
 
+use tracing::instrument;
+
 use crate::server::{
     Server,
     lsp::{
@@ -14,6 +16,7 @@ use crate::server::{
     },
 };
 
+#[instrument(skip_all, fields(id = %request.get_id(), uri = %request.get_document_uri()))]
 pub(super) async fn handle_hover_request(
     server_rc: Rc<Mutex<Server>>,
     request: HoverRequest,

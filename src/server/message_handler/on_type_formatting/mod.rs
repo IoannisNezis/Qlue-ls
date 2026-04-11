@@ -18,6 +18,7 @@ use crate::server::{
     message_handler::indent,
 };
 
+#[tracing::instrument(skip_all, fields(id = %request.get_id(), uri = %request.get_document_uri()))]
 pub(super) async fn handle_on_type_format_request(
     server_rc: Rc<Mutex<Server>>,
     request: OnTypeFormattingRequest,

@@ -16,6 +16,7 @@ use futures::lock::Mutex;
 use ll_sparql_parser::{TopEntryPoint, guess_operation_type};
 use std::rc::Rc;
 
+#[tracing::instrument(skip_all, fields(id = %request.get_id(), uri = %request.params.text_document.uri))]
 pub(super) async fn handle_execute_request(
     server_rc: Rc<Mutex<Server>>,
     request: ExecuteOperationRequest,

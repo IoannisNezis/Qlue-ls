@@ -13,6 +13,7 @@ use crate::server::{
     state::{ClientType, ServerStatus},
 };
 
+#[tracing::instrument(skip_all, fields(id = %request.base.id))]
 pub(super) async fn handle_shutdown_request(
     server_rc: Rc<Mutex<Server>>,
     request: ShutdownRequest,
@@ -35,6 +36,7 @@ pub(super) async fn handle_shutdown_request(
     }
 }
 
+#[tracing::instrument(skip_all, fields(id = %initialize_request.get_id()))]
 pub(super) async fn handle_initialize_request(
     server_rc: Rc<Mutex<Server>>,
     initialize_request: InitializeRequest,
@@ -136,6 +138,7 @@ pub(super) async fn handle_initialize_request(
     }
 }
 
+#[tracing::instrument(skip_all)]
 pub(super) async fn handle_initialized_notification(
     server_rc: Rc<Mutex<Server>>,
     _initialized_notification: InitializedNotification,
@@ -145,6 +148,7 @@ pub(super) async fn handle_initialized_notification(
     Ok(())
 }
 
+#[tracing::instrument(skip_all)]
 pub(super) async fn handle_exit_notification(
     _server_rc: Rc<Mutex<Server>>,
     _initialized_notification: ExitNotification,

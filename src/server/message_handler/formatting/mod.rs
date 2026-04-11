@@ -16,6 +16,7 @@ use ll_sparql_parser::{SyntaxNode, parse};
 use std::rc::Rc;
 use wasm_bindgen::prelude::wasm_bindgen;
 
+#[tracing::instrument(skip_all, fields(id = %request.get_id(), uri = %request.get_document_uri()))]
 pub(super) async fn handle_format_request(
     server_rc: Rc<Mutex<Server>>,
     request: FormattingRequest,

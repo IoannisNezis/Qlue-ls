@@ -16,6 +16,7 @@ use crate::server::{
     },
 };
 
+#[tracing::instrument(skip_all, fields(id = %request.get_id(), uri = %request.params.base.text_document.uri))]
 pub(super) async fn handle_jump_request(
     server_rc: Rc<Mutex<Server>>,
     request: JumpRequest,

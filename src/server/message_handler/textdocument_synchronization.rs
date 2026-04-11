@@ -15,6 +15,7 @@ use crate::server::{
     message_handler::diagnostic,
 };
 
+#[tracing::instrument(skip_all, fields(uri = %did_open_notification.params.text_document.uri))]
 pub(super) async fn handle_did_open_notification(
     server_rc: Rc<Mutex<Server>>,
     did_open_notification: DidOpenTextDocumentNotification,
@@ -25,6 +26,7 @@ pub(super) async fn handle_did_open_notification(
     Ok(())
 }
 
+#[tracing::instrument(skip_all, fields(uri = %did_change_notification.params.text_document.base.uri))]
 pub(super) async fn handle_did_change_notification(
     server_rc: Rc<Mutex<Server>>,
     did_change_notification: DidChangeTextDocumentNotification,
@@ -38,6 +40,7 @@ pub(super) async fn handle_did_change_notification(
     Ok(())
 }
 
+#[tracing::instrument(skip_all, fields(uri = %did_save_notification.params.text_document.uri))]
 pub(super) async fn handle_did_save_notification(
     server_rc: Rc<Mutex<Server>>,
     did_save_notification: DidSaveTextDocumentNotification,

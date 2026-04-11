@@ -23,6 +23,7 @@ use std::{
     rc::Rc,
 };
 
+#[tracing::instrument(skip_all, fields(id = %request.get_id(), uri = %request.params.text_document.uri))]
 pub(super) async fn handle_diagnostic_request(
     server_rc: Rc<Mutex<Server>>,
     request: DiagnosticRequest,

@@ -6,6 +6,7 @@ use crate::server::{
     lsp::{CancelQueryNotification, errors::LSPError},
 };
 
+#[tracing::instrument(skip_all, fields(query_id = %notification.params.query_id))]
 pub(super) async fn handle_cancel_notification(
     server_rc: Rc<Mutex<Server>>,
     notification: CancelQueryNotification,

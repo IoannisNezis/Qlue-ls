@@ -176,6 +176,7 @@ impl ServerState {
         ))
     }
 
+    #[tracing::instrument(skip(self), fields(cache_hit, parse_time_ms))]
     pub(super) fn get_cached_parse_tree(&self, uri: &str) -> Result<TimedParseResult, LSPError> {
         let document = self.documents.get(uri).ok_or(LSPError::new(
             ErrorCode::InvalidRequest,
@@ -185,15 +186,18 @@ impl ServerState {
             && uri == cached_parse_tree.document_uri
             && cached_parse_tree.version == document.version()
         {
+            tracing::Span::current().record("cache_hit", true);
             return Ok(TimedParseResult {
                 tree: cached_parse_tree.tree.clone(),
                 parse_time_ms: cached_parse_tree.parse_time_ms,
             });
         }
 
+        tracing::Span::current().record("cache_hit", false);
         let start = get_timestamp_ms();
         let (root, _) = parse(&document.text);
         let parse_time_ms = get_timestamp_ms() - start;
+        tracing::Span::current().record("parse_time_ms", parse_time_ms);
         *self.parse_tree_cache.borrow_mut() = Some(CachedParseTree {
             document_uri: uri.to_string(),
             version: document.version(),

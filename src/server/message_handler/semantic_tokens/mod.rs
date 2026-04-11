@@ -22,6 +22,7 @@ pub const TOKEN_TYPES: [SemanticTokenTypes; 8] = [
     SemanticTokenTypes::Namespace,
 ];
 
+#[tracing::instrument(skip_all, fields(id = %request.base.id, uri = %request.params.text_document.uri))]
 pub(super) async fn handle_semantic_tokens_full_request(
     server_rc: Rc<Mutex<Server>>,
     request: SemanticTokensFullRequest,
@@ -39,6 +40,7 @@ pub(super) async fn handle_semantic_tokens_full_request(
     ))
 }
 
+#[tracing::instrument(skip_all, fields(id = %request.base.id, uri = %request.params.text_document.uri))]
 pub(super) async fn handle_semantic_tokens_range_request(
     server_rc: Rc<Mutex<Server>>,
     request: SemanticTokensRangeRequest,

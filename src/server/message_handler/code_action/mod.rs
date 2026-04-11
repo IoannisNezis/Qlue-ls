@@ -23,6 +23,7 @@ use std::rc::Rc;
 pub(crate) use quickfix::declare_prefix;
 pub(crate) use quickfix::remove_prefix_declaration;
 
+#[tracing::instrument(skip_all, fields(id = %request.get_id(), uri = %request.params.text_document.uri))]
 pub(super) async fn handle_codeaction_request(
     server_rc: Rc<Mutex<Server>>,
     request: CodeActionRequest,

@@ -13,6 +13,7 @@ use crate::server::{
     sparql_operations::check_server_availability,
 };
 
+#[tracing::instrument(skip_all, fields(backend = %notification.params.backend_name))]
 pub(super) async fn handle_update_backend_default_notification(
     server_rc: Rc<Mutex<Server>>,
     notification: UpdateDefaultBackendNotification,
@@ -36,6 +37,7 @@ pub(super) async fn handle_update_backend_default_notification(
     Ok(())
 }
 
+#[tracing::instrument(skip_all, fields(id = %request.get_id()))]
 pub(super) async fn handle_ping_backend_request(
     server_rc: Rc<Mutex<Server>>,
     request: PingBackendRequest,
@@ -65,6 +67,7 @@ pub(super) async fn handle_ping_backend_request(
         .send_message(PingBackendResponse::new(request.get_id(), available))
 }
 
+#[tracing::instrument(skip_all, fields(backend = %request.params.name))]
 pub(super) async fn handle_add_backend_notification(
     server_rc: Rc<Mutex<Server>>,
     request: AddBackendNotification,
@@ -84,6 +87,7 @@ pub(super) async fn handle_add_backend_notification(
     Ok(())
 }
 
+#[tracing::instrument(skip_all, fields(id = %request.get_id()))]
 pub(super) async fn handle_get_backend_request(
     server_rc: Rc<Mutex<Server>>,
     request: GetBackendRequest,
@@ -106,6 +110,7 @@ pub(super) async fn handle_get_backend_request(
     ))
 }
 
+#[tracing::instrument(skip_all, fields(id = %request.get_id()))]
 pub(super) async fn handle_list_backends_request(
     server_rc: Rc<Mutex<Server>>,
     request: ListBackendsRequest,

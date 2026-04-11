@@ -111,6 +111,7 @@ pub(super) async fn dispatch(
 ) -> Result<(), LSPError> {
     let message = deserialize_message(message_string)?;
     let method = message.get_method().unwrap_or("response");
+
     macro_rules! call {
         ($handler:ident) => {{
             let message = message.parse()?;
@@ -178,7 +179,7 @@ pub(super) async fn dispatch(
             Ok(())
         }
         "$/setTrace" => {
-            tracing::warn!("Received cancel request (unsupported)");
+            tracing::warn!("Received setTrace request (unsupported)");
             Ok(())
         }
         unknown_method => {

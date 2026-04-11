@@ -7,6 +7,7 @@ use crate::server::{
     lsp::{WorkspaceEditResponse, errors::LSPError},
 };
 
+#[tracing::instrument(skip_all)]
 pub(super) async fn handle_workspace_edit_response(
     _server_rc: Rc<Mutex<Server>>,
     response: WorkspaceEditResponse,

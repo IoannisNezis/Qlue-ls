@@ -7,6 +7,7 @@ use environment::{CompletionEnvironment, CompletionLocation};
 use error::{CompletionError, to_lsp_error};
 use futures::lock::Mutex;
 use std::rc::Rc;
+use tracing::instrument;
 
 use crate::server::{
     Server,
@@ -19,6 +20,7 @@ use crate::server::{
     },
 };
 
+#[instrument(skip(server_rc,request), fields(id = %request.get_id(), uri = %request.params.base.text_document.uri))]
 pub(super) async fn handle_completion_request(
     server_rc: Rc<Mutex<Server>>,
     request: CompletionRequest,

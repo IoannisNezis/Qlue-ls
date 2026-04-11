@@ -11,6 +11,7 @@ use crate::server::{
     },
 };
 
+#[tracing::instrument(skip_all, fields(id = %request.get_id(), uri = %request.get_document_uri()))]
 pub(super) async fn handle_folding_range_request(
     server_rc: Rc<Mutex<Server>>,
     request: FoldingRangeRequest,

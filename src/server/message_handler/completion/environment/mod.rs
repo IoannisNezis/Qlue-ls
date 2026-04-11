@@ -389,7 +389,6 @@ fn get_location(
     continuations: &HashSet<SyntaxKind>,
     offset: TextSize,
 ) -> CompletionLocation {
-    log::debug!("{continuations:?}");
     if let Some(anchor) = anchor_token {
         macro_rules! continues_with {
                     ([$($kind:expr_2021),*]) => {

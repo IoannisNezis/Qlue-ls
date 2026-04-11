@@ -1,3 +1,5 @@
+use std::sync::LazyLock;
+
 use crate::server::{
     Server,
     lsp::{
@@ -6,6 +8,9 @@ use crate::server::{
     },
 };
 use ll_sparql_parser::{ast::QueryUnit, parse};
+
+pub static CODE: LazyLock<DiagnosticCode> =
+    LazyLock::new(|| DiagnosticCode::String("syntax-error".to_string()));
 
 pub(super) fn diagnostics(
     document: &TextDocumentItem,
@@ -21,7 +26,7 @@ pub(super) fn diagnostics(
                 range: Range::from_byte_offset_range(error.span, &document.text)
                     .expect("Parse error spans should be within the document"),
                 severity: DiagnosticSeverity::Error,
-                code: Some(DiagnosticCode::String("parse error".to_string())),
+                code: Some((*CODE).clone()),
                 source: Some("Qlue-ls".to_string()),
                 message: error.message,
                 data: None,

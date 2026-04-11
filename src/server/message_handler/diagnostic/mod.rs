@@ -1,11 +1,12 @@
 pub mod invalid_projection_variable;
 pub mod same_subject;
-mod syntax_errors;
+pub mod syntax_error;
 pub mod uncompacted_uri;
 pub mod undeclared_prefix;
 pub mod ungrouped_select_variable;
 pub mod unused_prefix_declaration;
 
+use super::code_action::remove_prefix_declaration;
 use crate::server::{
     Server,
     lsp::{
@@ -21,8 +22,6 @@ use std::{
     convert::identity,
     rc::Rc,
 };
-
-use super::code_action::remove_prefix_declaration;
 
 pub(super) async fn handle_diagnostic_request(
     server_rc: Rc<Mutex<Server>>,
@@ -54,7 +53,7 @@ pub(super) async fn handle_diagnostic_request(
     add!(ungrouped_select_variable::diagnostics);
     add!(invalid_projection_variable::diagnostics);
     add!(same_subject::diagnostics);
-    add!(syntax_errors::diagnostics);
+    add!(syntax_error::diagnostics);
 
     if client_support_workspace_edits(&server) {
         declare_and_undeclare_prefixes(&mut server, &request, &diagnostic_accu);

@@ -8,10 +8,11 @@ use crate::server::{
     lsp::{
         DidChangeTextDocumentNotification, DidOpenTextDocumentNotification,
         DidSaveTextDocumentNotification, PublishDiagnosticsNotification,
-        diagnostic::{Diagnostic, DiagnosticCode, DiagnosticSeverity},
+        diagnostic::{Diagnostic, DiagnosticSeverity},
         errors::LSPError,
         textdocument::Range,
     },
+    message_handler::diagnostic,
 };
 
 pub(super) async fn handle_did_open_notification(
@@ -54,7 +55,7 @@ pub(super) async fn handle_did_save_notification(
                 range: Range::from_byte_offset_range(error.span, &document.text)
                     .expect("Parse error spans should be within the document"),
                 severity: DiagnosticSeverity::Error,
-                code: Some(DiagnosticCode::String("parse error".to_string())),
+                code: Some(diagnostic::syntax_error::CODE.clone()),
                 source: Some("Qlue-ls".to_string()),
                 message: error.message,
                 data: None,

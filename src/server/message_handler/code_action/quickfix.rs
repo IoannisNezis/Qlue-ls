@@ -9,10 +9,7 @@ use crate::server::{
         errors::{ErrorCode, LSPError},
         textdocument::{Range, TextEdit},
     },
-    message_handler::{
-        code_action::same_subject::{contract_triples_from_diagnostic},
-        diagnostic,
-    },
+    message_handler::{code_action::same_subject::contract_triples_from_diagnostic, diagnostic},
 };
 use ll_sparql_parser::syntax_kind::SyntaxKind;
 use log::error;
@@ -24,21 +21,24 @@ pub(super) fn get_quickfix(
     document_uri: &String,
     diagnostic: Diagnostic,
 ) -> Result<Option<CodeAction>, LSPError> {
-    if let Some(code) = diagnostic.code.as_ref() {
-        if code == &*diagnostic::undeclared_prefix::CODE {
+    match diagnostic.code.as_ref() {
+        Some(code) if code == &*diagnostic::undeclared_prefix::CODE => {
             declare_prefix(server, document_uri, diagnostic)
-        } else if code == &*diagnostic::uncompacted_uri::CODE {
+        }
+        Some(code) if code == &*diagnostic::uncompacted_uri::CODE => {
             shorten_uri(server, document_uri, diagnostic)
-        } else if code == &*diagnostic::unused_prefix_declaration::CODE {
+        }
+        Some(code) if code == &*diagnostic::unused_prefix_declaration::CODE => {
             remove_prefix_declaration(server, document_uri, diagnostic)
-        } else if code == &*diagnostic::same_subject::CODE {
+        }
+        Some(code) if code == &*diagnostic::same_subject::CODE => {
             contract_triples_from_diagnostic(server, document_uri, diagnostic)
-        } else {
-            log::warn!("Unknown diagnostic code: {:?}", code);
+        }
+        Some(_) => {
+            // NOTE:Not all diagnostics have a quickfix
             Ok(None)
         }
-    } else {
-        Ok(None)
+        None => Ok(None),
     }
 }
 

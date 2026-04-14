@@ -63,7 +63,7 @@ pub fn completions(context: &CompletionEnvironment) -> Result<CompletionList, Co
             CompletionItemBuilder::new()
                 .label("LIMIT")
                 .detail("Limit the amount of results")
-                .insert_text("LIMMIT ${0:50}")
+                .insert_text("LIMIT ${0:50}")
                 .build(),
         );
     }

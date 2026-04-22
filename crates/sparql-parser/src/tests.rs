@@ -216,3 +216,19 @@ fn tokenize_iris() {
         ]
     )
 }
+
+#[test]
+fn tokenize_nill() {
+    let tokens = lex_all("() (1,2)");
+    assert_eq!(
+        tokens,
+        vec![
+            SyntaxKind::NIL,
+            SyntaxKind::LParen,
+            SyntaxKind::INTEGER,
+            SyntaxKind::Comma,
+            SyntaxKind::INTEGER,
+            SyntaxKind::RParen
+        ]
+    )
+}

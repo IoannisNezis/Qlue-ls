@@ -13,5 +13,5 @@ fn parse_tokens_after() {
 #[test]
 fn parse_tokens_before() {
     let input = "dings;\nCLEAR <GraphRef>;\n";
-    let root = parse_query(input).0;
+    let _root = parse_query(input).0;
 }

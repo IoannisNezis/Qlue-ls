@@ -120,7 +120,7 @@ pub enum SyntaxKind {
     SERVICE,
     #[token("BIND", ignore(case))]
     BIND,
-    #[token("NIL", ignore(case))]
+    #[regex(r"\([ \t\n\r\f]*\)")]
     NIL,
     #[token("UNDEF", ignore(case))]
     UNDEF,

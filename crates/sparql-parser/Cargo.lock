@@ -40,7 +40,7 @@ dependencies = [
 
 [[package]]
 name = "ll-sparql-parser"
-version = "2.1.0"
+version = "2.1.1"
 dependencies = [
  "indoc",
  "logos",

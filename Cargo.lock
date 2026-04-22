@@ -1318,9 +1318,9 @@ checksum = "6373607a59f0be73a39b6fe456b8192fcc3585f602af20751600e974dd455e77"
 
 [[package]]
 name = "ll-sparql-parser"
-version = "2.1.0"
+version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "80aa4f9066f24e5580400ce65fbddfdc570b0c80a4d93dc33821420b75a0b28d"
+checksum = "a02e55ae82ae4035548c205f8efaa0dbed449bc63dd477a3eda2fe3daf1dc3f3"
 dependencies = [
  "logos",
  "prettyplease",
@@ -1482,7 +1482,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

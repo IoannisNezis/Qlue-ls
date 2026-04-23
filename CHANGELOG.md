@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- tokenization of `NIL`
+
 ### Added
 
 - completions for all SPARQL 1.1 built-in functions with documentation and signatures

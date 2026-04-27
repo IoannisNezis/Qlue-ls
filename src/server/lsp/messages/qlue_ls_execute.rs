@@ -97,7 +97,7 @@ impl LspMessage for ExecuteOperationResponse {}
 #[serde(rename_all = "camelCase")]
 pub enum ExecuteOperationResponseResult {
     QueryResult(ExecuteQueryResponseResult),
-    UpdateResult(Vec<ExecuteUpdateResponseResult>),
+    UpdateResult(ExecuteUpdateResponseResult),
 }
 
 #[derive(Debug, Serialize)]
@@ -109,47 +109,137 @@ pub struct ExecuteQueryResponseResult {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ExecuteUpdateResponseResult {
+    pub operations: Vec<ExecuteUpdateOperationResult>,
+    pub time: ExecuteUpdateGlobalTimeInfo,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExecuteUpdateGlobalTimeInfo {
+    pub total: u64,
+    pub parsing: u64,
+    pub waiting_for_update_thread: u64,
+    pub acquiring_delta_triples_write_lock: u64,
+    pub operations: u64,
+    pub metadata_update_for_snapshot: u64,
+    pub disk_writeback: u64,
+    pub snapshot_creation: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ExecuteUpdateOperationResult {
     pub status: String,
     #[serde(rename(deserialize = "delta-triples", serialize = "deltaTriples"))]
     pub delta_triples: DeltaTiples,
-    pub time: TimeInfo,
+    #[serde(rename(deserialize = "located-triples", serialize = "locatedTriples"))]
+    pub located_triples: LocatedTriplesStats,
+    pub time: ExecuteUpdateOperationTimeInfo,
+    pub update: String,
+    pub warnings: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct TimeInfo {
-    #[serde(deserialize_with = "deserialize_ms")]
-    total: u64,
-    #[serde(deserialize_with = "deserialize_ms")]
-    planning: u64,
-    #[serde(rename = "where", deserialize_with = "deserialize_ms")]
-    lookup: u64,
-    update: UpdateTiming,
+#[serde(rename_all = "camelCase")]
+pub struct ExecuteUpdateOperationTimeInfo {
+    pub execution: ExecutionTime,
+    pub planning: u64,
+    pub total: u64,
+    pub update_metadata: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct UpdateTiming {
-    #[serde(deserialize_with = "deserialize_ms")]
-    total: u64,
-    #[serde(deserialize_with = "deserialize_ms")]
-    preparation: u64,
-    #[serde(deserialize_with = "deserialize_ms")]
-    delete: u64,
-    #[serde(deserialize_with = "deserialize_ms")]
-    insert: u64,
+#[serde(rename_all = "camelCase")]
+pub struct ExecutionTime {
+    pub clear_cache: u64,
+    pub compute_ids: ComputeIdsTime,
+    pub delete_triples: u64,
+    pub evaluate_where: u64,
+    pub insert_triples: InsertTriplesTime,
+    pub total: u64,
 }
 
-use serde::Deserializer;
-use serde::de;
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ComputeIdsTime {
+    pub deduplication: u64,
+    pub result_interpolation: u64,
+    pub total: u64,
+    pub vocab_lookup: u64,
+}
 
-fn deserialize_ms<'de, D>(deserializer: D) -> Result<u64, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let s = String::deserialize(deserializer)?;
-    let ms = s
-        .strip_suffix("ms")
-        .ok_or_else(|| de::Error::custom("expected value ending with 'ms'"))?;
-    ms.parse::<u64>().map_err(de::Error::custom)
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InsertTriplesTime {
+    pub external_permutation: ExternalPermutationTime,
+    pub internal_permutation: InternalPermutationTime,
+    pub make_internal_triples: u64,
+    pub total: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExternalPermutationTime {
+    pub located_and_add: ExternalLocatedAndAdd,
+    pub mark_triples: u64,
+    pub remove_existing_triples: u64,
+    pub remove_inverse_triples: u64,
+    pub rewrite_local_vocab_entries: u64,
+    pub total: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExternalLocatedAndAdd {
+    #[serde(rename(deserialize = "SPO"))]
+    pub spo: PermutationLocateAdd,
+    #[serde(rename(deserialize = "SOP"))]
+    pub sop: PermutationLocateAdd,
+    #[serde(rename(deserialize = "PSO"))]
+    pub pso: PermutationLocateAdd,
+    #[serde(rename(deserialize = "POS"))]
+    pub pos: PermutationLocateAdd,
+    #[serde(rename(deserialize = "OSP"))]
+    pub osp: PermutationLocateAdd,
+    #[serde(rename(deserialize = "OPS"))]
+    pub ops: PermutationLocateAdd,
+    pub total: u64,
+    pub transform_handles: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InternalPermutationTime {
+    pub located_and_add: InternalLocatedAndAdd,
+    pub mark_triples: u64,
+    pub remove_existing_triples: u64,
+    pub remove_inverse_triples: u64,
+    pub rewrite_local_vocab_entries: u64,
+    pub total: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InternalLocatedAndAdd {
+    #[serde(rename(deserialize = "PSO"))]
+    pub pso: PermutationLocateAdd,
+    #[serde(rename(deserialize = "POS"))]
+    pub pos: PermutationLocateAdd,
+    pub total: u64,
+    pub transform_handles: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PermutationLocateAdd {
+    pub add_to_located_triples: AddToLocatedTriples,
+    pub locate_triples: u64,
+    pub total: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AddToLocatedTriples {
+    pub adding: u64,
+    pub total: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -158,6 +248,30 @@ pub struct DeltaTiples {
     pub after: TripleDelta,
     pub difference: TripleDelta,
     pub operation: TripleDelta,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LocatedTriplesStats {
+    #[serde(rename(deserialize = "SPO"))]
+    pub spo: LocatedTriplesPermutationStats,
+    #[serde(rename(deserialize = "SOP"))]
+    pub sop: LocatedTriplesPermutationStats,
+    #[serde(rename(deserialize = "PSO"))]
+    pub pso: LocatedTriplesPermutationStats,
+    #[serde(rename(deserialize = "POS"))]
+    pub pos: LocatedTriplesPermutationStats,
+    #[serde(rename(deserialize = "OSP"))]
+    pub osp: LocatedTriplesPermutationStats,
+    #[serde(rename(deserialize = "OPS"))]
+    pub ops: LocatedTriplesPermutationStats,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LocatedTriplesPermutationStats {
+    #[serde(rename(deserialize = "blocks-affected", serialize = "blocksAffected"))]
+    pub blocks_affected: u32,
+    #[serde(rename(deserialize = "blocks-total", serialize = "blocksTotal"))]
+    pub blocks_total: u32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -241,7 +355,7 @@ impl LspMessage for PartialSparqlResultNotification {}
 mod test {
     use crate::server::lsp::{
         ExecuteOperationErrorData, ExecuteUpdateResponseResult, Metadata, QLeverException,
-        QLeverStatus, TimeInfo,
+        QLeverStatus,
     };
 
     #[test]
@@ -265,115 +379,183 @@ mod test {
     }
 
     #[test]
-    fn deserialize_timing_info() {
-        let message = r#"
-        {
-            "planning": "0ms",
-            "total": "0ms",
-            "where": "0ms",
-            "update": {
-                "delete": "0ms",
-                "insert": "0ms",
-                "preparation": "0ms",
-                "total": "0ms"
-            }
-        }"#;
-        let _x: TimeInfo = serde_json::from_str(message).unwrap();
-    }
-
-    #[test]
     fn deserialize_update_result() {
-        let message = r#"[
-    {
-        "delta-triples": {
-            "after": {
-                "deleted": 1,
-                "inserted": 3,
-                "total": 4
+        let message = r#"{
+    "operations": [
+        {
+            "delta-triples": {
+                "after": {
+                    "deleted": 0,
+                    "inserted": 1,
+                    "total": 1
+                },
+                "before": {
+                    "deleted": 0,
+                    "inserted": 1,
+                    "total": 1
+                },
+                "difference": {
+                    "deleted": 0,
+                    "inserted": 0,
+                    "total": 0
+                },
+                "operation": {
+                    "deleted": 0,
+                    "inserted": 1,
+                    "total": 1
+                }
             },
-            "before": {
-                "deleted": 1,
-                "inserted": 3,
-                "total": 4
+            "located-triples": {
+                "OPS": {
+                    "blocks-affected": 1,
+                    "blocks-total": 0
+                },
+                "OSP": {
+                    "blocks-affected": 1,
+                    "blocks-total": 0
+                },
+                "POS": {
+                    "blocks-affected": 1,
+                    "blocks-total": 0
+                },
+                "PSO": {
+                    "blocks-affected": 1,
+                    "blocks-total": 0
+                },
+                "SOP": {
+                    "blocks-affected": 1,
+                    "blocks-total": 0
+                },
+                "SPO": {
+                    "blocks-affected": 1,
+                    "blocks-total": 0
+                }
             },
-            "difference": {
-                "deleted": 0,
-                "inserted": 0,
-                "total": 0
+            "status": "OK",
+            "time": {
+                "execution": {
+                    "clearCache": 0,
+                    "computeIds": {
+                        "deduplication": 0,
+                        "resultInterpolation": 0,
+                        "total": 0,
+                        "vocabLookup": 0
+                    },
+                    "deleteTriples": 0,
+                    "evaluateWhere": 0,
+                    "insertTriples": {
+                        "externalPermutation": {
+                            "locatedAndAdd": {
+                                "OPS": {
+                                    "addToLocatedTriples": {
+                                        "adding": 0,
+                                        "total": 0
+                                    },
+                                    "locateTriples": 0,
+                                    "total": 0
+                                },
+                                "OSP": {
+                                    "addToLocatedTriples": {
+                                        "adding": 0,
+                                        "total": 0
+                                    },
+                                    "locateTriples": 0,
+                                    "total": 0
+                                },
+                                "POS": {
+                                    "addToLocatedTriples": {
+                                        "adding": 0,
+                                        "total": 0
+                                    },
+                                    "locateTriples": 0,
+                                    "total": 0
+                                },
+                                "PSO": {
+                                    "addToLocatedTriples": {
+                                        "adding": 0,
+                                        "total": 0
+                                    },
+                                    "locateTriples": 0,
+                                    "total": 0
+                                },
+                                "SOP": {
+                                    "addToLocatedTriples": {
+                                        "adding": 0,
+                                        "total": 0
+                                    },
+                                    "locateTriples": 0,
+                                    "total": 0
+                                },
+                                "SPO": {
+                                    "addToLocatedTriples": {
+                                        "adding": 0,
+                                        "total": 0
+                                    },
+                                    "locateTriples": 0,
+                                    "total": 0
+                                },
+                                "total": 0,
+                                "transformHandles": 0
+                            },
+                            "markTriples": 0,
+                            "removeExistingTriples": 0,
+                            "removeInverseTriples": 0,
+                            "rewriteLocalVocabEntries": 0,
+                            "total": 0
+                        },
+                        "internalPermutation": {
+                            "locatedAndAdd": {
+                                "POS": {
+                                    "addToLocatedTriples": {
+                                        "adding": 0,
+                                        "total": 0
+                                    },
+                                    "locateTriples": 0,
+                                    "total": 0
+                                },
+                                "PSO": {
+                                    "addToLocatedTriples": {
+                                        "adding": 0,
+                                        "total": 0
+                                    },
+                                    "locateTriples": 0,
+                                    "total": 0
+                                },
+                                "total": 0,
+                                "transformHandles": 0
+                            },
+                            "markTriples": 0,
+                            "removeExistingTriples": 0,
+                            "removeInverseTriples": 0,
+                            "rewriteLocalVocabEntries": 0,
+                            "total": 0
+                        },
+                        "makeInternalTriples": 0,
+                        "total": 0
+                    },
+                    "total": 0
+                },
+                "planning": 0,
+                "total": 0,
+                "updateMetadata": 0
             },
-            "operation": {
-                "deleted": 0,
-                "inserted": 1,
-                "total": 1
-            }
-        },
-        "located-triples": {
-            "OPS": {
-                "blocks-affected": 1,
-                "blocks-total": 0
-            },
-            "OSP": {
-                "blocks-affected": 1,
-                "blocks-total": 0
-            },
-            "POS": {
-                "blocks-affected": 1,
-                "blocks-total": 0
-            },
-            "PSO": {
-                "blocks-affected": 1,
-                "blocks-total": 0
-            },
-            "SOP": {
-                "blocks-affected": 1,
-                "blocks-total": 0
-            },
-            "SPO": {
-                "blocks-affected": 1,
-                "blocks-total": 0
-            }
-        },
-        "runtimeInformation": {
-            "meta": {
-                "time_query_planning": 0
-            },
-            "query_execution_tree": {
-                "cache_status": "computed",
-                "children": [],
-                "column_names": [],
-                "description": "NeutralElement",
-                "details": null,
-                "estimated_column_multiplicities": [],
-                "estimated_operation_cost": 0,
-                "estimated_size": 1,
-                "estimated_total_cost": 0,
-                "operation_time": 0,
-                "original_operation_time": 0,
-                "original_total_time": 0,
-                "result_cols": 0,
-                "result_rows": 1,
-                "status": "fully materialized",
-                "total_time": 0
-            }
-        },
-        "status": "OK",
-        "time": {
-            "planning": "0ms",
-            "total": "0ms",
-            "update": {
-                "delete": "0ms",
-                "insert": "0ms",
-                "preparation": "0ms",
-                "total": "0ms"
-            },
-            "where": "0ms"
-        },
-        "update": "INSERT DATA {\n  <x> <y> <z>\n}",
-        "warnings": [
-            "SPARQL 1.1 Update for QLever is experimental."
-        ]
+            "update": "INSERT DATA {\n  <a> <b> <b>\n}",
+            "warnings": [
+                "SPARQL 1.1 Update for QLever is experimental."
+            ]
+        }
+    ],
+    "time": {
+        "total": 1,
+        "parsing": 0,
+        "waitingForUpdateThread": 0,
+        "acquiringDeltaTriplesWriteLock": 0,
+        "operations": 1,
+        "metadataUpdateForSnapshot": 0,
+        "diskWriteback": 0,
+        "snapshotCreation": 0
     }
-]"#;
-        let _x: Vec<ExecuteUpdateResponseResult> = serde_json::from_str(message).unwrap();
+}"#;
+        let _x: ExecuteUpdateResponseResult = serde_json::from_str(message).unwrap();
     }
 }

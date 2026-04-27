@@ -113,7 +113,7 @@ pub(crate) async fn execute_update(
     _query: &str,
     _query_id: Option<&str>,
     _access_token: Option<&str>,
-) -> Result<Vec<ExecuteUpdateResponseResult>, SparqlRequestError> {
+) -> Result<ExecuteUpdateResponseResult, SparqlRequestError> {
     todo!()
 }
 

@@ -198,7 +198,7 @@ pub(crate) async fn execute_update(
     query: &str,
     query_id: Option<&str>,
     access_token: Option<&str>,
-) -> Result<Vec<ExecuteUpdateResponseResult>, SparqlRequestError> {
+) -> Result<ExecuteUpdateResponseResult, SparqlRequestError> {
     use js_sys::JsString;
     use std::str::FromStr;
     use wasm_bindgen::JsCast;

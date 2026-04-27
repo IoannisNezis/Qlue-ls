@@ -7,6 +7,7 @@ use std::{
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
+use syn::Ident;
 use ungrammar::{Grammar, Rule, Token};
 use utils::{compute_first, is_nullable, FirstSet};
 
@@ -30,12 +31,17 @@ pub fn generate() {
     }
 }
 
-fn generate_rule(grammar: &Grammar, rule: &Rule, first: &FirstSet) -> TokenStream {
+fn generate_rule(
+    grammar: &Grammar,
+    rule: &Rule,
+    first: &FirstSet,
+    rule_root: &Ident,
+) -> TokenStream {
     match rule {
         Rule::Labeled {
             label: _,
             rule: other,
-        } => generate_rule(grammar, other, first),
+        } => generate_rule(grammar, other, first, rule_root),
         Rule::Node(node) => {
             let ident = format_ident!("parse_{}", grammar[*node].name);
             quote! {#ident (p);}
@@ -46,7 +52,7 @@ fn generate_rule(grammar: &Grammar, rule: &Rule, first: &FirstSet) -> TokenStrea
         }
         Rule::Seq(rules) => rules
             .iter()
-            .map(|other| generate_rule(grammar, other, first))
+            .map(|other| generate_rule(grammar, other, first, rule_root))
             .collect(),
         Rule::Alt(rules) => {
             let match_arms: Vec<TokenStream> = rules
@@ -60,7 +66,7 @@ fn generate_rule(grammar: &Grammar, rule: &Rule, first: &FirstSet) -> TokenStrea
                             quote! { SyntaxKind::#kind }
                         })
                         .collect();
-                    let parse_rule = generate_rule(grammar, other_rule, first);
+                    let parse_rule = generate_rule(grammar, other_rule, first, rule_root);
                     quote! {
                         #(#tokens )|* => {
                             #parse_rule
@@ -90,6 +96,8 @@ fn generate_rule(grammar: &Grammar, rule: &Rule, first: &FirstSet) -> TokenStrea
                 match p.nth(0){
                   #(#match_arms)*,
                   SyntaxKind::Eof => {
+                        p.close(marker, SyntaxKind::#rule_root);
+                        let marker = p.open();
                         p.close(marker, SyntaxKind::Error);
                         return
                   },
@@ -105,7 +113,7 @@ fn generate_rule(grammar: &Grammar, rule: &Rule, first: &FirstSet) -> TokenStrea
                 .map(|ident| quote! {SyntaxKind::#ident})
                 .collect();
 
-            let parse_rule = generate_rule(grammar, other_rule, first);
+            let parse_rule = generate_rule(grammar, other_rule, first, rule_root);
             quote! {
                 if p.at_any(&[#(#first_set),*]){
                 #parse_rule
@@ -114,7 +122,7 @@ fn generate_rule(grammar: &Grammar, rule: &Rule, first: &FirstSet) -> TokenStrea
         }
         Rule::Rep(other_rule) => {
             let first_set: Vec<TokenStream> = generate_first_set(first, rule, grammar);
-            let parse_rule = generate_rule(grammar, other_rule, first);
+            let parse_rule = generate_rule(grammar, other_rule, first, rule_root);
             quote! {
                 while [#(#first_set),*].contains(&p.nth(0)) {
                     #parse_rule
@@ -384,7 +392,7 @@ fn generate_parser(grammar: &Grammar, first: &FirstSet) {
         let comment = format!(" [{}] {} -> {}", idx, name, format_rule(grammar, rule));
         let tree_kind = format_ident!("{}", name);
         let function_name = format_ident!("parse_{}", name);
-        let rules = generate_rule(grammar, rule, first);
+        let rules = generate_rule(grammar, rule, first, &tree_kind);
         let nullable = is_nullable(rule, grammar);
         let first_set = generate_first_set(first, rule, grammar);
         let escape = match nullable {

@@ -33,6 +33,8 @@ pub(super) fn parse_Query(p: &mut Parser) {
             parse_AskQuery(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::Query);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -63,6 +65,8 @@ pub(super) fn parse_Prologue(p: &mut Parser) {
                 parse_PrefixDecl(p);
             }
             SyntaxKind::Eof => {
+                p.close(marker, SyntaxKind::Prologue);
+                let marker = p.open();
                 p.close(marker, SyntaxKind::Error);
                 return;
             }
@@ -136,6 +140,8 @@ pub(super) fn parse_ConstructQuery(p: &mut Parser) {
             parse_SolutionModifier(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::ConstructQuery);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -176,6 +182,8 @@ pub(super) fn parse_DescribeQuery(p: &mut Parser) {
             p.expect(SyntaxKind::Star);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::DescribeQuery);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -329,6 +337,8 @@ pub(super) fn parse_SelectClause(p: &mut Parser) {
                 p.expect(SyntaxKind::REDUCED);
             }
             SyntaxKind::Eof => {
+                p.close(marker, SyntaxKind::SelectClause);
+                let marker = p.open();
                 p.close(marker, SyntaxKind::Error);
                 return;
             }
@@ -351,6 +361,8 @@ pub(super) fn parse_SelectClause(p: &mut Parser) {
                     p.expect(SyntaxKind::RParen);
                 }
                 SyntaxKind::Eof => {
+                    p.close(marker, SyntaxKind::SelectClause);
+                    let marker = p.open();
                     p.close(marker, SyntaxKind::Error);
                     return;
                 }
@@ -375,6 +387,8 @@ pub(super) fn parse_SelectClause(p: &mut Parser) {
                         p.expect(SyntaxKind::RParen);
                     }
                     SyntaxKind::Eof => {
+                        p.close(marker, SyntaxKind::SelectClause);
+                        let marker = p.open();
                         p.close(marker, SyntaxKind::Error);
                         return;
                     }
@@ -392,6 +406,8 @@ pub(super) fn parse_SelectClause(p: &mut Parser) {
             p.expect(SyntaxKind::Star);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::SelectClause);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -418,6 +434,8 @@ pub(super) fn parse_DatasetClause(p: &mut Parser) {
             parse_NamedGraphClause(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::DatasetClause);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -487,6 +505,8 @@ pub(super) fn parse_Var(p: &mut Parser) {
             p.expect(SyntaxKind::VAR2);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::Var);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -587,6 +607,8 @@ pub(super) fn parse_VarOrIri(p: &mut Parser) {
             parse_iri(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::VarOrIri);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -632,6 +654,8 @@ pub(super) fn parse_iri(p: &mut Parser) {
             parse_PrefixedName(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::iri);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -689,6 +713,8 @@ pub(super) fn parse_GroupGraphPattern(p: &mut Parser) {
             parse_GroupGraphPatternSub(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::GroupGraphPattern);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -956,6 +982,8 @@ pub(super) fn parse_LimitOffsetClauses(p: &mut Parser) {
             }
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::LimitOffsetClauses);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -1048,6 +1076,8 @@ pub(super) fn parse_GroupCondition(p: &mut Parser) {
             parse_Var(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::GroupCondition);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -1194,6 +1224,8 @@ pub(super) fn parse_BuiltInCall(p: &mut Parser) {
                     p.expect(SyntaxKind::NIL);
                 }
                 SyntaxKind::Eof => {
+                    p.close(marker, SyntaxKind::BuiltInCall);
+                    let marker = p.open();
                     p.close(marker, SyntaxKind::Error);
                     return;
                 }
@@ -1472,6 +1504,8 @@ pub(super) fn parse_BuiltInCall(p: &mut Parser) {
             parse_NotExistsFunc(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::BuiltInCall);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -1630,6 +1664,8 @@ pub(super) fn parse_Constraint(p: &mut Parser) {
             parse_FunctionCall(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::Constraint);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -1718,6 +1754,8 @@ pub(super) fn parse_OrderCondition(p: &mut Parser) {
                     p.expect(SyntaxKind::DESC);
                 }
                 SyntaxKind::Eof => {
+                    p.close(marker, SyntaxKind::OrderCondition);
+                    let marker = p.open();
                     p.close(marker, SyntaxKind::Error);
                     return;
                 }
@@ -1866,6 +1904,8 @@ pub(super) fn parse_OrderCondition(p: &mut Parser) {
                     parse_Var(p);
                 }
                 SyntaxKind::Eof => {
+                    p.close(marker, SyntaxKind::OrderCondition);
+                    let marker = p.open();
                     p.close(marker, SyntaxKind::Error);
                     return;
                 }
@@ -1943,6 +1983,8 @@ pub(super) fn parse_OrderCondition(p: &mut Parser) {
             };
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::OrderCondition);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -2055,6 +2097,8 @@ pub(super) fn parse_DataBlock(p: &mut Parser) {
             parse_InlineDataFull(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::DataBlock);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -2107,6 +2151,8 @@ pub(super) fn parse_UpdateOne(p: &mut Parser) {
             parse_Modify(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::UpdateOne);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -2249,6 +2295,8 @@ pub(super) fn parse_Modify(p: &mut Parser) {
             parse_InsertClause(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::Modify);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -2287,6 +2335,8 @@ pub(super) fn parse_GraphRefAll(p: &mut Parser) {
             p.expect(SyntaxKind::ALL);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::GraphRefAll);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -2315,6 +2365,8 @@ pub(super) fn parse_GraphOrDefault(p: &mut Parser) {
             parse_iri(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::GraphOrDefault);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -2373,6 +2425,8 @@ pub(super) fn parse_UsingClause(p: &mut Parser) {
             parse_iri(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::UsingClause);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -2559,6 +2613,8 @@ pub(super) fn parse_TriplesSameSubject(p: &mut Parser) {
             parse_PropertyList(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::TriplesSameSubject);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -2778,6 +2834,8 @@ pub(super) fn parse_GraphPatternNotTriples(p: &mut Parser) {
             parse_InlineData(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::GraphPatternNotTriples);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -2831,6 +2889,8 @@ pub(super) fn parse_TriplesSameSubjectPath(p: &mut Parser) {
             parse_PropertyListPath(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::TriplesSameSubjectPath);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -2982,6 +3042,8 @@ pub(super) fn parse_InlineDataFull(p: &mut Parser) {
             p.expect(SyntaxKind::RParen);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::InlineDataFull);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -3025,6 +3087,8 @@ pub(super) fn parse_InlineDataFull(p: &mut Parser) {
                 p.expect(SyntaxKind::NIL);
             }
             SyntaxKind::Eof => {
+                p.close(marker, SyntaxKind::InlineDataFull);
+                let marker = p.open();
                 p.close(marker, SyntaxKind::Error);
                 return;
             }
@@ -3067,6 +3131,8 @@ pub(super) fn parse_DataBlockValue(p: &mut Parser) {
             p.expect(SyntaxKind::UNDEF);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::DataBlockValue);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -3110,6 +3176,8 @@ pub(super) fn parse_RDFLiteral(p: &mut Parser) {
                 parse_iri(p);
             }
             SyntaxKind::Eof => {
+                p.close(marker, SyntaxKind::RDFLiteral);
+                let marker = p.open();
                 p.close(marker, SyntaxKind::Error);
                 return;
             }
@@ -3138,6 +3206,8 @@ pub(super) fn parse_NumericLiteral(p: &mut Parser) {
             parse_NumericLiteralNegative(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::NumericLiteral);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -3168,6 +3238,8 @@ pub(super) fn parse_BooleanLiteral(p: &mut Parser) {
             p.expect(SyntaxKind::False);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::BooleanLiteral);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -3197,6 +3269,8 @@ pub(super) fn parse_ArgList(p: &mut Parser) {
             p.expect(SyntaxKind::RParen);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::ArgList);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -3223,6 +3297,8 @@ pub(super) fn parse_ExpressionList(p: &mut Parser) {
             p.expect(SyntaxKind::RParen);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::ExpressionList);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -3301,6 +3377,8 @@ pub(super) fn parse_VarOrTerm(p: &mut Parser) {
             parse_GraphTerm(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::VarOrTerm);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -3366,6 +3444,8 @@ pub(super) fn parse_TriplesNode(p: &mut Parser) {
             parse_BlankNodePropertyList(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::TriplesNode);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -3415,6 +3495,8 @@ pub(super) fn parse_Verb(p: &mut Parser) {
             p.expect(SyntaxKind::a);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::Verb);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -3480,6 +3562,8 @@ pub(super) fn parse_GraphNode(p: &mut Parser) {
             parse_TriplesNode(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::GraphNode);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -3532,6 +3616,8 @@ pub(super) fn parse_PropertyListPathNotEmpty(p: &mut Parser) {
             parse_VerbSimple(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::PropertyListPathNotEmpty);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -3577,6 +3663,8 @@ pub(super) fn parse_PropertyListPathNotEmpty(p: &mut Parser) {
                     parse_VerbSimple(p);
                 }
                 SyntaxKind::Eof => {
+                    p.close(marker, SyntaxKind::PropertyListPathNotEmpty);
+                    let marker = p.open();
                     p.close(marker, SyntaxKind::Error);
                     return;
                 }
@@ -3610,6 +3698,8 @@ pub(super) fn parse_TriplesNodePath(p: &mut Parser) {
             parse_BlankNodePropertyListPath(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::TriplesNodePath);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -3717,6 +3807,8 @@ pub(super) fn parse_GraphNodePath(p: &mut Parser) {
             parse_TriplesNodePath(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::GraphNodePath);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -3789,6 +3881,8 @@ pub(super) fn parse_PathEltOrInverse(p: &mut Parser) {
             parse_PathElt(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::PathEltOrInverse);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -3835,6 +3929,8 @@ pub(super) fn parse_PathPrimary(p: &mut Parser) {
             p.expect(SyntaxKind::RParen);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::PathPrimary);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -3865,6 +3961,8 @@ pub(super) fn parse_PathMod(p: &mut Parser) {
             p.expect(SyntaxKind::Plus);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::PathMod);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -3907,6 +4005,8 @@ pub(super) fn parse_PathNegatedPropertySet(p: &mut Parser) {
             p.expect(SyntaxKind::RParen);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::PathNegatedPropertySet);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -3943,14 +4043,9 @@ pub(super) fn parse_PathOneInPropertySet(p: &mut Parser) {
                     p.expect(SyntaxKind::a);
                 }
                 SyntaxKind::Eof => {
-                    p.close(marker, SyntaxKind::Error);
-                    return;
-                }
-                // NOTE: This in an adjustment. Unfortunatuly I did not document why this exists.
-                SyntaxKind::RParen => {
-                    let inner_marker = p.open();
-                    p.close(inner_marker, SyntaxKind::Error);
                     p.close(marker, SyntaxKind::PathOneInPropertySet);
+                    let marker = p.open();
+                    p.close(marker, SyntaxKind::Error);
                     return;
                 }
                 _ => {
@@ -3964,6 +4059,8 @@ pub(super) fn parse_PathOneInPropertySet(p: &mut Parser) {
             };
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::PathOneInPropertySet);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -3980,6 +4077,8 @@ pub(super) fn parse_PathOneInPropertySet(p: &mut Parser) {
     p.close(marker, SyntaxKind::PathOneInPropertySet);
 }
 
+// NOTE: This is a strange thing in the SPARQL grammar.
+// The Integer rule is never used anywhere, yet it exists.
 #[allow(dead_code)]
 /// [110] Integer -> 'INTEGER'
 pub(super) fn parse_Integer(p: &mut Parser) {
@@ -4115,6 +4214,8 @@ pub(super) fn parse_GraphTerm(p: &mut Parser) {
             p.expect(SyntaxKind::NIL);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::GraphTerm);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -4157,6 +4258,8 @@ pub(super) fn parse_BlankNode(p: &mut Parser) {
             p.expect(SyntaxKind::ANON);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::BlankNode);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -4241,6 +4344,8 @@ pub(super) fn parse_RelationalExpression(p: &mut Parser) {
                 parse_ExpressionList(p);
             }
             SyntaxKind::Eof => {
+                p.close(marker, SyntaxKind::RelationalExpression);
+                let marker = p.open();
                 p.close(marker, SyntaxKind::Error);
                 return;
             }
@@ -4309,6 +4414,8 @@ pub(super) fn parse_AdditiveExpression(p: &mut Parser) {
                         parse_NumericLiteralNegative(p);
                     }
                     SyntaxKind::Eof => {
+                        p.close(marker, SyntaxKind::AdditiveExpression);
+                        let marker = p.open();
                         p.close(marker, SyntaxKind::Error);
                         return;
                     }
@@ -4334,6 +4441,8 @@ pub(super) fn parse_AdditiveExpression(p: &mut Parser) {
                             parse_UnaryExpression(p);
                         }
                         SyntaxKind::Eof => {
+                            p.close(marker, SyntaxKind::AdditiveExpression);
+                            let marker = p.open();
                             p.close(marker, SyntaxKind::Error);
                             return;
                         }
@@ -4344,6 +4453,8 @@ pub(super) fn parse_AdditiveExpression(p: &mut Parser) {
                 }
             }
             SyntaxKind::Eof => {
+                p.close(marker, SyntaxKind::AdditiveExpression);
+                let marker = p.open();
                 p.close(marker, SyntaxKind::Error);
                 return;
             }
@@ -4378,6 +4489,8 @@ pub(super) fn parse_MultiplicativeExpression(p: &mut Parser) {
                 parse_UnaryExpression(p);
             }
             SyntaxKind::Eof => {
+                p.close(marker, SyntaxKind::MultiplicativeExpression);
+                let marker = p.open();
                 p.close(marker, SyntaxKind::Error);
                 return;
             }
@@ -4402,6 +4515,8 @@ pub(super) fn parse_NumericLiteralPositive(p: &mut Parser) {
             p.expect(SyntaxKind::DOUBLE_POSITIVE);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::NumericLiteralPositive);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -4429,6 +4544,8 @@ pub(super) fn parse_NumericLiteralNegative(p: &mut Parser) {
             p.expect(SyntaxKind::DOUBLE_NEGATIVE);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::NumericLiteralNegative);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -4543,6 +4660,8 @@ pub(super) fn parse_UnaryExpression(p: &mut Parser) {
             parse_PrimaryExpression(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::UnaryExpression);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -4735,6 +4854,8 @@ pub(super) fn parse_PrimaryExpression(p: &mut Parser) {
             parse_Var(p);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::PrimaryExpression);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -4938,6 +5059,8 @@ pub(super) fn parse_Aggregate(p: &mut Parser) {
                     parse_Expression(p);
                 }
                 SyntaxKind::Eof => {
+                    p.close(marker, SyntaxKind::Aggregate);
+                    let marker = p.open();
                     p.close(marker, SyntaxKind::Error);
                     return;
                 }
@@ -5095,6 +5218,8 @@ pub(super) fn parse_Aggregate(p: &mut Parser) {
             p.expect(SyntaxKind::RParen);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::Aggregate);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -5191,6 +5316,8 @@ pub(super) fn parse_String(p: &mut Parser) {
             p.expect(SyntaxKind::STRING_LITERAL_LONG2);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::String);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -5219,6 +5346,8 @@ pub(super) fn parse_NumericLiteralUnsigned(p: &mut Parser) {
             p.expect(SyntaxKind::DOUBLE);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::NumericLiteralUnsigned);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }
@@ -5243,6 +5372,8 @@ pub(super) fn parse_PrefixedName(p: &mut Parser) {
             p.expect(SyntaxKind::PNAME_NS);
         }
         SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::PrefixedName);
+            let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
         }

@@ -5,7 +5,7 @@ use crate::{rules::Rule, syntax_kind::SyntaxKind, SyntaxNode};
 pub fn continuations_at(root: &SyntaxNode, mut offset: TextSize) -> Option<Vec<SyntaxKind>> {
     let token = if offset < root.text_range().start() {
         return None;
-    } else if offset >= root.text_range().end() {
+    } else if offset > root.text_range().end() {
         let last_token = root.last_token()?;
         offset = last_token.text_range().end();
         last_token

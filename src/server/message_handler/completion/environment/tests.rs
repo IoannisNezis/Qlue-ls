@@ -9,7 +9,7 @@ fn match_location_at_offset(input: &str, matcher: CompletionLocation, offset: u3
 }
 
 fn location(input: &str, offset: u32) -> CompletionLocation {
-    let (root, _) = parse_query(input);
+    let (root, _) = parse_query(&input[..offset as usize]);
     let trigger_token = get_trigger_token(&root, offset.into());
     let anchor = trigger_token.and_then(get_anchor_token);
     let continuations = get_continuations(&root, &anchor);

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- completion, hover and other position-based features now work correctly inside incomplete queries:
+  the parser preserves the structural identity of the rule being parsed when input ends unexpectedly,
+  instead of collapsing it into a generic error node
+- completion now triggers correctly when the cursor is at the very end of the document
+
 ## [2.6.1] - 2026-04-23
 
 ### Fixed

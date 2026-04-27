@@ -16,7 +16,7 @@ use indoc::indoc;
 use ll_sparql_parser::{
     SyntaxNode, SyntaxToken, TokenAtOffset,
     ast::{AstNode, BlankPropertyList, InlineData, QueryUnit, SelectClause, Triple},
-    continuations_at,
+    continuations_at, parse,
     syntax_kind::SyntaxKind,
 };
 use std::{collections::HashSet, fmt::Display, rc::Rc, vec};
@@ -317,11 +317,7 @@ impl CompletionEnvironment {
         let trigger_kind = request.get_completion_context().trigger_kind.clone();
         let trigger_character = request.get_completion_context().trigger_character.clone();
 
-        let tree = server
-            .state
-            .get_cached_parse_tree(&document_position.text_document.uri)
-            .map_err(|err| CompletionError::Localization(err.message))?
-            .tree;
+        let tree = parse(&document.text[..trigger_offset.into()]).0;
         let trigger_token = get_trigger_token(&tree, trigger_offset);
         let backend = trigger_token
             .as_ref()
@@ -404,13 +400,6 @@ fn get_location(
         // NOTE: START
         if anchor.kind() == SyntaxKind::WHITESPACE && anchor.text_range().start() == 0.into() {
             CompletionLocation::Start
-        } else if anchor.kind() == SyntaxKind::ANON && anchor.text_range().contains(offset) {
-            anchor
-                .parent()
-                .and_then(|parent| {
-                    BlankPropertyList::cast(parent).map(CompletionLocation::BlankNodeProperty)
-                })
-                .unwrap_or(CompletionLocation::Unknown)
         }
         // NOTE: Predicate
         else if continues_with!([
@@ -642,15 +631,20 @@ fn get_anchor_token(mut trigger_token: SyntaxToken) -> Option<SyntaxToken> {
             | SyntaxKind::Zirkumflex
             | SyntaxKind::ANON
             | SyntaxKind::LParen
+            | SyntaxKind::LBrack
     ) {
         trigger_token = trigger_token.prev_token()?;
     }
+
     while trigger_token.kind() == SyntaxKind::WHITESPACE
         || trigger_token.parent().unwrap().kind() == SyntaxKind::Error
     {
         match trigger_token.prev_token() {
             Some(prev) => trigger_token = prev,
             _ => {
+                if !trigger_token.kind().is_trivia() && trigger_token.kind() != SyntaxKind::Error {
+                    return Some(trigger_token);
+                }
                 return None;
             }
         }

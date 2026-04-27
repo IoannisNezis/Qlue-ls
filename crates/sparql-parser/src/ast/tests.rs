@@ -123,7 +123,6 @@ fn property_list() {
 fn blank_prop_list() {
     let input = "SELECT * WHERE { ?s ?p []}";
     let root = parse_query(input).0;
-    println!("{}", print_full_tree(&root, 2));
     let node = walk(root, vec![0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0]).unwrap();
     let ast_node = BlankPropertyList::cast(node).unwrap();
     assert!(ast_node.property_list().is_none());
@@ -226,15 +225,6 @@ fn triples_block() {
 fn ast_triple() {
     let input = "SELECT * { ?s ?p ?o ; ?p2 ?o2 ; ?p3 ?o3}";
     let root = parse_query(input).0;
-    println!("{}", print_full_tree(&root, 2));
     let node = walk(root, vec![0, 0, 1, 0, 0, 0, 0]).unwrap();
     let triple = Triple::cast(node).unwrap();
-    println!(
-        "{:?}",
-        triple
-            .visible_variables()
-            .iter()
-            .map(|var| var.syntax().text().to_string())
-            .collect::<Vec<String>>()
-    );
 }

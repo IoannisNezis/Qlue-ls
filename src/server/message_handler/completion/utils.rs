@@ -567,8 +567,8 @@ mod test {
         //       012345678901234567890123456
         let s = "Select * { ?a !()}";
         let reduced = "?a ?qlue_ls_entity []";
-        let offset = 16;
-        let (tree, _) = parse_query(s);
+        let offset: u32 = 16;
+        let (tree, _) = parse_query(&s[..offset as usize]);
         let query_unit = QueryUnit::cast(tree).unwrap();
         let triples = query_unit
             .select_query()

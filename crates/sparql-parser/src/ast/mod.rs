@@ -702,7 +702,11 @@ impl Var {
     ///
     /// `?subject` -> `subject`
     pub fn var_name(&self) -> String {
-        self.syntax.text().to_string()[1..].to_string()
+        let text = self.syntax.text().to_string();
+        if !text.is_empty() && text.starts_with('?') {
+            return text[1..].to_string();
+        }
+        return text;
     }
 }
 

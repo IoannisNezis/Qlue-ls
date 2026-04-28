@@ -152,9 +152,9 @@ pub struct ExecuteUpdateOperationTimeInfo {
 pub struct ExecutionTime {
     pub clear_cache: u64,
     pub compute_ids: ComputeIdsTime,
-    pub delete_triples: u64,
+    pub delete_triples: TripleWriteTime,
     pub evaluate_where: u64,
-    pub insert_triples: InsertTriplesTime,
+    pub insert_triples: TripleWriteTime,
     pub total: u64,
 }
 
@@ -167,9 +167,19 @@ pub struct ComputeIdsTime {
     pub vocab_lookup: u64,
 }
 
+// INFO: QLever reports `0` when the operation does not perform that kind of
+// write (e.g. `insertTriples` is a plain integer for a DELETE WHERE), and a
+// detailed breakdown otherwise.
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum TripleWriteTime {
+    Skipped(u64),
+    Detailed(TripleWriteTimeDetails),
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct InsertTriplesTime {
+pub struct TripleWriteTimeDetails {
     pub external_permutation: ExternalPermutationTime,
     pub internal_permutation: InternalPermutationTime,
     pub make_internal_triples: u64,
@@ -540,6 +550,190 @@ mod test {
                 "updateMetadata": 0
             },
             "update": "INSERT DATA {\n  <a> <b> <b>\n}",
+            "warnings": [
+                "SPARQL 1.1 Update for QLever is experimental."
+            ]
+        }
+    ],
+    "time": {
+        "total": 1,
+        "parsing": 0,
+        "waitingForUpdateThread": 0,
+        "acquiringDeltaTriplesWriteLock": 0,
+        "operations": 1,
+        "metadataUpdateForSnapshot": 0,
+        "diskWriteback": 0,
+        "snapshotCreation": 0
+    }
+}"#;
+        let _x: ExecuteUpdateResponseResult = serde_json::from_str(message).unwrap();
+    }
+
+    #[test]
+    fn deserialize_update_result_delete_where() {
+        // INFO: For a DELETE WHERE the shapes of `deleteTriples` and
+        // `insertTriples` are flipped vs an INSERT: the detailed breakdown
+        // shows up under `deleteTriples`, while `insertTriples` is a plain `0`.
+        let message = r#"{
+    "operations": [
+        {
+            "delta-triples": {
+                "after": {
+                    "deleted": 3,
+                    "inserted": 1,
+                    "total": 4
+                },
+                "before": {
+                    "deleted": 2,
+                    "inserted": 2,
+                    "total": 4
+                },
+                "difference": {
+                    "deleted": 1,
+                    "inserted": -1,
+                    "total": 0
+                },
+                "operation": {
+                    "deleted": 1,
+                    "inserted": 0,
+                    "total": 1
+                }
+            },
+            "located-triples": {
+                "OPS": {
+                    "blocks-affected": 1,
+                    "blocks-total": 0
+                },
+                "OSP": {
+                    "blocks-affected": 1,
+                    "blocks-total": 0
+                },
+                "POS": {
+                    "blocks-affected": 1,
+                    "blocks-total": 0
+                },
+                "PSO": {
+                    "blocks-affected": 1,
+                    "blocks-total": 0
+                },
+                "SOP": {
+                    "blocks-affected": 1,
+                    "blocks-total": 0
+                },
+                "SPO": {
+                    "blocks-affected": 1,
+                    "blocks-total": 0
+                }
+            },
+            "status": "OK",
+            "time": {
+                "execution": {
+                    "clearCache": 0,
+                    "computeIds": {
+                        "deduplication": 0,
+                        "resultInterpolation": 0,
+                        "total": 0,
+                        "vocabLookup": 0
+                    },
+                    "deleteTriples": {
+                        "externalPermutation": {
+                            "locatedAndAdd": {
+                                "OPS": {
+                                    "addToLocatedTriples": {
+                                        "adding": 0,
+                                        "total": 0
+                                    },
+                                    "locateTriples": 0,
+                                    "total": 0
+                                },
+                                "OSP": {
+                                    "addToLocatedTriples": {
+                                        "adding": 0,
+                                        "total": 0
+                                    },
+                                    "locateTriples": 0,
+                                    "total": 0
+                                },
+                                "POS": {
+                                    "addToLocatedTriples": {
+                                        "adding": 0,
+                                        "total": 0
+                                    },
+                                    "locateTriples": 0,
+                                    "total": 0
+                                },
+                                "PSO": {
+                                    "addToLocatedTriples": {
+                                        "adding": 0,
+                                        "total": 0
+                                    },
+                                    "locateTriples": 0,
+                                    "total": 0
+                                },
+                                "SOP": {
+                                    "addToLocatedTriples": {
+                                        "adding": 0,
+                                        "total": 0
+                                    },
+                                    "locateTriples": 0,
+                                    "total": 0
+                                },
+                                "SPO": {
+                                    "addToLocatedTriples": {
+                                        "adding": 0,
+                                        "total": 0
+                                    },
+                                    "locateTriples": 0,
+                                    "total": 0
+                                },
+                                "total": 0,
+                                "transformHandles": 0
+                            },
+                            "markTriples": 0,
+                            "removeExistingTriples": 0,
+                            "removeInverseTriples": 0,
+                            "rewriteLocalVocabEntries": 0,
+                            "total": 0
+                        },
+                        "internalPermutation": {
+                            "locatedAndAdd": {
+                                "POS": {
+                                    "addToLocatedTriples": {
+                                        "adding": 0,
+                                        "total": 0
+                                    },
+                                    "locateTriples": 0,
+                                    "total": 0
+                                },
+                                "PSO": {
+                                    "addToLocatedTriples": {
+                                        "adding": 0,
+                                        "total": 0
+                                    },
+                                    "locateTriples": 0,
+                                    "total": 0
+                                },
+                                "total": 0,
+                                "transformHandles": 0
+                            },
+                            "markTriples": 0,
+                            "removeExistingTriples": 0,
+                            "removeInverseTriples": 0,
+                            "rewriteLocalVocabEntries": 0,
+                            "total": 0
+                        },
+                        "makeInternalTriples": 0,
+                        "total": 0
+                    },
+                    "evaluateWhere": 0,
+                    "insertTriples": 0,
+                    "total": 0
+                },
+                "planning": 0,
+                "total": 0,
+                "updateMetadata": 0
+            },
+            "update": "DELETE WHERE {\n  <a> ?p ?o\n}",
             "warnings": [
                 "SPARQL 1.1 Update for QLever is experimental."
             ]

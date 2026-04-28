@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [2.6.4] - 2026-04-28
+
+### Fixed
+
+- update response deserialization for `DELETE WHERE` operations, where
+  `deleteTriples` carries the detailed timing breakdown and `insertTriples`
+  is a plain `0` (QLever specific)
+
 ## [2.6.3] - 2026-04-27
 
 ### Fixed

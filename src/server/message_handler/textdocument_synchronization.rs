@@ -36,7 +36,6 @@ pub(super) async fn handle_did_change_notification(
     server
         .state
         .change_document(uri, did_change_notification.params.content_changes)?;
-
     Ok(())
 }
 

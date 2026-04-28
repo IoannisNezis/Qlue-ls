@@ -32,6 +32,7 @@ pub async fn completions(
             .tree
             .descendants()
             .filter_map(Var::cast)
+            .filter(|var| !var.has_error())
             .map(|var| format!("?{}", var.var_name())),
     )
     .into_iter()

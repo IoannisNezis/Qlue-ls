@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- `qlueLs/executeOperation` now accepts an inline `query` string as an
+  alternative to `textDocument`, letting clients submit a SPARQL operation
+  without first synchronizing it as a document. The existing `textDocument`
+  form continues to work unchanged.
+
 ## [2.6.5] - 2026-04-28
 
 - parser crash on empty variables

@@ -33,12 +33,26 @@ impl LspMessage for ExecuteOperationRequest {}
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExecuteOperationParams {
-    pub text_document: TextDocumentIdentifier,
+    #[serde(flatten)]
+    pub source: ExecuteOperationSource,
     pub max_result_size: Option<usize>,
     pub result_offset: Option<usize>,
     pub query_id: Option<String>,
     pub lazy: Option<bool>,
     pub access_token: Option<String>,
+}
+
+// INFO: `textDocument` resolves the query text via the server's document store;
+// `query` carries the SPARQL string inline.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all_fields = "camelCase", untagged)]
+pub enum ExecuteOperationSource {
+    Document {
+        text_document: TextDocumentIdentifier,
+    },
+    Inline {
+        query: String,
+    },
 }
 
 #[derive(Debug, Serialize)]
@@ -364,9 +378,42 @@ impl LspMessage for PartialSparqlResultNotification {}
 #[cfg(test)]
 mod test {
     use crate::server::lsp::{
-        ExecuteOperationErrorData, ExecuteUpdateResponseResult, Metadata, QLeverException,
-        QLeverStatus,
+        ExecuteOperationErrorData, ExecuteOperationParams, ExecuteOperationSource,
+        ExecuteUpdateResponseResult, Metadata, QLeverException, QLeverStatus,
     };
+
+    #[test]
+    fn deserialize_execute_params_with_text_document() {
+        let message = r#"{
+            "textDocument": { "uri": "file:///tab-161.rq" },
+            "queryId": "de9aa904-9640-43c0-9d88-1d063cc7cea0",
+            "accessToken": "UdKTWNFUoLm9POa8m7a5jvhjVrq7tYqU",
+            "maxResultSize": 100,
+            "resultOffset": 0,
+            "lazy": true
+        }"#;
+        let params: ExecuteOperationParams = serde_json::from_str(message).unwrap();
+        let ExecuteOperationSource::Document { text_document } = params.source else {
+            panic!("expected Document source");
+        };
+        assert_eq!(text_document.uri, "file:///tab-161.rq");
+        assert_eq!(params.max_result_size, Some(100));
+        assert_eq!(params.lazy, Some(true));
+    }
+
+    #[test]
+    fn deserialize_execute_params_with_inline_query() {
+        let message = r#"{
+            "query": "SELECT * WHERE { ?s ?p ?o }",
+            "maxResultSize": 50
+        }"#;
+        let params: ExecuteOperationParams = serde_json::from_str(message).unwrap();
+        let ExecuteOperationSource::Inline { query } = params.source else {
+            panic!("expected Inline source");
+        };
+        assert_eq!(query, "SELECT * WHERE { ?s ?p ?o }");
+        assert_eq!(params.max_result_size, Some(50));
+    }
 
     #[test]
     fn serialize_execute_query_error() {

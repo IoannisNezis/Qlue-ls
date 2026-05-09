@@ -5,7 +5,7 @@ mod utils;
 use crate::server::{
     Server,
     lsp::{
-        ExecuteOperationRequest,
+        ExecuteOperationRequest, ExecuteOperationSource,
         errors::{ErrorCode, LSPError},
     },
     message_handler::execute::{
@@ -16,18 +16,19 @@ use futures::lock::Mutex;
 use ll_sparql_parser::{TopEntryPoint, guess_operation_type};
 use std::rc::Rc;
 
-#[tracing::instrument(skip_all, fields(id = %request.get_id(), uri = %request.params.text_document.uri))]
+#[tracing::instrument(skip_all, fields(id = %request.get_id()))]
 pub(super) async fn handle_execute_request(
     server_rc: Rc<Mutex<Server>>,
     request: ExecuteOperationRequest,
 ) -> Result<(), LSPError> {
     let (query, url, engine) = {
         let server = server_rc.lock().await;
-        let text = server
-            .state
-            .get_document(&request.params.text_document.uri)?
-            .text
-            .clone();
+        let text = match &request.params.source {
+            ExecuteOperationSource::Document { text_document } => {
+                server.state.get_document(&text_document.uri)?.text.clone()
+            }
+            ExecuteOperationSource::Inline { query } => query.clone(),
+        };
         let service = server.state.get_default_backend().ok_or(LSPError::new(
             ErrorCode::InvalidRequest,
             "Can not execute operation, no SPARQL endpoint was specified",

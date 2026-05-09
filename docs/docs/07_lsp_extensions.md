@@ -188,8 +188,12 @@ Execute a SPARQL query or update operation against the configured backend.
 - params: `ExecuteOperationParams` defined as follows:
 
 ```ts
-interface ExecuteOperationParams {
-    textDocument: TextDocumentIdentifier;
+type ExecuteOperationParams = ExecuteOperationOptions & (
+    | { textDocument: TextDocumentIdentifier } // resolve query from an open document
+    | { query: string }                         // pass the SPARQL string inline
+);
+
+interface ExecuteOperationOptions {
     maxResultSize?: number;
     resultOffset?: number;
     queryId?: string;
@@ -197,6 +201,12 @@ interface ExecuteOperationParams {
     accessToken?: string; // For authenticated endpoints
 }
 ```
+
+The request must carry exactly one of `textDocument` or `query`. The
+`textDocument` form looks up the query text in the server's document store
+(populated via `textDocument/didOpen` and `textDocument/didChange`). The
+`query` form lets clients submit a SPARQL string without first synchronizing
+it as a document.
 
 *Response*:
 

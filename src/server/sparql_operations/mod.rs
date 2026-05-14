@@ -1,5 +1,6 @@
 #[cfg(not(target_arch = "wasm32"))]
 mod native;
+mod utils;
 #[cfg(target_arch = "wasm32")]
 mod wasm;
 use crate::server::lsp::CanceledError;

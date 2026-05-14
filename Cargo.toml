@@ -47,12 +47,8 @@ futures = "0.3.31"
 regex = "1.11.1"
 urlencoding = "2.1.3"
 unicode-width = "0.2.1"
-lazy-sparql-result-reader = { features = ["call_from_rust"], version = "2.0.3" }
-# lazy-sparql-result-reader = { path = "/home/ianni/code/lazy-sparql-result-reader/", features = [
-# "call_from_rust",
-# ] }
+lazy-sparql-result-reader = { features = ["call_from_rust"], version = "3.0.0" }
 ntriples-parser = "2.0.0"
-# ntriples-parser = { path = "./crates/ntriples-parser/" }
 
 # WASM (wasm-bindgen needed for both targets due to #[wasm_bindgen] attributes)
 wasm-bindgen = "0.2.108"

@@ -4,6 +4,7 @@ use crate::server::lsp::ExecuteUpdateResponseResult;
 use crate::server::lsp::SparqlEngine;
 use crate::server::sparql_operations::ConnectionError;
 use crate::server::sparql_operations::SparqlRequestError;
+use crate::server::sparql_operations::utils::add_limit_offset_to_query;
 use crate::sparql::results::SparqlResult;
 use futures::lock::Mutex;
 use reqwest::Client;
@@ -117,23 +118,3 @@ pub(crate) async fn execute_update(
     todo!()
 }
 
-fn add_limit_offset_to_query(query: &str, limit: Option<usize>, offset: usize) -> Option<String> {
-    if limit.is_none() && offset == 0 {
-        return None;
-    }
-    use ll_sparql_parser::{
-        ast::{AstNode, QueryUnit},
-        parse_query,
-    };
-    let syntax_tree = QueryUnit::cast(parse_query(query).0)?;
-    let select_query = syntax_tree.select_query()?;
-    let limit_clause = limit.map_or(String::new(), |limit| format!("LIMIT {limit}\n"));
-    Some(format!(
-        "{}SELECT * WHERE {{\n{}\n}}\n{}OFFSET {}{}",
-        &query[0..select_query.syntax().text_range().start().into()],
-        select_query.text(),
-        limit_clause,
-        offset,
-        &query[select_query.syntax().text_range().end().into()..]
-    ))
-}

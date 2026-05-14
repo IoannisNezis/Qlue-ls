@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   alternative to `textDocument`, letting clients submit a SPARQL operation
   without first synchronizing it as a document. The existing `textDocument`
   form continues to work unchanged.
+- lazy query evaluation now reports the total result count back to the
+  client. QLever responses already include a trailing `meta` block; for
+  every other engine a synthetic `Meta` partial-result with
+  `result-size-total` is emitted once the stream completes.
 
 ## [2.6.5] - 2026-04-28
 

@@ -62,7 +62,7 @@ dependencies = [
 
 [[package]]
 name = "lazy-sparql-result-reader"
-version = "2.0.3"
+version = "3.0.0"
 dependencies = [
  "arbitrary",
  "console_error_panic_hook",

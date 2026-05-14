@@ -15,7 +15,7 @@ fuzz_target!(|result: SparqlResult| {
             bindings: Vec::new(),
         },
         meta: Meta {
-            query_time_ms: 0,
+            query_time_ms: Some(0),
             result_size_total: 0,
         },
     };

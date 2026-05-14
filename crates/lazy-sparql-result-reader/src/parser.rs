@@ -25,6 +25,10 @@ impl Parser {
         }
     }
 
+    pub fn binding_count(&self) -> usize {
+        self.binding_counter
+    }
+
     /// Returins the remaining bindings, consuming the parser.
     pub fn flush(self) -> Option<PartialResult> {
         (!self.binding_buffer.is_empty()).then_some(PartialResult::Bindings(self.binding_buffer))
@@ -158,7 +162,7 @@ mod test {
                 bindings: Vec::new(),
             },
             meta: Meta {
-                query_time_ms: 0,
+                query_time_ms: Some(0),
                 result_size_total: 0,
             },
         };

@@ -16,7 +16,8 @@ pub struct SparqlResult {
 #[serde(rename_all = "kebab-case")]
 pub struct Meta {
     // This gives max query time of (2**32-1)/1000/24 = 12810238940076 days
-    pub query_time_ms: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub query_time_ms: Option<u64>,
     pub result_size_total: u64,
 }
 

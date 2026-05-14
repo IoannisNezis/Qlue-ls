@@ -20,7 +20,7 @@ pub async fn read<F: AsyncFn(PartialResult)>(
     limit: Option<usize>,
     offset: usize,
     callback: F,
-) -> Result<(), SparqlResultReaderError> {
+) -> Result<usize, SparqlResultReaderError> {
     let reader: ReadableStreamDefaultReader = stream.get_reader().unchecked_into();
     let mut parser = Parser::new(batch_size, limit, offset);
 
@@ -56,10 +56,11 @@ pub async fn read<F: AsyncFn(PartialResult)>(
             }
         }
     }
+    let count = parser.binding_count();
     if let Some(buffered_bindings) = parser.flush() {
         callback(buffered_bindings).await;
     }
-    Ok(())
+    Ok(count)
 }
 
 #[cfg(not(feature = "call_from_rust"))]
@@ -74,7 +75,7 @@ pub async fn read(
     limit: Option<usize>,
     offset: usize,
     callback: &Function,
-) -> Result<(), JsValue> {
+) -> Result<usize, JsValue> {
     let reader: ReadableStreamDefaultReader = stream.get_reader().unchecked_into();
     let mut parser = Parser::new(batch_size, limit, offset);
 
@@ -104,8 +105,9 @@ pub async fn read(
         }
     }
 
+    let count = parser.binding_count();
     if let Some(PartialResult::Bindings(bindings)) = parser.flush() {
         callback.call1(&JsValue::NULL, &serde_wasm_bindgen::to_value(&bindings)?)?;
     }
-    Ok(())
+    Ok(count)
 }

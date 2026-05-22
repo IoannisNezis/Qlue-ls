@@ -19,7 +19,7 @@ pub(super) fn code_actions(server: &Server, document_uri: String) -> Vec<CodeAct
 
 // TODO: Handle errors properly.
 fn shorten_all_uris(server: &Server, document_uri: &String) -> Option<CodeAction> {
-    let mut code_action = CodeAction::new("Shorten all URI's", Some(CodeActionKind::Refactor));
+    let mut code_action = CodeAction::new("Shorten all URIs", Some(CodeActionKind::Refactor));
     let uncompacted_uris = find_all_uncompacted_iris(server, document_uri).ok()?;
     let mut declared_uri_prefix_set: HashSet<String> =
         find_all_prefix_declarations(&server.state, document_uri)

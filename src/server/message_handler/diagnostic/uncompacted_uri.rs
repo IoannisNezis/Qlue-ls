@@ -38,7 +38,7 @@ pub(super) fn diagnostics(
                         )?,
                         severity: DiagnosticSeverity::Information,
                         message: format!(
-                            "You might want to shorten this Uri\n{} -> {}",
+                            "You might want to shorten this URI\n{} -> {}",
                             raw_iri, curie
                         ),
                         data: Some(LSPAny::LSPArray(vec![

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- the `ungrouped-select-var` diagnostic no longer flags a variable used in a
+  SELECT-clause assignment when that variable was derived by an earlier
+  assignment in the same SELECT clause. Forward references to variables derived
+  in later assignments are still reported.
+
 ## [2.7.0] - 2026-05-16
 
 ### Added

@@ -33,7 +33,7 @@ use super::lsp::{
     errors::{ErrorCode, LSPError},
     textdocument::TextDocumentItem,
 };
-use curies::Converter;
+use curies::{Converter, Record};
 use ll_sparql_parser::{SyntaxNode, parse};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -134,13 +134,36 @@ impl ServerState {
     ) -> Result<(), LSPError> {
         let mut converter = Converter::default();
         for (prefix, uri_prefix) in map {
-            converter.add_prefix(prefix, uri_prefix).map_err(|err| {
-                tracing::error!("{}", err);
-                LSPError::new(
-                    ErrorCode::InvalidParams,
-                    &format!("Could not load prefix map:\n\"{}\"", err),
-                )
-            })?;
+            // NOTE: `add_prefix` errors on a duplicate prefix *or* a duplicate uri_prefix.
+            //       Instead of failing, overwrite the conflicting record.
+            if converter.add_prefix(prefix, uri_prefix).is_err() {
+                // INFO: `update_record` matches by prefix, so it only handles the
+                //       duplicate-prefix case. If that fails, the uri_prefix was the
+                //       conflict: register `prefix` as a synonym on the existing record.
+                let result = converter
+                    .update_record(Record::new(prefix, uri_prefix))
+                    .inspect(|()| {
+                        tracing::warn!(
+                            "Prefix \"{prefix}\" is already registered, overwriting it with \"{uri_prefix}\""
+                        )
+                    })
+                    .or_else(|_| {
+                        let mut record = converter.find_by_uri_prefix(uri_prefix)?.as_ref().clone();
+                        tracing::warn!(
+                            "URI prefix \"{uri_prefix}\" is already registered to prefix \"{}\", adding \"{prefix}\" as a synonym",
+                            record.prefix
+                        );
+                        record.prefix_synonyms.insert(prefix.clone());
+                        converter.update_record(record)
+                    });
+                if let Err(err) = result {
+                    tracing::error!("Could not load prefix \"{prefix}\"\n{}", err);
+                    return Err(LSPError::new(
+                        ErrorCode::InvalidParams,
+                        &format!("Could not load prefix map:\n\"{}\"", err),
+                    ));
+                }
+            }
         }
         self.uri_converter.insert(backend, converter);
         Ok(())

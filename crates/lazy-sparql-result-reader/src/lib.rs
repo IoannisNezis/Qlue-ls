@@ -21,6 +21,10 @@ pub async fn read<F: AsyncFn(PartialResult)>(
     offset: usize,
     callback: F,
 ) -> Result<usize, SparqlResultReaderError> {
+    assert!(
+        limit.is_none_or(|limit| limit - offset >= batch_size),
+        "The batch size must be smaler than the read window"
+    );
     let reader: ReadableStreamDefaultReader = stream.get_reader().unchecked_into();
     let mut parser = Parser::new(batch_size, limit, offset);
 
@@ -76,6 +80,10 @@ pub async fn read(
     offset: usize,
     callback: &Function,
 ) -> Result<usize, JsValue> {
+    assert!(
+        limit.is_none_or(|limit| limit - offset >= batch_size),
+        "The batch size must be smaler than the read window"
+    );
     let reader: ReadableStreamDefaultReader = stream.get_reader().unchecked_into();
     let mut parser = Parser::new(batch_size, limit, offset);
 

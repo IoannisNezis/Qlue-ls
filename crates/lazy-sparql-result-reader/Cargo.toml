@@ -1,6 +1,6 @@
 [package]
 name = "lazy-sparql-result-reader"
-version = "3.0.0"
+version = "3.0.1"
 description = "A lazy SPARQL result reader"
 license-file = "LICENSE"
 repository = "https://github.com/IoannisNezis/Lazy-SPARQL-result-reader"

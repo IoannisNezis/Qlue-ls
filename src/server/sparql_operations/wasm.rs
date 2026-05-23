@@ -178,7 +178,7 @@ async fn stream_lazy_query_results(
 ) -> Result<usize, SparqlRequestError> {
     let result = lazy_sparql_result_reader::read(
         resp.body().unwrap(),
-        1000,
+        limit.map(|limit| 1000.min(limit - offset)).unwrap_or(1000),
         limit,
         offset,
         async |mut partial_result: PartialResult| {

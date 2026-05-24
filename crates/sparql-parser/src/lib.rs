@@ -49,4 +49,3 @@ pub fn guess_query_type(input: &str) -> Option<QueryType> {
 
 #[cfg(test)]
 mod tests;
-

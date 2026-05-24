@@ -54,6 +54,7 @@ impl Rule {
             SyntaxKind::Prologue => Some(Rule::Rep(Box::new(Rule::Alt(vec![
                 Rule::Node(SyntaxKind::BaseDecl),
                 Rule::Node(SyntaxKind::PrefixDecl),
+                Rule::Node(SyntaxKind::VersionDecl),
             ])))),
             SyntaxKind::SelectQuery => Some(Rule::Seq(vec![
                 Rule::Node(SyntaxKind::SelectClause),
@@ -122,6 +123,14 @@ impl Rule {
                 Rule::Token(SyntaxKind::PREFIX),
                 Rule::Token(SyntaxKind::PNAME_NS),
                 Rule::Token(SyntaxKind::IRIREF),
+            ])),
+            SyntaxKind::VersionDecl => Some(Rule::Seq(vec![
+                Rule::Token(SyntaxKind::VERSION),
+                Rule::Node(SyntaxKind::VersionSpecifier),
+            ])),
+            SyntaxKind::VersionSpecifier => Some(Rule::Alt(vec![
+                Rule::Token(SyntaxKind::STRING_LITERAL1),
+                Rule::Token(SyntaxKind::STRING_LITERAL2),
             ])),
             SyntaxKind::SelectClause => Some(Rule::Seq(vec![
                 Rule::Token(SyntaxKind::SELECT),
@@ -277,6 +286,12 @@ impl Rule {
                     Rule::Token(SyntaxKind::LParen),
                     Rule::Node(SyntaxKind::Expression),
                     Rule::Token(SyntaxKind::Comma),
+                    Rule::Node(SyntaxKind::Expression),
+                    Rule::Token(SyntaxKind::RParen),
+                ]),
+                Rule::Seq(vec![
+                    Rule::Token(SyntaxKind::LANGDIR),
+                    Rule::Token(SyntaxKind::LParen),
                     Rule::Node(SyntaxKind::Expression),
                     Rule::Token(SyntaxKind::RParen),
                 ]),
@@ -526,6 +541,16 @@ impl Rule {
                     Rule::Token(SyntaxKind::RParen),
                 ]),
                 Rule::Seq(vec![
+                    Rule::Token(SyntaxKind::STRLANGDIR),
+                    Rule::Token(SyntaxKind::LParen),
+                    Rule::Node(SyntaxKind::Expression),
+                    Rule::Token(SyntaxKind::Comma),
+                    Rule::Node(SyntaxKind::Expression),
+                    Rule::Token(SyntaxKind::Comma),
+                    Rule::Node(SyntaxKind::Expression),
+                    Rule::Token(SyntaxKind::RParen),
+                ]),
+                Rule::Seq(vec![
                     Rule::Token(SyntaxKind::STRDT),
                     Rule::Token(SyntaxKind::LParen),
                     Rule::Node(SyntaxKind::Expression),
@@ -571,9 +596,55 @@ impl Rule {
                     Rule::Node(SyntaxKind::Expression),
                     Rule::Token(SyntaxKind::RParen),
                 ]),
+                Rule::Seq(vec![
+                    Rule::Token(SyntaxKind::hasLANG),
+                    Rule::Token(SyntaxKind::LParen),
+                    Rule::Node(SyntaxKind::Expression),
+                    Rule::Token(SyntaxKind::RParen),
+                ]),
+                Rule::Seq(vec![
+                    Rule::Token(SyntaxKind::hasLANGDIR),
+                    Rule::Token(SyntaxKind::LParen),
+                    Rule::Node(SyntaxKind::Expression),
+                    Rule::Token(SyntaxKind::RParen),
+                ]),
                 Rule::Node(SyntaxKind::RegexExpression),
                 Rule::Node(SyntaxKind::ExistsFunc),
                 Rule::Node(SyntaxKind::NotExistsFunc),
+                Rule::Seq(vec![
+                    Rule::Token(SyntaxKind::isTRIPLE),
+                    Rule::Token(SyntaxKind::LParen),
+                    Rule::Node(SyntaxKind::Expression),
+                    Rule::Token(SyntaxKind::RParen),
+                ]),
+                Rule::Seq(vec![
+                    Rule::Token(SyntaxKind::TRIPLE),
+                    Rule::Token(SyntaxKind::LParen),
+                    Rule::Node(SyntaxKind::Expression),
+                    Rule::Token(SyntaxKind::Comma),
+                    Rule::Node(SyntaxKind::Expression),
+                    Rule::Token(SyntaxKind::Comma),
+                    Rule::Node(SyntaxKind::Expression),
+                    Rule::Token(SyntaxKind::RParen),
+                ]),
+                Rule::Seq(vec![
+                    Rule::Token(SyntaxKind::SUBJECT),
+                    Rule::Token(SyntaxKind::LParen),
+                    Rule::Node(SyntaxKind::Expression),
+                    Rule::Token(SyntaxKind::RParen),
+                ]),
+                Rule::Seq(vec![
+                    Rule::Token(SyntaxKind::PREDICATE),
+                    Rule::Token(SyntaxKind::LParen),
+                    Rule::Node(SyntaxKind::Expression),
+                    Rule::Token(SyntaxKind::RParen),
+                ]),
+                Rule::Seq(vec![
+                    Rule::Token(SyntaxKind::OBJECT),
+                    Rule::Token(SyntaxKind::LParen),
+                    Rule::Node(SyntaxKind::Expression),
+                    Rule::Token(SyntaxKind::RParen),
+                ]),
             ])),
             SyntaxKind::FunctionCall => Some(Rule::Seq(vec![
                 Rule::Node(SyntaxKind::iri),
@@ -623,10 +694,10 @@ impl Rule {
                 Rule::Node(SyntaxKind::Move),
                 Rule::Node(SyntaxKind::Copy),
                 Rule::Node(SyntaxKind::Create),
-                Rule::Node(SyntaxKind::InsertData),
-                Rule::Node(SyntaxKind::DeleteData),
                 Rule::Node(SyntaxKind::DeleteWhere),
                 Rule::Node(SyntaxKind::Modify),
+                Rule::Node(SyntaxKind::InsertData),
+                Rule::Node(SyntaxKind::DeleteData),
             ])),
             SyntaxKind::Load => Some(Rule::Seq(vec![
                 Rule::Token(SyntaxKind::LOAD),
@@ -673,14 +744,6 @@ impl Rule {
                 Rule::Opt(Box::new(Rule::Token(SyntaxKind::SILENT))),
                 Rule::Node(SyntaxKind::GraphRef),
             ])),
-            SyntaxKind::InsertData => Some(Rule::Seq(vec![
-                Rule::Token(SyntaxKind::INSERT_DATA),
-                Rule::Node(SyntaxKind::QuadData),
-            ])),
-            SyntaxKind::DeleteData => Some(Rule::Seq(vec![
-                Rule::Token(SyntaxKind::DELETE_DATA),
-                Rule::Node(SyntaxKind::QuadData),
-            ])),
             SyntaxKind::DeleteWhere => Some(Rule::Seq(vec![
                 Rule::Token(SyntaxKind::DELETE_WHERE),
                 Rule::Node(SyntaxKind::QuadPattern),
@@ -700,6 +763,14 @@ impl Rule {
                 Rule::Rep(Box::new(Rule::Node(SyntaxKind::UsingClause))),
                 Rule::Token(SyntaxKind::WHERE),
                 Rule::Node(SyntaxKind::GroupGraphPattern),
+            ])),
+            SyntaxKind::InsertData => Some(Rule::Seq(vec![
+                Rule::Token(SyntaxKind::INSERT_DATA),
+                Rule::Node(SyntaxKind::QuadData),
+            ])),
+            SyntaxKind::DeleteData => Some(Rule::Seq(vec![
+                Rule::Token(SyntaxKind::DELETE_DATA),
+                Rule::Node(SyntaxKind::QuadData),
             ])),
             SyntaxKind::GraphRef => Some(Rule::Seq(vec![
                 Rule::Token(SyntaxKind::GRAPH),
@@ -770,6 +841,7 @@ impl Rule {
                     Rule::Node(SyntaxKind::TriplesNode),
                     Rule::Node(SyntaxKind::PropertyList),
                 ]),
+                Rule::Node(SyntaxKind::ReifiedTripleBlock),
             ])),
             SyntaxKind::GroupGraphPatternSub => Some(Rule::Seq(vec![
                 Rule::Opt(Box::new(Rule::Node(SyntaxKind::TriplesBlock))),
@@ -805,7 +877,30 @@ impl Rule {
                     Rule::Node(SyntaxKind::TriplesNodePath),
                     Rule::Node(SyntaxKind::PropertyListPath),
                 ]),
+                Rule::Node(SyntaxKind::ReifiedTripleBlockPath),
             ])),
+            SyntaxKind::ReifiedTripleBlock => Some(Rule::Seq(vec![
+                Rule::Node(SyntaxKind::ReifiedTriple),
+                Rule::Node(SyntaxKind::PropertyList),
+            ])),
+            SyntaxKind::ReifiedTriple => Some(Rule::Seq(vec![
+                Rule::Token(SyntaxKind::DoubleLess),
+                Rule::Node(SyntaxKind::ReifiedTripleSubject),
+                Rule::Node(SyntaxKind::Verb),
+                Rule::Node(SyntaxKind::ReifiedTripleObject),
+                Rule::Opt(Box::new(Rule::Node(SyntaxKind::Reifier))),
+                Rule::Token(SyntaxKind::DoubleMore),
+            ])),
+            SyntaxKind::PropertyList => Some(Rule::Opt(Box::new(Rule::Node(
+                SyntaxKind::PropertyListNotEmpty,
+            )))),
+            SyntaxKind::ReifiedTripleBlockPath => Some(Rule::Seq(vec![
+                Rule::Node(SyntaxKind::ReifiedTriple),
+                Rule::Node(SyntaxKind::PropertyListPath),
+            ])),
+            SyntaxKind::PropertyListPath => Some(Rule::Opt(Box::new(Rule::Node(
+                SyntaxKind::PropertyListPathNotEmpty,
+            )))),
             SyntaxKind::GroupOrUnionGraphPattern => Some(Rule::Seq(vec![
                 Rule::Node(SyntaxKind::GroupGraphPattern),
                 Rule::Rep(Box::new(Rule::Seq(vec![
@@ -880,11 +975,12 @@ impl Rule {
                 Rule::Node(SyntaxKind::NumericLiteral),
                 Rule::Node(SyntaxKind::BooleanLiteral),
                 Rule::Token(SyntaxKind::UNDEF),
+                Rule::Node(SyntaxKind::TripleTermData),
             ])),
             SyntaxKind::RDFLiteral => Some(Rule::Seq(vec![
                 Rule::Node(SyntaxKind::String),
                 Rule::Opt(Box::new(Rule::Alt(vec![
-                    Rule::Token(SyntaxKind::LANGTAG),
+                    Rule::Token(SyntaxKind::LANG_DIR),
                     Rule::Seq(vec![
                         Rule::Token(SyntaxKind::DoubleZirkumflex),
                         Rule::Node(SyntaxKind::iri),
@@ -899,6 +995,29 @@ impl Rule {
             SyntaxKind::BooleanLiteral => Some(Rule::Alt(vec![
                 Rule::Token(SyntaxKind::True),
                 Rule::Token(SyntaxKind::False),
+            ])),
+            SyntaxKind::TripleTermData => Some(Rule::Seq(vec![
+                Rule::Token(SyntaxKind::DoubleLessLParen),
+                Rule::Node(SyntaxKind::TripleTermDataSubject),
+                Rule::Alt(vec![
+                    Rule::Node(SyntaxKind::iri),
+                    Rule::Token(SyntaxKind::a),
+                ]),
+                Rule::Node(SyntaxKind::TripleTermDataObject),
+                Rule::Token(SyntaxKind::RParenDoubleMore),
+            ])),
+            SyntaxKind::Reifier => Some(Rule::Seq(vec![
+                Rule::Token(SyntaxKind::Tilde),
+                Rule::Opt(Box::new(Rule::Node(SyntaxKind::VarOrReifierId))),
+            ])),
+            SyntaxKind::VarOrReifierId => Some(Rule::Alt(vec![
+                Rule::Node(SyntaxKind::Var),
+                Rule::Node(SyntaxKind::iri),
+                Rule::Node(SyntaxKind::BlankNode),
+            ])),
+            SyntaxKind::BlankNode => Some(Rule::Alt(vec![
+                Rule::Token(SyntaxKind::BLANK_NODE_LABEL),
+                Rule::Token(SyntaxKind::ANON),
             ])),
             SyntaxKind::ArgList => Some(Rule::Alt(vec![
                 Rule::Token(SyntaxKind::NIL),
@@ -934,7 +1053,13 @@ impl Rule {
             ])),
             SyntaxKind::VarOrTerm => Some(Rule::Alt(vec![
                 Rule::Node(SyntaxKind::Var),
-                Rule::Node(SyntaxKind::GraphTerm),
+                Rule::Node(SyntaxKind::iri),
+                Rule::Node(SyntaxKind::RDFLiteral),
+                Rule::Node(SyntaxKind::NumericLiteral),
+                Rule::Node(SyntaxKind::BooleanLiteral),
+                Rule::Node(SyntaxKind::BlankNode),
+                Rule::Token(SyntaxKind::NIL),
+                Rule::Node(SyntaxKind::TripleTerm),
             ])),
             SyntaxKind::PropertyListNotEmpty => Some(Rule::Seq(vec![
                 Rule::Node(SyntaxKind::Verb),
@@ -951,9 +1076,6 @@ impl Rule {
                 Rule::Node(SyntaxKind::Collection),
                 Rule::Node(SyntaxKind::BlankNodePropertyList),
             ])),
-            SyntaxKind::PropertyList => Some(Rule::Opt(Box::new(Rule::Node(
-                SyntaxKind::PropertyListNotEmpty,
-            )))),
             SyntaxKind::Verb => Some(Rule::Alt(vec![
                 Rule::Node(SyntaxKind::VarOrIri),
                 Rule::Token(SyntaxKind::a),
@@ -965,11 +1087,19 @@ impl Rule {
                     Rule::Node(SyntaxKind::Object),
                 ]))),
             ])),
-            SyntaxKind::Object => Some(Rule::Node(SyntaxKind::GraphNode)),
+            SyntaxKind::Object => Some(Rule::Seq(vec![
+                Rule::Node(SyntaxKind::GraphNode),
+                Rule::Node(SyntaxKind::Annotation),
+            ])),
             SyntaxKind::GraphNode => Some(Rule::Alt(vec![
                 Rule::Node(SyntaxKind::VarOrTerm),
                 Rule::Node(SyntaxKind::TriplesNode),
+                Rule::Node(SyntaxKind::ReifiedTriple),
             ])),
+            SyntaxKind::Annotation => Some(Rule::Rep(Box::new(Rule::Alt(vec![
+                Rule::Node(SyntaxKind::Reifier),
+                Rule::Node(SyntaxKind::AnnotationBlock),
+            ])))),
             SyntaxKind::PropertyListPathNotEmpty => Some(Rule::Seq(vec![
                 Rule::Alt(vec![
                     Rule::Node(SyntaxKind::VerbPath),
@@ -983,7 +1113,7 @@ impl Rule {
                             Rule::Node(SyntaxKind::VerbPath),
                             Rule::Node(SyntaxKind::VerbSimple),
                         ]),
-                        Rule::Node(SyntaxKind::ObjectList),
+                        Rule::Node(SyntaxKind::ObjectListPath),
                     ]))),
                 ]))),
             ])),
@@ -991,9 +1121,6 @@ impl Rule {
                 Rule::Node(SyntaxKind::CollectionPath),
                 Rule::Node(SyntaxKind::BlankNodePropertyListPath),
             ])),
-            SyntaxKind::PropertyListPath => Some(Rule::Opt(Box::new(Rule::Node(
-                SyntaxKind::PropertyListPathNotEmpty,
-            )))),
             SyntaxKind::VerbPath => Some(Rule::Node(SyntaxKind::Path)),
             SyntaxKind::VerbSimple => Some(Rule::Node(SyntaxKind::Var)),
             SyntaxKind::ObjectListPath => Some(Rule::Seq(vec![
@@ -1004,11 +1131,19 @@ impl Rule {
                 ]))),
             ])),
             SyntaxKind::Path => Some(Rule::Node(SyntaxKind::PathAlternative)),
-            SyntaxKind::ObjectPath => Some(Rule::Node(SyntaxKind::GraphNodePath)),
+            SyntaxKind::ObjectPath => Some(Rule::Seq(vec![
+                Rule::Node(SyntaxKind::GraphNodePath),
+                Rule::Node(SyntaxKind::AnnotationPath),
+            ])),
             SyntaxKind::GraphNodePath => Some(Rule::Alt(vec![
                 Rule::Node(SyntaxKind::VarOrTerm),
                 Rule::Node(SyntaxKind::TriplesNodePath),
+                Rule::Node(SyntaxKind::ReifiedTriple),
             ])),
+            SyntaxKind::AnnotationPath => Some(Rule::Rep(Box::new(Rule::Alt(vec![
+                Rule::Node(SyntaxKind::Reifier),
+                Rule::Node(SyntaxKind::AnnotationBlockPath),
+            ])))),
             SyntaxKind::PathAlternative => Some(Rule::Seq(vec![
                 Rule::Node(SyntaxKind::PathSequence),
                 Rule::Rep(Box::new(Rule::Seq(vec![
@@ -1077,7 +1212,6 @@ impl Rule {
                     ]),
                 ]),
             ])),
-            SyntaxKind::Integer => Some(Rule::Token(SyntaxKind::INTEGER)),
             SyntaxKind::Collection => Some(Rule::Seq(vec![
                 Rule::Token(SyntaxKind::LParen),
                 Rule::Node(SyntaxKind::GraphNode),
@@ -1100,17 +1234,68 @@ impl Rule {
                 Rule::Node(SyntaxKind::PropertyListPathNotEmpty),
                 Rule::Token(SyntaxKind::RBrack),
             ])),
-            SyntaxKind::GraphTerm => Some(Rule::Alt(vec![
+            SyntaxKind::AnnotationBlockPath => Some(Rule::Seq(vec![
+                Rule::Token(SyntaxKind::LCurlyPipe),
+                Rule::Node(SyntaxKind::PropertyListPathNotEmpty),
+                Rule::Token(SyntaxKind::PipeRCurly),
+            ])),
+            SyntaxKind::AnnotationBlock => Some(Rule::Seq(vec![
+                Rule::Token(SyntaxKind::LCurlyPipe),
+                Rule::Node(SyntaxKind::PropertyListNotEmpty),
+                Rule::Token(SyntaxKind::PipeRCurly),
+            ])),
+            SyntaxKind::TripleTerm => Some(Rule::Seq(vec![
+                Rule::Token(SyntaxKind::DoubleLessLParen),
+                Rule::Node(SyntaxKind::TripleTermSubject),
+                Rule::Node(SyntaxKind::Verb),
+                Rule::Node(SyntaxKind::TripleTermObject),
+                Rule::Token(SyntaxKind::RParenDoubleMore),
+            ])),
+            SyntaxKind::ReifiedTripleSubject => Some(Rule::Alt(vec![
+                Rule::Node(SyntaxKind::Var),
                 Rule::Node(SyntaxKind::iri),
                 Rule::Node(SyntaxKind::RDFLiteral),
                 Rule::Node(SyntaxKind::NumericLiteral),
                 Rule::Node(SyntaxKind::BooleanLiteral),
                 Rule::Node(SyntaxKind::BlankNode),
-                Rule::Token(SyntaxKind::NIL),
+                Rule::Node(SyntaxKind::ReifiedTriple),
+                Rule::Node(SyntaxKind::TripleTerm),
             ])),
-            SyntaxKind::BlankNode => Some(Rule::Alt(vec![
-                Rule::Token(SyntaxKind::BLANK_NODE_LABEL),
-                Rule::Token(SyntaxKind::ANON),
+            SyntaxKind::ReifiedTripleObject => Some(Rule::Alt(vec![
+                Rule::Node(SyntaxKind::Var),
+                Rule::Node(SyntaxKind::iri),
+                Rule::Node(SyntaxKind::RDFLiteral),
+                Rule::Node(SyntaxKind::NumericLiteral),
+                Rule::Node(SyntaxKind::BooleanLiteral),
+                Rule::Node(SyntaxKind::BlankNode),
+                Rule::Node(SyntaxKind::ReifiedTriple),
+                Rule::Node(SyntaxKind::TripleTerm),
+            ])),
+            SyntaxKind::TripleTermSubject => Some(Rule::Alt(vec![
+                Rule::Node(SyntaxKind::Var),
+                Rule::Node(SyntaxKind::iri),
+                Rule::Node(SyntaxKind::RDFLiteral),
+                Rule::Node(SyntaxKind::NumericLiteral),
+                Rule::Node(SyntaxKind::BooleanLiteral),
+                Rule::Node(SyntaxKind::BlankNode),
+                Rule::Node(SyntaxKind::TripleTerm),
+            ])),
+            SyntaxKind::TripleTermObject => Some(Rule::Alt(vec![
+                Rule::Node(SyntaxKind::Var),
+                Rule::Node(SyntaxKind::iri),
+                Rule::Node(SyntaxKind::RDFLiteral),
+                Rule::Node(SyntaxKind::NumericLiteral),
+                Rule::Node(SyntaxKind::BooleanLiteral),
+                Rule::Node(SyntaxKind::BlankNode),
+                Rule::Node(SyntaxKind::TripleTerm),
+            ])),
+            SyntaxKind::TripleTermDataSubject => Some(Rule::Node(SyntaxKind::iri)),
+            SyntaxKind::TripleTermDataObject => Some(Rule::Alt(vec![
+                Rule::Node(SyntaxKind::iri),
+                Rule::Node(SyntaxKind::RDFLiteral),
+                Rule::Node(SyntaxKind::NumericLiteral),
+                Rule::Node(SyntaxKind::BooleanLiteral),
+                Rule::Node(SyntaxKind::TripleTermData),
             ])),
             SyntaxKind::ConditionalOrExpression => Some(Rule::Seq(vec![
                 Rule::Node(SyntaxKind::ConditionalAndExpression),
@@ -1221,7 +1406,7 @@ impl Rule {
             SyntaxKind::UnaryExpression => Some(Rule::Alt(vec![
                 Rule::Seq(vec![
                     Rule::Token(SyntaxKind::ExclamationMark),
-                    Rule::Node(SyntaxKind::PrimaryExpression),
+                    Rule::Node(SyntaxKind::UnaryExpression),
                 ]),
                 Rule::Seq(vec![
                     Rule::Token(SyntaxKind::Plus),
@@ -1241,10 +1426,30 @@ impl Rule {
                 Rule::Node(SyntaxKind::NumericLiteral),
                 Rule::Node(SyntaxKind::BooleanLiteral),
                 Rule::Node(SyntaxKind::Var),
+                Rule::Node(SyntaxKind::ExprTripleTerm),
             ])),
             SyntaxKind::iriOrFunction => Some(Rule::Seq(vec![
                 Rule::Node(SyntaxKind::iri),
                 Rule::Opt(Box::new(Rule::Node(SyntaxKind::ArgList))),
+            ])),
+            SyntaxKind::ExprTripleTerm => Some(Rule::Seq(vec![
+                Rule::Token(SyntaxKind::DoubleLessLParen),
+                Rule::Node(SyntaxKind::ExprTripleTermSubject),
+                Rule::Node(SyntaxKind::Verb),
+                Rule::Node(SyntaxKind::ExprTripleTermObject),
+                Rule::Token(SyntaxKind::RParenDoubleMore),
+            ])),
+            SyntaxKind::ExprTripleTermSubject => Some(Rule::Alt(vec![
+                Rule::Node(SyntaxKind::iri),
+                Rule::Node(SyntaxKind::Var),
+            ])),
+            SyntaxKind::ExprTripleTermObject => Some(Rule::Alt(vec![
+                Rule::Node(SyntaxKind::iri),
+                Rule::Node(SyntaxKind::RDFLiteral),
+                Rule::Node(SyntaxKind::NumericLiteral),
+                Rule::Node(SyntaxKind::BooleanLiteral),
+                Rule::Node(SyntaxKind::Var),
+                Rule::Node(SyntaxKind::ExprTripleTerm),
             ])),
             SyntaxKind::Aggregate => Some(Rule::Alt(vec![
                 Rule::Seq(vec![

@@ -50,19 +50,22 @@ pub(super) fn parse_Query(p: &mut Parser) {
     parse_ValuesClause(p);
     p.close(marker, SyntaxKind::Query);
 }
-/// [2] Prologue -> (BaseDecl | PrefixDecl)*
+/// [2] Prologue -> (BaseDecl | PrefixDecl | VersionDecl)*
 pub(super) fn parse_Prologue(p: &mut Parser) {
-    if !p.at_any(&[SyntaxKind::BASE, SyntaxKind::PREFIX]) {
+    if !p.at_any(&[SyntaxKind::BASE, SyntaxKind::PREFIX, SyntaxKind::VERSION]) {
         return;
     }
     let marker = p.open();
-    while [SyntaxKind::BASE, SyntaxKind::PREFIX].contains(&p.nth(0)) {
+    while [SyntaxKind::BASE, SyntaxKind::PREFIX, SyntaxKind::VERSION].contains(&p.nth(0)) {
         match p.nth(0) {
             SyntaxKind::BASE => {
                 parse_BaseDecl(p);
             }
             SyntaxKind::PREFIX => {
                 parse_PrefixDecl(p);
+            }
+            SyntaxKind::VERSION => {
+                parse_VersionDecl(p);
             }
             SyntaxKind::Eof => {
                 p.close(marker, SyntaxKind::Prologue);
@@ -71,7 +74,11 @@ pub(super) fn parse_Prologue(p: &mut Parser) {
                 return;
             }
             _ => {
-                p.advance_with_error(vec![SyntaxKind::BASE, SyntaxKind::PREFIX]);
+                p.advance_with_error(vec![
+                    SyntaxKind::BASE,
+                    SyntaxKind::PREFIX,
+                    SyntaxKind::VERSION,
+                ]);
             }
         };
     }
@@ -110,10 +117,14 @@ pub(super) fn parse_ConstructQuery(p: &mut Parser) {
             if p.at_any(&[
                 SyntaxKind::IRIREF,
                 SyntaxKind::PNAME_NS,
+                SyntaxKind::STRING_LITERAL1,
+                SyntaxKind::STRING_LITERAL2,
                 SyntaxKind::LParen,
                 SyntaxKind::INTEGER,
                 SyntaxKind::NIL,
                 SyntaxKind::LBrack,
+                SyntaxKind::DoubleLess,
+                SyntaxKind::DoubleLessLParen,
                 SyntaxKind::VAR1,
                 SyntaxKind::VAR2,
                 SyntaxKind::DECIMAL,
@@ -126,8 +137,6 @@ pub(super) fn parse_ConstructQuery(p: &mut Parser) {
                 SyntaxKind::DOUBLE_NEGATIVE,
                 SyntaxKind::True,
                 SyntaxKind::False,
-                SyntaxKind::STRING_LITERAL1,
-                SyntaxKind::STRING_LITERAL2,
                 SyntaxKind::STRING_LITERAL_LONG1,
                 SyntaxKind::STRING_LITERAL_LONG2,
                 SyntaxKind::PNAME_LN,
@@ -235,6 +244,7 @@ pub(super) fn parse_UpdateUnit(p: &mut Parser) {
     if !p.at_any(&[
         SyntaxKind::BASE,
         SyntaxKind::PREFIX,
+        SyntaxKind::VERSION,
         SyntaxKind::LOAD,
         SyntaxKind::CLEAR,
         SyntaxKind::DROP,
@@ -268,6 +278,7 @@ pub(super) fn parse_Update(p: &mut Parser) {
     if !p.at_any(&[
         SyntaxKind::BASE,
         SyntaxKind::PREFIX,
+        SyntaxKind::VERSION,
         SyntaxKind::LOAD,
         SyntaxKind::CLEAR,
         SyntaxKind::DROP,
@@ -324,7 +335,39 @@ pub(super) fn parse_PrefixDecl(p: &mut Parser) {
     p.expect(SyntaxKind::IRIREF);
     p.close(marker, SyntaxKind::PrefixDecl);
 }
-/// [12] SelectClause -> 'SELECT' ('DISTINCT' | 'REDUCED')? ((Var | '(' Expression 'AS' Var ')') (Var | '(' Expression 'AS' Var ')')* | '*')
+/// [12] VersionDecl -> 'VERSION' VersionSpecifier
+pub(super) fn parse_VersionDecl(p: &mut Parser) {
+    let marker = p.open();
+    p.expect(SyntaxKind::VERSION);
+    parse_VersionSpecifier(p);
+    p.close(marker, SyntaxKind::VersionDecl);
+}
+/// [13] VersionSpecifier -> 'STRING_LITERAL1' | 'STRING_LITERAL2'
+pub(super) fn parse_VersionSpecifier(p: &mut Parser) {
+    let marker = p.open();
+    match p.nth(0) {
+        SyntaxKind::STRING_LITERAL1 => {
+            p.expect(SyntaxKind::STRING_LITERAL1);
+        }
+        SyntaxKind::STRING_LITERAL2 => {
+            p.expect(SyntaxKind::STRING_LITERAL2);
+        }
+        SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::VersionSpecifier);
+            let marker = p.open();
+            p.close(marker, SyntaxKind::Error);
+            return;
+        }
+        _ => {
+            p.advance_with_error(vec![
+                SyntaxKind::STRING_LITERAL1,
+                SyntaxKind::STRING_LITERAL2,
+            ]);
+        }
+    };
+    p.close(marker, SyntaxKind::VersionSpecifier);
+}
+/// [14] SelectClause -> 'SELECT' ('DISTINCT' | 'REDUCED')? ((Var | '(' Expression 'AS' Var ')') (Var | '(' Expression 'AS' Var ')')* | '*')
 pub(super) fn parse_SelectClause(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::SELECT);
@@ -422,7 +465,7 @@ pub(super) fn parse_SelectClause(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::SelectClause);
 }
-/// [13] DatasetClause -> 'FROM' (DefaultGraphClause | NamedGraphClause)
+/// [15] DatasetClause -> 'FROM' (DefaultGraphClause | NamedGraphClause)
 pub(super) fn parse_DatasetClause(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::FROM);
@@ -450,7 +493,7 @@ pub(super) fn parse_DatasetClause(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::DatasetClause);
 }
-/// [14] WhereClause -> 'WHERE'? GroupGraphPattern
+/// [16] WhereClause -> 'WHERE'? GroupGraphPattern
 pub(super) fn parse_WhereClause(p: &mut Parser) {
     let marker = p.open();
     if p.at_any(&[SyntaxKind::WHERE]) {
@@ -459,7 +502,7 @@ pub(super) fn parse_WhereClause(p: &mut Parser) {
     parse_GroupGraphPattern(p);
     p.close(marker, SyntaxKind::WhereClause);
 }
-/// [15] SolutionModifier -> GroupClause? HavingClause? OrderClause? LimitOffsetClauses?
+/// [17] SolutionModifier -> GroupClause? HavingClause? OrderClause? LimitOffsetClauses?
 pub(super) fn parse_SolutionModifier(p: &mut Parser) {
     if !p.at_any(&[
         SyntaxKind::GROUP,
@@ -485,7 +528,7 @@ pub(super) fn parse_SolutionModifier(p: &mut Parser) {
     }
     p.close(marker, SyntaxKind::SolutionModifier);
 }
-/// [16] SubSelect -> SelectClause WhereClause SolutionModifier ValuesClause
+/// [18] SubSelect -> SelectClause WhereClause SolutionModifier ValuesClause
 pub(super) fn parse_SubSelect(p: &mut Parser) {
     let marker = p.open();
     parse_SelectClause(p);
@@ -494,7 +537,7 @@ pub(super) fn parse_SubSelect(p: &mut Parser) {
     parse_ValuesClause(p);
     p.close(marker, SyntaxKind::SubSelect);
 }
-/// [17] Var -> 'VAR1' | 'VAR2'
+/// [19] Var -> 'VAR1' | 'VAR2'
 pub(super) fn parse_Var(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -516,23 +559,27 @@ pub(super) fn parse_Var(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::Var);
 }
-/// [18] Expression -> ConditionalOrExpression
+/// [20] Expression -> ConditionalOrExpression
 pub(super) fn parse_Expression(p: &mut Parser) {
     let marker = p.open();
     parse_ConditionalOrExpression(p);
     p.close(marker, SyntaxKind::Expression);
 }
-/// [19] ConstructTemplate -> '{' ConstructTriples? '}'
+/// [21] ConstructTemplate -> '{' ConstructTriples? '}'
 pub(super) fn parse_ConstructTemplate(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::LCurly);
     if p.at_any(&[
         SyntaxKind::IRIREF,
         SyntaxKind::PNAME_NS,
+        SyntaxKind::STRING_LITERAL1,
+        SyntaxKind::STRING_LITERAL2,
         SyntaxKind::LParen,
         SyntaxKind::INTEGER,
         SyntaxKind::NIL,
         SyntaxKind::LBrack,
+        SyntaxKind::DoubleLess,
+        SyntaxKind::DoubleLessLParen,
         SyntaxKind::VAR1,
         SyntaxKind::VAR2,
         SyntaxKind::DECIMAL,
@@ -545,8 +592,6 @@ pub(super) fn parse_ConstructTemplate(p: &mut Parser) {
         SyntaxKind::DOUBLE_NEGATIVE,
         SyntaxKind::True,
         SyntaxKind::False,
-        SyntaxKind::STRING_LITERAL1,
-        SyntaxKind::STRING_LITERAL2,
         SyntaxKind::STRING_LITERAL_LONG1,
         SyntaxKind::STRING_LITERAL_LONG2,
         SyntaxKind::PNAME_LN,
@@ -558,7 +603,7 @@ pub(super) fn parse_ConstructTemplate(p: &mut Parser) {
     p.expect(SyntaxKind::RCurly);
     p.close(marker, SyntaxKind::ConstructTemplate);
 }
-/// [20] TriplesTemplate -> TriplesSameSubject ('.' TriplesTemplate?)?
+/// [22] TriplesTemplate -> TriplesSameSubject ('.' TriplesTemplate?)?
 pub(super) fn parse_TriplesTemplate(p: &mut Parser) {
     let marker = p.open();
     parse_TriplesSameSubject(p);
@@ -567,10 +612,14 @@ pub(super) fn parse_TriplesTemplate(p: &mut Parser) {
         if p.at_any(&[
             SyntaxKind::IRIREF,
             SyntaxKind::PNAME_NS,
+            SyntaxKind::STRING_LITERAL1,
+            SyntaxKind::STRING_LITERAL2,
             SyntaxKind::LParen,
             SyntaxKind::INTEGER,
             SyntaxKind::NIL,
             SyntaxKind::LBrack,
+            SyntaxKind::DoubleLess,
+            SyntaxKind::DoubleLessLParen,
             SyntaxKind::VAR1,
             SyntaxKind::VAR2,
             SyntaxKind::DECIMAL,
@@ -583,8 +632,6 @@ pub(super) fn parse_TriplesTemplate(p: &mut Parser) {
             SyntaxKind::DOUBLE_NEGATIVE,
             SyntaxKind::True,
             SyntaxKind::False,
-            SyntaxKind::STRING_LITERAL1,
-            SyntaxKind::STRING_LITERAL2,
             SyntaxKind::STRING_LITERAL_LONG1,
             SyntaxKind::STRING_LITERAL_LONG2,
             SyntaxKind::PNAME_LN,
@@ -596,7 +643,7 @@ pub(super) fn parse_TriplesTemplate(p: &mut Parser) {
     }
     p.close(marker, SyntaxKind::TriplesTemplate);
 }
-/// [21] VarOrIri -> Var | iri
+/// [23] VarOrIri -> Var | iri
 pub(super) fn parse_VarOrIri(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -624,26 +671,26 @@ pub(super) fn parse_VarOrIri(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::VarOrIri);
 }
-/// [22] DefaultGraphClause -> SourceSelector
+/// [24] DefaultGraphClause -> SourceSelector
 pub(super) fn parse_DefaultGraphClause(p: &mut Parser) {
     let marker = p.open();
     parse_SourceSelector(p);
     p.close(marker, SyntaxKind::DefaultGraphClause);
 }
-/// [23] NamedGraphClause -> 'NAMED' SourceSelector
+/// [25] NamedGraphClause -> 'NAMED' SourceSelector
 pub(super) fn parse_NamedGraphClause(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::NAMED);
     parse_SourceSelector(p);
     p.close(marker, SyntaxKind::NamedGraphClause);
 }
-/// [24] SourceSelector -> iri
+/// [26] SourceSelector -> iri
 pub(super) fn parse_SourceSelector(p: &mut Parser) {
     let marker = p.open();
     parse_iri(p);
     p.close(marker, SyntaxKind::SourceSelector);
 }
-/// [25] iri -> 'IRIREF' | PrefixedName
+/// [27] iri -> 'IRIREF' | PrefixedName
 pub(super) fn parse_iri(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -669,7 +716,7 @@ pub(super) fn parse_iri(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::iri);
 }
-/// [26] GroupGraphPattern -> '{' (SubSelect | GroupGraphPatternSub) '}'
+/// [28] GroupGraphPattern -> '{' (SubSelect | GroupGraphPatternSub) '}'
 pub(super) fn parse_GroupGraphPattern(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::LCurly);
@@ -679,6 +726,8 @@ pub(super) fn parse_GroupGraphPattern(p: &mut Parser) {
         }
         SyntaxKind::IRIREF
         | SyntaxKind::PNAME_NS
+        | SyntaxKind::STRING_LITERAL1
+        | SyntaxKind::STRING_LITERAL2
         | SyntaxKind::LParen
         | SyntaxKind::LCurly
         | SyntaxKind::INTEGER
@@ -691,6 +740,8 @@ pub(super) fn parse_GroupGraphPattern(p: &mut Parser) {
         | SyntaxKind::MINUS
         | SyntaxKind::FILTER
         | SyntaxKind::LBrack
+        | SyntaxKind::DoubleLess
+        | SyntaxKind::DoubleLessLParen
         | SyntaxKind::VAR1
         | SyntaxKind::VAR2
         | SyntaxKind::DECIMAL
@@ -703,8 +754,6 @@ pub(super) fn parse_GroupGraphPattern(p: &mut Parser) {
         | SyntaxKind::DOUBLE_NEGATIVE
         | SyntaxKind::True
         | SyntaxKind::False
-        | SyntaxKind::STRING_LITERAL1
-        | SyntaxKind::STRING_LITERAL2
         | SyntaxKind::STRING_LITERAL_LONG1
         | SyntaxKind::STRING_LITERAL_LONG2
         | SyntaxKind::PNAME_LN
@@ -723,7 +772,7 @@ pub(super) fn parse_GroupGraphPattern(p: &mut Parser) {
     p.expect(SyntaxKind::RCurly);
     p.close(marker, SyntaxKind::GroupGraphPattern);
 }
-/// [27] GroupClause -> 'GROUP' 'BY' GroupCondition GroupCondition*
+/// [29] GroupClause -> 'GROUP' 'BY' GroupCondition GroupCondition*
 pub(super) fn parse_GroupClause(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::GROUP);
@@ -739,6 +788,7 @@ pub(super) fn parse_GroupClause(p: &mut Parser) {
         SyntaxKind::STR,
         SyntaxKind::LANG,
         SyntaxKind::LANGMATCHES,
+        SyntaxKind::LANGDIR,
         SyntaxKind::DATATYPE,
         SyntaxKind::BOUND,
         SyntaxKind::IRI,
@@ -778,6 +828,7 @@ pub(super) fn parse_GroupClause(p: &mut Parser) {
         SyntaxKind::COALESCE,
         SyntaxKind::IF,
         SyntaxKind::STRLANG,
+        SyntaxKind::STRLANGDIR,
         SyntaxKind::STRDT,
         SyntaxKind::sameTerm,
         SyntaxKind::isIRI,
@@ -785,6 +836,13 @@ pub(super) fn parse_GroupClause(p: &mut Parser) {
         SyntaxKind::isBLANK,
         SyntaxKind::isLITERAL,
         SyntaxKind::isNUMERIC,
+        SyntaxKind::hasLANG,
+        SyntaxKind::hasLANGDIR,
+        SyntaxKind::isTRIPLE,
+        SyntaxKind::TRIPLE,
+        SyntaxKind::SUBJECT,
+        SyntaxKind::PREDICATE,
+        SyntaxKind::OBJECT,
         SyntaxKind::REGEX,
         SyntaxKind::SUBSTR,
         SyntaxKind::REPLACE,
@@ -804,7 +862,7 @@ pub(super) fn parse_GroupClause(p: &mut Parser) {
     }
     p.close(marker, SyntaxKind::GroupClause);
 }
-/// [28] HavingClause -> 'HAVING' HavingCondition HavingCondition*
+/// [30] HavingClause -> 'HAVING' HavingCondition HavingCondition*
 pub(super) fn parse_HavingClause(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::HAVING);
@@ -817,6 +875,7 @@ pub(super) fn parse_HavingClause(p: &mut Parser) {
         SyntaxKind::STR,
         SyntaxKind::LANG,
         SyntaxKind::LANGMATCHES,
+        SyntaxKind::LANGDIR,
         SyntaxKind::DATATYPE,
         SyntaxKind::BOUND,
         SyntaxKind::IRI,
@@ -856,6 +915,7 @@ pub(super) fn parse_HavingClause(p: &mut Parser) {
         SyntaxKind::COALESCE,
         SyntaxKind::IF,
         SyntaxKind::STRLANG,
+        SyntaxKind::STRLANGDIR,
         SyntaxKind::STRDT,
         SyntaxKind::sameTerm,
         SyntaxKind::isIRI,
@@ -863,6 +923,13 @@ pub(super) fn parse_HavingClause(p: &mut Parser) {
         SyntaxKind::isBLANK,
         SyntaxKind::isLITERAL,
         SyntaxKind::isNUMERIC,
+        SyntaxKind::hasLANG,
+        SyntaxKind::hasLANGDIR,
+        SyntaxKind::isTRIPLE,
+        SyntaxKind::TRIPLE,
+        SyntaxKind::SUBJECT,
+        SyntaxKind::PREDICATE,
+        SyntaxKind::OBJECT,
         SyntaxKind::REGEX,
         SyntaxKind::SUBSTR,
         SyntaxKind::REPLACE,
@@ -882,7 +949,7 @@ pub(super) fn parse_HavingClause(p: &mut Parser) {
     }
     p.close(marker, SyntaxKind::HavingClause);
 }
-/// [29] OrderClause -> 'ORDER' 'BY' OrderCondition OrderCondition*
+/// [31] OrderClause -> 'ORDER' 'BY' OrderCondition OrderCondition*
 pub(super) fn parse_OrderClause(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::ORDER);
@@ -900,6 +967,7 @@ pub(super) fn parse_OrderClause(p: &mut Parser) {
         SyntaxKind::STR,
         SyntaxKind::LANG,
         SyntaxKind::LANGMATCHES,
+        SyntaxKind::LANGDIR,
         SyntaxKind::DATATYPE,
         SyntaxKind::BOUND,
         SyntaxKind::IRI,
@@ -939,6 +1007,7 @@ pub(super) fn parse_OrderClause(p: &mut Parser) {
         SyntaxKind::COALESCE,
         SyntaxKind::IF,
         SyntaxKind::STRLANG,
+        SyntaxKind::STRLANGDIR,
         SyntaxKind::STRDT,
         SyntaxKind::sameTerm,
         SyntaxKind::isIRI,
@@ -946,6 +1015,13 @@ pub(super) fn parse_OrderClause(p: &mut Parser) {
         SyntaxKind::isBLANK,
         SyntaxKind::isLITERAL,
         SyntaxKind::isNUMERIC,
+        SyntaxKind::hasLANG,
+        SyntaxKind::hasLANGDIR,
+        SyntaxKind::isTRIPLE,
+        SyntaxKind::TRIPLE,
+        SyntaxKind::SUBJECT,
+        SyntaxKind::PREDICATE,
+        SyntaxKind::OBJECT,
         SyntaxKind::REGEX,
         SyntaxKind::SUBSTR,
         SyntaxKind::REPLACE,
@@ -965,7 +1041,7 @@ pub(super) fn parse_OrderClause(p: &mut Parser) {
     }
     p.close(marker, SyntaxKind::OrderClause);
 }
-/// [30] LimitOffsetClauses -> LimitClause OffsetClause? | OffsetClause LimitClause?
+/// [32] LimitOffsetClauses -> LimitClause OffsetClause? | OffsetClause LimitClause?
 pub(super) fn parse_LimitOffsetClauses(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -993,7 +1069,7 @@ pub(super) fn parse_LimitOffsetClauses(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::LimitOffsetClauses);
 }
-/// [31] GroupCondition -> BuiltInCall | FunctionCall | '(' Expression ('AS' Var)? ')' | Var
+/// [33] GroupCondition -> BuiltInCall | FunctionCall | '(' Expression ('AS' Var)? ')' | Var
 pub(super) fn parse_GroupCondition(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -1001,6 +1077,7 @@ pub(super) fn parse_GroupCondition(p: &mut Parser) {
         | SyntaxKind::STR
         | SyntaxKind::LANG
         | SyntaxKind::LANGMATCHES
+        | SyntaxKind::LANGDIR
         | SyntaxKind::DATATYPE
         | SyntaxKind::BOUND
         | SyntaxKind::IRI
@@ -1040,6 +1117,7 @@ pub(super) fn parse_GroupCondition(p: &mut Parser) {
         | SyntaxKind::COALESCE
         | SyntaxKind::IF
         | SyntaxKind::STRLANG
+        | SyntaxKind::STRLANGDIR
         | SyntaxKind::STRDT
         | SyntaxKind::sameTerm
         | SyntaxKind::isIRI
@@ -1047,6 +1125,13 @@ pub(super) fn parse_GroupCondition(p: &mut Parser) {
         | SyntaxKind::isBLANK
         | SyntaxKind::isLITERAL
         | SyntaxKind::isNUMERIC
+        | SyntaxKind::hasLANG
+        | SyntaxKind::hasLANGDIR
+        | SyntaxKind::isTRIPLE
+        | SyntaxKind::TRIPLE
+        | SyntaxKind::SUBJECT
+        | SyntaxKind::PREDICATE
+        | SyntaxKind::OBJECT
         | SyntaxKind::REGEX
         | SyntaxKind::SUBSTR
         | SyntaxKind::REPLACE
@@ -1087,6 +1172,7 @@ pub(super) fn parse_GroupCondition(p: &mut Parser) {
                 SyntaxKind::STR,
                 SyntaxKind::LANG,
                 SyntaxKind::LANGMATCHES,
+                SyntaxKind::LANGDIR,
                 SyntaxKind::DATATYPE,
                 SyntaxKind::BOUND,
                 SyntaxKind::IRI,
@@ -1126,6 +1212,7 @@ pub(super) fn parse_GroupCondition(p: &mut Parser) {
                 SyntaxKind::COALESCE,
                 SyntaxKind::IF,
                 SyntaxKind::STRLANG,
+                SyntaxKind::STRLANGDIR,
                 SyntaxKind::STRDT,
                 SyntaxKind::sameTerm,
                 SyntaxKind::isIRI,
@@ -1133,6 +1220,13 @@ pub(super) fn parse_GroupCondition(p: &mut Parser) {
                 SyntaxKind::isBLANK,
                 SyntaxKind::isLITERAL,
                 SyntaxKind::isNUMERIC,
+                SyntaxKind::hasLANG,
+                SyntaxKind::hasLANGDIR,
+                SyntaxKind::isTRIPLE,
+                SyntaxKind::TRIPLE,
+                SyntaxKind::SUBJECT,
+                SyntaxKind::PREDICATE,
+                SyntaxKind::OBJECT,
                 SyntaxKind::REGEX,
                 SyntaxKind::SUBSTR,
                 SyntaxKind::REPLACE,
@@ -1155,7 +1249,7 @@ pub(super) fn parse_GroupCondition(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::GroupCondition);
 }
-/// [32] BuiltInCall -> Aggregate | 'STR' '(' Expression ')' | 'LANG' '(' Expression ')' | 'LANGMATCHES' '(' Expression ',' Expression ')' | 'DATATYPE' '(' Expression ')' | 'BOUND' '(' Var ')' | 'IRI' '(' Expression ')' | 'URI' '(' Expression ')' | 'BNODE' ('(' Expression ')' | 'NIL') | 'RAND' 'NIL' | 'ABS' '(' Expression ')' | 'CEIL' '(' Expression ')' | 'FLOOR' '(' Expression ')' | 'ROUND' '(' Expression ')' | 'CONCAT' ExpressionList | SubstringExpression | 'STRLEN' '(' Expression ')' | StrReplaceExpression | 'UCASE' '(' Expression ')' | 'LCASE' '(' Expression ')' | 'ENCODE_FOR_URI' '(' Expression ')' | 'CONTAINS' '(' Expression ',' Expression ')' | 'STRSTARTS' '(' Expression ',' Expression ')' | 'STRENDS' '(' Expression ',' Expression ')' | 'STRBEFORE' '(' Expression ',' Expression ')' | 'STRAFTER' '(' Expression ',' Expression ')' | 'YEAR' '(' Expression ')' | 'MONTH' '(' Expression ')' | 'DAY' '(' Expression ')' | 'HOURS' '(' Expression ')' | 'MINUTES' '(' Expression ')' | 'SECONDS' '(' Expression ')' | 'TIMEZONE' '(' Expression ')' | 'TZ' '(' Expression ')' | 'NOW' 'NIL' | 'UUID' 'NIL' | 'STRUUID' 'NIL' | 'MD5' '(' Expression ')' | 'SHA1' '(' Expression ')' | 'SHA256' '(' Expression ')' | 'SHA384' '(' Expression ')' | 'SHA512' '(' Expression ')' | 'COALESCE' ExpressionList | 'IF' '(' Expression ',' Expression ',' Expression ')' | 'STRLANG' '(' Expression ',' Expression ')' | 'STRDT' '(' Expression ',' Expression ')' | 'sameTerm' '(' Expression ',' Expression ')' | 'isIRI' '(' Expression ')' | 'isURI' '(' Expression ')' | 'isBLANK' '(' Expression ')' | 'isLITERAL' '(' Expression ')' | 'isNUMERIC' '(' Expression ')' | RegexExpression | ExistsFunc | NotExistsFunc
+/// [34] BuiltInCall -> Aggregate | 'STR' '(' Expression ')' | 'LANG' '(' Expression ')' | 'LANGMATCHES' '(' Expression ',' Expression ')' | 'LANGDIR' '(' Expression ')' | 'DATATYPE' '(' Expression ')' | 'BOUND' '(' Var ')' | 'IRI' '(' Expression ')' | 'URI' '(' Expression ')' | 'BNODE' ('(' Expression ')' | 'NIL') | 'RAND' 'NIL' | 'ABS' '(' Expression ')' | 'CEIL' '(' Expression ')' | 'FLOOR' '(' Expression ')' | 'ROUND' '(' Expression ')' | 'CONCAT' ExpressionList | SubstringExpression | 'STRLEN' '(' Expression ')' | StrReplaceExpression | 'UCASE' '(' Expression ')' | 'LCASE' '(' Expression ')' | 'ENCODE_FOR_URI' '(' Expression ')' | 'CONTAINS' '(' Expression ',' Expression ')' | 'STRSTARTS' '(' Expression ',' Expression ')' | 'STRENDS' '(' Expression ',' Expression ')' | 'STRBEFORE' '(' Expression ',' Expression ')' | 'STRAFTER' '(' Expression ',' Expression ')' | 'YEAR' '(' Expression ')' | 'MONTH' '(' Expression ')' | 'DAY' '(' Expression ')' | 'HOURS' '(' Expression ')' | 'MINUTES' '(' Expression ')' | 'SECONDS' '(' Expression ')' | 'TIMEZONE' '(' Expression ')' | 'TZ' '(' Expression ')' | 'NOW' 'NIL' | 'UUID' 'NIL' | 'STRUUID' 'NIL' | 'MD5' '(' Expression ')' | 'SHA1' '(' Expression ')' | 'SHA256' '(' Expression ')' | 'SHA384' '(' Expression ')' | 'SHA512' '(' Expression ')' | 'COALESCE' ExpressionList | 'IF' '(' Expression ',' Expression ',' Expression ')' | 'STRLANG' '(' Expression ',' Expression ')' | 'STRLANGDIR' '(' Expression ',' Expression ',' Expression ')' | 'STRDT' '(' Expression ',' Expression ')' | 'sameTerm' '(' Expression ',' Expression ')' | 'isIRI' '(' Expression ')' | 'isURI' '(' Expression ')' | 'isBLANK' '(' Expression ')' | 'isLITERAL' '(' Expression ')' | 'isNUMERIC' '(' Expression ')' | 'hasLANG' '(' Expression ')' | 'hasLANGDIR' '(' Expression ')' | RegexExpression | ExistsFunc | NotExistsFunc | 'isTRIPLE' '(' Expression ')' | 'TRIPLE' '(' Expression ',' Expression ',' Expression ')' | 'SUBJECT' '(' Expression ')' | 'PREDICATE' '(' Expression ')' | 'OBJECT' '(' Expression ')'
 pub(super) fn parse_BuiltInCall(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -1185,6 +1279,12 @@ pub(super) fn parse_BuiltInCall(p: &mut Parser) {
             p.expect(SyntaxKind::LParen);
             parse_Expression(p);
             p.expect(SyntaxKind::Comma);
+            parse_Expression(p);
+            p.expect(SyntaxKind::RParen);
+        }
+        SyntaxKind::LANGDIR => {
+            p.expect(SyntaxKind::LANGDIR);
+            p.expect(SyntaxKind::LParen);
             parse_Expression(p);
             p.expect(SyntaxKind::RParen);
         }
@@ -1448,6 +1548,16 @@ pub(super) fn parse_BuiltInCall(p: &mut Parser) {
             parse_Expression(p);
             p.expect(SyntaxKind::RParen);
         }
+        SyntaxKind::STRLANGDIR => {
+            p.expect(SyntaxKind::STRLANGDIR);
+            p.expect(SyntaxKind::LParen);
+            parse_Expression(p);
+            p.expect(SyntaxKind::Comma);
+            parse_Expression(p);
+            p.expect(SyntaxKind::Comma);
+            parse_Expression(p);
+            p.expect(SyntaxKind::RParen);
+        }
         SyntaxKind::STRDT => {
             p.expect(SyntaxKind::STRDT);
             p.expect(SyntaxKind::LParen);
@@ -1494,6 +1604,18 @@ pub(super) fn parse_BuiltInCall(p: &mut Parser) {
             parse_Expression(p);
             p.expect(SyntaxKind::RParen);
         }
+        SyntaxKind::hasLANG => {
+            p.expect(SyntaxKind::hasLANG);
+            p.expect(SyntaxKind::LParen);
+            parse_Expression(p);
+            p.expect(SyntaxKind::RParen);
+        }
+        SyntaxKind::hasLANGDIR => {
+            p.expect(SyntaxKind::hasLANGDIR);
+            p.expect(SyntaxKind::LParen);
+            parse_Expression(p);
+            p.expect(SyntaxKind::RParen);
+        }
         SyntaxKind::REGEX => {
             parse_RegexExpression(p);
         }
@@ -1502,6 +1624,40 @@ pub(super) fn parse_BuiltInCall(p: &mut Parser) {
         }
         SyntaxKind::NOT => {
             parse_NotExistsFunc(p);
+        }
+        SyntaxKind::isTRIPLE => {
+            p.expect(SyntaxKind::isTRIPLE);
+            p.expect(SyntaxKind::LParen);
+            parse_Expression(p);
+            p.expect(SyntaxKind::RParen);
+        }
+        SyntaxKind::TRIPLE => {
+            p.expect(SyntaxKind::TRIPLE);
+            p.expect(SyntaxKind::LParen);
+            parse_Expression(p);
+            p.expect(SyntaxKind::Comma);
+            parse_Expression(p);
+            p.expect(SyntaxKind::Comma);
+            parse_Expression(p);
+            p.expect(SyntaxKind::RParen);
+        }
+        SyntaxKind::SUBJECT => {
+            p.expect(SyntaxKind::SUBJECT);
+            p.expect(SyntaxKind::LParen);
+            parse_Expression(p);
+            p.expect(SyntaxKind::RParen);
+        }
+        SyntaxKind::PREDICATE => {
+            p.expect(SyntaxKind::PREDICATE);
+            p.expect(SyntaxKind::LParen);
+            parse_Expression(p);
+            p.expect(SyntaxKind::RParen);
+        }
+        SyntaxKind::OBJECT => {
+            p.expect(SyntaxKind::OBJECT);
+            p.expect(SyntaxKind::LParen);
+            parse_Expression(p);
+            p.expect(SyntaxKind::RParen);
         }
         SyntaxKind::Eof => {
             p.close(marker, SyntaxKind::BuiltInCall);
@@ -1521,6 +1677,7 @@ pub(super) fn parse_BuiltInCall(p: &mut Parser) {
                 SyntaxKind::STR,
                 SyntaxKind::LANG,
                 SyntaxKind::LANGMATCHES,
+                SyntaxKind::LANGDIR,
                 SyntaxKind::DATATYPE,
                 SyntaxKind::BOUND,
                 SyntaxKind::IRI,
@@ -1562,6 +1719,7 @@ pub(super) fn parse_BuiltInCall(p: &mut Parser) {
                 SyntaxKind::COALESCE,
                 SyntaxKind::IF,
                 SyntaxKind::STRLANG,
+                SyntaxKind::STRLANGDIR,
                 SyntaxKind::STRDT,
                 SyntaxKind::sameTerm,
                 SyntaxKind::isIRI,
@@ -1569,28 +1727,35 @@ pub(super) fn parse_BuiltInCall(p: &mut Parser) {
                 SyntaxKind::isBLANK,
                 SyntaxKind::isLITERAL,
                 SyntaxKind::isNUMERIC,
+                SyntaxKind::hasLANG,
+                SyntaxKind::hasLANGDIR,
                 SyntaxKind::REGEX,
                 SyntaxKind::EXISTS,
                 SyntaxKind::NOT,
+                SyntaxKind::isTRIPLE,
+                SyntaxKind::TRIPLE,
+                SyntaxKind::SUBJECT,
+                SyntaxKind::PREDICATE,
+                SyntaxKind::OBJECT,
             ]);
         }
     };
     p.close(marker, SyntaxKind::BuiltInCall);
 }
-/// [33] FunctionCall -> iri ArgList
+/// [35] FunctionCall -> iri ArgList
 pub(super) fn parse_FunctionCall(p: &mut Parser) {
     let marker = p.open();
     parse_iri(p);
     parse_ArgList(p);
     p.close(marker, SyntaxKind::FunctionCall);
 }
-/// [34] HavingCondition -> Constraint
+/// [36] HavingCondition -> Constraint
 pub(super) fn parse_HavingCondition(p: &mut Parser) {
     let marker = p.open();
     parse_Constraint(p);
     p.close(marker, SyntaxKind::HavingCondition);
 }
-/// [35] Constraint -> BrackettedExpression | BuiltInCall | FunctionCall
+/// [37] Constraint -> BrackettedExpression | BuiltInCall | FunctionCall
 pub(super) fn parse_Constraint(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -1601,6 +1766,7 @@ pub(super) fn parse_Constraint(p: &mut Parser) {
         | SyntaxKind::STR
         | SyntaxKind::LANG
         | SyntaxKind::LANGMATCHES
+        | SyntaxKind::LANGDIR
         | SyntaxKind::DATATYPE
         | SyntaxKind::BOUND
         | SyntaxKind::IRI
@@ -1640,6 +1806,7 @@ pub(super) fn parse_Constraint(p: &mut Parser) {
         | SyntaxKind::COALESCE
         | SyntaxKind::IF
         | SyntaxKind::STRLANG
+        | SyntaxKind::STRLANGDIR
         | SyntaxKind::STRDT
         | SyntaxKind::sameTerm
         | SyntaxKind::isIRI
@@ -1647,6 +1814,13 @@ pub(super) fn parse_Constraint(p: &mut Parser) {
         | SyntaxKind::isBLANK
         | SyntaxKind::isLITERAL
         | SyntaxKind::isNUMERIC
+        | SyntaxKind::hasLANG
+        | SyntaxKind::hasLANGDIR
+        | SyntaxKind::isTRIPLE
+        | SyntaxKind::TRIPLE
+        | SyntaxKind::SUBJECT
+        | SyntaxKind::PREDICATE
+        | SyntaxKind::OBJECT
         | SyntaxKind::REGEX
         | SyntaxKind::SUBSTR
         | SyntaxKind::REPLACE
@@ -1676,6 +1850,7 @@ pub(super) fn parse_Constraint(p: &mut Parser) {
                 SyntaxKind::STR,
                 SyntaxKind::LANG,
                 SyntaxKind::LANGMATCHES,
+                SyntaxKind::LANGDIR,
                 SyntaxKind::DATATYPE,
                 SyntaxKind::BOUND,
                 SyntaxKind::IRI,
@@ -1715,6 +1890,7 @@ pub(super) fn parse_Constraint(p: &mut Parser) {
                 SyntaxKind::COALESCE,
                 SyntaxKind::IF,
                 SyntaxKind::STRLANG,
+                SyntaxKind::STRLANGDIR,
                 SyntaxKind::STRDT,
                 SyntaxKind::sameTerm,
                 SyntaxKind::isIRI,
@@ -1722,6 +1898,13 @@ pub(super) fn parse_Constraint(p: &mut Parser) {
                 SyntaxKind::isBLANK,
                 SyntaxKind::isLITERAL,
                 SyntaxKind::isNUMERIC,
+                SyntaxKind::hasLANG,
+                SyntaxKind::hasLANGDIR,
+                SyntaxKind::isTRIPLE,
+                SyntaxKind::TRIPLE,
+                SyntaxKind::SUBJECT,
+                SyntaxKind::PREDICATE,
+                SyntaxKind::OBJECT,
                 SyntaxKind::REGEX,
                 SyntaxKind::SUBSTR,
                 SyntaxKind::REPLACE,
@@ -1741,7 +1924,7 @@ pub(super) fn parse_Constraint(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::Constraint);
 }
-/// [36] OrderCondition -> ('ASC' | 'DESC') BrackettedExpression | Constraint | Var
+/// [38] OrderCondition -> ('ASC' | 'DESC') BrackettedExpression | Constraint | Var
 pub(super) fn parse_OrderCondition(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -1774,6 +1957,7 @@ pub(super) fn parse_OrderCondition(p: &mut Parser) {
         | SyntaxKind::STR
         | SyntaxKind::LANG
         | SyntaxKind::LANGMATCHES
+        | SyntaxKind::LANGDIR
         | SyntaxKind::DATATYPE
         | SyntaxKind::BOUND
         | SyntaxKind::IRI
@@ -1813,6 +1997,7 @@ pub(super) fn parse_OrderCondition(p: &mut Parser) {
         | SyntaxKind::COALESCE
         | SyntaxKind::IF
         | SyntaxKind::STRLANG
+        | SyntaxKind::STRLANGDIR
         | SyntaxKind::STRDT
         | SyntaxKind::sameTerm
         | SyntaxKind::isIRI
@@ -1820,6 +2005,13 @@ pub(super) fn parse_OrderCondition(p: &mut Parser) {
         | SyntaxKind::isBLANK
         | SyntaxKind::isLITERAL
         | SyntaxKind::isNUMERIC
+        | SyntaxKind::hasLANG
+        | SyntaxKind::hasLANGDIR
+        | SyntaxKind::isTRIPLE
+        | SyntaxKind::TRIPLE
+        | SyntaxKind::SUBJECT
+        | SyntaxKind::PREDICATE
+        | SyntaxKind::OBJECT
         | SyntaxKind::REGEX
         | SyntaxKind::SUBSTR
         | SyntaxKind::REPLACE
@@ -1840,6 +2032,7 @@ pub(super) fn parse_OrderCondition(p: &mut Parser) {
                 | SyntaxKind::STR
                 | SyntaxKind::LANG
                 | SyntaxKind::LANGMATCHES
+                | SyntaxKind::LANGDIR
                 | SyntaxKind::DATATYPE
                 | SyntaxKind::BOUND
                 | SyntaxKind::IRI
@@ -1879,6 +2072,7 @@ pub(super) fn parse_OrderCondition(p: &mut Parser) {
                 | SyntaxKind::COALESCE
                 | SyntaxKind::IF
                 | SyntaxKind::STRLANG
+                | SyntaxKind::STRLANGDIR
                 | SyntaxKind::STRDT
                 | SyntaxKind::sameTerm
                 | SyntaxKind::isIRI
@@ -1886,6 +2080,13 @@ pub(super) fn parse_OrderCondition(p: &mut Parser) {
                 | SyntaxKind::isBLANK
                 | SyntaxKind::isLITERAL
                 | SyntaxKind::isNUMERIC
+                | SyntaxKind::hasLANG
+                | SyntaxKind::hasLANGDIR
+                | SyntaxKind::isTRIPLE
+                | SyntaxKind::TRIPLE
+                | SyntaxKind::SUBJECT
+                | SyntaxKind::PREDICATE
+                | SyntaxKind::OBJECT
                 | SyntaxKind::REGEX
                 | SyntaxKind::SUBSTR
                 | SyntaxKind::REPLACE
@@ -1918,6 +2119,7 @@ pub(super) fn parse_OrderCondition(p: &mut Parser) {
                         SyntaxKind::STR,
                         SyntaxKind::LANG,
                         SyntaxKind::LANGMATCHES,
+                        SyntaxKind::LANGDIR,
                         SyntaxKind::DATATYPE,
                         SyntaxKind::BOUND,
                         SyntaxKind::IRI,
@@ -1957,6 +2159,7 @@ pub(super) fn parse_OrderCondition(p: &mut Parser) {
                         SyntaxKind::COALESCE,
                         SyntaxKind::IF,
                         SyntaxKind::STRLANG,
+                        SyntaxKind::STRLANGDIR,
                         SyntaxKind::STRDT,
                         SyntaxKind::sameTerm,
                         SyntaxKind::isIRI,
@@ -1964,6 +2167,13 @@ pub(super) fn parse_OrderCondition(p: &mut Parser) {
                         SyntaxKind::isBLANK,
                         SyntaxKind::isLITERAL,
                         SyntaxKind::isNUMERIC,
+                        SyntaxKind::hasLANG,
+                        SyntaxKind::hasLANGDIR,
+                        SyntaxKind::isTRIPLE,
+                        SyntaxKind::TRIPLE,
+                        SyntaxKind::SUBJECT,
+                        SyntaxKind::PREDICATE,
+                        SyntaxKind::OBJECT,
                         SyntaxKind::REGEX,
                         SyntaxKind::SUBSTR,
                         SyntaxKind::REPLACE,
@@ -2001,6 +2211,7 @@ pub(super) fn parse_OrderCondition(p: &mut Parser) {
                 SyntaxKind::STR,
                 SyntaxKind::LANG,
                 SyntaxKind::LANGMATCHES,
+                SyntaxKind::LANGDIR,
                 SyntaxKind::DATATYPE,
                 SyntaxKind::BOUND,
                 SyntaxKind::IRI,
@@ -2040,6 +2251,7 @@ pub(super) fn parse_OrderCondition(p: &mut Parser) {
                 SyntaxKind::COALESCE,
                 SyntaxKind::IF,
                 SyntaxKind::STRLANG,
+                SyntaxKind::STRLANGDIR,
                 SyntaxKind::STRDT,
                 SyntaxKind::sameTerm,
                 SyntaxKind::isIRI,
@@ -2047,6 +2259,13 @@ pub(super) fn parse_OrderCondition(p: &mut Parser) {
                 SyntaxKind::isBLANK,
                 SyntaxKind::isLITERAL,
                 SyntaxKind::isNUMERIC,
+                SyntaxKind::hasLANG,
+                SyntaxKind::hasLANGDIR,
+                SyntaxKind::isTRIPLE,
+                SyntaxKind::TRIPLE,
+                SyntaxKind::SUBJECT,
+                SyntaxKind::PREDICATE,
+                SyntaxKind::OBJECT,
                 SyntaxKind::REGEX,
                 SyntaxKind::SUBSTR,
                 SyntaxKind::REPLACE,
@@ -2064,7 +2283,7 @@ pub(super) fn parse_OrderCondition(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::OrderCondition);
 }
-/// [37] BrackettedExpression -> '(' Expression ')'
+/// [39] BrackettedExpression -> '(' Expression ')'
 pub(super) fn parse_BrackettedExpression(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::LParen);
@@ -2072,21 +2291,21 @@ pub(super) fn parse_BrackettedExpression(p: &mut Parser) {
     p.expect(SyntaxKind::RParen);
     p.close(marker, SyntaxKind::BrackettedExpression);
 }
-/// [38] LimitClause -> 'LIMIT' 'INTEGER'
+/// [40] LimitClause -> 'LIMIT' 'INTEGER'
 pub(super) fn parse_LimitClause(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::LIMIT);
     p.expect(SyntaxKind::INTEGER);
     p.close(marker, SyntaxKind::LimitClause);
 }
-/// [39] OffsetClause -> 'OFFSET' 'INTEGER'
+/// [41] OffsetClause -> 'OFFSET' 'INTEGER'
 pub(super) fn parse_OffsetClause(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::OFFSET);
     p.expect(SyntaxKind::INTEGER);
     p.close(marker, SyntaxKind::OffsetClause);
 }
-/// [40] DataBlock -> InlineDataOneVar | InlineDataFull
+/// [42] DataBlock -> InlineDataOneVar | InlineDataFull
 pub(super) fn parse_DataBlock(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -2113,7 +2332,7 @@ pub(super) fn parse_DataBlock(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::DataBlock);
 }
-/// [41] UpdateOne -> Load | Clear | Drop | Add | Move | Copy | Create | InsertData | DeleteData | DeleteWhere | Modify
+/// [43] UpdateOne -> Load | Clear | Drop | Add | Move | Copy | Create | DeleteWhere | Modify | InsertData | DeleteData
 pub(super) fn parse_UpdateOne(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -2138,17 +2357,17 @@ pub(super) fn parse_UpdateOne(p: &mut Parser) {
         SyntaxKind::CREATE => {
             parse_Create(p);
         }
-        SyntaxKind::INSERT_DATA => {
-            parse_InsertData(p);
-        }
-        SyntaxKind::DELETE_DATA => {
-            parse_DeleteData(p);
-        }
         SyntaxKind::DELETE_WHERE => {
             parse_DeleteWhere(p);
         }
         SyntaxKind::WITH | SyntaxKind::DELETE | SyntaxKind::INSERT => {
             parse_Modify(p);
+        }
+        SyntaxKind::INSERT_DATA => {
+            parse_InsertData(p);
+        }
+        SyntaxKind::DELETE_DATA => {
+            parse_DeleteData(p);
         }
         SyntaxKind::Eof => {
             p.close(marker, SyntaxKind::UpdateOne);
@@ -2165,18 +2384,18 @@ pub(super) fn parse_UpdateOne(p: &mut Parser) {
                 SyntaxKind::MOVE,
                 SyntaxKind::COPY,
                 SyntaxKind::CREATE,
-                SyntaxKind::INSERT_DATA,
-                SyntaxKind::DELETE_DATA,
                 SyntaxKind::DELETE_WHERE,
                 SyntaxKind::WITH,
                 SyntaxKind::DELETE,
                 SyntaxKind::INSERT,
+                SyntaxKind::INSERT_DATA,
+                SyntaxKind::DELETE_DATA,
             ]);
         }
     };
     p.close(marker, SyntaxKind::UpdateOne);
 }
-/// [42] Load -> 'LOAD' 'SILENT'? iri ('INTO' GraphRef)?
+/// [44] Load -> 'LOAD' 'SILENT'? iri ('INTO' GraphRef)?
 pub(super) fn parse_Load(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::LOAD);
@@ -2190,7 +2409,7 @@ pub(super) fn parse_Load(p: &mut Parser) {
     }
     p.close(marker, SyntaxKind::Load);
 }
-/// [43] Clear -> 'CLEAR' 'SILENT'? GraphRefAll
+/// [45] Clear -> 'CLEAR' 'SILENT'? GraphRefAll
 pub(super) fn parse_Clear(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::CLEAR);
@@ -2200,7 +2419,7 @@ pub(super) fn parse_Clear(p: &mut Parser) {
     parse_GraphRefAll(p);
     p.close(marker, SyntaxKind::Clear);
 }
-/// [44] Drop -> 'DROP' 'SILENT'? GraphRefAll
+/// [46] Drop -> 'DROP' 'SILENT'? GraphRefAll
 pub(super) fn parse_Drop(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::DROP);
@@ -2210,7 +2429,7 @@ pub(super) fn parse_Drop(p: &mut Parser) {
     parse_GraphRefAll(p);
     p.close(marker, SyntaxKind::Drop);
 }
-/// [45] Add -> 'ADD' 'SILENT'? GraphOrDefault 'TO' GraphOrDefault
+/// [47] Add -> 'ADD' 'SILENT'? GraphOrDefault 'TO' GraphOrDefault
 pub(super) fn parse_Add(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::ADD);
@@ -2222,7 +2441,7 @@ pub(super) fn parse_Add(p: &mut Parser) {
     parse_GraphOrDefault(p);
     p.close(marker, SyntaxKind::Add);
 }
-/// [46] Move -> 'MOVE' 'SILENT'? GraphOrDefault 'TO' GraphOrDefault
+/// [48] Move -> 'MOVE' 'SILENT'? GraphOrDefault 'TO' GraphOrDefault
 pub(super) fn parse_Move(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::MOVE);
@@ -2234,7 +2453,7 @@ pub(super) fn parse_Move(p: &mut Parser) {
     parse_GraphOrDefault(p);
     p.close(marker, SyntaxKind::Move);
 }
-/// [47] Copy -> 'COPY' 'SILENT'? GraphOrDefault 'TO' GraphOrDefault
+/// [49] Copy -> 'COPY' 'SILENT'? GraphOrDefault 'TO' GraphOrDefault
 pub(super) fn parse_Copy(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::COPY);
@@ -2246,7 +2465,7 @@ pub(super) fn parse_Copy(p: &mut Parser) {
     parse_GraphOrDefault(p);
     p.close(marker, SyntaxKind::Copy);
 }
-/// [48] Create -> 'CREATE' 'SILENT'? GraphRef
+/// [50] Create -> 'CREATE' 'SILENT'? GraphRef
 pub(super) fn parse_Create(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::CREATE);
@@ -2255,20 +2474,6 @@ pub(super) fn parse_Create(p: &mut Parser) {
     }
     parse_GraphRef(p);
     p.close(marker, SyntaxKind::Create);
-}
-/// [49] InsertData -> 'INSERT_DATA' QuadData
-pub(super) fn parse_InsertData(p: &mut Parser) {
-    let marker = p.open();
-    p.expect(SyntaxKind::INSERT_DATA);
-    parse_QuadData(p);
-    p.close(marker, SyntaxKind::InsertData);
-}
-/// [50] DeleteData -> 'DELETE_DATA' QuadData
-pub(super) fn parse_DeleteData(p: &mut Parser) {
-    let marker = p.open();
-    p.expect(SyntaxKind::DELETE_DATA);
-    parse_QuadData(p);
-    p.close(marker, SyntaxKind::DeleteData);
 }
 /// [51] DeleteWhere -> 'DELETE_WHERE' QuadPattern
 pub(super) fn parse_DeleteWhere(p: &mut Parser) {
@@ -2311,14 +2516,28 @@ pub(super) fn parse_Modify(p: &mut Parser) {
     parse_GroupGraphPattern(p);
     p.close(marker, SyntaxKind::Modify);
 }
-/// [53] GraphRef -> 'GRAPH' iri
+/// [53] InsertData -> 'INSERT_DATA' QuadData
+pub(super) fn parse_InsertData(p: &mut Parser) {
+    let marker = p.open();
+    p.expect(SyntaxKind::INSERT_DATA);
+    parse_QuadData(p);
+    p.close(marker, SyntaxKind::InsertData);
+}
+/// [54] DeleteData -> 'DELETE_DATA' QuadData
+pub(super) fn parse_DeleteData(p: &mut Parser) {
+    let marker = p.open();
+    p.expect(SyntaxKind::DELETE_DATA);
+    parse_QuadData(p);
+    p.close(marker, SyntaxKind::DeleteData);
+}
+/// [55] GraphRef -> 'GRAPH' iri
 pub(super) fn parse_GraphRef(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::GRAPH);
     parse_iri(p);
     p.close(marker, SyntaxKind::GraphRef);
 }
-/// [54] GraphRefAll -> GraphRef | 'DEFAULT' | 'NAMED' | 'ALL'
+/// [56] GraphRefAll -> GraphRef | 'DEFAULT' | 'NAMED' | 'ALL'
 pub(super) fn parse_GraphRefAll(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -2351,7 +2570,7 @@ pub(super) fn parse_GraphRefAll(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::GraphRefAll);
 }
-/// [55] GraphOrDefault -> 'DEFAULT' | 'GRAPH'? iri
+/// [57] GraphOrDefault -> 'DEFAULT' | 'GRAPH'? iri
 pub(super) fn parse_GraphOrDefault(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -2382,7 +2601,7 @@ pub(super) fn parse_GraphOrDefault(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::GraphOrDefault);
 }
-/// [56] QuadData -> '{' Quads '}'
+/// [58] QuadData -> '{' Quads '}'
 pub(super) fn parse_QuadData(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::LCurly);
@@ -2390,7 +2609,7 @@ pub(super) fn parse_QuadData(p: &mut Parser) {
     p.expect(SyntaxKind::RCurly);
     p.close(marker, SyntaxKind::QuadData);
 }
-/// [57] QuadPattern -> '{' Quads '}'
+/// [59] QuadPattern -> '{' Quads '}'
 pub(super) fn parse_QuadPattern(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::LCurly);
@@ -2398,21 +2617,21 @@ pub(super) fn parse_QuadPattern(p: &mut Parser) {
     p.expect(SyntaxKind::RCurly);
     p.close(marker, SyntaxKind::QuadPattern);
 }
-/// [58] DeleteClause -> 'DELETE' QuadPattern
+/// [60] DeleteClause -> 'DELETE' QuadPattern
 pub(super) fn parse_DeleteClause(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::DELETE);
     parse_QuadPattern(p);
     p.close(marker, SyntaxKind::DeleteClause);
 }
-/// [59] InsertClause -> 'INSERT' QuadPattern
+/// [61] InsertClause -> 'INSERT' QuadPattern
 pub(super) fn parse_InsertClause(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::INSERT);
     parse_QuadPattern(p);
     p.close(marker, SyntaxKind::InsertClause);
 }
-/// [60] UsingClause -> 'USING' (iri | 'NAMED' iri)
+/// [62] UsingClause -> 'USING' (iri | 'NAMED' iri)
 pub(super) fn parse_UsingClause(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::USING);
@@ -2441,16 +2660,20 @@ pub(super) fn parse_UsingClause(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::UsingClause);
 }
-/// [61] Quads -> TriplesTemplate? (QuadsNotTriples '.'? TriplesTemplate?)*
+/// [63] Quads -> TriplesTemplate? (QuadsNotTriples '.'? TriplesTemplate?)*
 pub(super) fn parse_Quads(p: &mut Parser) {
     if !p.at_any(&[
         SyntaxKind::IRIREF,
         SyntaxKind::PNAME_NS,
+        SyntaxKind::STRING_LITERAL1,
+        SyntaxKind::STRING_LITERAL2,
         SyntaxKind::LParen,
         SyntaxKind::INTEGER,
         SyntaxKind::GRAPH,
         SyntaxKind::NIL,
         SyntaxKind::LBrack,
+        SyntaxKind::DoubleLess,
+        SyntaxKind::DoubleLessLParen,
         SyntaxKind::VAR1,
         SyntaxKind::VAR2,
         SyntaxKind::DECIMAL,
@@ -2463,8 +2686,6 @@ pub(super) fn parse_Quads(p: &mut Parser) {
         SyntaxKind::DOUBLE_NEGATIVE,
         SyntaxKind::True,
         SyntaxKind::False,
-        SyntaxKind::STRING_LITERAL1,
-        SyntaxKind::STRING_LITERAL2,
         SyntaxKind::STRING_LITERAL_LONG1,
         SyntaxKind::STRING_LITERAL_LONG2,
         SyntaxKind::PNAME_LN,
@@ -2477,10 +2698,14 @@ pub(super) fn parse_Quads(p: &mut Parser) {
     if p.at_any(&[
         SyntaxKind::IRIREF,
         SyntaxKind::PNAME_NS,
+        SyntaxKind::STRING_LITERAL1,
+        SyntaxKind::STRING_LITERAL2,
         SyntaxKind::LParen,
         SyntaxKind::INTEGER,
         SyntaxKind::NIL,
         SyntaxKind::LBrack,
+        SyntaxKind::DoubleLess,
+        SyntaxKind::DoubleLessLParen,
         SyntaxKind::VAR1,
         SyntaxKind::VAR2,
         SyntaxKind::DECIMAL,
@@ -2493,8 +2718,6 @@ pub(super) fn parse_Quads(p: &mut Parser) {
         SyntaxKind::DOUBLE_NEGATIVE,
         SyntaxKind::True,
         SyntaxKind::False,
-        SyntaxKind::STRING_LITERAL1,
-        SyntaxKind::STRING_LITERAL2,
         SyntaxKind::STRING_LITERAL_LONG1,
         SyntaxKind::STRING_LITERAL_LONG2,
         SyntaxKind::PNAME_LN,
@@ -2511,10 +2734,14 @@ pub(super) fn parse_Quads(p: &mut Parser) {
         if p.at_any(&[
             SyntaxKind::IRIREF,
             SyntaxKind::PNAME_NS,
+            SyntaxKind::STRING_LITERAL1,
+            SyntaxKind::STRING_LITERAL2,
             SyntaxKind::LParen,
             SyntaxKind::INTEGER,
             SyntaxKind::NIL,
             SyntaxKind::LBrack,
+            SyntaxKind::DoubleLess,
+            SyntaxKind::DoubleLessLParen,
             SyntaxKind::VAR1,
             SyntaxKind::VAR2,
             SyntaxKind::DECIMAL,
@@ -2527,8 +2754,6 @@ pub(super) fn parse_Quads(p: &mut Parser) {
             SyntaxKind::DOUBLE_NEGATIVE,
             SyntaxKind::True,
             SyntaxKind::False,
-            SyntaxKind::STRING_LITERAL1,
-            SyntaxKind::STRING_LITERAL2,
             SyntaxKind::STRING_LITERAL_LONG1,
             SyntaxKind::STRING_LITERAL_LONG2,
             SyntaxKind::PNAME_LN,
@@ -2540,7 +2765,7 @@ pub(super) fn parse_Quads(p: &mut Parser) {
     }
     p.close(marker, SyntaxKind::Quads);
 }
-/// [62] QuadsNotTriples -> 'GRAPH' VarOrIri '{' TriplesTemplate? '}'
+/// [64] QuadsNotTriples -> 'GRAPH' VarOrIri '{' TriplesTemplate? '}'
 pub(super) fn parse_QuadsNotTriples(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::GRAPH);
@@ -2549,10 +2774,14 @@ pub(super) fn parse_QuadsNotTriples(p: &mut Parser) {
     if p.at_any(&[
         SyntaxKind::IRIREF,
         SyntaxKind::PNAME_NS,
+        SyntaxKind::STRING_LITERAL1,
+        SyntaxKind::STRING_LITERAL2,
         SyntaxKind::LParen,
         SyntaxKind::INTEGER,
         SyntaxKind::NIL,
         SyntaxKind::LBrack,
+        SyntaxKind::DoubleLess,
+        SyntaxKind::DoubleLessLParen,
         SyntaxKind::VAR1,
         SyntaxKind::VAR2,
         SyntaxKind::DECIMAL,
@@ -2565,8 +2794,6 @@ pub(super) fn parse_QuadsNotTriples(p: &mut Parser) {
         SyntaxKind::DOUBLE_NEGATIVE,
         SyntaxKind::True,
         SyntaxKind::False,
-        SyntaxKind::STRING_LITERAL1,
-        SyntaxKind::STRING_LITERAL2,
         SyntaxKind::STRING_LITERAL_LONG1,
         SyntaxKind::STRING_LITERAL_LONG2,
         SyntaxKind::PNAME_LN,
@@ -2578,14 +2805,17 @@ pub(super) fn parse_QuadsNotTriples(p: &mut Parser) {
     p.expect(SyntaxKind::RCurly);
     p.close(marker, SyntaxKind::QuadsNotTriples);
 }
-/// [63] TriplesSameSubject -> VarOrTerm PropertyListNotEmpty | TriplesNode PropertyList
+/// [65] TriplesSameSubject -> VarOrTerm PropertyListNotEmpty | TriplesNode PropertyList | ReifiedTripleBlock
 pub(super) fn parse_TriplesSameSubject(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
         SyntaxKind::IRIREF
         | SyntaxKind::PNAME_NS
+        | SyntaxKind::STRING_LITERAL1
+        | SyntaxKind::STRING_LITERAL2
         | SyntaxKind::INTEGER
         | SyntaxKind::NIL
+        | SyntaxKind::DoubleLessLParen
         | SyntaxKind::VAR1
         | SyntaxKind::VAR2
         | SyntaxKind::DECIMAL
@@ -2598,8 +2828,6 @@ pub(super) fn parse_TriplesSameSubject(p: &mut Parser) {
         | SyntaxKind::DOUBLE_NEGATIVE
         | SyntaxKind::True
         | SyntaxKind::False
-        | SyntaxKind::STRING_LITERAL1
-        | SyntaxKind::STRING_LITERAL2
         | SyntaxKind::STRING_LITERAL_LONG1
         | SyntaxKind::STRING_LITERAL_LONG2
         | SyntaxKind::PNAME_LN
@@ -2612,6 +2840,9 @@ pub(super) fn parse_TriplesSameSubject(p: &mut Parser) {
             parse_TriplesNode(p);
             parse_PropertyList(p);
         }
+        SyntaxKind::DoubleLess => {
+            parse_ReifiedTripleBlock(p);
+        }
         SyntaxKind::Eof => {
             p.close(marker, SyntaxKind::TriplesSameSubject);
             let marker = p.open();
@@ -2622,8 +2853,11 @@ pub(super) fn parse_TriplesSameSubject(p: &mut Parser) {
             p.advance_with_error(vec![
                 SyntaxKind::IRIREF,
                 SyntaxKind::PNAME_NS,
+                SyntaxKind::STRING_LITERAL1,
+                SyntaxKind::STRING_LITERAL2,
                 SyntaxKind::INTEGER,
                 SyntaxKind::NIL,
+                SyntaxKind::DoubleLessLParen,
                 SyntaxKind::VAR1,
                 SyntaxKind::VAR2,
                 SyntaxKind::DECIMAL,
@@ -2636,8 +2870,6 @@ pub(super) fn parse_TriplesSameSubject(p: &mut Parser) {
                 SyntaxKind::DOUBLE_NEGATIVE,
                 SyntaxKind::True,
                 SyntaxKind::False,
-                SyntaxKind::STRING_LITERAL1,
-                SyntaxKind::STRING_LITERAL2,
                 SyntaxKind::STRING_LITERAL_LONG1,
                 SyntaxKind::STRING_LITERAL_LONG2,
                 SyntaxKind::PNAME_LN,
@@ -2645,16 +2877,19 @@ pub(super) fn parse_TriplesSameSubject(p: &mut Parser) {
                 SyntaxKind::ANON,
                 SyntaxKind::LParen,
                 SyntaxKind::LBrack,
+                SyntaxKind::DoubleLess,
             ]);
         }
     };
     p.close(marker, SyntaxKind::TriplesSameSubject);
 }
-/// [64] GroupGraphPatternSub -> TriplesBlock? (GraphPatternNotTriples '.'? TriplesBlock?)*
+/// [66] GroupGraphPatternSub -> TriplesBlock? (GraphPatternNotTriples '.'? TriplesBlock?)*
 pub(super) fn parse_GroupGraphPatternSub(p: &mut Parser) {
     if !p.at_any(&[
         SyntaxKind::IRIREF,
         SyntaxKind::PNAME_NS,
+        SyntaxKind::STRING_LITERAL1,
+        SyntaxKind::STRING_LITERAL2,
         SyntaxKind::LParen,
         SyntaxKind::LCurly,
         SyntaxKind::INTEGER,
@@ -2667,6 +2902,8 @@ pub(super) fn parse_GroupGraphPatternSub(p: &mut Parser) {
         SyntaxKind::MINUS,
         SyntaxKind::FILTER,
         SyntaxKind::LBrack,
+        SyntaxKind::DoubleLess,
+        SyntaxKind::DoubleLessLParen,
         SyntaxKind::VAR1,
         SyntaxKind::VAR2,
         SyntaxKind::DECIMAL,
@@ -2679,8 +2916,6 @@ pub(super) fn parse_GroupGraphPatternSub(p: &mut Parser) {
         SyntaxKind::DOUBLE_NEGATIVE,
         SyntaxKind::True,
         SyntaxKind::False,
-        SyntaxKind::STRING_LITERAL1,
-        SyntaxKind::STRING_LITERAL2,
         SyntaxKind::STRING_LITERAL_LONG1,
         SyntaxKind::STRING_LITERAL_LONG2,
         SyntaxKind::PNAME_LN,
@@ -2693,10 +2928,14 @@ pub(super) fn parse_GroupGraphPatternSub(p: &mut Parser) {
     if p.at_any(&[
         SyntaxKind::IRIREF,
         SyntaxKind::PNAME_NS,
+        SyntaxKind::STRING_LITERAL1,
+        SyntaxKind::STRING_LITERAL2,
         SyntaxKind::LParen,
         SyntaxKind::INTEGER,
         SyntaxKind::NIL,
         SyntaxKind::LBrack,
+        SyntaxKind::DoubleLess,
+        SyntaxKind::DoubleLessLParen,
         SyntaxKind::VAR1,
         SyntaxKind::VAR2,
         SyntaxKind::DECIMAL,
@@ -2709,8 +2948,6 @@ pub(super) fn parse_GroupGraphPatternSub(p: &mut Parser) {
         SyntaxKind::DOUBLE_NEGATIVE,
         SyntaxKind::True,
         SyntaxKind::False,
-        SyntaxKind::STRING_LITERAL1,
-        SyntaxKind::STRING_LITERAL2,
         SyntaxKind::STRING_LITERAL_LONG1,
         SyntaxKind::STRING_LITERAL_LONG2,
         SyntaxKind::PNAME_LN,
@@ -2738,10 +2975,14 @@ pub(super) fn parse_GroupGraphPatternSub(p: &mut Parser) {
         if p.at_any(&[
             SyntaxKind::IRIREF,
             SyntaxKind::PNAME_NS,
+            SyntaxKind::STRING_LITERAL1,
+            SyntaxKind::STRING_LITERAL2,
             SyntaxKind::LParen,
             SyntaxKind::INTEGER,
             SyntaxKind::NIL,
             SyntaxKind::LBrack,
+            SyntaxKind::DoubleLess,
+            SyntaxKind::DoubleLessLParen,
             SyntaxKind::VAR1,
             SyntaxKind::VAR2,
             SyntaxKind::DECIMAL,
@@ -2754,8 +2995,6 @@ pub(super) fn parse_GroupGraphPatternSub(p: &mut Parser) {
             SyntaxKind::DOUBLE_NEGATIVE,
             SyntaxKind::True,
             SyntaxKind::False,
-            SyntaxKind::STRING_LITERAL1,
-            SyntaxKind::STRING_LITERAL2,
             SyntaxKind::STRING_LITERAL_LONG1,
             SyntaxKind::STRING_LITERAL_LONG2,
             SyntaxKind::PNAME_LN,
@@ -2767,7 +3006,7 @@ pub(super) fn parse_GroupGraphPatternSub(p: &mut Parser) {
     }
     p.close(marker, SyntaxKind::GroupGraphPatternSub);
 }
-/// [65] TriplesBlock -> TriplesSameSubjectPath ('.' TriplesBlock?)?
+/// [67] TriplesBlock -> TriplesSameSubjectPath ('.' TriplesBlock?)?
 pub(super) fn parse_TriplesBlock(p: &mut Parser) {
     let marker = p.open();
     parse_TriplesSameSubjectPath(p);
@@ -2776,10 +3015,14 @@ pub(super) fn parse_TriplesBlock(p: &mut Parser) {
         if p.at_any(&[
             SyntaxKind::IRIREF,
             SyntaxKind::PNAME_NS,
+            SyntaxKind::STRING_LITERAL1,
+            SyntaxKind::STRING_LITERAL2,
             SyntaxKind::LParen,
             SyntaxKind::INTEGER,
             SyntaxKind::NIL,
             SyntaxKind::LBrack,
+            SyntaxKind::DoubleLess,
+            SyntaxKind::DoubleLessLParen,
             SyntaxKind::VAR1,
             SyntaxKind::VAR2,
             SyntaxKind::DECIMAL,
@@ -2792,8 +3035,6 @@ pub(super) fn parse_TriplesBlock(p: &mut Parser) {
             SyntaxKind::DOUBLE_NEGATIVE,
             SyntaxKind::True,
             SyntaxKind::False,
-            SyntaxKind::STRING_LITERAL1,
-            SyntaxKind::STRING_LITERAL2,
             SyntaxKind::STRING_LITERAL_LONG1,
             SyntaxKind::STRING_LITERAL_LONG2,
             SyntaxKind::PNAME_LN,
@@ -2805,7 +3046,7 @@ pub(super) fn parse_TriplesBlock(p: &mut Parser) {
     }
     p.close(marker, SyntaxKind::TriplesBlock);
 }
-/// [66] GraphPatternNotTriples -> GroupOrUnionGraphPattern | OptionalGraphPattern | MinusGraphPattern | GraphGraphPattern | ServiceGraphPattern | Filter | Bind | InlineData
+/// [68] GraphPatternNotTriples -> GroupOrUnionGraphPattern | OptionalGraphPattern | MinusGraphPattern | GraphGraphPattern | ServiceGraphPattern | Filter | Bind | InlineData
 pub(super) fn parse_GraphPatternNotTriples(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -2854,14 +3095,17 @@ pub(super) fn parse_GraphPatternNotTriples(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::GraphPatternNotTriples);
 }
-/// [67] TriplesSameSubjectPath -> VarOrTerm PropertyListPathNotEmpty | TriplesNodePath PropertyListPath
+/// [69] TriplesSameSubjectPath -> VarOrTerm PropertyListPathNotEmpty | TriplesNodePath PropertyListPath | ReifiedTripleBlockPath
 pub(super) fn parse_TriplesSameSubjectPath(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
         SyntaxKind::IRIREF
         | SyntaxKind::PNAME_NS
+        | SyntaxKind::STRING_LITERAL1
+        | SyntaxKind::STRING_LITERAL2
         | SyntaxKind::INTEGER
         | SyntaxKind::NIL
+        | SyntaxKind::DoubleLessLParen
         | SyntaxKind::VAR1
         | SyntaxKind::VAR2
         | SyntaxKind::DECIMAL
@@ -2874,8 +3118,6 @@ pub(super) fn parse_TriplesSameSubjectPath(p: &mut Parser) {
         | SyntaxKind::DOUBLE_NEGATIVE
         | SyntaxKind::True
         | SyntaxKind::False
-        | SyntaxKind::STRING_LITERAL1
-        | SyntaxKind::STRING_LITERAL2
         | SyntaxKind::STRING_LITERAL_LONG1
         | SyntaxKind::STRING_LITERAL_LONG2
         | SyntaxKind::PNAME_LN
@@ -2888,6 +3130,9 @@ pub(super) fn parse_TriplesSameSubjectPath(p: &mut Parser) {
             parse_TriplesNodePath(p);
             parse_PropertyListPath(p);
         }
+        SyntaxKind::DoubleLess => {
+            parse_ReifiedTripleBlockPath(p);
+        }
         SyntaxKind::Eof => {
             p.close(marker, SyntaxKind::TriplesSameSubjectPath);
             let marker = p.open();
@@ -2898,8 +3143,11 @@ pub(super) fn parse_TriplesSameSubjectPath(p: &mut Parser) {
             p.advance_with_error(vec![
                 SyntaxKind::IRIREF,
                 SyntaxKind::PNAME_NS,
+                SyntaxKind::STRING_LITERAL1,
+                SyntaxKind::STRING_LITERAL2,
                 SyntaxKind::INTEGER,
                 SyntaxKind::NIL,
+                SyntaxKind::DoubleLessLParen,
                 SyntaxKind::VAR1,
                 SyntaxKind::VAR2,
                 SyntaxKind::DECIMAL,
@@ -2912,8 +3160,6 @@ pub(super) fn parse_TriplesSameSubjectPath(p: &mut Parser) {
                 SyntaxKind::DOUBLE_NEGATIVE,
                 SyntaxKind::True,
                 SyntaxKind::False,
-                SyntaxKind::STRING_LITERAL1,
-                SyntaxKind::STRING_LITERAL2,
                 SyntaxKind::STRING_LITERAL_LONG1,
                 SyntaxKind::STRING_LITERAL_LONG2,
                 SyntaxKind::PNAME_LN,
@@ -2921,12 +3167,96 @@ pub(super) fn parse_TriplesSameSubjectPath(p: &mut Parser) {
                 SyntaxKind::ANON,
                 SyntaxKind::LParen,
                 SyntaxKind::LBrack,
+                SyntaxKind::DoubleLess,
             ]);
         }
     };
     p.close(marker, SyntaxKind::TriplesSameSubjectPath);
 }
-/// [68] GroupOrUnionGraphPattern -> GroupGraphPattern ('UNION' GroupGraphPattern)*
+/// [70] ReifiedTripleBlock -> ReifiedTriple PropertyList
+pub(super) fn parse_ReifiedTripleBlock(p: &mut Parser) {
+    let marker = p.open();
+    parse_ReifiedTriple(p);
+    parse_PropertyList(p);
+    p.close(marker, SyntaxKind::ReifiedTripleBlock);
+}
+/// [71] ReifiedTriple -> '<<' ReifiedTripleSubject Verb ReifiedTripleObject Reifier? '>>'
+pub(super) fn parse_ReifiedTriple(p: &mut Parser) {
+    let marker = p.open();
+    p.expect(SyntaxKind::DoubleLess);
+    parse_ReifiedTripleSubject(p);
+    parse_Verb(p);
+    parse_ReifiedTripleObject(p);
+    if p.at_any(&[SyntaxKind::Tilde]) {
+        parse_Reifier(p);
+    }
+    p.expect(SyntaxKind::DoubleMore);
+    p.close(marker, SyntaxKind::ReifiedTriple);
+}
+/// [72] PropertyList -> PropertyListNotEmpty?
+pub(super) fn parse_PropertyList(p: &mut Parser) {
+    if !p.at_any(&[
+        SyntaxKind::IRIREF,
+        SyntaxKind::PNAME_NS,
+        SyntaxKind::a,
+        SyntaxKind::VAR1,
+        SyntaxKind::VAR2,
+        SyntaxKind::PNAME_LN,
+    ]) {
+        return;
+    }
+    let marker = p.open();
+    if p.at_any(&[
+        SyntaxKind::IRIREF,
+        SyntaxKind::PNAME_NS,
+        SyntaxKind::a,
+        SyntaxKind::VAR1,
+        SyntaxKind::VAR2,
+        SyntaxKind::PNAME_LN,
+    ]) {
+        parse_PropertyListNotEmpty(p);
+    }
+    p.close(marker, SyntaxKind::PropertyList);
+}
+/// [73] ReifiedTripleBlockPath -> ReifiedTriple PropertyListPath
+pub(super) fn parse_ReifiedTripleBlockPath(p: &mut Parser) {
+    let marker = p.open();
+    parse_ReifiedTriple(p);
+    parse_PropertyListPath(p);
+    p.close(marker, SyntaxKind::ReifiedTripleBlockPath);
+}
+/// [74] PropertyListPath -> PropertyListPathNotEmpty?
+pub(super) fn parse_PropertyListPath(p: &mut Parser) {
+    if !p.at_any(&[
+        SyntaxKind::IRIREF,
+        SyntaxKind::PNAME_NS,
+        SyntaxKind::LParen,
+        SyntaxKind::a,
+        SyntaxKind::Zirkumflex,
+        SyntaxKind::ExclamationMark,
+        SyntaxKind::VAR1,
+        SyntaxKind::VAR2,
+        SyntaxKind::PNAME_LN,
+    ]) {
+        return;
+    }
+    let marker = p.open();
+    if p.at_any(&[
+        SyntaxKind::IRIREF,
+        SyntaxKind::PNAME_NS,
+        SyntaxKind::LParen,
+        SyntaxKind::a,
+        SyntaxKind::Zirkumflex,
+        SyntaxKind::ExclamationMark,
+        SyntaxKind::VAR1,
+        SyntaxKind::VAR2,
+        SyntaxKind::PNAME_LN,
+    ]) {
+        parse_PropertyListPathNotEmpty(p);
+    }
+    p.close(marker, SyntaxKind::PropertyListPath);
+}
+/// [75] GroupOrUnionGraphPattern -> GroupGraphPattern ('UNION' GroupGraphPattern)*
 pub(super) fn parse_GroupOrUnionGraphPattern(p: &mut Parser) {
     let marker = p.open();
     parse_GroupGraphPattern(p);
@@ -2936,21 +3266,21 @@ pub(super) fn parse_GroupOrUnionGraphPattern(p: &mut Parser) {
     }
     p.close(marker, SyntaxKind::GroupOrUnionGraphPattern);
 }
-/// [69] OptionalGraphPattern -> 'OPTIONAL' GroupGraphPattern
+/// [76] OptionalGraphPattern -> 'OPTIONAL' GroupGraphPattern
 pub(super) fn parse_OptionalGraphPattern(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::OPTIONAL);
     parse_GroupGraphPattern(p);
     p.close(marker, SyntaxKind::OptionalGraphPattern);
 }
-/// [70] MinusGraphPattern -> 'MINUS' GroupGraphPattern
+/// [77] MinusGraphPattern -> 'MINUS' GroupGraphPattern
 pub(super) fn parse_MinusGraphPattern(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::MINUS);
     parse_GroupGraphPattern(p);
     p.close(marker, SyntaxKind::MinusGraphPattern);
 }
-/// [71] GraphGraphPattern -> 'GRAPH' VarOrIri GroupGraphPattern
+/// [78] GraphGraphPattern -> 'GRAPH' VarOrIri GroupGraphPattern
 pub(super) fn parse_GraphGraphPattern(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::GRAPH);
@@ -2958,7 +3288,7 @@ pub(super) fn parse_GraphGraphPattern(p: &mut Parser) {
     parse_GroupGraphPattern(p);
     p.close(marker, SyntaxKind::GraphGraphPattern);
 }
-/// [72] ServiceGraphPattern -> 'SERVICE' 'SILENT'? VarOrIri GroupGraphPattern
+/// [79] ServiceGraphPattern -> 'SERVICE' 'SILENT'? VarOrIri GroupGraphPattern
 pub(super) fn parse_ServiceGraphPattern(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::SERVICE);
@@ -2969,14 +3299,14 @@ pub(super) fn parse_ServiceGraphPattern(p: &mut Parser) {
     parse_GroupGraphPattern(p);
     p.close(marker, SyntaxKind::ServiceGraphPattern);
 }
-/// [73] Filter -> 'FILTER' Constraint
+/// [80] Filter -> 'FILTER' Constraint
 pub(super) fn parse_Filter(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::FILTER);
     parse_Constraint(p);
     p.close(marker, SyntaxKind::Filter);
 }
-/// [74] Bind -> 'BIND' '(' Expression 'AS' Var ')'
+/// [81] Bind -> 'BIND' '(' Expression 'AS' Var ')'
 pub(super) fn parse_Bind(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::BIND);
@@ -2987,14 +3317,14 @@ pub(super) fn parse_Bind(p: &mut Parser) {
     p.expect(SyntaxKind::RParen);
     p.close(marker, SyntaxKind::Bind);
 }
-/// [75] InlineData -> 'VALUES' DataBlock
+/// [82] InlineData -> 'VALUES' DataBlock
 pub(super) fn parse_InlineData(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::VALUES);
     parse_DataBlock(p);
     p.close(marker, SyntaxKind::InlineData);
 }
-/// [76] InlineDataOneVar -> Var '{' DataBlockValue* '}'
+/// [83] InlineDataOneVar -> Var '{' DataBlockValue* '}'
 pub(super) fn parse_InlineDataOneVar(p: &mut Parser) {
     let marker = p.open();
     parse_Var(p);
@@ -3002,8 +3332,11 @@ pub(super) fn parse_InlineDataOneVar(p: &mut Parser) {
     while [
         SyntaxKind::IRIREF,
         SyntaxKind::PNAME_NS,
+        SyntaxKind::STRING_LITERAL1,
+        SyntaxKind::STRING_LITERAL2,
         SyntaxKind::INTEGER,
         SyntaxKind::UNDEF,
+        SyntaxKind::DoubleLessLParen,
         SyntaxKind::DECIMAL,
         SyntaxKind::DOUBLE,
         SyntaxKind::INTEGER_POSITIVE,
@@ -3014,8 +3347,6 @@ pub(super) fn parse_InlineDataOneVar(p: &mut Parser) {
         SyntaxKind::DOUBLE_NEGATIVE,
         SyntaxKind::True,
         SyntaxKind::False,
-        SyntaxKind::STRING_LITERAL1,
-        SyntaxKind::STRING_LITERAL2,
         SyntaxKind::STRING_LITERAL_LONG1,
         SyntaxKind::STRING_LITERAL_LONG2,
         SyntaxKind::PNAME_LN,
@@ -3027,7 +3358,7 @@ pub(super) fn parse_InlineDataOneVar(p: &mut Parser) {
     p.expect(SyntaxKind::RCurly);
     p.close(marker, SyntaxKind::InlineDataOneVar);
 }
-/// [77] InlineDataFull -> ('NIL' | '(' Var* ')') '{' ('(' DataBlockValue* ')' | 'NIL')* '}'
+/// [84] InlineDataFull -> ('NIL' | '(' Var* ')') '{' ('(' DataBlockValue* ')' | 'NIL')* '}'
 pub(super) fn parse_InlineDataFull(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -3059,8 +3390,11 @@ pub(super) fn parse_InlineDataFull(p: &mut Parser) {
                 while [
                     SyntaxKind::IRIREF,
                     SyntaxKind::PNAME_NS,
+                    SyntaxKind::STRING_LITERAL1,
+                    SyntaxKind::STRING_LITERAL2,
                     SyntaxKind::INTEGER,
                     SyntaxKind::UNDEF,
+                    SyntaxKind::DoubleLessLParen,
                     SyntaxKind::DECIMAL,
                     SyntaxKind::DOUBLE,
                     SyntaxKind::INTEGER_POSITIVE,
@@ -3071,8 +3405,6 @@ pub(super) fn parse_InlineDataFull(p: &mut Parser) {
                     SyntaxKind::DOUBLE_NEGATIVE,
                     SyntaxKind::True,
                     SyntaxKind::False,
-                    SyntaxKind::STRING_LITERAL1,
-                    SyntaxKind::STRING_LITERAL2,
                     SyntaxKind::STRING_LITERAL_LONG1,
                     SyntaxKind::STRING_LITERAL_LONG2,
                     SyntaxKind::PNAME_LN,
@@ -3100,7 +3432,7 @@ pub(super) fn parse_InlineDataFull(p: &mut Parser) {
     p.expect(SyntaxKind::RCurly);
     p.close(marker, SyntaxKind::InlineDataFull);
 }
-/// [78] DataBlockValue -> iri | RDFLiteral | NumericLiteral | BooleanLiteral | 'UNDEF'
+/// [85] DataBlockValue -> iri | RDFLiteral | NumericLiteral | BooleanLiteral | 'UNDEF' | TripleTermData
 pub(super) fn parse_DataBlockValue(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -3130,6 +3462,9 @@ pub(super) fn parse_DataBlockValue(p: &mut Parser) {
         SyntaxKind::UNDEF => {
             p.expect(SyntaxKind::UNDEF);
         }
+        SyntaxKind::DoubleLessLParen => {
+            parse_TripleTermData(p);
+        }
         SyntaxKind::Eof => {
             p.close(marker, SyntaxKind::DataBlockValue);
             let marker = p.open();
@@ -3157,19 +3492,20 @@ pub(super) fn parse_DataBlockValue(p: &mut Parser) {
                 SyntaxKind::True,
                 SyntaxKind::False,
                 SyntaxKind::UNDEF,
+                SyntaxKind::DoubleLessLParen,
             ]);
         }
     };
     p.close(marker, SyntaxKind::DataBlockValue);
 }
-/// [79] RDFLiteral -> String ('LANGTAG' | '^^' iri)?
+/// [86] RDFLiteral -> String ('LANG_DIR' | '^^' iri)?
 pub(super) fn parse_RDFLiteral(p: &mut Parser) {
     let marker = p.open();
     parse_String(p);
-    if p.at_any(&[SyntaxKind::LANGTAG, SyntaxKind::DoubleZirkumflex]) {
+    if p.at_any(&[SyntaxKind::LANG_DIR, SyntaxKind::DoubleZirkumflex]) {
         match p.nth(0) {
-            SyntaxKind::LANGTAG => {
-                p.expect(SyntaxKind::LANGTAG);
+            SyntaxKind::LANG_DIR => {
+                p.expect(SyntaxKind::LANG_DIR);
             }
             SyntaxKind::DoubleZirkumflex => {
                 p.expect(SyntaxKind::DoubleZirkumflex);
@@ -3182,13 +3518,13 @@ pub(super) fn parse_RDFLiteral(p: &mut Parser) {
                 return;
             }
             _ => {
-                p.advance_with_error(vec![SyntaxKind::LANGTAG, SyntaxKind::DoubleZirkumflex]);
+                p.advance_with_error(vec![SyntaxKind::LANG_DIR, SyntaxKind::DoubleZirkumflex]);
             }
         };
     }
     p.close(marker, SyntaxKind::RDFLiteral);
 }
-/// [80] NumericLiteral -> NumericLiteralUnsigned | NumericLiteralPositive | NumericLiteralNegative
+/// [87] NumericLiteral -> NumericLiteralUnsigned | NumericLiteralPositive | NumericLiteralNegative
 pub(super) fn parse_NumericLiteral(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -3227,7 +3563,7 @@ pub(super) fn parse_NumericLiteral(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::NumericLiteral);
 }
-/// [81] BooleanLiteral -> 'true' | 'false'
+/// [88] BooleanLiteral -> 'true' | 'false'
 pub(super) fn parse_BooleanLiteral(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -3249,7 +3585,110 @@ pub(super) fn parse_BooleanLiteral(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::BooleanLiteral);
 }
-/// [82] ArgList -> 'NIL' | '(' 'DISTINCT'? Expression (',' Expression)* ')'
+/// [89] TripleTermData -> '<<(' TripleTermDataSubject (iri | 'a') TripleTermDataObject ')>>'
+pub(super) fn parse_TripleTermData(p: &mut Parser) {
+    let marker = p.open();
+    p.expect(SyntaxKind::DoubleLessLParen);
+    parse_TripleTermDataSubject(p);
+    match p.nth(0) {
+        SyntaxKind::IRIREF | SyntaxKind::PNAME_NS | SyntaxKind::PNAME_LN => {
+            parse_iri(p);
+        }
+        SyntaxKind::a => {
+            p.expect(SyntaxKind::a);
+        }
+        SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::TripleTermData);
+            let marker = p.open();
+            p.close(marker, SyntaxKind::Error);
+            return;
+        }
+        _ => {
+            p.advance_with_error(vec![
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::a,
+            ]);
+        }
+    };
+    parse_TripleTermDataObject(p);
+    p.expect(SyntaxKind::RParenDoubleMore);
+    p.close(marker, SyntaxKind::TripleTermData);
+}
+/// [90] Reifier -> '~' VarOrReifierId?
+pub(super) fn parse_Reifier(p: &mut Parser) {
+    let marker = p.open();
+    p.expect(SyntaxKind::Tilde);
+    if p.at_any(&[
+        SyntaxKind::IRIREF,
+        SyntaxKind::PNAME_NS,
+        SyntaxKind::VAR1,
+        SyntaxKind::VAR2,
+        SyntaxKind::PNAME_LN,
+        SyntaxKind::BLANK_NODE_LABEL,
+        SyntaxKind::ANON,
+    ]) {
+        parse_VarOrReifierId(p);
+    }
+    p.close(marker, SyntaxKind::Reifier);
+}
+/// [91] VarOrReifierId -> Var | iri | BlankNode
+pub(super) fn parse_VarOrReifierId(p: &mut Parser) {
+    let marker = p.open();
+    match p.nth(0) {
+        SyntaxKind::VAR1 | SyntaxKind::VAR2 => {
+            parse_Var(p);
+        }
+        SyntaxKind::IRIREF | SyntaxKind::PNAME_NS | SyntaxKind::PNAME_LN => {
+            parse_iri(p);
+        }
+        SyntaxKind::BLANK_NODE_LABEL | SyntaxKind::ANON => {
+            parse_BlankNode(p);
+        }
+        SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::VarOrReifierId);
+            let marker = p.open();
+            p.close(marker, SyntaxKind::Error);
+            return;
+        }
+        _ => {
+            p.advance_with_error(vec![
+                SyntaxKind::VAR1,
+                SyntaxKind::VAR2,
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::BLANK_NODE_LABEL,
+                SyntaxKind::ANON,
+            ]);
+        }
+    };
+    p.close(marker, SyntaxKind::VarOrReifierId);
+}
+/// [92] BlankNode -> 'BLANK_NODE_LABEL' | 'ANON'
+pub(super) fn parse_BlankNode(p: &mut Parser) {
+    let marker = p.open();
+    match p.nth(0) {
+        SyntaxKind::BLANK_NODE_LABEL => {
+            p.expect(SyntaxKind::BLANK_NODE_LABEL);
+        }
+        SyntaxKind::ANON => {
+            p.expect(SyntaxKind::ANON);
+        }
+        SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::BlankNode);
+            let marker = p.open();
+            p.close(marker, SyntaxKind::Error);
+            return;
+        }
+        _ => {
+            p.advance_with_error(vec![SyntaxKind::BLANK_NODE_LABEL, SyntaxKind::ANON]);
+        }
+    };
+    p.close(marker, SyntaxKind::BlankNode);
+}
+/// [93] ArgList -> 'NIL' | '(' 'DISTINCT'? Expression (',' Expression)* ')'
 pub(super) fn parse_ArgList(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -3280,7 +3719,7 @@ pub(super) fn parse_ArgList(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::ArgList);
 }
-/// [83] ExpressionList -> 'NIL' | '(' Expression (',' Expression)* ')'
+/// [94] ExpressionList -> 'NIL' | '(' Expression (',' Expression)* ')'
 pub(super) fn parse_ExpressionList(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -3308,7 +3747,7 @@ pub(super) fn parse_ExpressionList(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::ExpressionList);
 }
-/// [84] ConstructTriples -> TriplesSameSubject ('.' ConstructTriples?)?
+/// [95] ConstructTriples -> TriplesSameSubject ('.' ConstructTriples?)?
 pub(super) fn parse_ConstructTriples(p: &mut Parser) {
     let marker = p.open();
     parse_TriplesSameSubject(p);
@@ -3317,10 +3756,14 @@ pub(super) fn parse_ConstructTriples(p: &mut Parser) {
         if p.at_any(&[
             SyntaxKind::IRIREF,
             SyntaxKind::PNAME_NS,
+            SyntaxKind::STRING_LITERAL1,
+            SyntaxKind::STRING_LITERAL2,
             SyntaxKind::LParen,
             SyntaxKind::INTEGER,
             SyntaxKind::NIL,
             SyntaxKind::LBrack,
+            SyntaxKind::DoubleLess,
+            SyntaxKind::DoubleLessLParen,
             SyntaxKind::VAR1,
             SyntaxKind::VAR2,
             SyntaxKind::DECIMAL,
@@ -3333,8 +3776,6 @@ pub(super) fn parse_ConstructTriples(p: &mut Parser) {
             SyntaxKind::DOUBLE_NEGATIVE,
             SyntaxKind::True,
             SyntaxKind::False,
-            SyntaxKind::STRING_LITERAL1,
-            SyntaxKind::STRING_LITERAL2,
             SyntaxKind::STRING_LITERAL_LONG1,
             SyntaxKind::STRING_LITERAL_LONG2,
             SyntaxKind::PNAME_LN,
@@ -3346,17 +3787,23 @@ pub(super) fn parse_ConstructTriples(p: &mut Parser) {
     }
     p.close(marker, SyntaxKind::ConstructTriples);
 }
-/// [85] VarOrTerm -> Var | GraphTerm
+/// [96] VarOrTerm -> Var | iri | RDFLiteral | NumericLiteral | BooleanLiteral | BlankNode | 'NIL' | TripleTerm
 pub(super) fn parse_VarOrTerm(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
         SyntaxKind::VAR1 | SyntaxKind::VAR2 => {
             parse_Var(p);
         }
-        SyntaxKind::IRIREF
-        | SyntaxKind::PNAME_NS
-        | SyntaxKind::INTEGER
-        | SyntaxKind::NIL
+        SyntaxKind::IRIREF | SyntaxKind::PNAME_NS | SyntaxKind::PNAME_LN => {
+            parse_iri(p);
+        }
+        SyntaxKind::STRING_LITERAL1
+        | SyntaxKind::STRING_LITERAL2
+        | SyntaxKind::STRING_LITERAL_LONG1
+        | SyntaxKind::STRING_LITERAL_LONG2 => {
+            parse_RDFLiteral(p);
+        }
+        SyntaxKind::INTEGER
         | SyntaxKind::DECIMAL
         | SyntaxKind::DOUBLE
         | SyntaxKind::INTEGER_POSITIVE
@@ -3364,17 +3811,20 @@ pub(super) fn parse_VarOrTerm(p: &mut Parser) {
         | SyntaxKind::DOUBLE_POSITIVE
         | SyntaxKind::INTEGER_NEGATIVE
         | SyntaxKind::DECIMAL_NEGATIVE
-        | SyntaxKind::DOUBLE_NEGATIVE
-        | SyntaxKind::True
-        | SyntaxKind::False
-        | SyntaxKind::STRING_LITERAL1
-        | SyntaxKind::STRING_LITERAL2
-        | SyntaxKind::STRING_LITERAL_LONG1
-        | SyntaxKind::STRING_LITERAL_LONG2
-        | SyntaxKind::PNAME_LN
-        | SyntaxKind::BLANK_NODE_LABEL
-        | SyntaxKind::ANON => {
-            parse_GraphTerm(p);
+        | SyntaxKind::DOUBLE_NEGATIVE => {
+            parse_NumericLiteral(p);
+        }
+        SyntaxKind::True | SyntaxKind::False => {
+            parse_BooleanLiteral(p);
+        }
+        SyntaxKind::BLANK_NODE_LABEL | SyntaxKind::ANON => {
+            parse_BlankNode(p);
+        }
+        SyntaxKind::NIL => {
+            p.expect(SyntaxKind::NIL);
+        }
+        SyntaxKind::DoubleLessLParen => {
+            parse_TripleTerm(p);
         }
         SyntaxKind::Eof => {
             p.close(marker, SyntaxKind::VarOrTerm);
@@ -3388,8 +3838,12 @@ pub(super) fn parse_VarOrTerm(p: &mut Parser) {
                 SyntaxKind::VAR2,
                 SyntaxKind::IRIREF,
                 SyntaxKind::PNAME_NS,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::STRING_LITERAL1,
+                SyntaxKind::STRING_LITERAL2,
+                SyntaxKind::STRING_LITERAL_LONG1,
+                SyntaxKind::STRING_LITERAL_LONG2,
                 SyntaxKind::INTEGER,
-                SyntaxKind::NIL,
                 SyntaxKind::DECIMAL,
                 SyntaxKind::DOUBLE,
                 SyntaxKind::INTEGER_POSITIVE,
@@ -3400,19 +3854,16 @@ pub(super) fn parse_VarOrTerm(p: &mut Parser) {
                 SyntaxKind::DOUBLE_NEGATIVE,
                 SyntaxKind::True,
                 SyntaxKind::False,
-                SyntaxKind::STRING_LITERAL1,
-                SyntaxKind::STRING_LITERAL2,
-                SyntaxKind::STRING_LITERAL_LONG1,
-                SyntaxKind::STRING_LITERAL_LONG2,
-                SyntaxKind::PNAME_LN,
                 SyntaxKind::BLANK_NODE_LABEL,
                 SyntaxKind::ANON,
+                SyntaxKind::NIL,
+                SyntaxKind::DoubleLessLParen,
             ]);
         }
     };
     p.close(marker, SyntaxKind::VarOrTerm);
 }
-/// [86] PropertyListNotEmpty -> Verb ObjectList (';' (Verb ObjectList)?)*
+/// [97] PropertyListNotEmpty -> Verb ObjectList (';' (Verb ObjectList)?)*
 pub(super) fn parse_PropertyListNotEmpty(p: &mut Parser) {
     let marker = p.open();
     parse_Verb(p);
@@ -3433,7 +3884,7 @@ pub(super) fn parse_PropertyListNotEmpty(p: &mut Parser) {
     }
     p.close(marker, SyntaxKind::PropertyListNotEmpty);
 }
-/// [87] TriplesNode -> Collection | BlankNodePropertyList
+/// [98] TriplesNode -> Collection | BlankNodePropertyList
 pub(super) fn parse_TriplesNode(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -3455,32 +3906,7 @@ pub(super) fn parse_TriplesNode(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::TriplesNode);
 }
-/// [88] PropertyList -> PropertyListNotEmpty?
-pub(super) fn parse_PropertyList(p: &mut Parser) {
-    if !p.at_any(&[
-        SyntaxKind::IRIREF,
-        SyntaxKind::PNAME_NS,
-        SyntaxKind::a,
-        SyntaxKind::VAR1,
-        SyntaxKind::VAR2,
-        SyntaxKind::PNAME_LN,
-    ]) {
-        return;
-    }
-    let marker = p.open();
-    if p.at_any(&[
-        SyntaxKind::IRIREF,
-        SyntaxKind::PNAME_NS,
-        SyntaxKind::a,
-        SyntaxKind::VAR1,
-        SyntaxKind::VAR2,
-        SyntaxKind::PNAME_LN,
-    ]) {
-        parse_PropertyListNotEmpty(p);
-    }
-    p.close(marker, SyntaxKind::PropertyList);
-}
-/// [89] Verb -> VarOrIri | 'a'
+/// [99] Verb -> VarOrIri | 'a'
 pub(super) fn parse_Verb(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -3513,7 +3939,7 @@ pub(super) fn parse_Verb(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::Verb);
 }
-/// [90] ObjectList -> Object (',' Object)*
+/// [100] ObjectList -> Object (',' Object)*
 pub(super) fn parse_ObjectList(p: &mut Parser) {
     let marker = p.open();
     parse_Object(p);
@@ -3523,20 +3949,24 @@ pub(super) fn parse_ObjectList(p: &mut Parser) {
     }
     p.close(marker, SyntaxKind::ObjectList);
 }
-/// [91] Object -> GraphNode
+/// [101] Object -> GraphNode Annotation
 pub(super) fn parse_Object(p: &mut Parser) {
     let marker = p.open();
     parse_GraphNode(p);
+    parse_Annotation(p);
     p.close(marker, SyntaxKind::Object);
 }
-/// [92] GraphNode -> VarOrTerm | TriplesNode
+/// [102] GraphNode -> VarOrTerm | TriplesNode | ReifiedTriple
 pub(super) fn parse_GraphNode(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
         SyntaxKind::IRIREF
         | SyntaxKind::PNAME_NS
+        | SyntaxKind::STRING_LITERAL1
+        | SyntaxKind::STRING_LITERAL2
         | SyntaxKind::INTEGER
         | SyntaxKind::NIL
+        | SyntaxKind::DoubleLessLParen
         | SyntaxKind::VAR1
         | SyntaxKind::VAR2
         | SyntaxKind::DECIMAL
@@ -3549,8 +3979,6 @@ pub(super) fn parse_GraphNode(p: &mut Parser) {
         | SyntaxKind::DOUBLE_NEGATIVE
         | SyntaxKind::True
         | SyntaxKind::False
-        | SyntaxKind::STRING_LITERAL1
-        | SyntaxKind::STRING_LITERAL2
         | SyntaxKind::STRING_LITERAL_LONG1
         | SyntaxKind::STRING_LITERAL_LONG2
         | SyntaxKind::PNAME_LN
@@ -3560,6 +3988,9 @@ pub(super) fn parse_GraphNode(p: &mut Parser) {
         }
         SyntaxKind::LParen | SyntaxKind::LBrack => {
             parse_TriplesNode(p);
+        }
+        SyntaxKind::DoubleLess => {
+            parse_ReifiedTriple(p);
         }
         SyntaxKind::Eof => {
             p.close(marker, SyntaxKind::GraphNode);
@@ -3571,8 +4002,11 @@ pub(super) fn parse_GraphNode(p: &mut Parser) {
             p.advance_with_error(vec![
                 SyntaxKind::IRIREF,
                 SyntaxKind::PNAME_NS,
+                SyntaxKind::STRING_LITERAL1,
+                SyntaxKind::STRING_LITERAL2,
                 SyntaxKind::INTEGER,
                 SyntaxKind::NIL,
+                SyntaxKind::DoubleLessLParen,
                 SyntaxKind::VAR1,
                 SyntaxKind::VAR2,
                 SyntaxKind::DECIMAL,
@@ -3585,8 +4019,6 @@ pub(super) fn parse_GraphNode(p: &mut Parser) {
                 SyntaxKind::DOUBLE_NEGATIVE,
                 SyntaxKind::True,
                 SyntaxKind::False,
-                SyntaxKind::STRING_LITERAL1,
-                SyntaxKind::STRING_LITERAL2,
                 SyntaxKind::STRING_LITERAL_LONG1,
                 SyntaxKind::STRING_LITERAL_LONG2,
                 SyntaxKind::PNAME_LN,
@@ -3594,12 +4026,40 @@ pub(super) fn parse_GraphNode(p: &mut Parser) {
                 SyntaxKind::ANON,
                 SyntaxKind::LParen,
                 SyntaxKind::LBrack,
+                SyntaxKind::DoubleLess,
             ]);
         }
     };
     p.close(marker, SyntaxKind::GraphNode);
 }
-/// [93] PropertyListPathNotEmpty -> (VerbPath | VerbSimple) ObjectListPath (';' ((VerbPath | VerbSimple) ObjectList)?)*
+/// [103] Annotation -> (Reifier | AnnotationBlock)*
+pub(super) fn parse_Annotation(p: &mut Parser) {
+    if !p.at_any(&[SyntaxKind::Tilde, SyntaxKind::LCurlyPipe]) {
+        return;
+    }
+    let marker = p.open();
+    while [SyntaxKind::Tilde, SyntaxKind::LCurlyPipe].contains(&p.nth(0)) {
+        match p.nth(0) {
+            SyntaxKind::Tilde => {
+                parse_Reifier(p);
+            }
+            SyntaxKind::LCurlyPipe => {
+                parse_AnnotationBlock(p);
+            }
+            SyntaxKind::Eof => {
+                p.close(marker, SyntaxKind::Annotation);
+                let marker = p.open();
+                p.close(marker, SyntaxKind::Error);
+                return;
+            }
+            _ => {
+                p.advance_with_error(vec![SyntaxKind::Tilde, SyntaxKind::LCurlyPipe]);
+            }
+        };
+    }
+    p.close(marker, SyntaxKind::Annotation);
+}
+/// [104] PropertyListPathNotEmpty -> (VerbPath | VerbSimple) ObjectListPath (';' ((VerbPath | VerbSimple) ObjectListPath)?)*
 pub(super) fn parse_PropertyListPathNotEmpty(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -3682,12 +4142,12 @@ pub(super) fn parse_PropertyListPathNotEmpty(p: &mut Parser) {
                     ]);
                 }
             };
-            parse_ObjectList(p);
+            parse_ObjectListPath(p);
         }
     }
     p.close(marker, SyntaxKind::PropertyListPathNotEmpty);
 }
-/// [94] TriplesNodePath -> CollectionPath | BlankNodePropertyListPath
+/// [105] TriplesNodePath -> CollectionPath | BlankNodePropertyListPath
 pub(super) fn parse_TriplesNodePath(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -3709,50 +4169,19 @@ pub(super) fn parse_TriplesNodePath(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::TriplesNodePath);
 }
-/// [95] PropertyListPath -> PropertyListPathNotEmpty?
-pub(super) fn parse_PropertyListPath(p: &mut Parser) {
-    if !p.at_any(&[
-        SyntaxKind::IRIREF,
-        SyntaxKind::PNAME_NS,
-        SyntaxKind::LParen,
-        SyntaxKind::a,
-        SyntaxKind::Zirkumflex,
-        SyntaxKind::ExclamationMark,
-        SyntaxKind::VAR1,
-        SyntaxKind::VAR2,
-        SyntaxKind::PNAME_LN,
-    ]) {
-        return;
-    }
-    let marker = p.open();
-    if p.at_any(&[
-        SyntaxKind::IRIREF,
-        SyntaxKind::PNAME_NS,
-        SyntaxKind::LParen,
-        SyntaxKind::a,
-        SyntaxKind::Zirkumflex,
-        SyntaxKind::ExclamationMark,
-        SyntaxKind::VAR1,
-        SyntaxKind::VAR2,
-        SyntaxKind::PNAME_LN,
-    ]) {
-        parse_PropertyListPathNotEmpty(p);
-    }
-    p.close(marker, SyntaxKind::PropertyListPath);
-}
-/// [96] VerbPath -> Path
+/// [106] VerbPath -> Path
 pub(super) fn parse_VerbPath(p: &mut Parser) {
     let marker = p.open();
     parse_Path(p);
     p.close(marker, SyntaxKind::VerbPath);
 }
-/// [97] VerbSimple -> Var
+/// [107] VerbSimple -> Var
 pub(super) fn parse_VerbSimple(p: &mut Parser) {
     let marker = p.open();
     parse_Var(p);
     p.close(marker, SyntaxKind::VerbSimple);
 }
-/// [98] ObjectListPath -> ObjectPath (',' ObjectPath)*
+/// [108] ObjectListPath -> ObjectPath (',' ObjectPath)*
 pub(super) fn parse_ObjectListPath(p: &mut Parser) {
     let marker = p.open();
     parse_ObjectPath(p);
@@ -3762,26 +4191,30 @@ pub(super) fn parse_ObjectListPath(p: &mut Parser) {
     }
     p.close(marker, SyntaxKind::ObjectListPath);
 }
-/// [99] Path -> PathAlternative
+/// [109] Path -> PathAlternative
 pub(super) fn parse_Path(p: &mut Parser) {
     let marker = p.open();
     parse_PathAlternative(p);
     p.close(marker, SyntaxKind::Path);
 }
-/// [100] ObjectPath -> GraphNodePath
+/// [110] ObjectPath -> GraphNodePath AnnotationPath
 pub(super) fn parse_ObjectPath(p: &mut Parser) {
     let marker = p.open();
     parse_GraphNodePath(p);
+    parse_AnnotationPath(p);
     p.close(marker, SyntaxKind::ObjectPath);
 }
-/// [101] GraphNodePath -> VarOrTerm | TriplesNodePath
+/// [111] GraphNodePath -> VarOrTerm | TriplesNodePath | ReifiedTriple
 pub(super) fn parse_GraphNodePath(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
         SyntaxKind::IRIREF
         | SyntaxKind::PNAME_NS
+        | SyntaxKind::STRING_LITERAL1
+        | SyntaxKind::STRING_LITERAL2
         | SyntaxKind::INTEGER
         | SyntaxKind::NIL
+        | SyntaxKind::DoubleLessLParen
         | SyntaxKind::VAR1
         | SyntaxKind::VAR2
         | SyntaxKind::DECIMAL
@@ -3794,8 +4227,6 @@ pub(super) fn parse_GraphNodePath(p: &mut Parser) {
         | SyntaxKind::DOUBLE_NEGATIVE
         | SyntaxKind::True
         | SyntaxKind::False
-        | SyntaxKind::STRING_LITERAL1
-        | SyntaxKind::STRING_LITERAL2
         | SyntaxKind::STRING_LITERAL_LONG1
         | SyntaxKind::STRING_LITERAL_LONG2
         | SyntaxKind::PNAME_LN
@@ -3805,6 +4236,9 @@ pub(super) fn parse_GraphNodePath(p: &mut Parser) {
         }
         SyntaxKind::LParen | SyntaxKind::LBrack => {
             parse_TriplesNodePath(p);
+        }
+        SyntaxKind::DoubleLess => {
+            parse_ReifiedTriple(p);
         }
         SyntaxKind::Eof => {
             p.close(marker, SyntaxKind::GraphNodePath);
@@ -3816,8 +4250,11 @@ pub(super) fn parse_GraphNodePath(p: &mut Parser) {
             p.advance_with_error(vec![
                 SyntaxKind::IRIREF,
                 SyntaxKind::PNAME_NS,
+                SyntaxKind::STRING_LITERAL1,
+                SyntaxKind::STRING_LITERAL2,
                 SyntaxKind::INTEGER,
                 SyntaxKind::NIL,
+                SyntaxKind::DoubleLessLParen,
                 SyntaxKind::VAR1,
                 SyntaxKind::VAR2,
                 SyntaxKind::DECIMAL,
@@ -3830,8 +4267,6 @@ pub(super) fn parse_GraphNodePath(p: &mut Parser) {
                 SyntaxKind::DOUBLE_NEGATIVE,
                 SyntaxKind::True,
                 SyntaxKind::False,
-                SyntaxKind::STRING_LITERAL1,
-                SyntaxKind::STRING_LITERAL2,
                 SyntaxKind::STRING_LITERAL_LONG1,
                 SyntaxKind::STRING_LITERAL_LONG2,
                 SyntaxKind::PNAME_LN,
@@ -3839,12 +4274,40 @@ pub(super) fn parse_GraphNodePath(p: &mut Parser) {
                 SyntaxKind::ANON,
                 SyntaxKind::LParen,
                 SyntaxKind::LBrack,
+                SyntaxKind::DoubleLess,
             ]);
         }
     };
     p.close(marker, SyntaxKind::GraphNodePath);
 }
-/// [102] PathAlternative -> PathSequence ('|' PathSequence)*
+/// [112] AnnotationPath -> (Reifier | AnnotationBlockPath)*
+pub(super) fn parse_AnnotationPath(p: &mut Parser) {
+    if !p.at_any(&[SyntaxKind::Tilde, SyntaxKind::LCurlyPipe]) {
+        return;
+    }
+    let marker = p.open();
+    while [SyntaxKind::Tilde, SyntaxKind::LCurlyPipe].contains(&p.nth(0)) {
+        match p.nth(0) {
+            SyntaxKind::Tilde => {
+                parse_Reifier(p);
+            }
+            SyntaxKind::LCurlyPipe => {
+                parse_AnnotationBlockPath(p);
+            }
+            SyntaxKind::Eof => {
+                p.close(marker, SyntaxKind::AnnotationPath);
+                let marker = p.open();
+                p.close(marker, SyntaxKind::Error);
+                return;
+            }
+            _ => {
+                p.advance_with_error(vec![SyntaxKind::Tilde, SyntaxKind::LCurlyPipe]);
+            }
+        };
+    }
+    p.close(marker, SyntaxKind::AnnotationPath);
+}
+/// [113] PathAlternative -> PathSequence ('|' PathSequence)*
 pub(super) fn parse_PathAlternative(p: &mut Parser) {
     let marker = p.open();
     parse_PathSequence(p);
@@ -3854,7 +4317,7 @@ pub(super) fn parse_PathAlternative(p: &mut Parser) {
     }
     p.close(marker, SyntaxKind::PathAlternative);
 }
-/// [103] PathSequence -> PathEltOrInverse ('/' PathEltOrInverse)*
+/// [114] PathSequence -> PathEltOrInverse ('/' PathEltOrInverse)*
 pub(super) fn parse_PathSequence(p: &mut Parser) {
     let marker = p.open();
     parse_PathEltOrInverse(p);
@@ -3864,7 +4327,7 @@ pub(super) fn parse_PathSequence(p: &mut Parser) {
     }
     p.close(marker, SyntaxKind::PathSequence);
 }
-/// [104] PathEltOrInverse -> PathElt | '^' PathElt
+/// [115] PathEltOrInverse -> PathElt | '^' PathElt
 pub(super) fn parse_PathEltOrInverse(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -3900,7 +4363,7 @@ pub(super) fn parse_PathEltOrInverse(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::PathEltOrInverse);
 }
-/// [105] PathElt -> PathPrimary PathMod?
+/// [116] PathElt -> PathPrimary PathMod?
 pub(super) fn parse_PathElt(p: &mut Parser) {
     let marker = p.open();
     parse_PathPrimary(p);
@@ -3909,7 +4372,7 @@ pub(super) fn parse_PathElt(p: &mut Parser) {
     }
     p.close(marker, SyntaxKind::PathElt);
 }
-/// [106] PathPrimary -> iri | 'a' | '!' PathNegatedPropertySet | '(' Path ')'
+/// [117] PathPrimary -> iri | 'a' | '!' PathNegatedPropertySet | '(' Path ')'
 pub(super) fn parse_PathPrimary(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -3947,7 +4410,7 @@ pub(super) fn parse_PathPrimary(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::PathPrimary);
 }
-/// [107] PathMod -> '?' | '*' | '+'
+/// [118] PathMod -> '?' | '*' | '+'
 pub(super) fn parse_PathMod(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -3976,7 +4439,7 @@ pub(super) fn parse_PathMod(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::PathMod);
 }
-/// [108] PathNegatedPropertySet -> PathOneInPropertySet | '(' (PathOneInPropertySet ('|' PathOneInPropertySet)*)? ')'
+/// [119] PathNegatedPropertySet -> PathOneInPropertySet | '(' (PathOneInPropertySet ('|' PathOneInPropertySet)*)? ')'
 pub(super) fn parse_PathNegatedPropertySet(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -4023,7 +4486,7 @@ pub(super) fn parse_PathNegatedPropertySet(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::PathNegatedPropertySet);
 }
-/// [109] PathOneInPropertySet -> iri | 'a' | '^' (iri | 'a')
+/// [120] PathOneInPropertySet -> iri | 'a' | '^' (iri | 'a')
 pub(super) fn parse_PathOneInPropertySet(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -4076,17 +4539,7 @@ pub(super) fn parse_PathOneInPropertySet(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::PathOneInPropertySet);
 }
-
-// NOTE: This is a strange thing in the SPARQL grammar.
-// The Integer rule is never used anywhere, yet it exists.
-#[allow(dead_code)]
-/// [110] Integer -> 'INTEGER'
-pub(super) fn parse_Integer(p: &mut Parser) {
-    let marker = p.open();
-    p.expect(SyntaxKind::INTEGER);
-    p.close(marker, SyntaxKind::Integer);
-}
-/// [111] Collection -> '(' GraphNode GraphNode* ')'
+/// [121] Collection -> '(' GraphNode GraphNode* ')'
 pub(super) fn parse_Collection(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::LParen);
@@ -4094,10 +4547,14 @@ pub(super) fn parse_Collection(p: &mut Parser) {
     while [
         SyntaxKind::IRIREF,
         SyntaxKind::PNAME_NS,
+        SyntaxKind::STRING_LITERAL1,
+        SyntaxKind::STRING_LITERAL2,
         SyntaxKind::LParen,
         SyntaxKind::INTEGER,
         SyntaxKind::NIL,
         SyntaxKind::LBrack,
+        SyntaxKind::DoubleLess,
+        SyntaxKind::DoubleLessLParen,
         SyntaxKind::VAR1,
         SyntaxKind::VAR2,
         SyntaxKind::DECIMAL,
@@ -4110,8 +4567,6 @@ pub(super) fn parse_Collection(p: &mut Parser) {
         SyntaxKind::DOUBLE_NEGATIVE,
         SyntaxKind::True,
         SyntaxKind::False,
-        SyntaxKind::STRING_LITERAL1,
-        SyntaxKind::STRING_LITERAL2,
         SyntaxKind::STRING_LITERAL_LONG1,
         SyntaxKind::STRING_LITERAL_LONG2,
         SyntaxKind::PNAME_LN,
@@ -4125,7 +4580,7 @@ pub(super) fn parse_Collection(p: &mut Parser) {
     p.expect(SyntaxKind::RParen);
     p.close(marker, SyntaxKind::Collection);
 }
-/// [112] BlankNodePropertyList -> '[' PropertyListNotEmpty ']'
+/// [122] BlankNodePropertyList -> '[' PropertyListNotEmpty ']'
 pub(super) fn parse_BlankNodePropertyList(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::LBrack);
@@ -4133,7 +4588,7 @@ pub(super) fn parse_BlankNodePropertyList(p: &mut Parser) {
     p.expect(SyntaxKind::RBrack);
     p.close(marker, SyntaxKind::BlankNodePropertyList);
 }
-/// [113] CollectionPath -> '(' GraphNodePath GraphNodePath* ')'
+/// [123] CollectionPath -> '(' GraphNodePath GraphNodePath* ')'
 pub(super) fn parse_CollectionPath(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::LParen);
@@ -4141,10 +4596,14 @@ pub(super) fn parse_CollectionPath(p: &mut Parser) {
     while [
         SyntaxKind::IRIREF,
         SyntaxKind::PNAME_NS,
+        SyntaxKind::STRING_LITERAL1,
+        SyntaxKind::STRING_LITERAL2,
         SyntaxKind::LParen,
         SyntaxKind::INTEGER,
         SyntaxKind::NIL,
         SyntaxKind::LBrack,
+        SyntaxKind::DoubleLess,
+        SyntaxKind::DoubleLessLParen,
         SyntaxKind::VAR1,
         SyntaxKind::VAR2,
         SyntaxKind::DECIMAL,
@@ -4157,8 +4616,6 @@ pub(super) fn parse_CollectionPath(p: &mut Parser) {
         SyntaxKind::DOUBLE_NEGATIVE,
         SyntaxKind::True,
         SyntaxKind::False,
-        SyntaxKind::STRING_LITERAL1,
-        SyntaxKind::STRING_LITERAL2,
         SyntaxKind::STRING_LITERAL_LONG1,
         SyntaxKind::STRING_LITERAL_LONG2,
         SyntaxKind::PNAME_LN,
@@ -4172,7 +4629,7 @@ pub(super) fn parse_CollectionPath(p: &mut Parser) {
     p.expect(SyntaxKind::RParen);
     p.close(marker, SyntaxKind::CollectionPath);
 }
-/// [114] BlankNodePropertyListPath -> '[' PropertyListPathNotEmpty ']'
+/// [124] BlankNodePropertyListPath -> '[' PropertyListPathNotEmpty ']'
 pub(super) fn parse_BlankNodePropertyListPath(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::LBrack);
@@ -4180,10 +4637,39 @@ pub(super) fn parse_BlankNodePropertyListPath(p: &mut Parser) {
     p.expect(SyntaxKind::RBrack);
     p.close(marker, SyntaxKind::BlankNodePropertyListPath);
 }
-/// [115] GraphTerm -> iri | RDFLiteral | NumericLiteral | BooleanLiteral | BlankNode | 'NIL'
-pub(super) fn parse_GraphTerm(p: &mut Parser) {
+/// [125] AnnotationBlockPath -> '{|' PropertyListPathNotEmpty '|}'
+pub(super) fn parse_AnnotationBlockPath(p: &mut Parser) {
+    let marker = p.open();
+    p.expect(SyntaxKind::LCurlyPipe);
+    parse_PropertyListPathNotEmpty(p);
+    p.expect(SyntaxKind::PipeRCurly);
+    p.close(marker, SyntaxKind::AnnotationBlockPath);
+}
+/// [126] AnnotationBlock -> '{|' PropertyListNotEmpty '|}'
+pub(super) fn parse_AnnotationBlock(p: &mut Parser) {
+    let marker = p.open();
+    p.expect(SyntaxKind::LCurlyPipe);
+    parse_PropertyListNotEmpty(p);
+    p.expect(SyntaxKind::PipeRCurly);
+    p.close(marker, SyntaxKind::AnnotationBlock);
+}
+/// [127] TripleTerm -> '<<(' TripleTermSubject Verb TripleTermObject ')>>'
+pub(super) fn parse_TripleTerm(p: &mut Parser) {
+    let marker = p.open();
+    p.expect(SyntaxKind::DoubleLessLParen);
+    parse_TripleTermSubject(p);
+    parse_Verb(p);
+    parse_TripleTermObject(p);
+    p.expect(SyntaxKind::RParenDoubleMore);
+    p.close(marker, SyntaxKind::TripleTerm);
+}
+/// [128] ReifiedTripleSubject -> Var | iri | RDFLiteral | NumericLiteral | BooleanLiteral | BlankNode | ReifiedTriple | TripleTerm
+pub(super) fn parse_ReifiedTripleSubject(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
+        SyntaxKind::VAR1 | SyntaxKind::VAR2 => {
+            parse_Var(p);
+        }
         SyntaxKind::IRIREF | SyntaxKind::PNAME_NS | SyntaxKind::PNAME_LN => {
             parse_iri(p);
         }
@@ -4210,11 +4696,307 @@ pub(super) fn parse_GraphTerm(p: &mut Parser) {
         SyntaxKind::BLANK_NODE_LABEL | SyntaxKind::ANON => {
             parse_BlankNode(p);
         }
-        SyntaxKind::NIL => {
-            p.expect(SyntaxKind::NIL);
+        SyntaxKind::DoubleLess => {
+            parse_ReifiedTriple(p);
+        }
+        SyntaxKind::DoubleLessLParen => {
+            parse_TripleTerm(p);
         }
         SyntaxKind::Eof => {
-            p.close(marker, SyntaxKind::GraphTerm);
+            p.close(marker, SyntaxKind::ReifiedTripleSubject);
+            let marker = p.open();
+            p.close(marker, SyntaxKind::Error);
+            return;
+        }
+        _ => {
+            p.advance_with_error(vec![
+                SyntaxKind::VAR1,
+                SyntaxKind::VAR2,
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::STRING_LITERAL1,
+                SyntaxKind::STRING_LITERAL2,
+                SyntaxKind::STRING_LITERAL_LONG1,
+                SyntaxKind::STRING_LITERAL_LONG2,
+                SyntaxKind::INTEGER,
+                SyntaxKind::DECIMAL,
+                SyntaxKind::DOUBLE,
+                SyntaxKind::INTEGER_POSITIVE,
+                SyntaxKind::DECIMAL_POSITIVE,
+                SyntaxKind::DOUBLE_POSITIVE,
+                SyntaxKind::INTEGER_NEGATIVE,
+                SyntaxKind::DECIMAL_NEGATIVE,
+                SyntaxKind::DOUBLE_NEGATIVE,
+                SyntaxKind::True,
+                SyntaxKind::False,
+                SyntaxKind::BLANK_NODE_LABEL,
+                SyntaxKind::ANON,
+                SyntaxKind::DoubleLess,
+                SyntaxKind::DoubleLessLParen,
+            ]);
+        }
+    };
+    p.close(marker, SyntaxKind::ReifiedTripleSubject);
+}
+/// [129] ReifiedTripleObject -> Var | iri | RDFLiteral | NumericLiteral | BooleanLiteral | BlankNode | ReifiedTriple | TripleTerm
+pub(super) fn parse_ReifiedTripleObject(p: &mut Parser) {
+    let marker = p.open();
+    match p.nth(0) {
+        SyntaxKind::VAR1 | SyntaxKind::VAR2 => {
+            parse_Var(p);
+        }
+        SyntaxKind::IRIREF | SyntaxKind::PNAME_NS | SyntaxKind::PNAME_LN => {
+            parse_iri(p);
+        }
+        SyntaxKind::STRING_LITERAL1
+        | SyntaxKind::STRING_LITERAL2
+        | SyntaxKind::STRING_LITERAL_LONG1
+        | SyntaxKind::STRING_LITERAL_LONG2 => {
+            parse_RDFLiteral(p);
+        }
+        SyntaxKind::INTEGER
+        | SyntaxKind::DECIMAL
+        | SyntaxKind::DOUBLE
+        | SyntaxKind::INTEGER_POSITIVE
+        | SyntaxKind::DECIMAL_POSITIVE
+        | SyntaxKind::DOUBLE_POSITIVE
+        | SyntaxKind::INTEGER_NEGATIVE
+        | SyntaxKind::DECIMAL_NEGATIVE
+        | SyntaxKind::DOUBLE_NEGATIVE => {
+            parse_NumericLiteral(p);
+        }
+        SyntaxKind::True | SyntaxKind::False => {
+            parse_BooleanLiteral(p);
+        }
+        SyntaxKind::BLANK_NODE_LABEL | SyntaxKind::ANON => {
+            parse_BlankNode(p);
+        }
+        SyntaxKind::DoubleLess => {
+            parse_ReifiedTriple(p);
+        }
+        SyntaxKind::DoubleLessLParen => {
+            parse_TripleTerm(p);
+        }
+        SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::ReifiedTripleObject);
+            let marker = p.open();
+            p.close(marker, SyntaxKind::Error);
+            return;
+        }
+        _ => {
+            p.advance_with_error(vec![
+                SyntaxKind::VAR1,
+                SyntaxKind::VAR2,
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::STRING_LITERAL1,
+                SyntaxKind::STRING_LITERAL2,
+                SyntaxKind::STRING_LITERAL_LONG1,
+                SyntaxKind::STRING_LITERAL_LONG2,
+                SyntaxKind::INTEGER,
+                SyntaxKind::DECIMAL,
+                SyntaxKind::DOUBLE,
+                SyntaxKind::INTEGER_POSITIVE,
+                SyntaxKind::DECIMAL_POSITIVE,
+                SyntaxKind::DOUBLE_POSITIVE,
+                SyntaxKind::INTEGER_NEGATIVE,
+                SyntaxKind::DECIMAL_NEGATIVE,
+                SyntaxKind::DOUBLE_NEGATIVE,
+                SyntaxKind::True,
+                SyntaxKind::False,
+                SyntaxKind::BLANK_NODE_LABEL,
+                SyntaxKind::ANON,
+                SyntaxKind::DoubleLess,
+                SyntaxKind::DoubleLessLParen,
+            ]);
+        }
+    };
+    p.close(marker, SyntaxKind::ReifiedTripleObject);
+}
+/// [130] TripleTermSubject -> Var | iri | RDFLiteral | NumericLiteral | BooleanLiteral | BlankNode | TripleTerm
+pub(super) fn parse_TripleTermSubject(p: &mut Parser) {
+    let marker = p.open();
+    match p.nth(0) {
+        SyntaxKind::VAR1 | SyntaxKind::VAR2 => {
+            parse_Var(p);
+        }
+        SyntaxKind::IRIREF | SyntaxKind::PNAME_NS | SyntaxKind::PNAME_LN => {
+            parse_iri(p);
+        }
+        SyntaxKind::STRING_LITERAL1
+        | SyntaxKind::STRING_LITERAL2
+        | SyntaxKind::STRING_LITERAL_LONG1
+        | SyntaxKind::STRING_LITERAL_LONG2 => {
+            parse_RDFLiteral(p);
+        }
+        SyntaxKind::INTEGER
+        | SyntaxKind::DECIMAL
+        | SyntaxKind::DOUBLE
+        | SyntaxKind::INTEGER_POSITIVE
+        | SyntaxKind::DECIMAL_POSITIVE
+        | SyntaxKind::DOUBLE_POSITIVE
+        | SyntaxKind::INTEGER_NEGATIVE
+        | SyntaxKind::DECIMAL_NEGATIVE
+        | SyntaxKind::DOUBLE_NEGATIVE => {
+            parse_NumericLiteral(p);
+        }
+        SyntaxKind::True | SyntaxKind::False => {
+            parse_BooleanLiteral(p);
+        }
+        SyntaxKind::BLANK_NODE_LABEL | SyntaxKind::ANON => {
+            parse_BlankNode(p);
+        }
+        SyntaxKind::DoubleLessLParen => {
+            parse_TripleTerm(p);
+        }
+        SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::TripleTermSubject);
+            let marker = p.open();
+            p.close(marker, SyntaxKind::Error);
+            return;
+        }
+        _ => {
+            p.advance_with_error(vec![
+                SyntaxKind::VAR1,
+                SyntaxKind::VAR2,
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::STRING_LITERAL1,
+                SyntaxKind::STRING_LITERAL2,
+                SyntaxKind::STRING_LITERAL_LONG1,
+                SyntaxKind::STRING_LITERAL_LONG2,
+                SyntaxKind::INTEGER,
+                SyntaxKind::DECIMAL,
+                SyntaxKind::DOUBLE,
+                SyntaxKind::INTEGER_POSITIVE,
+                SyntaxKind::DECIMAL_POSITIVE,
+                SyntaxKind::DOUBLE_POSITIVE,
+                SyntaxKind::INTEGER_NEGATIVE,
+                SyntaxKind::DECIMAL_NEGATIVE,
+                SyntaxKind::DOUBLE_NEGATIVE,
+                SyntaxKind::True,
+                SyntaxKind::False,
+                SyntaxKind::BLANK_NODE_LABEL,
+                SyntaxKind::ANON,
+                SyntaxKind::DoubleLessLParen,
+            ]);
+        }
+    };
+    p.close(marker, SyntaxKind::TripleTermSubject);
+}
+/// [131] TripleTermObject -> Var | iri | RDFLiteral | NumericLiteral | BooleanLiteral | BlankNode | TripleTerm
+pub(super) fn parse_TripleTermObject(p: &mut Parser) {
+    let marker = p.open();
+    match p.nth(0) {
+        SyntaxKind::VAR1 | SyntaxKind::VAR2 => {
+            parse_Var(p);
+        }
+        SyntaxKind::IRIREF | SyntaxKind::PNAME_NS | SyntaxKind::PNAME_LN => {
+            parse_iri(p);
+        }
+        SyntaxKind::STRING_LITERAL1
+        | SyntaxKind::STRING_LITERAL2
+        | SyntaxKind::STRING_LITERAL_LONG1
+        | SyntaxKind::STRING_LITERAL_LONG2 => {
+            parse_RDFLiteral(p);
+        }
+        SyntaxKind::INTEGER
+        | SyntaxKind::DECIMAL
+        | SyntaxKind::DOUBLE
+        | SyntaxKind::INTEGER_POSITIVE
+        | SyntaxKind::DECIMAL_POSITIVE
+        | SyntaxKind::DOUBLE_POSITIVE
+        | SyntaxKind::INTEGER_NEGATIVE
+        | SyntaxKind::DECIMAL_NEGATIVE
+        | SyntaxKind::DOUBLE_NEGATIVE => {
+            parse_NumericLiteral(p);
+        }
+        SyntaxKind::True | SyntaxKind::False => {
+            parse_BooleanLiteral(p);
+        }
+        SyntaxKind::BLANK_NODE_LABEL | SyntaxKind::ANON => {
+            parse_BlankNode(p);
+        }
+        SyntaxKind::DoubleLessLParen => {
+            parse_TripleTerm(p);
+        }
+        SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::TripleTermObject);
+            let marker = p.open();
+            p.close(marker, SyntaxKind::Error);
+            return;
+        }
+        _ => {
+            p.advance_with_error(vec![
+                SyntaxKind::VAR1,
+                SyntaxKind::VAR2,
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::STRING_LITERAL1,
+                SyntaxKind::STRING_LITERAL2,
+                SyntaxKind::STRING_LITERAL_LONG1,
+                SyntaxKind::STRING_LITERAL_LONG2,
+                SyntaxKind::INTEGER,
+                SyntaxKind::DECIMAL,
+                SyntaxKind::DOUBLE,
+                SyntaxKind::INTEGER_POSITIVE,
+                SyntaxKind::DECIMAL_POSITIVE,
+                SyntaxKind::DOUBLE_POSITIVE,
+                SyntaxKind::INTEGER_NEGATIVE,
+                SyntaxKind::DECIMAL_NEGATIVE,
+                SyntaxKind::DOUBLE_NEGATIVE,
+                SyntaxKind::True,
+                SyntaxKind::False,
+                SyntaxKind::BLANK_NODE_LABEL,
+                SyntaxKind::ANON,
+                SyntaxKind::DoubleLessLParen,
+            ]);
+        }
+    };
+    p.close(marker, SyntaxKind::TripleTermObject);
+}
+/// [132] TripleTermDataSubject -> iri
+pub(super) fn parse_TripleTermDataSubject(p: &mut Parser) {
+    let marker = p.open();
+    parse_iri(p);
+    p.close(marker, SyntaxKind::TripleTermDataSubject);
+}
+/// [133] TripleTermDataObject -> iri | RDFLiteral | NumericLiteral | BooleanLiteral | TripleTermData
+pub(super) fn parse_TripleTermDataObject(p: &mut Parser) {
+    let marker = p.open();
+    match p.nth(0) {
+        SyntaxKind::IRIREF | SyntaxKind::PNAME_NS | SyntaxKind::PNAME_LN => {
+            parse_iri(p);
+        }
+        SyntaxKind::STRING_LITERAL1
+        | SyntaxKind::STRING_LITERAL2
+        | SyntaxKind::STRING_LITERAL_LONG1
+        | SyntaxKind::STRING_LITERAL_LONG2 => {
+            parse_RDFLiteral(p);
+        }
+        SyntaxKind::INTEGER
+        | SyntaxKind::DECIMAL
+        | SyntaxKind::DOUBLE
+        | SyntaxKind::INTEGER_POSITIVE
+        | SyntaxKind::DECIMAL_POSITIVE
+        | SyntaxKind::DOUBLE_POSITIVE
+        | SyntaxKind::INTEGER_NEGATIVE
+        | SyntaxKind::DECIMAL_NEGATIVE
+        | SyntaxKind::DOUBLE_NEGATIVE => {
+            parse_NumericLiteral(p);
+        }
+        SyntaxKind::True | SyntaxKind::False => {
+            parse_BooleanLiteral(p);
+        }
+        SyntaxKind::DoubleLessLParen => {
+            parse_TripleTermData(p);
+        }
+        SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::TripleTermDataObject);
             let marker = p.open();
             p.close(marker, SyntaxKind::Error);
             return;
@@ -4239,37 +5021,13 @@ pub(super) fn parse_GraphTerm(p: &mut Parser) {
                 SyntaxKind::DOUBLE_NEGATIVE,
                 SyntaxKind::True,
                 SyntaxKind::False,
-                SyntaxKind::BLANK_NODE_LABEL,
-                SyntaxKind::ANON,
-                SyntaxKind::NIL,
+                SyntaxKind::DoubleLessLParen,
             ]);
         }
     };
-    p.close(marker, SyntaxKind::GraphTerm);
+    p.close(marker, SyntaxKind::TripleTermDataObject);
 }
-/// [116] BlankNode -> 'BLANK_NODE_LABEL' | 'ANON'
-pub(super) fn parse_BlankNode(p: &mut Parser) {
-    let marker = p.open();
-    match p.nth(0) {
-        SyntaxKind::BLANK_NODE_LABEL => {
-            p.expect(SyntaxKind::BLANK_NODE_LABEL);
-        }
-        SyntaxKind::ANON => {
-            p.expect(SyntaxKind::ANON);
-        }
-        SyntaxKind::Eof => {
-            p.close(marker, SyntaxKind::BlankNode);
-            let marker = p.open();
-            p.close(marker, SyntaxKind::Error);
-            return;
-        }
-        _ => {
-            p.advance_with_error(vec![SyntaxKind::BLANK_NODE_LABEL, SyntaxKind::ANON]);
-        }
-    };
-    p.close(marker, SyntaxKind::BlankNode);
-}
-/// [117] ConditionalOrExpression -> ConditionalAndExpression ('||' ConditionalAndExpression)*
+/// [134] ConditionalOrExpression -> ConditionalAndExpression ('||' ConditionalAndExpression)*
 pub(super) fn parse_ConditionalOrExpression(p: &mut Parser) {
     let marker = p.open();
     parse_ConditionalAndExpression(p);
@@ -4279,7 +5037,7 @@ pub(super) fn parse_ConditionalOrExpression(p: &mut Parser) {
     }
     p.close(marker, SyntaxKind::ConditionalOrExpression);
 }
-/// [118] ConditionalAndExpression -> ValueLogical ('&&' ValueLogical)*
+/// [135] ConditionalAndExpression -> ValueLogical ('&&' ValueLogical)*
 pub(super) fn parse_ConditionalAndExpression(p: &mut Parser) {
     let marker = p.open();
     parse_ValueLogical(p);
@@ -4289,13 +5047,13 @@ pub(super) fn parse_ConditionalAndExpression(p: &mut Parser) {
     }
     p.close(marker, SyntaxKind::ConditionalAndExpression);
 }
-/// [119] ValueLogical -> RelationalExpression
+/// [136] ValueLogical -> RelationalExpression
 pub(super) fn parse_ValueLogical(p: &mut Parser) {
     let marker = p.open();
     parse_RelationalExpression(p);
     p.close(marker, SyntaxKind::ValueLogical);
 }
-/// [120] RelationalExpression -> NumericExpression ('=' NumericExpression | '!=' NumericExpression | '<' NumericExpression | '>' NumericExpression | '<=' NumericExpression | '>=' NumericExpression | 'IN' ExpressionList | 'NOT' 'IN' ExpressionList)?
+/// [137] RelationalExpression -> NumericExpression ('=' NumericExpression | '!=' NumericExpression | '<' NumericExpression | '>' NumericExpression | '<=' NumericExpression | '>=' NumericExpression | 'IN' ExpressionList | 'NOT' 'IN' ExpressionList)?
 pub(super) fn parse_RelationalExpression(p: &mut Parser) {
     let marker = p.open();
     parse_NumericExpression(p);
@@ -4365,13 +5123,13 @@ pub(super) fn parse_RelationalExpression(p: &mut Parser) {
     }
     p.close(marker, SyntaxKind::RelationalExpression);
 }
-/// [121] NumericExpression -> AdditiveExpression
+/// [138] NumericExpression -> AdditiveExpression
 pub(super) fn parse_NumericExpression(p: &mut Parser) {
     let marker = p.open();
     parse_AdditiveExpression(p);
     p.close(marker, SyntaxKind::NumericExpression);
 }
-/// [122] AdditiveExpression -> MultiplicativeExpression ('+' MultiplicativeExpression | '-' MultiplicativeExpression | (NumericLiteralPositive | NumericLiteralNegative) ('*' UnaryExpression | '/' UnaryExpression)*)*
+/// [139] AdditiveExpression -> MultiplicativeExpression ('+' MultiplicativeExpression | '-' MultiplicativeExpression | (NumericLiteralPositive | NumericLiteralNegative) ('*' UnaryExpression | '/' UnaryExpression)*)*
 pub(super) fn parse_AdditiveExpression(p: &mut Parser) {
     let marker = p.open();
     parse_MultiplicativeExpression(p);
@@ -4474,7 +5232,7 @@ pub(super) fn parse_AdditiveExpression(p: &mut Parser) {
     }
     p.close(marker, SyntaxKind::AdditiveExpression);
 }
-/// [123] MultiplicativeExpression -> UnaryExpression ('*' UnaryExpression | '/' UnaryExpression)*
+/// [140] MultiplicativeExpression -> UnaryExpression ('*' UnaryExpression | '/' UnaryExpression)*
 pub(super) fn parse_MultiplicativeExpression(p: &mut Parser) {
     let marker = p.open();
     parse_UnaryExpression(p);
@@ -4501,7 +5259,7 @@ pub(super) fn parse_MultiplicativeExpression(p: &mut Parser) {
     }
     p.close(marker, SyntaxKind::MultiplicativeExpression);
 }
-/// [124] NumericLiteralPositive -> 'INTEGER_POSITIVE' | 'DECIMAL_POSITIVE' | 'DOUBLE_POSITIVE'
+/// [141] NumericLiteralPositive -> 'INTEGER_POSITIVE' | 'DECIMAL_POSITIVE' | 'DOUBLE_POSITIVE'
 pub(super) fn parse_NumericLiteralPositive(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -4530,7 +5288,7 @@ pub(super) fn parse_NumericLiteralPositive(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::NumericLiteralPositive);
 }
-/// [125] NumericLiteralNegative -> 'INTEGER_NEGATIVE' | 'DECIMAL_NEGATIVE' | 'DOUBLE_NEGATIVE'
+/// [142] NumericLiteralNegative -> 'INTEGER_NEGATIVE' | 'DECIMAL_NEGATIVE' | 'DOUBLE_NEGATIVE'
 pub(super) fn parse_NumericLiteralNegative(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -4559,13 +5317,13 @@ pub(super) fn parse_NumericLiteralNegative(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::NumericLiteralNegative);
 }
-/// [126] UnaryExpression -> '!' PrimaryExpression | '+' PrimaryExpression | '-' PrimaryExpression | PrimaryExpression
+/// [143] UnaryExpression -> '!' UnaryExpression | '+' PrimaryExpression | '-' PrimaryExpression | PrimaryExpression
 pub(super) fn parse_UnaryExpression(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
         SyntaxKind::ExclamationMark => {
             p.expect(SyntaxKind::ExclamationMark);
-            parse_PrimaryExpression(p);
+            parse_UnaryExpression(p);
         }
         SyntaxKind::Plus => {
             p.expect(SyntaxKind::Plus);
@@ -4577,14 +5335,18 @@ pub(super) fn parse_UnaryExpression(p: &mut Parser) {
         }
         SyntaxKind::IRIREF
         | SyntaxKind::PNAME_NS
+        | SyntaxKind::STRING_LITERAL1
+        | SyntaxKind::STRING_LITERAL2
         | SyntaxKind::LParen
         | SyntaxKind::INTEGER
+        | SyntaxKind::DoubleLessLParen
         | SyntaxKind::VAR1
         | SyntaxKind::VAR2
         | SyntaxKind::NOT
         | SyntaxKind::STR
         | SyntaxKind::LANG
         | SyntaxKind::LANGMATCHES
+        | SyntaxKind::LANGDIR
         | SyntaxKind::DATATYPE
         | SyntaxKind::BOUND
         | SyntaxKind::IRI
@@ -4624,6 +5386,7 @@ pub(super) fn parse_UnaryExpression(p: &mut Parser) {
         | SyntaxKind::COALESCE
         | SyntaxKind::IF
         | SyntaxKind::STRLANG
+        | SyntaxKind::STRLANGDIR
         | SyntaxKind::STRDT
         | SyntaxKind::sameTerm
         | SyntaxKind::isIRI
@@ -4631,6 +5394,13 @@ pub(super) fn parse_UnaryExpression(p: &mut Parser) {
         | SyntaxKind::isBLANK
         | SyntaxKind::isLITERAL
         | SyntaxKind::isNUMERIC
+        | SyntaxKind::hasLANG
+        | SyntaxKind::hasLANGDIR
+        | SyntaxKind::isTRIPLE
+        | SyntaxKind::TRIPLE
+        | SyntaxKind::SUBJECT
+        | SyntaxKind::PREDICATE
+        | SyntaxKind::OBJECT
         | SyntaxKind::REGEX
         | SyntaxKind::SUBSTR
         | SyntaxKind::REPLACE
@@ -4652,8 +5422,6 @@ pub(super) fn parse_UnaryExpression(p: &mut Parser) {
         | SyntaxKind::DOUBLE_NEGATIVE
         | SyntaxKind::True
         | SyntaxKind::False
-        | SyntaxKind::STRING_LITERAL1
-        | SyntaxKind::STRING_LITERAL2
         | SyntaxKind::STRING_LITERAL_LONG1
         | SyntaxKind::STRING_LITERAL_LONG2
         | SyntaxKind::PNAME_LN => {
@@ -4672,14 +5440,18 @@ pub(super) fn parse_UnaryExpression(p: &mut Parser) {
                 SyntaxKind::Minus,
                 SyntaxKind::IRIREF,
                 SyntaxKind::PNAME_NS,
+                SyntaxKind::STRING_LITERAL1,
+                SyntaxKind::STRING_LITERAL2,
                 SyntaxKind::LParen,
                 SyntaxKind::INTEGER,
+                SyntaxKind::DoubleLessLParen,
                 SyntaxKind::VAR1,
                 SyntaxKind::VAR2,
                 SyntaxKind::NOT,
                 SyntaxKind::STR,
                 SyntaxKind::LANG,
                 SyntaxKind::LANGMATCHES,
+                SyntaxKind::LANGDIR,
                 SyntaxKind::DATATYPE,
                 SyntaxKind::BOUND,
                 SyntaxKind::IRI,
@@ -4719,6 +5491,7 @@ pub(super) fn parse_UnaryExpression(p: &mut Parser) {
                 SyntaxKind::COALESCE,
                 SyntaxKind::IF,
                 SyntaxKind::STRLANG,
+                SyntaxKind::STRLANGDIR,
                 SyntaxKind::STRDT,
                 SyntaxKind::sameTerm,
                 SyntaxKind::isIRI,
@@ -4726,6 +5499,13 @@ pub(super) fn parse_UnaryExpression(p: &mut Parser) {
                 SyntaxKind::isBLANK,
                 SyntaxKind::isLITERAL,
                 SyntaxKind::isNUMERIC,
+                SyntaxKind::hasLANG,
+                SyntaxKind::hasLANGDIR,
+                SyntaxKind::isTRIPLE,
+                SyntaxKind::TRIPLE,
+                SyntaxKind::SUBJECT,
+                SyntaxKind::PREDICATE,
+                SyntaxKind::OBJECT,
                 SyntaxKind::REGEX,
                 SyntaxKind::SUBSTR,
                 SyntaxKind::REPLACE,
@@ -4747,8 +5527,6 @@ pub(super) fn parse_UnaryExpression(p: &mut Parser) {
                 SyntaxKind::DOUBLE_NEGATIVE,
                 SyntaxKind::True,
                 SyntaxKind::False,
-                SyntaxKind::STRING_LITERAL1,
-                SyntaxKind::STRING_LITERAL2,
                 SyntaxKind::STRING_LITERAL_LONG1,
                 SyntaxKind::STRING_LITERAL_LONG2,
                 SyntaxKind::PNAME_LN,
@@ -4757,7 +5535,7 @@ pub(super) fn parse_UnaryExpression(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::UnaryExpression);
 }
-/// [127] PrimaryExpression -> BrackettedExpression | BuiltInCall | iriOrFunction | RDFLiteral | NumericLiteral | BooleanLiteral | Var
+/// [144] PrimaryExpression -> BrackettedExpression | BuiltInCall | iriOrFunction | RDFLiteral | NumericLiteral | BooleanLiteral | Var | ExprTripleTerm
 pub(super) fn parse_PrimaryExpression(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -4768,6 +5546,7 @@ pub(super) fn parse_PrimaryExpression(p: &mut Parser) {
         | SyntaxKind::STR
         | SyntaxKind::LANG
         | SyntaxKind::LANGMATCHES
+        | SyntaxKind::LANGDIR
         | SyntaxKind::DATATYPE
         | SyntaxKind::BOUND
         | SyntaxKind::IRI
@@ -4807,6 +5586,7 @@ pub(super) fn parse_PrimaryExpression(p: &mut Parser) {
         | SyntaxKind::COALESCE
         | SyntaxKind::IF
         | SyntaxKind::STRLANG
+        | SyntaxKind::STRLANGDIR
         | SyntaxKind::STRDT
         | SyntaxKind::sameTerm
         | SyntaxKind::isIRI
@@ -4814,6 +5594,13 @@ pub(super) fn parse_PrimaryExpression(p: &mut Parser) {
         | SyntaxKind::isBLANK
         | SyntaxKind::isLITERAL
         | SyntaxKind::isNUMERIC
+        | SyntaxKind::hasLANG
+        | SyntaxKind::hasLANGDIR
+        | SyntaxKind::isTRIPLE
+        | SyntaxKind::TRIPLE
+        | SyntaxKind::SUBJECT
+        | SyntaxKind::PREDICATE
+        | SyntaxKind::OBJECT
         | SyntaxKind::REGEX
         | SyntaxKind::SUBSTR
         | SyntaxKind::REPLACE
@@ -4853,6 +5640,9 @@ pub(super) fn parse_PrimaryExpression(p: &mut Parser) {
         SyntaxKind::VAR1 | SyntaxKind::VAR2 => {
             parse_Var(p);
         }
+        SyntaxKind::DoubleLessLParen => {
+            parse_ExprTripleTerm(p);
+        }
         SyntaxKind::Eof => {
             p.close(marker, SyntaxKind::PrimaryExpression);
             let marker = p.open();
@@ -4866,6 +5656,7 @@ pub(super) fn parse_PrimaryExpression(p: &mut Parser) {
                 SyntaxKind::STR,
                 SyntaxKind::LANG,
                 SyntaxKind::LANGMATCHES,
+                SyntaxKind::LANGDIR,
                 SyntaxKind::DATATYPE,
                 SyntaxKind::BOUND,
                 SyntaxKind::IRI,
@@ -4905,6 +5696,7 @@ pub(super) fn parse_PrimaryExpression(p: &mut Parser) {
                 SyntaxKind::COALESCE,
                 SyntaxKind::IF,
                 SyntaxKind::STRLANG,
+                SyntaxKind::STRLANGDIR,
                 SyntaxKind::STRDT,
                 SyntaxKind::sameTerm,
                 SyntaxKind::isIRI,
@@ -4912,6 +5704,13 @@ pub(super) fn parse_PrimaryExpression(p: &mut Parser) {
                 SyntaxKind::isBLANK,
                 SyntaxKind::isLITERAL,
                 SyntaxKind::isNUMERIC,
+                SyntaxKind::hasLANG,
+                SyntaxKind::hasLANGDIR,
+                SyntaxKind::isTRIPLE,
+                SyntaxKind::TRIPLE,
+                SyntaxKind::SUBJECT,
+                SyntaxKind::PREDICATE,
+                SyntaxKind::OBJECT,
                 SyntaxKind::REGEX,
                 SyntaxKind::SUBSTR,
                 SyntaxKind::REPLACE,
@@ -4943,12 +5742,13 @@ pub(super) fn parse_PrimaryExpression(p: &mut Parser) {
                 SyntaxKind::False,
                 SyntaxKind::VAR1,
                 SyntaxKind::VAR2,
+                SyntaxKind::DoubleLessLParen,
             ]);
         }
     };
     p.close(marker, SyntaxKind::PrimaryExpression);
 }
-/// [128] iriOrFunction -> iri ArgList?
+/// [145] iriOrFunction -> iri ArgList?
 pub(super) fn parse_iriOrFunction(p: &mut Parser) {
     let marker = p.open();
     parse_iri(p);
@@ -4957,7 +5757,112 @@ pub(super) fn parse_iriOrFunction(p: &mut Parser) {
     }
     p.close(marker, SyntaxKind::iriOrFunction);
 }
-/// [129] Aggregate -> 'COUNT' '(' 'DISTINCT'? ('*' | Expression) ')' | 'SUM' '(' 'DISTINCT'? Expression ')' | 'MIN' '(' 'DISTINCT'? Expression ')' | 'MAX' '(' 'DISTINCT'? Expression ')' | 'AVG' '(' 'DISTINCT'? Expression ')' | 'SAMPLE' '(' 'DISTINCT'? Expression ')' | 'GROUP_CONCAT' '(' 'DISTINCT'? Expression (';' 'SEPARATOR' '=' String)? ')'
+/// [146] ExprTripleTerm -> '<<(' ExprTripleTermSubject Verb ExprTripleTermObject ')>>'
+pub(super) fn parse_ExprTripleTerm(p: &mut Parser) {
+    let marker = p.open();
+    p.expect(SyntaxKind::DoubleLessLParen);
+    parse_ExprTripleTermSubject(p);
+    parse_Verb(p);
+    parse_ExprTripleTermObject(p);
+    p.expect(SyntaxKind::RParenDoubleMore);
+    p.close(marker, SyntaxKind::ExprTripleTerm);
+}
+/// [147] ExprTripleTermSubject -> iri | Var
+pub(super) fn parse_ExprTripleTermSubject(p: &mut Parser) {
+    let marker = p.open();
+    match p.nth(0) {
+        SyntaxKind::IRIREF | SyntaxKind::PNAME_NS | SyntaxKind::PNAME_LN => {
+            parse_iri(p);
+        }
+        SyntaxKind::VAR1 | SyntaxKind::VAR2 => {
+            parse_Var(p);
+        }
+        SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::ExprTripleTermSubject);
+            let marker = p.open();
+            p.close(marker, SyntaxKind::Error);
+            return;
+        }
+        _ => {
+            p.advance_with_error(vec![
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::VAR1,
+                SyntaxKind::VAR2,
+            ]);
+        }
+    };
+    p.close(marker, SyntaxKind::ExprTripleTermSubject);
+}
+/// [148] ExprTripleTermObject -> iri | RDFLiteral | NumericLiteral | BooleanLiteral | Var | ExprTripleTerm
+pub(super) fn parse_ExprTripleTermObject(p: &mut Parser) {
+    let marker = p.open();
+    match p.nth(0) {
+        SyntaxKind::IRIREF | SyntaxKind::PNAME_NS | SyntaxKind::PNAME_LN => {
+            parse_iri(p);
+        }
+        SyntaxKind::STRING_LITERAL1
+        | SyntaxKind::STRING_LITERAL2
+        | SyntaxKind::STRING_LITERAL_LONG1
+        | SyntaxKind::STRING_LITERAL_LONG2 => {
+            parse_RDFLiteral(p);
+        }
+        SyntaxKind::INTEGER
+        | SyntaxKind::DECIMAL
+        | SyntaxKind::DOUBLE
+        | SyntaxKind::INTEGER_POSITIVE
+        | SyntaxKind::DECIMAL_POSITIVE
+        | SyntaxKind::DOUBLE_POSITIVE
+        | SyntaxKind::INTEGER_NEGATIVE
+        | SyntaxKind::DECIMAL_NEGATIVE
+        | SyntaxKind::DOUBLE_NEGATIVE => {
+            parse_NumericLiteral(p);
+        }
+        SyntaxKind::True | SyntaxKind::False => {
+            parse_BooleanLiteral(p);
+        }
+        SyntaxKind::VAR1 | SyntaxKind::VAR2 => {
+            parse_Var(p);
+        }
+        SyntaxKind::DoubleLessLParen => {
+            parse_ExprTripleTerm(p);
+        }
+        SyntaxKind::Eof => {
+            p.close(marker, SyntaxKind::ExprTripleTermObject);
+            let marker = p.open();
+            p.close(marker, SyntaxKind::Error);
+            return;
+        }
+        _ => {
+            p.advance_with_error(vec![
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::PNAME_LN,
+                SyntaxKind::STRING_LITERAL1,
+                SyntaxKind::STRING_LITERAL2,
+                SyntaxKind::STRING_LITERAL_LONG1,
+                SyntaxKind::STRING_LITERAL_LONG2,
+                SyntaxKind::INTEGER,
+                SyntaxKind::DECIMAL,
+                SyntaxKind::DOUBLE,
+                SyntaxKind::INTEGER_POSITIVE,
+                SyntaxKind::DECIMAL_POSITIVE,
+                SyntaxKind::DOUBLE_POSITIVE,
+                SyntaxKind::INTEGER_NEGATIVE,
+                SyntaxKind::DECIMAL_NEGATIVE,
+                SyntaxKind::DOUBLE_NEGATIVE,
+                SyntaxKind::True,
+                SyntaxKind::False,
+                SyntaxKind::VAR1,
+                SyntaxKind::VAR2,
+                SyntaxKind::DoubleLessLParen,
+            ]);
+        }
+    };
+    p.close(marker, SyntaxKind::ExprTripleTermObject);
+}
+/// [149] Aggregate -> 'COUNT' '(' 'DISTINCT'? ('*' | Expression) ')' | 'SUM' '(' 'DISTINCT'? Expression ')' | 'MIN' '(' 'DISTINCT'? Expression ')' | 'MAX' '(' 'DISTINCT'? Expression ')' | 'AVG' '(' 'DISTINCT'? Expression ')' | 'SAMPLE' '(' 'DISTINCT'? Expression ')' | 'GROUP_CONCAT' '(' 'DISTINCT'? Expression (';' 'SEPARATOR' '=' String)? ')'
 pub(super) fn parse_Aggregate(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -4973,10 +5878,13 @@ pub(super) fn parse_Aggregate(p: &mut Parser) {
                 }
                 SyntaxKind::IRIREF
                 | SyntaxKind::PNAME_NS
+                | SyntaxKind::STRING_LITERAL1
+                | SyntaxKind::STRING_LITERAL2
                 | SyntaxKind::LParen
                 | SyntaxKind::INTEGER
                 | SyntaxKind::Plus
                 | SyntaxKind::ExclamationMark
+                | SyntaxKind::DoubleLessLParen
                 | SyntaxKind::VAR1
                 | SyntaxKind::VAR2
                 | SyntaxKind::NOT
@@ -4984,6 +5892,7 @@ pub(super) fn parse_Aggregate(p: &mut Parser) {
                 | SyntaxKind::STR
                 | SyntaxKind::LANG
                 | SyntaxKind::LANGMATCHES
+                | SyntaxKind::LANGDIR
                 | SyntaxKind::DATATYPE
                 | SyntaxKind::BOUND
                 | SyntaxKind::IRI
@@ -5023,6 +5932,7 @@ pub(super) fn parse_Aggregate(p: &mut Parser) {
                 | SyntaxKind::COALESCE
                 | SyntaxKind::IF
                 | SyntaxKind::STRLANG
+                | SyntaxKind::STRLANGDIR
                 | SyntaxKind::STRDT
                 | SyntaxKind::sameTerm
                 | SyntaxKind::isIRI
@@ -5030,6 +5940,13 @@ pub(super) fn parse_Aggregate(p: &mut Parser) {
                 | SyntaxKind::isBLANK
                 | SyntaxKind::isLITERAL
                 | SyntaxKind::isNUMERIC
+                | SyntaxKind::hasLANG
+                | SyntaxKind::hasLANGDIR
+                | SyntaxKind::isTRIPLE
+                | SyntaxKind::TRIPLE
+                | SyntaxKind::SUBJECT
+                | SyntaxKind::PREDICATE
+                | SyntaxKind::OBJECT
                 | SyntaxKind::REGEX
                 | SyntaxKind::SUBSTR
                 | SyntaxKind::REPLACE
@@ -5051,8 +5968,6 @@ pub(super) fn parse_Aggregate(p: &mut Parser) {
                 | SyntaxKind::DOUBLE_NEGATIVE
                 | SyntaxKind::True
                 | SyntaxKind::False
-                | SyntaxKind::STRING_LITERAL1
-                | SyntaxKind::STRING_LITERAL2
                 | SyntaxKind::STRING_LITERAL_LONG1
                 | SyntaxKind::STRING_LITERAL_LONG2
                 | SyntaxKind::PNAME_LN => {
@@ -5069,10 +5984,13 @@ pub(super) fn parse_Aggregate(p: &mut Parser) {
                         SyntaxKind::Star,
                         SyntaxKind::IRIREF,
                         SyntaxKind::PNAME_NS,
+                        SyntaxKind::STRING_LITERAL1,
+                        SyntaxKind::STRING_LITERAL2,
                         SyntaxKind::LParen,
                         SyntaxKind::INTEGER,
                         SyntaxKind::Plus,
                         SyntaxKind::ExclamationMark,
+                        SyntaxKind::DoubleLessLParen,
                         SyntaxKind::VAR1,
                         SyntaxKind::VAR2,
                         SyntaxKind::NOT,
@@ -5080,6 +5998,7 @@ pub(super) fn parse_Aggregate(p: &mut Parser) {
                         SyntaxKind::STR,
                         SyntaxKind::LANG,
                         SyntaxKind::LANGMATCHES,
+                        SyntaxKind::LANGDIR,
                         SyntaxKind::DATATYPE,
                         SyntaxKind::BOUND,
                         SyntaxKind::IRI,
@@ -5119,6 +6038,7 @@ pub(super) fn parse_Aggregate(p: &mut Parser) {
                         SyntaxKind::COALESCE,
                         SyntaxKind::IF,
                         SyntaxKind::STRLANG,
+                        SyntaxKind::STRLANGDIR,
                         SyntaxKind::STRDT,
                         SyntaxKind::sameTerm,
                         SyntaxKind::isIRI,
@@ -5126,6 +6046,13 @@ pub(super) fn parse_Aggregate(p: &mut Parser) {
                         SyntaxKind::isBLANK,
                         SyntaxKind::isLITERAL,
                         SyntaxKind::isNUMERIC,
+                        SyntaxKind::hasLANG,
+                        SyntaxKind::hasLANGDIR,
+                        SyntaxKind::isTRIPLE,
+                        SyntaxKind::TRIPLE,
+                        SyntaxKind::SUBJECT,
+                        SyntaxKind::PREDICATE,
+                        SyntaxKind::OBJECT,
                         SyntaxKind::REGEX,
                         SyntaxKind::SUBSTR,
                         SyntaxKind::REPLACE,
@@ -5147,8 +6074,6 @@ pub(super) fn parse_Aggregate(p: &mut Parser) {
                         SyntaxKind::DOUBLE_NEGATIVE,
                         SyntaxKind::True,
                         SyntaxKind::False,
-                        SyntaxKind::STRING_LITERAL1,
-                        SyntaxKind::STRING_LITERAL2,
                         SyntaxKind::STRING_LITERAL_LONG1,
                         SyntaxKind::STRING_LITERAL_LONG2,
                         SyntaxKind::PNAME_LN,
@@ -5237,7 +6162,7 @@ pub(super) fn parse_Aggregate(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::Aggregate);
 }
-/// [130] SubstringExpression -> 'SUBSTR' '(' Expression ',' Expression (',' Expression)? ')'
+/// [150] SubstringExpression -> 'SUBSTR' '(' Expression ',' Expression (',' Expression)? ')'
 pub(super) fn parse_SubstringExpression(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::SUBSTR);
@@ -5252,7 +6177,7 @@ pub(super) fn parse_SubstringExpression(p: &mut Parser) {
     p.expect(SyntaxKind::RParen);
     p.close(marker, SyntaxKind::SubstringExpression);
 }
-/// [131] StrReplaceExpression -> 'REPLACE' '(' Expression ',' Expression ',' Expression (',' Expression)? ')'
+/// [151] StrReplaceExpression -> 'REPLACE' '(' Expression ',' Expression ',' Expression (',' Expression)? ')'
 pub(super) fn parse_StrReplaceExpression(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::REPLACE);
@@ -5269,7 +6194,7 @@ pub(super) fn parse_StrReplaceExpression(p: &mut Parser) {
     p.expect(SyntaxKind::RParen);
     p.close(marker, SyntaxKind::StrReplaceExpression);
 }
-/// [132] RegexExpression -> 'REGEX' '(' Expression ',' Expression (',' Expression)? ')'
+/// [152] RegexExpression -> 'REGEX' '(' Expression ',' Expression (',' Expression)? ')'
 pub(super) fn parse_RegexExpression(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::REGEX);
@@ -5284,14 +6209,14 @@ pub(super) fn parse_RegexExpression(p: &mut Parser) {
     p.expect(SyntaxKind::RParen);
     p.close(marker, SyntaxKind::RegexExpression);
 }
-/// [133] ExistsFunc -> 'EXISTS' GroupGraphPattern
+/// [153] ExistsFunc -> 'EXISTS' GroupGraphPattern
 pub(super) fn parse_ExistsFunc(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::EXISTS);
     parse_GroupGraphPattern(p);
     p.close(marker, SyntaxKind::ExistsFunc);
 }
-/// [134] NotExistsFunc -> 'NOT' 'EXISTS' GroupGraphPattern
+/// [154] NotExistsFunc -> 'NOT' 'EXISTS' GroupGraphPattern
 pub(super) fn parse_NotExistsFunc(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::NOT);
@@ -5299,7 +6224,7 @@ pub(super) fn parse_NotExistsFunc(p: &mut Parser) {
     parse_GroupGraphPattern(p);
     p.close(marker, SyntaxKind::NotExistsFunc);
 }
-/// [135] String -> 'STRING_LITERAL1' | 'STRING_LITERAL2' | 'STRING_LITERAL_LONG1' | 'STRING_LITERAL_LONG2'
+/// [155] String -> 'STRING_LITERAL1' | 'STRING_LITERAL2' | 'STRING_LITERAL_LONG1' | 'STRING_LITERAL_LONG2'
 pub(super) fn parse_String(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -5332,7 +6257,7 @@ pub(super) fn parse_String(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::String);
 }
-/// [136] NumericLiteralUnsigned -> 'INTEGER' | 'DECIMAL' | 'DOUBLE'
+/// [156] NumericLiteralUnsigned -> 'INTEGER' | 'DECIMAL' | 'DOUBLE'
 pub(super) fn parse_NumericLiteralUnsigned(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {
@@ -5361,7 +6286,7 @@ pub(super) fn parse_NumericLiteralUnsigned(p: &mut Parser) {
     };
     p.close(marker, SyntaxKind::NumericLiteralUnsigned);
 }
-/// [137] PrefixedName -> 'PNAME_LN' | 'PNAME_NS'
+/// [157] PrefixedName -> 'PNAME_LN' | 'PNAME_NS'
 pub(super) fn parse_PrefixedName(p: &mut Parser) {
     let marker = p.open();
     match p.nth(0) {

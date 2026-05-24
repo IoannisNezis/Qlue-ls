@@ -1,9 +1,9 @@
 [package]
 name = "ll-sparql-parser"
-version = "3.0.1"
+version = "3.1.0"
 edition = "2021"
 authors = ["Ioannis Nezis <ioannis@nezis.de>"]
-description = "A resilient LL parser for SPARQL"
+description = "A resilient LL parser for SPARQL 1.2"
 repository = "https://github.com/IoannisNezis/qlue-ls"
 keywords = ["SPARQL", "parser", "rdf"]
 license = "MIT"

@@ -40,6 +40,10 @@ pub enum SyntaxKind {
     LCurly,
     #[token("}")]
     RCurly,
+    #[token("{|")]
+    LCurlyPipe,
+    #[token("|}")]
+    PipeRCurly,
     #[token("DESCRIBE", ignore(case))]
     DESCRIBE,
     #[token("ASK", ignore(case))]
@@ -114,6 +118,8 @@ pub enum SyntaxKind {
     ALL,
     #[token(".")]
     Dot,
+    #[token("~")]
+    Tilde,
     #[token("OPTIONAL", ignore(case))]
     OPTIONAL,
     #[token("SERVICE", ignore(case))]
@@ -158,6 +164,8 @@ pub enum SyntaxKind {
         r"\$(?:[A-Z]|[a-z]|[\u{00C0}-\u{00D6}]|[\u{00D8}-\u{00F6}]|[\u{00F8}-\u{02FF}]|[\u{0370}-\u{037D}]|[\u{037F}-\u{1FFF}]|[\u{200C}-\u{200D}]|[\u{2070}-\u{218F}]|[\u{2C00}-\u{2FEF}]|[\u{3001}-\u{D7FF}]|[\u{F900}-\u{FDCF}]|[\u{FDF0}-\u{FFFD}]|[\u{10000}-\u{EFFFF}]|_|[0-9])(?:[A-Z]|[a-z]|[\u{00C0}-\u{00D6}]|[\u{00D8}-\u{00F6}]|[\u{00F8}-\u{02FF}]|[\u{0370}-\u{037D}]|[\u{037F}-\u{1FFF}]|[\u{200C}-\u{200D}]|[\u{2070}-\u{218F}]|[\u{2C00}-\u{2FEF}]|[\u{3001}-\u{D7FF}]|[\u{F900}-\u{FDCF}]|[\u{FDF0}-\u{FFFD}]|[\u{10000}-\u{EFFFF}]|_|[0-9]|\u{00B7}|[\u{0300}-\u{036F}]|[\u{203F}-\u{2040}])*"
     )]
     VAR2,
+    #[regex(r"@[a-zA-Z]+(?:-[a-zA-Z0-9]+)*(?:--[a-zA-Z]+)?")]
+    LANG_DIR,
     #[token("||")]
     DoublePipe,
     #[token("&&")]
@@ -174,6 +182,14 @@ pub enum SyntaxKind {
     LessEquals,
     #[token(">=")]
     MoreEquals,
+    #[token("<<")]
+    DoubleLess,
+    #[token("<<(")]
+    DoubleLessLParen,
+    #[token(">>")]
+    DoubleMore,
+    #[token(")>>")]
+    RParenDoubleMore,
     #[regex(r"(?i-u:IN\b)")]
     IN,
     #[token("NOT", ignore(case))]
@@ -302,8 +318,26 @@ pub enum SyntaxKind {
     GROUP_CONCAT,
     #[token("SEPARATOR", ignore(case))]
     SEPARATOR,
-    #[regex("@[a-zA-Z]+(?:-[a-zA-Z0-9]+)*")]
-    LANGTAG,
+    #[token("VERSION", ignore(case))]
+    VERSION,
+    #[token("STRLANGDIR", ignore(case))]
+    STRLANGDIR,
+    #[token("hasLANG", ignore(case))]
+    hasLANG,
+    #[token("hasLANGDIR", ignore(case))]
+    hasLANGDIR,
+    #[token("isTRIPLE", ignore(case))]
+    isTRIPLE,
+    #[token("TRIPLE", ignore(case))]
+    TRIPLE,
+    #[token("SUBJECT", ignore(case))]
+    SUBJECT,
+    #[token("PREDICATE", ignore(case))]
+    PREDICATE,
+    #[token("OBJECT", ignore(case))]
+    OBJECT,
+    #[token("LANGDIR", ignore(case))]
+    LANGDIR,
     #[token("^^")]
     DoubleZirkumflex,
     #[regex(r"\d+")]
@@ -371,6 +405,10 @@ pub enum SyntaxKind {
     BaseDecl,
     /// PrefixDecl => 'PREFIX' 'PNAME_NS' 'IRIREF'
     PrefixDecl,
+    /// VersionDecl => 'VERSION' VersionSpecifier
+    VersionDecl,
+    /// VersionSpecifier = 'STRING_LITERAL1' | 'STRING_LITERAL2'
+    VersionSpecifier,
     /// SelectClause => 'SELECT' ('DISTINCT' | 'REDUCED')? ((Var | '(' Expression 'AS' Var ')') (Var | '(' Expression 'AS' Var ')')* | '*')
     SelectClause,
     /// DatasetClause => 'FROM' (DefaultGraphClause | NamedGraphClause)
@@ -479,6 +517,22 @@ pub enum SyntaxKind {
     GroupGraphPatternSub,
     /// TriplesBlock => TriplesSameSubjectPath ('.' TriplesBlock?)?
     TriplesBlock,
+    /// ReifiedTripleBlock = ReifiedTriple PropertyList
+    ReifiedTripleBlock,
+    /// ReifiedTripleBlockPath = ReifiedTriple PropertyListPath
+    ReifiedTripleBlockPath,
+    /// Reifier = '~' VarOrReifierId?
+    Reifier,
+    /// VarOrReifierId = Var | iri | BlankNode
+    VarOrReifierId,
+    /// AnnotationPath = ( Reifier | AnnotationBlockPath )*
+    AnnotationPath,
+    /// AnnotationBlockPath = '{|' PropertyListPathNotEmpty '|}'
+    AnnotationBlockPath,
+    /// Annotation = ( Reifier | AnnotationBlock )*
+    Annotation,
+    /// AnnotationBlock = '{|' PropertyListNotEmpty '|}'
+    AnnotationBlock,
     /// GraphPatternNotTriples => GroupOrUnionGraphPattern | OptionalGraphPattern | MinusGraphPattern | GraphGraphPattern | ServiceGraphPattern | Filter | Bind | InlineData
     GraphPatternNotTriples,
     /// TriplesSameSubjectPath => VarOrTerm PropertyListPathNotEmpty | TriplesNodePath PropertyListPath
@@ -519,6 +573,24 @@ pub enum SyntaxKind {
     ConstructTriples,
     /// VarOrTerm => Var | GraphTerm
     VarOrTerm,
+    /// ReifiedTriple = '<<' ReifiedTripleSubject Verb ReifiedTripleObject Reifier? '>>'
+    ReifiedTriple,
+    /// ReifiedTripleSubject = Var | iri | RDFLiteral | NumericLiteral | BooleanLiteral | BlankNode | ReifiedTriple | TripleTerm
+    ReifiedTripleSubject,
+    /// ReifiedTripleObject = Var | iri | RDFLiteral | NumericLiteral | BooleanLiteral | BlankNode | ReifiedTriple | TripleTerm
+    ReifiedTripleObject,
+    /// TripleTerm = '<<(' TripleTermSubject Verb TripleTermObject ')>>'
+    TripleTerm,
+    /// TripleTermSubject = Var | iri | RDFLiteral | NumericLiteral | BooleanLiteral | BlankNode | TripleTerm
+    TripleTermSubject,
+    /// TripleTermObject = Var | iri | RDFLiteral | NumericLiteral | BooleanLiteral | BlankNode | TripleTerm
+    TripleTermObject,
+    /// TripleTermData = '<<(' TripleTermDataSubject ( iri | 'a' ) TripleTermDataObject ')>>'
+    TripleTermData,
+    /// TripleTermDataSubject = iri
+    TripleTermDataSubject,
+    /// TripleTermDataObject = iri | RDFLiteral | NumericLiteral | BooleanLiteral | TripleTermData
+    TripleTermDataObject,
     /// PropertyListNotEmpty => Verb ObjectList (';' (Verb ObjectList)?)*
     PropertyListNotEmpty,
     /// TriplesNode => Collection | BlankNodePropertyList
@@ -603,6 +675,12 @@ pub enum SyntaxKind {
     UnaryExpression,
     /// PrimaryExpression => BrackettedExpression | BuiltInCall | iriOrFunction | RDFLiteral | NumericLiteral | BooleanLiteral | Var
     PrimaryExpression,
+    /// ExprTripleTerm = '<<(' ExprTripleTermSubject Verb ExprTripleTermObject ')>>'
+    ExprTripleTerm,
+    /// ExprTripleTermSubject = iri | Var
+    ExprTripleTermSubject,
+    /// ExprTripleTermObject = iri | RDFLiteral | NumericLiteral | BooleanLiteral | Var | ExprTripleTerm
+    ExprTripleTermObject,
     /// iriOrFunction => iri ArgList?
     iriOrFunction,
     /// Aggregate => 'COUNT' '(' 'DISTINCT'? ('*' | Expression) ')' | 'SUM' '(' 'DISTINCT'? Expression ')' | 'MIN' '(' 'DISTINCT'? Expression ')' | 'MAX' '(' 'DISTINCT'? Expression ')' | 'AVG' '(' 'DISTINCT'? Expression ')' | 'SAMPLE' '(' 'DISTINCT'? Expression ')' | 'GROUP_CONCAT' '(' 'DISTINCT'? Expression (';' 'SEPARATOR' '=' String)? ')'

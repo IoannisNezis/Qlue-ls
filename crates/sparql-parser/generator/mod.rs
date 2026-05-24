@@ -12,7 +12,7 @@ use ungrammar::{Grammar, Rule, Token};
 use utils::{compute_first, is_nullable, FirstSet};
 
 pub fn generate() {
-    let mut file = File::open("sparql.ungram").expect("File should exist");
+    let mut file = File::open("sparql12.ungram").expect("File should exist");
     let mut contents = String::new();
     file.read_to_string(&mut contents)
         .expect("could not read file");
@@ -156,8 +156,11 @@ fn generate_token_kind(token: &str) -> proc_macro2::Ident {
             ")" => "RParen",
             "{" => "LCurly",
             "}" => "RCurly",
+            "{|" => "LCurlyPipe",
+            "|}" => "PipeRCurly",
             "[" => "LBrack",
             "]" => "RBrack",
+            "~" => "Tilde",
             "." => "Dot",
             "," => "Comma",
             ";" => "Semicolon",
@@ -174,8 +177,12 @@ fn generate_token_kind(token: &str) -> proc_macro2::Ident {
             "!=" => "ExclamationMarkEquals",
             "<" => "Less",
             "<=" => "LessEquals",
+            "<<" => "DoubleLess",
+            "<<(" => "DoubleLessLParen",
             ">" => "More",
             ">=" => "MoreEquals",
+            ">>" => "DoubleMore",
+            ")>>" => "RParenDoubleMore",
             "true" => "True",
             "false" => "False",
             other => other,

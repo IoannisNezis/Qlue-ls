@@ -1,6 +1,6 @@
 mod generator;
 fn main() {
-    println!("cargo:rerun-if-changed=sparql.ungram");
+    println!("cargo:rerun-if-changed=sparql12.ungram");
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=generator");
     println!("cargo:rerun-if-env-changed=GENERATE_PARSER");

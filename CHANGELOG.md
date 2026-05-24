@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- SPARQL 1.2 support. The language server now understands the new syntax and
+  vocabulary introduced by SPARQL 1.2 / RDF 1.2:
+  - **Parser** — recognizes the new grammar constructs:
+    - version declarations (`VERSION "1.2"`)
+    - reified triples (`<< :s :p :o >>`) with optional reifiers (`~`)
+    - triple terms (`<<( :s :p :o )>>`), in data, patterns and expressions
+    - annotation syntax with annotation blocks (`{| :p :o |}`)
+    - directional language tags (e.g. `"text"@en--ltr`)
+  - **Syntax highlighting** — semantic tokens are emitted for the new
+    keywords and constructs, so 1.2 queries are highlighted correctly.
+  - **Completions** — the built-in function list now offers the new functions:
+    `TRIPLE`, `SUBJECT`, `PREDICATE`, `OBJECT` and `isTRIPLE` for triple terms,
+    and `LANGDIR`, `STRLANGDIR`, `hasLANG` and `hasLANGDIR` for directional
+    language strings.
+
 ## [2.7.1] - 2026-05-23
 
 ### Fixed

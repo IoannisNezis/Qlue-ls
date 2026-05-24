@@ -32,6 +32,13 @@ pub(crate) async fn completions() -> Result<CompletionList, CompletionError> {
                 .insert_text("LANG(${0:literal})")
                 .build(),
             CompletionItemBuilder::new()
+                .label("LANGDIR")
+                .label_details(" (literal)")
+                .kind(CompletionItemKind::Function)
+                .documentation("Returns the base direction of a directional language-tagged string (\"ltr\" or \"rtl\"). Returns \"\" if the literal has no base direction. (SPARQL 1.2)")
+                .insert_text("LANGDIR(${0:literal})")
+                .build(),
+            CompletionItemBuilder::new()
                 .label("LANGMATCHES")
                 .label_details(" (langTag, langRange)")
                 .kind(CompletionItemKind::Function)
@@ -142,6 +149,13 @@ pub(crate) async fn completions() -> Result<CompletionList, CompletionError> {
                 .kind(CompletionItemKind::Function)
                 .documentation("Constructs a language-tagged literal from the given lexical form and language tag.")
                 .insert_text("STRLANG(${1:lexicalForm}, ${0:langTag})")
+                .build(),
+            CompletionItemBuilder::new()
+                .label("STRLANGDIR")
+                .label_details(" (lexicalForm, langTag, direction)")
+                .kind(CompletionItemKind::Function)
+                .documentation("Constructs a directional language-tagged literal from the given lexical form, language tag, and base direction (\"ltr\" or \"rtl\"). (SPARQL 1.2)")
+                .insert_text("STRLANGDIR(${1:lexicalForm}, ${2:langTag}, ${0:direction})")
                 .build(),
             CompletionItemBuilder::new()
                 .label("STRDT")
@@ -330,6 +344,27 @@ pub(crate) async fn completions() -> Result<CompletionList, CompletionError> {
                 .insert_text("isNUMERIC(${0:term})")
                 .build(),
             CompletionItemBuilder::new()
+                .label("isTRIPLE")
+                .label_details(" (term)")
+                .kind(CompletionItemKind::Function)
+                .documentation("Returns true if the term is a triple term (an RDF 1.2 quoted triple). (SPARQL 1.2)")
+                .insert_text("isTRIPLE(${0:term})")
+                .build(),
+            CompletionItemBuilder::new()
+                .label("hasLANG")
+                .label_details(" (literal)")
+                .kind(CompletionItemKind::Function)
+                .documentation("Returns true if the literal has a language tag. (SPARQL 1.2)")
+                .insert_text("hasLANG(${0:literal})")
+                .build(),
+            CompletionItemBuilder::new()
+                .label("hasLANGDIR")
+                .label_details(" (literal)")
+                .kind(CompletionItemKind::Function)
+                .documentation("Returns true if the literal has a base direction (\"ltr\" or \"rtl\"). (SPARQL 1.2)")
+                .insert_text("hasLANGDIR(${0:literal})")
+                .build(),
+            CompletionItemBuilder::new()
                 .label("sameTerm")
                 .label_details(" (term1, term2)")
                 .kind(CompletionItemKind::Function)
@@ -371,6 +406,35 @@ pub(crate) async fn completions() -> Result<CompletionList, CompletionError> {
                 .kind(CompletionItemKind::Function)
                 .documentation("Returns a string that is the UUID portion of a UUID IRI (without the urn:uuid: prefix). Each call returns a different UUID.")
                 .insert_text("STRUUID()")
+                .build(),
+            // --- Triple Term Functions (SPARQL 1.2) ---
+            CompletionItemBuilder::new()
+                .label("TRIPLE")
+                .label_details(" (subject, predicate, object)")
+                .kind(CompletionItemKind::Function)
+                .documentation("Constructs a triple term from the given subject, predicate, and object. (SPARQL 1.2)")
+                .insert_text("TRIPLE(${1:subject}, ${2:predicate}, ${0:object})")
+                .build(),
+            CompletionItemBuilder::new()
+                .label("SUBJECT")
+                .label_details(" (tripleTerm)")
+                .kind(CompletionItemKind::Function)
+                .documentation("Returns the subject of a triple term. (SPARQL 1.2)")
+                .insert_text("SUBJECT(${0:tripleTerm})")
+                .build(),
+            CompletionItemBuilder::new()
+                .label("PREDICATE")
+                .label_details(" (tripleTerm)")
+                .kind(CompletionItemKind::Function)
+                .documentation("Returns the predicate of a triple term. (SPARQL 1.2)")
+                .insert_text("PREDICATE(${0:tripleTerm})")
+                .build(),
+            CompletionItemBuilder::new()
+                .label("OBJECT")
+                .label_details(" (tripleTerm)")
+                .kind(CompletionItemKind::Function)
+                .documentation("Returns the object of a triple term. (SPARQL 1.2)")
+                .insert_text("OBJECT(${0:tripleTerm})")
                 .build(),
             // --- Conditional & Misc Functions ---
             CompletionItemBuilder::new()

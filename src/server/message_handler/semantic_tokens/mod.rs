@@ -90,6 +90,7 @@ fn collect_semantic_tokens(
             | SyntaxKind::CONSTRUCT
             | SyntaxKind::WHERE
             | SyntaxKind::PREFIX
+            | SyntaxKind::VERSION
             | SyntaxKind::BASE
             | SyntaxKind::ORDER
             | SyntaxKind::BY
@@ -195,6 +196,15 @@ fn collect_semantic_tokens(
             | SyntaxKind::REGEX
             | SyntaxKind::SUBSTR
             | SyntaxKind::REPLACE
+            | SyntaxKind::TRIPLE
+            | SyntaxKind::SUBJECT
+            | SyntaxKind::PREDICATE
+            | SyntaxKind::OBJECT
+            | SyntaxKind::isTRIPLE
+            | SyntaxKind::LANGDIR
+            | SyntaxKind::STRLANGDIR
+            | SyntaxKind::hasLANG
+            | SyntaxKind::hasLANGDIR
             // Aggregates
             | SyntaxKind::COUNT
             | SyntaxKind::SUM

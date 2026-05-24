@@ -16,6 +16,11 @@ pub(crate) fn add_limit_offset_to_query(
     if limit.is_none() && offset == 0 {
         return None;
     }
+    // WARNING: The inner SELECT's `ORDER BY` is not guaranteed by the SPARQL
+    // spec to be preserved once it is wrapped as a subquery under an outer
+    // `SELECT *`. QLever happens to preserve it, but pagination over a query
+    // without a total `ORDER BY` may yield overlapping or skipped rows across
+    // separate LIMIT/OFFSET requests.
     let syntax_tree = QueryUnit::cast(parse_query(query).0)?;
     let select_query = syntax_tree.select_query()?;
     let limit_clause = limit.map_or(String::new(), |limit| format!("LIMIT {limit}\n"));

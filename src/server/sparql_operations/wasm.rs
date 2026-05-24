@@ -134,6 +134,8 @@ fn build_query_request(
     url: &str,
     query: &str,
     method: &RequestMethod,
+    limit: Option<usize>,
+    offset: usize,
     engine: &Option<SparqlEngine>,
     query_id: Option<&str>,
     opts: &RequestInit,
@@ -145,8 +147,18 @@ fn build_query_request(
         }
         (RequestMethod::POST, Some(SparqlEngine::QLever)) => {
             opts.set_method("POST");
-            let body = format!("query={}", js_sys::encode_uri_component(query));
-            opts.set_body(&JsString::from_str(&body).unwrap());
+            // NOTE: QLever provides the "send" parameter.
+            // It causes the Engine to only send and therfor produce n results,
+            // even if the result size is larger then n.
+            // We set this send parameter to the minimal n required.
+            // Maybe QLever will also provide a "offset" parameter in the future.
+            let mut fields = Vec::with_capacity(2);
+            if let Some(limit) = limit {
+                fields.push(format!("send={}", limit + offset));
+            }
+            fields.push(format!("query={}", js_sys::encode_uri_component(query)));
+            let body: String = fields.join("&");
+            opts.set_body(&JsString::from_str(&body).expect("Request body should be valid."));
             let request = Request::new_with_str_and_init(url, opts).unwrap();
             set_header(&request, "Content-Type", CONTENT_TYPE_FORM);
             if let Some(id) = query_id {
@@ -178,7 +190,9 @@ async fn stream_lazy_query_results(
 ) -> Result<usize, SparqlRequestError> {
     let result = lazy_sparql_result_reader::read(
         resp.body().unwrap(),
-        limit.map(|limit| 1000.min(limit - offset)).unwrap_or(1000),
+        // INFO: `limit` is the window size (rows after `offset`), so the read
+        // window is `limit` itself; cap the batch size at it.
+        limit.map(|limit| 1000.min(limit)).unwrap_or(1000),
         limit,
         offset,
         async |mut partial_result: PartialResult| {
@@ -361,8 +375,9 @@ pub(crate) async fn execute_query(
     if !lazy && let Some(new_query) = add_limit_offset_to_query(&query, limit, offset) {
         query = new_query;
     }
-
-    let request = build_query_request(&url, &query, &method, &engine, query_id, &opts);
+    let request = build_query_request(
+        &url, &query, &method, limit, offset, &engine, query_id, &opts,
+    );
 
     let resp = fetch(&request, &query).await?;
     if !resp.ok() {

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [2.8.0] - 2026-05-29
+
 ### Added
 
 - SPARQL 1.2 support. The language server now understands the new syntax and

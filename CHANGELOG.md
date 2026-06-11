@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- the `ungrouped-select-var` diagnostic now recognizes a bracketted variable
+  in the GROUP BY clause (e.g. `GROUP BY (?x)`) as grouping by that variable.
+  Complex expressions like `GROUP BY (1 + ?x)` still do not make `?x`
+  projectable.
+
 ## [2.8.0] - 2026-05-29
 
 ### Added

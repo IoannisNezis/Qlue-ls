@@ -90,9 +90,9 @@ fn tokenize_langtag() {
         tokens,
         vec![
             SyntaxKind::STRING_LITERAL2,
-            SyntaxKind::LANGTAG,
+            SyntaxKind::LANG_DIR,
             SyntaxKind::STRING_LITERAL2,
-            SyntaxKind::LANGTAG
+            SyntaxKind::LANG_DIR
         ]
     )
 }

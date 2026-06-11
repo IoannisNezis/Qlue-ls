@@ -44,6 +44,29 @@ fn expression() {
 }
 
 #[test]
+fn group_clause_visible_variables() {
+    // NOTE: A GroupCondition binds a variable if it is a plain variable ("?a"),
+    //       an alias ("(... AS ?c)"), or a bracketted variable ("(?b)").
+    let input = "SELECT ?a { } GROUP BY ?a (?b) (1 + ?x AS ?c) (1 + ?y) SUM(?z)";
+    let query = QueryUnit::cast(parse(input).0).unwrap();
+    let group_clause = query
+        .select_query()
+        .unwrap()
+        .soulution_modifier()
+        .unwrap()
+        .group_clause()
+        .unwrap();
+    assert_eq!(
+        group_clause
+            .visible_variables()
+            .into_iter()
+            .map(|var| var.text())
+            .collect::<Vec<_>>(),
+        vec!["?a", "?b", "?c"]
+    );
+}
+
+#[test]
 fn select_clause() {
     let input = "SELECT ?a (3 as ?b) ?e (?c as ?d) { }";
     let query = QueryUnit::cast(parse(input).0).unwrap();
@@ -123,7 +146,7 @@ fn property_list() {
 fn blank_prop_list() {
     let input = "SELECT * WHERE { ?s ?p []}";
     let root = parse_query(input).0;
-    let node = walk(root, vec![0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0]).unwrap();
+    let node = walk(root, vec![0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0]).unwrap();
     let ast_node = BlankPropertyList::cast(node).unwrap();
     assert!(ast_node.property_list().is_none());
 

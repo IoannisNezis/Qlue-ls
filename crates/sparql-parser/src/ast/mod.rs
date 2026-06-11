@@ -224,6 +224,23 @@ pub struct Expression {
 }
 
 impl Expression {
+    /// Returns the variable, if this expression consists of just a single variable.
+    pub fn as_var(&self) -> Option<Var> {
+        // NOTE: A plain variable is wrapped in a chain of single-child expression nodes.
+        let mut node = self.syntax.clone();
+        while !Var::can_cast(node.kind()) {
+            let mut children = node.children_with_tokens().filter(|child| {
+                !matches!(child.kind(), SyntaxKind::WHITESPACE | SyntaxKind::Comment)
+            });
+            let only_child = children.next()?;
+            if children.next().is_some() {
+                return None;
+            }
+            node = only_child.into_node()?;
+        }
+        Var::cast(node)
+    }
+
     pub fn unaggregated_variables(&self) -> Vec<Var> {
         let mut res = vec![];
         let mut stack = vec![self.syntax.clone()];
@@ -1420,11 +1437,15 @@ impl AstNode for GroupClause {
     }
 
     fn visible_variables(&self) -> Vec<Var> {
+        // NOTE: A GroupCondition binds a variable if it is a plain variable ("?x"),
+        //       an alias ("(... AS ?x)"), or a bracketted variable ("(?x)").
         self.syntax
             .children()
             .into_iter()
             .filter_map(|group_condition| group_condition.last_child())
-            .filter_map(Var::cast)
+            .filter_map(|node| {
+                Var::cast(node.clone()).or_else(|| Expression::cast(node)?.as_var())
+            })
             .collect()
     }
 }

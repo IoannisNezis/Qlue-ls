@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [2.8.1] - 2026-06-11
+
 ### Fixed
 
 - the `ungrouped-select-var` diagnostic now recognizes a bracketted variable

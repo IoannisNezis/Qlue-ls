@@ -128,32 +128,44 @@ impl TextDocumentItem {
         // NOTE: This is refering to a utf-8 byte offset in the text.
         let mut current_change_start_byte_offset: usize = 0;
         while let Some(change) = changes.peek() {
+            let Some(range) = &change.range else {
+                // NOTE: A change without a range replaces the entire document.
+                self.text = changes.next().expect("peek returned Some").text;
+                cursor = Position::new(0, 0);
+                byte_offset = 0;
+                current_change_start_byte_offset = 0;
+                continue;
+            };
             assert!(
-                change.range.start <= change.range.end,
+                range.start <= range.end,
                 "received a invalid change: {change:?}"
             );
             assert!(
-                change.range.end >= cursor,
+                range.end >= cursor,
                 "A change was missed when applying changes. The next change end position: {}, cursor position: {cursor}",
-                change.range.end
+                range.end
             );
-            if change.range.start == cursor {
+            if range.start == cursor {
                 current_change_start_byte_offset = byte_offset;
             }
-            if change.range.end == cursor {
+            if range.end == cursor {
+                let change_start = range.start;
                 self.text
                     .replace_range(current_change_start_byte_offset..byte_offset, &change.text);
                 // NOTE: The cursor is now at the end of the edit.
                 // Therefor its position in the document needs to be corrected.
-                cursor = change.range.start;
+                cursor = change_start;
                 byte_offset = current_change_start_byte_offset;
                 changes.next();
                 // NOTE: The changes don't have to be ordered.
                 // If the next change is infront of the cursor, the cursor has to be reset.
-                if changes
-                    .peek()
-                    .is_some_and(|change| change.range.start < cursor)
-                {
+                // A rangeless change resets the cursor as well, since it replaces the document.
+                if changes.peek().is_some_and(|change| {
+                    change
+                        .range
+                        .as_ref()
+                        .is_none_or(|range| range.start < cursor)
+                }) {
                     cursor = Position::new(0, 0);
                     byte_offset = 0;
                 }
@@ -782,16 +794,16 @@ mod tests {
         let initial_text = "\n";
         let mut document = TextDocumentItem::new("file:///test.txt", initial_text);
         document.apply_content_changes(vec![TextDocumentContentChangeEvent {
-            range: Range::new(0, 0, 0, 0),
+            range: Some(Range::new(0, 0, 0, 0)),
             text: "a".to_string(),
         }]);
         document.apply_content_changes(vec![
             TextDocumentContentChangeEvent {
-                range: Range::new(0, 1, 0, 1),
+                range: Some(Range::new(0, 1, 0, 1)),
                 text: "b".to_string(),
             },
             TextDocumentContentChangeEvent {
-                range: Range::new(0, 2, 0, 2),
+                range: Some(Range::new(0, 2, 0, 2)),
                 text: "c".to_string(),
             },
         ]);
@@ -808,11 +820,11 @@ mod tests {
         let mut document = TextDocumentItem::new("file:///test.txt", initial_text);
         document.apply_content_changes(vec![
             TextDocumentContentChangeEvent {
-                range: Range::new(0, 10, 0, 11),
+                range: Some(Range::new(0, 10, 0, 11)),
                 text: "".to_string(),
             },
             TextDocumentContentChangeEvent {
-                range: Range::new(0, 7, 0, 8),
+                range: Some(Range::new(0, 7, 0, 8)),
                 text: "".to_string(),
             },
         ]);
@@ -833,11 +845,11 @@ mod tests {
         let mut document = TextDocumentItem::new("file:///test.txt", initial_text);
         document.apply_content_changes(vec![
             TextDocumentContentChangeEvent {
-                range: Range::new(0, 16, 0, 18),
+                range: Some(Range::new(0, 16, 0, 18)),
                 text: "\n\n\n\n\nr".to_string(),
             },
             TextDocumentContentChangeEvent {
-                range: Range::new(5, 1, 5, 1),
+                range: Some(Range::new(5, 1, 5, 1)),
                 text: "".to_string(),
             },
         ]);
@@ -857,21 +869,42 @@ mod tests {
         let mut document = TextDocumentItem::new("file:///test.txt", initial_text);
         document.apply_content_changes(vec![
             TextDocumentContentChangeEvent {
-                range: Range::new(5, 1, 5, 1),
+                range: Some(Range::new(5, 1, 5, 1)),
                 text: "".to_string(),
             },
             TextDocumentContentChangeEvent {
-                range: Range::new(0, 16, 5, 1),
+                range: Some(Range::new(0, 16, 5, 1)),
                 text: " r".to_string(),
             },
             TextDocumentContentChangeEvent {
-                range: Range::new(0, 18, 0, 18),
+                range: Some(Range::new(0, 18, 0, 18)),
                 text: "".to_string(),
             },
             TextDocumentContentChangeEvent {
-                range: Range::new(0, 18, 0, 18),
+                range: Some(Range::new(0, 18, 0, 18)),
                 text: "".to_string(),
             },
         ]);
+    }
+
+    #[test]
+    fn content_change_event_full_document() {
+        let initial_text = "SELECT * WHERE {\n  ?s ?p ?o\n}\n";
+        let mut document = TextDocumentItem::new("file:///test.txt", initial_text);
+        document.apply_content_changes(vec![
+            TextDocumentContentChangeEvent {
+                range: Some(Range::new(0, 7, 0, 8)),
+                text: "?x".to_string(),
+            },
+            TextDocumentContentChangeEvent {
+                range: None,
+                text: "ASK { ?s ?p ?o }\n".to_string(),
+            },
+            TextDocumentContentChangeEvent {
+                range: Some(Range::new(0, 0, 0, 3)),
+                text: "ask".to_string(),
+            },
+        ]);
+        assert_eq!(document.text, "ask { ?s ?p ?o }\n");
     }
 }

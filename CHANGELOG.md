@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- `textDocument/didChange` now accepts content changes without a `range`,
+  which per the LSP specification replace the entire document. Previously
+  such notifications failed to deserialize, so clients using full document
+  synchronization could not update documents.
+
 ## [2.8.1] - 2026-06-11
 
 ### Fixed

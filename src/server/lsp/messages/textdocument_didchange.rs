@@ -25,18 +25,19 @@ pub struct DidChangeTextDocumentParams {
 }
 
 // https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocumentContentChangeEvent
+// NOTE: `range` is absent when the event replaces the whole document.
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct TextDocumentContentChangeEvent {
-    pub range: Range,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub range: Option<Range>,
     pub text: String,
 }
 
 impl fmt::Display for TextDocumentContentChangeEvent {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{:?}; [{}-{}]",
-            self.text, self.range.start, self.range.end
-        )
+        match &self.range {
+            Some(range) => write!(f, "{:?}; [{}-{}]", self.text, range.start, range.end),
+            None => write!(f, "{:?}; [full document]", self.text),
+        }
     }
 }

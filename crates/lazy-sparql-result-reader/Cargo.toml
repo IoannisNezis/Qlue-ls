@@ -11,17 +11,14 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 console_error_panic_hook = "0.1.7"
-js-sys = "0.3.83"
+js-sys = "0.3.100"
 log = "0.4.29"
 serde = { version = "1.0.228", features = ["derive"] }
 serde-wasm-bindgen = "0.6.5"
 serde_json = "1.0.145"
-wasm-bindgen = "0.2.106"
-wasm-bindgen-futures = "0.4.56"
-web-sys = { version = "0.3.83", features = [
-	"ReadableStream",
-	"ReadableStreamDefaultReader",
-] }
+wasm-bindgen = "0.2.123"
+wasm-bindgen-futures = "0.4.73"
+web-sys = { version = "0.3.100", features = ["ReadableStream", "ReadableStreamDefaultReader"] }
 arbitrary = { version = "1", optional = true, features = ["derive"] }
 
 [features]

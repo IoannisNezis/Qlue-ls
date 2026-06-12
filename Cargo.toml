@@ -51,7 +51,7 @@ lazy-sparql-result-reader = { features = ["call_from_rust"], version = "3.0.0" }
 ntriples-parser = "2.0.0"
 
 # WASM (wasm-bindgen needed for both targets due to #[wasm_bindgen] attributes)
-wasm-bindgen = "0.2.108"
+wasm-bindgen = "0.2.123"
 
 # Native-only dependencies
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
@@ -67,7 +67,7 @@ reqwest = { version = "0.13.0", features = ["json", "form"] }
 # WASM-only dependencies
 [target.'cfg(target_family = "wasm")'.dependencies]
 wasm-tracing = "2.1.0"
-wasm-bindgen-futures = "0.4.58"
+wasm-bindgen-futures = "0.4.73"
 web-sys = { version = "0.3.85", features = [
 	"ReadableStream",
 	"ReadableStreamDefaultReader",
@@ -86,7 +86,7 @@ web-sys = { version = "0.3.85", features = [
 	"Performance",
 	"console",
 ] }
-js-sys = "0.3.85"
+js-sys = "0.3.100"
 console_error_panic_hook = { version = "0.1.7", optional = true }
 getrandom = { version = "0.4", features = ["wasm_js"] }
 serde-wasm-bindgen = "0.6.5"

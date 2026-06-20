@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- **BREAKING** template variables are now prefixed with `qls_` instead of
+  `qlue_ls_` for conciseness. Existing query templates using the `qlue_ls_`
+  prefix must be updated to the new `qls_` prefix.
+
 ## [2.8.2] - 2026-06-11
 
 ### Fixed

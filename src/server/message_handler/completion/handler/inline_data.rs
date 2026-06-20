@@ -78,7 +78,7 @@ fn local_context(environment: &CompletionEnvironment) -> Result<String, Completi
                 "VALUES clause has no variable at index".to_string(),
             ))?
             .text();
-        Ok(format!("BIND({} AS ?qlue_ls_entity)", var))
+        Ok(format!("BIND({} AS ?qls_entity)", var))
     } else {
         Err(CompletionError::Resolve(
             "inline_data completion called for non InlineData location".to_string(),

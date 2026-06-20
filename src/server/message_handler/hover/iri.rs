@@ -81,10 +81,10 @@ pub(super) async fn hover(
             .first()
         {
             Some(binding) => binding
-                .get("qlue_ls_label")
+                .get("qls_label")
                 .ok_or(LSPError::new(
                     ErrorCode::InternalError,
-                    "No RDF literal \"qlue_ls_entity\" in result",
+                    "No RDF literal \"qls_entity\" in result",
                 ))
                 .map(|rdf_term| Some(rdf_term.value().to_string())),
             None => Ok(None),

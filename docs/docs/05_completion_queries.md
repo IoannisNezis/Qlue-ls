@@ -10,11 +10,11 @@ Each completion query result **MUST** contain the following variables:
 
 | Variable          | Content                             | Example               |
 | ----------------- | ----------------------------------- | --------------------- |
-| `?qlue_ls_entity` | RDF term, value to be completed     | \<book_1\>            |
-| `?qlue_ls_label`  | representation of completion item   | book title            |
-| `?qlue_ls_alias` | description of the completion item  | Book from author ...  |
+| `?qls_entity` | RDF term, value to be completed     | \<book_1\>            |
+| `?qls_label`  | representation of completion item   | book title            |
+| `?qls_alias` | description of the completion item  | Book from author ...  |
 
-Optionally, you can include `?qlue_ls_count` to provide a relevance score (e.g., occurrence count) for sorting results.
+Optionally, you can include `?qls_count` to provide a relevance score (e.g., occurrence count) for sorting results.
 
 ## Query Types
 
@@ -45,7 +45,7 @@ Each template has the following variables available:
 | -------------------------- | ------ | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | `prefixes`                 | list   | PREFIX declarations from the document and configuration       | `[("rdfs", "http://www.w3.org/2000/01/rdf-schema#"), ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")]`  |
 | `subject`                  | string | Subject of the current triple                                 | `"?sub"` or `"<http://example.org/entity>"`                                                                   |
-| `local_context`            | string | Triple pattern for the completion location                    | `"?sub ?qlue_ls_entity []"`                                                                                   |
+| `local_context`            | string | Triple pattern for the completion location                    | `"?sub ?qls_entity []"`                                                                                   |
 | `context`                  | string | Constraining triples from the query                           | `"?sub rdf:type <Thing> . ?sub <n> 42"`                                                                       |
 | `search_term`              | string | Partial text the user is typing                               | `"boo"` (when typing "book")                                                                                  |
 | `search_term_uncompressed` | string | Expanded IRI if user typed a prefixed name                    | `"http://www.wikidata.org/prop/direct/P"` (when typing `wdt:P`)                                               |
@@ -101,21 +101,21 @@ Below are simplified, generic examples for each query type. These can be adapted
 ```sparql
 {% include "prefix_declarations" %}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
+SELECT ?qls_entity ?qls_label ?qls_alias ?qls_count WHERE {
   {
-    SELECT ?qlue_ls_entity (COUNT(*) AS ?qlue_ls_count) WHERE {
-      ?qlue_ls_entity ?p ?o .
+    SELECT ?qls_entity (COUNT(*) AS ?qls_count) WHERE {
+      ?qls_entity ?p ?o .
       {% if search_term %}
-      ?qlue_ls_entity rdfs:label ?label .
+      ?qls_entity rdfs:label ?label .
       FILTER(STRSTARTS(LCASE(?label), LCASE("{{ search_term }}")))
       {% endif %}
     }
-    GROUP BY ?qlue_ls_entity
-    ORDER BY DESC(?qlue_ls_count)
+    GROUP BY ?qls_entity
+    ORDER BY DESC(?qls_count)
     LIMIT {{ limit }}
   }
-  OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label }
-  OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_alias }
+  OPTIONAL { ?qls_entity rdfs:label ?qls_label }
+  OPTIONAL { ?qls_entity rdfs:comment ?qls_alias }
 }
 ```
 
@@ -124,17 +124,17 @@ SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
 ```sparql
 {% include "prefix_declarations" %}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
+SELECT ?qls_entity ?qls_label ?qls_alias ?qls_count WHERE {
   {
-    SELECT ?qlue_ls_entity (COUNT(*) AS ?qlue_ls_count) WHERE {
+    SELECT ?qls_entity (COUNT(*) AS ?qls_count) WHERE {
       {{ context }} {{ local_context }}
     }
-    GROUP BY ?qlue_ls_entity
-    ORDER BY DESC(?qlue_ls_count)
+    GROUP BY ?qls_entity
+    ORDER BY DESC(?qls_count)
     LIMIT {{ limit }}
   }
-  OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label }
-  OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_alias }
+  OPTIONAL { ?qls_entity rdfs:label ?qls_label }
+  OPTIONAL { ?qls_entity rdfs:comment ?qls_alias }
 }
 ```
 
@@ -143,17 +143,17 @@ SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
 ```sparql
 {% include "prefix_declarations" %}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
+SELECT ?qls_entity ?qls_label ?qls_alias ?qls_count WHERE {
   {
-    SELECT ?qlue_ls_entity (COUNT(*) AS ?qlue_ls_count) WHERE {
+    SELECT ?qls_entity (COUNT(*) AS ?qls_count) WHERE {
       {{ local_context }}
     }
-    GROUP BY ?qlue_ls_entity
-    ORDER BY DESC(?qlue_ls_count)
+    GROUP BY ?qls_entity
+    ORDER BY DESC(?qls_count)
     LIMIT {{ limit }}
   }
-  OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label }
-  OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_alias }
+  OPTIONAL { ?qls_entity rdfs:label ?qls_label }
+  OPTIONAL { ?qls_entity rdfs:comment ?qls_alias }
 }
 ```
 
@@ -162,19 +162,19 @@ SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
 ```sparql
 {% include "prefix_declarations" %}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
+SELECT ?qls_entity ?qls_label ?qls_alias ?qls_count WHERE {
   {
-    SELECT ?qlue_ls_entity (COUNT(*) AS ?qlue_ls_count) WHERE {
+    SELECT ?qls_entity (COUNT(*) AS ?qls_count) WHERE {
       {{ context }} {{ local_context }}
     }
-    GROUP BY ?qlue_ls_entity
-    ORDER BY DESC(?qlue_ls_count)
+    GROUP BY ?qls_entity
+    ORDER BY DESC(?qls_count)
     LIMIT {{ limit }}
   }
-  OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label }
-  OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_alias }
+  OPTIONAL { ?qls_entity rdfs:label ?qls_label }
+  OPTIONAL { ?qls_entity rdfs:comment ?qls_alias }
   {% if search_term %}
-  FILTER(CONTAINS(LCASE(STR(?qlue_ls_label)), LCASE("{{ search_term }}")) || CONTAINS(LCASE(STR(?alias)), LCASE("{{ search_term }}")))
+  FILTER(CONTAINS(LCASE(STR(?qls_label)), LCASE("{{ search_term }}")) || CONTAINS(LCASE(STR(?alias)), LCASE("{{ search_term }}")))
   {% endif %}
 }
 ```
@@ -184,29 +184,29 @@ SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
 ```sparql
 {% include "prefix_declarations" %}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
+SELECT ?qls_entity ?qls_label ?qls_alias ?qls_count WHERE {
   {
-    SELECT ?qlue_ls_entity (COUNT(*) AS ?qlue_ls_count) WHERE {
+    SELECT ?qls_entity (COUNT(*) AS ?qls_count) WHERE {
       {{ local_context }}
     }
-    GROUP BY ?qlue_ls_entity
-    ORDER BY DESC(?qlue_ls_count)
+    GROUP BY ?qls_entity
+    ORDER BY DESC(?qls_count)
     LIMIT {{ limit }}
   }
-  OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label }
-  OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_alias }
+  OPTIONAL { ?qls_entity rdfs:label ?qls_label }
+  OPTIONAL { ?qls_entity rdfs:comment ?qls_alias }
   {% if search_term %}
-  FILTER(CONTAINS(LCASE(STR(?qlue_ls_label)), LCASE("{{ search_term }}")) || CONTAINS(LCASE(STR(?alias)), LCASE("{{ search_term }}")))
+  FILTER(CONTAINS(LCASE(STR(?qls_label)), LCASE("{{ search_term }}")) || CONTAINS(LCASE(STR(?alias)), LCASE("{{ search_term }}")))
   {% endif %}
 }
 ```
 
 ### VALUES Completion (Context-Sensitive)
 
-VALUES completions trigger inside `VALUES ?var { ... }` blocks. The `local_context` is a `BIND` expression that connects the VALUES variable to `?qlue_ls_entity`:
+VALUES completions trigger inside `VALUES ?var { ... }` blocks. The `local_context` is a `BIND` expression that connects the VALUES variable to `?qls_entity`:
 
 ```
-BIND(?var AS ?qlue_ls_entity)
+BIND(?var AS ?qls_entity)
 ```
 
 This allows the context-sensitive query to use surrounding triple patterns that reference the same variable to narrow results. For example, given:
@@ -219,24 +219,24 @@ SELECT * WHERE {
 }
 ```
 
-The `context` will contain the connected triples `?s rdf:type <Book> . ?s <title> ?title`, and `local_context` will be `BIND(?s AS ?qlue_ls_entity)`, so the query effectively finds all `?s` that match the surrounding patterns.
+The `context` will contain the connected triples `?s rdf:type <Book> . ?s <title> ?title`, and `local_context` will be `BIND(?s AS ?qls_entity)`, so the query effectively finds all `?s` that match the surrounding patterns.
 
 ```sparql
 {% include "prefix_declarations" %}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX wikibase: <http://wikiba.se/ontology#>
-SELECT ?qlue_ls_entity ?qlue_ls_label (GROUP_CONCAT(DISTINCT ?alias; SEPARATOR=", ") AS ?qlue_ls_alias) ?qlue_ls_count WHERE {
+SELECT ?qls_entity ?qls_label (GROUP_CONCAT(DISTINCT ?alias; SEPARATOR=", ") AS ?qls_alias) ?qls_count WHERE {
   {{ context }} {{ local_context }}
-  ?qlue_ls_entity wikibase:sitelinks ?qlue_ls_count .
-  OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label . FILTER(LANG(?qlue_ls_label) = "en") }
-  OPTIONAL { ?qlue_ls_entity skos:altLabel ?alias . FILTER(LANG(?alias) = "en") }
+  ?qls_entity wikibase:sitelinks ?qls_count .
+  OPTIONAL { ?qls_entity rdfs:label ?qls_label . FILTER(LANG(?qls_label) = "en") }
+  OPTIONAL { ?qls_entity skos:altLabel ?alias . FILTER(LANG(?alias) = "en") }
   {% if search_term %}
-  FILTER(CONTAINS(LCASE(STR(?qlue_ls_label)), LCASE("{{ search_term }}")) || CONTAINS(LCASE(STR(?alias)), LCASE("{{ search_term }}")))
+  FILTER(CONTAINS(LCASE(STR(?qls_label)), LCASE("{{ search_term }}")) || CONTAINS(LCASE(STR(?alias)), LCASE("{{ search_term }}")))
   {% endif %}
 }
-GROUP BY ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_count
-ORDER BY DESC(?qlue_ls_count)
+GROUP BY ?qls_entity ?qls_label ?qls_count
+ORDER BY DESC(?qls_count)
 LIMIT {{ limit }}
 ```
 
@@ -249,17 +249,17 @@ The context-insensitive variant uses only the `local_context` (the `BIND` expres
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX wikibase: <http://wikiba.se/ontology#>
-SELECT ?qlue_ls_entity ?qlue_ls_label (GROUP_CONCAT(DISTINCT ?alias; SEPARATOR=", ") AS ?qlue_ls_alias) ?qlue_ls_count WHERE {
+SELECT ?qls_entity ?qls_label (GROUP_CONCAT(DISTINCT ?alias; SEPARATOR=", ") AS ?qls_alias) ?qls_count WHERE {
   {{ local_context }}
-  ?qlue_ls_entity wikibase:sitelinks ?qlue_ls_count .
-  OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label . FILTER(LANG(?qlue_ls_label) = "en") }
-  OPTIONAL { ?qlue_ls_entity skos:altLabel ?alias . FILTER(LANG(?alias) = "en") }
+  ?qls_entity wikibase:sitelinks ?qls_count .
+  OPTIONAL { ?qls_entity rdfs:label ?qls_label . FILTER(LANG(?qls_label) = "en") }
+  OPTIONAL { ?qls_entity skos:altLabel ?alias . FILTER(LANG(?alias) = "en") }
   {% if search_term %}
-  FILTER(CONTAINS(LCASE(STR(?qlue_ls_label)), LCASE("{{ search_term }}")) || CONTAINS(LCASE(STR(?alias)), LCASE("{{ search_term }}")))
+  FILTER(CONTAINS(LCASE(STR(?qls_label)), LCASE("{{ search_term }}")) || CONTAINS(LCASE(STR(?alias)), LCASE("{{ search_term }}")))
   {% endif %}
 }
-GROUP BY ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_count
-ORDER BY DESC(?qlue_ls_count)
+GROUP BY ?qls_entity ?qls_label ?qls_count
+ORDER BY DESC(?qls_count)
 LIMIT {{ limit }}
 ```
 
@@ -271,15 +271,15 @@ Hover queries fetch information about an entity for display in tooltips. Unlike 
 
 | Variable          | Content                            |
 | ----------------- | ---------------------------------- |
-| `?qlue_ls_label`  | Label/name of the entity           |
-| `?qlue_ls_alias` | Description or additional details  |
+| `?qls_label`  | Label/name of the entity           |
+| `?qls_alias` | Description or additional details  |
 
 ```sparql
 {% include "prefix_declarations" %}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?qlue_ls_label ?qlue_ls_alias WHERE {
-  {{ entity }} rdfs:label ?qlue_ls_label .
-  OPTIONAL { {{ entity }} rdfs:comment ?qlue_ls_alias }
+SELECT ?qls_label ?qls_alias WHERE {
+  {{ entity }} rdfs:label ?qls_label .
+  OPTIONAL { {{ entity }} rdfs:comment ?qls_alias }
 }
 LIMIT 1
 ```
@@ -302,9 +302,9 @@ Include the `prefix_declarations` template to inherit prefixes from the document
 
 ```tera
 {% if search_term_uncompressed %}
-FILTER(STRSTARTS(STR(?qlue_ls_entity), "{{ search_term_uncompressed }}"))
+FILTER(STRSTARTS(STR(?qls_entity), "{{ search_term_uncompressed }}"))
 {% elif search_term %}
-FILTER(CONTAINS(LCASE(?qlue_ls_label), LCASE("{{ search_term }}")))
+FILTER(CONTAINS(LCASE(?qls_label), LCASE("{{ search_term }}")))
 {% endif %}
 ```
 
@@ -325,19 +325,19 @@ Use the `variable` test to adapt queries based on whether the subject is bound:
 Sub-select queries are a powerful technique to speed up completion queries. By performing aggregation and limiting in an inner query, you reduce the number of entities that need label/detail lookups:
 
 ```sparql
-SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_alias ?qlue_ls_count WHERE {
+SELECT ?qls_entity ?qls_label ?qls_alias ?qls_count WHERE {
   {
     # Inner query: find and rank entities efficiently
-    SELECT ?qlue_ls_entity (COUNT(*) AS ?qlue_ls_count) WHERE {
+    SELECT ?qls_entity (COUNT(*) AS ?qls_count) WHERE {
       {{ context }} {{ local_context }}
     }
-    GROUP BY ?qlue_ls_entity
-    ORDER BY DESC(?qlue_ls_count)
+    GROUP BY ?qls_entity
+    ORDER BY DESC(?qls_count)
     LIMIT {{ limit }}
   }
   # Outer query: fetch labels only for the top results
-  OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label }
-  OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_alias }
+  OPTIONAL { ?qls_entity rdfs:label ?qls_label }
+  OPTIONAL { ?qls_entity rdfs:comment ?qls_alias }
 }
 ```
 
@@ -352,8 +352,8 @@ This pattern is especially effective when:
 Use OPTIONAL for non-critical fields:
 
 ```sparql
-OPTIONAL { ?qlue_ls_entity rdfs:label ?qlue_ls_label }
-OPTIONAL { ?qlue_ls_entity rdfs:comment ?qlue_ls_alias }
+OPTIONAL { ?qls_entity rdfs:label ?qls_label }
+OPTIONAL { ?qls_entity rdfs:comment ?qls_alias }
 ```
 
 ### Performance Tips

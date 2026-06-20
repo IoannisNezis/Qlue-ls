@@ -27,7 +27,7 @@ pub async fn completions(
 fn local_context(environment: &CompletionEnvironment) -> Option<String> {
     if let CompletionLocation::BlankNodeObject(ref blank_node_props) = environment.location {
         Some(format!(
-            "[] {} ?qlue_ls_entity",
+            "[] {} ?qls_entity",
             blank_node_props.property_list()?.text(),
         ))
     } else {

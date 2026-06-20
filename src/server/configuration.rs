@@ -351,13 +351,13 @@ mod tests {
               rdfs: http://www.w3.org/2000/01/rdf-schema#
             default: false
             queries:
-              subjectCompletion: SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail WHERE { ?qlue_ls_entity a ?type }
-              predicateCompletionContextSensitive: SELECT ?qlue_ls_entity WHERE { ?s ?qlue_ls_entity ?o }
-              predicateCompletionContextInsensitive: SELECT ?qlue_ls_entity WHERE { [] ?qlue_ls_entity [] }
-              objectCompletionContextSensitive: SELECT ?qlue_ls_entity WHERE { ?s ?p ?qlue_ls_entity }
-              objectCompletionContextInsensitive: SELECT ?qlue_ls_entity WHERE { [] [] ?qlue_ls_entity }
-              valuesCompletionContextSensitive: SELECT ?qlue_ls_entity WHERE { ?qlue_ls_entity ?p ?o }
-              valuesCompletionContextInsensitive: SELECT ?qlue_ls_entity WHERE { ?qlue_ls_entity ?p ?o }
+              subjectCompletion: SELECT ?qls_entity ?qls_label ?qls_detail WHERE { ?qls_entity a ?type }
+              predicateCompletionContextSensitive: SELECT ?qls_entity WHERE { ?s ?qls_entity ?o }
+              predicateCompletionContextInsensitive: SELECT ?qls_entity WHERE { [] ?qls_entity [] }
+              objectCompletionContextSensitive: SELECT ?qls_entity WHERE { ?s ?p ?qls_entity }
+              objectCompletionContextInsensitive: SELECT ?qls_entity WHERE { [] [] ?qls_entity }
+              valuesCompletionContextSensitive: SELECT ?qls_entity WHERE { ?qls_entity ?p ?o }
+              valuesCompletionContextInsensitive: SELECT ?qls_entity WHERE { ?qls_entity ?p ?o }
         "#;
 
         let config: BackendConfiguration = parse_yaml(yaml);
@@ -410,8 +410,8 @@ mod tests {
             url: https://example.com/sparql
             prefixMap: {}
             queries:
-              subjectCompletion: SELECT ?qlue_ls_entity WHERE { ?qlue_ls_entity ?p ?o }
-              objectCompletionContextInsensitive: SELECT ?qlue_ls_entity WHERE { ?s ?p ?qlue_ls_entity }
+              subjectCompletion: SELECT ?qls_entity WHERE { ?qls_entity ?p ?o }
+              objectCompletionContextInsensitive: SELECT ?qls_entity WHERE { ?s ?p ?qls_entity }
         "#;
 
         let config: BackendConfiguration = parse_yaml(yaml);
@@ -442,8 +442,8 @@ mod tests {
             url: https://example.com/sparql
             prefixMap: {}
             queries:
-              invalidQueryType: SELECT ?qlue_ls_entity WHERE { ?s ?p ?o }
-              subjectCompletion: SELECT ?qlue_ls_entity WHERE { ?qlue_ls_entity ?p ?o }
+              invalidQueryType: SELECT ?qls_entity WHERE { ?s ?p ?o }
+              subjectCompletion: SELECT ?qls_entity WHERE { ?qls_entity ?p ?o }
         "#;
 
         let result = Config::builder()
@@ -467,18 +467,18 @@ mod tests {
             default: false
             queries:
               subjectCompletion: |
-                SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail
+                SELECT ?qls_entity ?qls_label ?qls_detail
                 WHERE {
-                  ?qlue_ls_entity rdfs:label ?qlue_ls_label .
-                  OPTIONAL { ?qlue_ls_entity schema:description ?qlue_ls_detail }
-                  FILTER(LANG(?qlue_ls_label) = "en")
+                  ?qls_entity rdfs:label ?qls_label .
+                  OPTIONAL { ?qls_entity schema:description ?qls_detail }
+                  FILTER(LANG(?qls_label) = "en")
                 }
                 LIMIT 100
               predicateCompletionContextSensitive: |
-                SELECT ?qlue_ls_entity WHERE {
-                  ?s ?qlue_ls_entity ?o
+                SELECT ?qls_entity WHERE {
+                  ?s ?qls_entity ?o
                 }
-              objectCompletionContextInsensitive: SELECT ?qlue_ls_entity WHERE { [] [] ?qlue_ls_entity }
+              objectCompletionContextInsensitive: SELECT ?qls_entity WHERE { [] [] ?qls_entity }
         "#;
 
         let config: BackendConfiguration = parse_yaml(yaml);
@@ -494,8 +494,8 @@ mod tests {
             .queries
             .get(&CompletionTemplate::SubjectCompletion)
             .unwrap();
-        assert!(subject_query.contains("SELECT ?qlue_ls_entity ?qlue_ls_label ?qlue_ls_detail"));
-        assert!(subject_query.contains("FILTER(LANG(?qlue_ls_label) = \"en\")"));
+        assert!(subject_query.contains("SELECT ?qls_entity ?qls_label ?qls_detail"));
+        assert!(subject_query.contains("FILTER(LANG(?qls_label) = \"en\")"));
     }
 
     #[test]
@@ -508,7 +508,7 @@ mod tests {
                 prefixMap:
                   wd: http://www.wikidata.org/entity/
                 queries:
-                  subjectCompletion: SELECT ?qlue_ls_entity WHERE { ?qlue_ls_entity ?p ?o }
+                  subjectCompletion: SELECT ?qls_entity WHERE { ?qls_entity ?p ?o }
               dbpedia:
                 name: DBpedia
                 url: https://dbpedia.org/sparql
@@ -516,7 +516,7 @@ mod tests {
                   dbo: http://dbpedia.org/ontology/
                 default: true
                 queries:
-                  objectCompletionContextSensitive: SELECT ?qlue_ls_entity WHERE { ?s ?p ?qlue_ls_entity }
+                  objectCompletionContextSensitive: SELECT ?qls_entity WHERE { ?s ?p ?qls_entity }
         "#;
 
         let settings: BackendsSettings = parse_yaml(yaml);
@@ -560,8 +560,8 @@ mod tests {
                     wdt: http://www.wikidata.org/prop/direct/
                   default: true
                   queries:
-                    subjectCompletion: SELECT ?qlue_ls_entity WHERE { ?qlue_ls_entity ?p ?o }
-                    predicateCompletionContextSensitive: SELECT ?qlue_ls_entity WHERE { ?s ?qlue_ls_entity ?o }
+                    subjectCompletion: SELECT ?qls_entity WHERE { ?qls_entity ?p ?o }
+                    predicateCompletionContextSensitive: SELECT ?qls_entity WHERE { ?s ?qls_entity ?o }
             prefixes:
               addMissing: true
               removeUnused: false

@@ -147,18 +147,18 @@ pub(super) async fn fetch_online_completions(
         .into_iter()
         .map(|binding| {
             let rdf_term = binding
-                .get("qlue_ls_entity")
-                .expect("Every completion query should provide a `qlue_ls_entity`");
+                .get("qls_entity")
+                .expect("Every completion query should provide a `qls_entity`");
             let (value, import_edit) =
                 render_rdf_term(&server, query_unit, rdf_term, &backend.name);
             let label = binding
-                .get("qlue_ls_label")
+                .get("qls_label")
                 .map_or(String::new(), |rdf_term| rdf_term.value().to_string());
             let detail = binding
-                .get("qlue_ls_alias")
+                .get("qls_alias")
                 .map(|rdf_term: &RDFTerm| rdf_term.value().to_string());
             let score = binding
-                .get("qlue_ls_count")
+                .get("qls_count")
                 .and_then(|rdf_term: &RDFTerm| rdf_term.value().parse().ok());
             // NOTE: This is the text the in editor filter uses.
             // If a compressed IRI is used as search term i.e. "wdt:p" the expanded iri is used as
@@ -255,7 +255,7 @@ pub(super) fn reduce_path(
     offset: TextSize,
 ) -> Option<String> {
     if path.syntax().text_range().start() >= offset {
-        return Some(format!("{} ?qlue_ls_entity {}", subject, object));
+        return Some(format!("{} ?qls_entity {}", subject, object));
     }
     match path.syntax().kind() {
         SyntaxKind::PathPrimary | SyntaxKind::PathElt | SyntaxKind::Path | SyntaxKind::VerbPath => {
@@ -277,11 +277,11 @@ pub(super) fn reduce_path(
             let path_seq_len = sub_paths.len();
             if path_seq_len > 1 {
                 let path_prefix = sub_paths[..path_seq_len - 1].join("/");
-                let prefix = format!("{} {} {}", subject, path_prefix, "?qlue_ls_inner");
+                let prefix = format!("{} {} {}", subject, path_prefix, "?qls_inner");
                 Some(format!(
                     "{} . {}",
                     prefix,
-                    reduce_path("?qlue_ls_inner", &path.sub_paths().last()?, object, offset)?
+                    reduce_path("?qls_inner", &path.sub_paths().last()?, object, offset)?
                 ))
             } else {
                 reduce_path(subject, &path.sub_paths().last()?, object, offset)
@@ -306,15 +306,15 @@ pub(super) fn reduce_path(
         }
         SyntaxKind::PathNegatedPropertySet => match path.syntax().last_child() {
             Some(last_child) => reduce_path(subject, &Path::cast(last_child)?, object, offset),
-            _ => Some(format!("{} ?qlue_ls_entity {}", subject, object)),
+            _ => Some(format!("{} ?qls_entity {}", subject, object)),
         },
         SyntaxKind::PathOneInPropertySet => {
             let first_child = path.syntax().first_child_or_token()?;
             if first_child.kind() == SyntaxKind::Zirkumflex {
                 if first_child.text_range().end() == offset {
-                    Some(format!("{} ?qlue_ls_entity {}", object, subject))
+                    Some(format!("{} ?qls_entity {}", object, subject))
                 } else {
-                    Some(format!("{} ?qlue_ls_entity {}", subject, object))
+                    Some(format!("{} ?qls_entity {}", subject, object))
                 }
             } else {
                 Some(path.text().to_string())
@@ -458,7 +458,7 @@ mod test {
     fn reduce_sequence_path() {
         //       0123456789012345678901
         let s = "Select * { ?a <p0>/  }";
-        let reduced = "?a <p0> ?qlue_ls_inner . ?qlue_ls_inner ?qlue_ls_entity []";
+        let reduced = "?a <p0> ?qls_inner . ?qls_inner ?qls_entity []";
         let offset = 19;
         let (tree, _) = parse_query(s);
         let query_unit = QueryUnit::cast(tree).unwrap();
@@ -494,7 +494,7 @@ mod test {
     fn reduce_alternating_path() {
         //       012345678901234567890123456
         let s = "Select * { ?a <p0>/<p1>|  <x>}";
-        let reduced = "?a ?qlue_ls_entity []";
+        let reduced = "?a ?qls_entity []";
         let offset = 24;
         let (tree, _) = parse_query(s);
         let query_unit = QueryUnit::cast(tree).unwrap();
@@ -530,7 +530,7 @@ mod test {
     fn reduce_inverse_path() {
         //       012345678901234567890123456
         let s = "Select * { ?a ^  <x>}";
-        let reduced = "[] ?qlue_ls_entity ?a";
+        let reduced = "[] ?qls_entity ?a";
         let offset = 15;
         let (tree, _) = parse_query(s);
         let query_unit = QueryUnit::cast(tree).unwrap();
@@ -566,7 +566,7 @@ mod test {
     fn reduce_negated_path() {
         //       012345678901234567890123456
         let s = "Select * { ?a !()}";
-        let reduced = "?a ?qlue_ls_entity []";
+        let reduced = "?a ?qls_entity []";
         let offset: u32 = 16;
         let (tree, _) = parse_query(&s[..offset as usize]);
         let query_unit = QueryUnit::cast(tree).unwrap();
@@ -602,7 +602,7 @@ mod test {
     fn reduce_complex_path1() {
         //       0123456789012345678901234567890123456
         let s = "Select * { ?a <p0>|<p1>/(<p2>)/^  <x>}";
-        let reduced = "?a <p1>/(<p2>) ?qlue_ls_inner . [] ?qlue_ls_entity ?qlue_ls_inner";
+        let reduced = "?a <p1>/(<p2>) ?qls_inner . [] ?qls_entity ?qls_inner";
         let offset = 32;
         let (tree, _) = parse_query(s);
         let query_unit = QueryUnit::cast(tree).unwrap();
@@ -637,7 +637,7 @@ mod test {
     fn reduce_complex_path2() {
         //       01234567890123456789012345678901234567890
         let s = "Select * { ?a <p0>|<p1>/(<p2>)/^<p2>/!(^)  <x>}";
-        let reduced = "?a <p1>/(<p2>)/^<p2> ?qlue_ls_inner . [] ?qlue_ls_entity ?qlue_ls_inner";
+        let reduced = "?a <p1>/(<p2>)/^<p2> ?qls_inner . [] ?qls_entity ?qls_inner";
         let offset = 40;
         let (tree, _) = parse_query(s);
         let query_unit = QueryUnit::cast(tree).unwrap();
@@ -673,7 +673,7 @@ mod test {
     fn reduce_complex_path3() {
         //       0123456789012345678901234567890123456
         let s = "Select * { ?a ^(^<a>/)  <x>}";
-        let reduced = "[] ^<a> ?qlue_ls_inner . ?qlue_ls_inner ?qlue_ls_entity ?a";
+        let reduced = "[] ^<a> ?qls_inner . ?qls_inner ?qls_entity ?a";
         let offset = 21;
         let (tree, _) = parse_query(s);
         let query_unit = QueryUnit::cast(tree).unwrap();
@@ -709,7 +709,7 @@ mod test {
     fn reduce_complex_path4() {
         //       01234567890123456
         let s = "Select * { ?a !^  <x>}";
-        let reduced = "[] ?qlue_ls_entity ?a";
+        let reduced = "[] ?qls_entity ?a";
         let offset = 16;
 
         let (tree, _) = parse_query(s);

@@ -106,11 +106,7 @@ fn local_template_context(environment: &CompletionEnvironment) -> Result<Context
         }
         template_context.insert(
             "local_context",
-            &format!(
-                "{} {} ?qlue_ls_entity",
-                subject_string,
-                last_prop.verb.text()
-            ),
+            &format!("{} {} ?qls_entity", subject_string, last_prop.verb.text()),
         );
         template_context.insert("context", &context);
     } else {

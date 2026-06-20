@@ -88,7 +88,7 @@ fn local_template_context(environment: &CompletionEnvironment) -> Result<Context
         {
             template_context.insert(
                 "local_context",
-                &format!("{} ?qlue_ls_entity []", subject_string),
+                &format!("{} ?qls_entity []", subject_string),
             );
         } else {
             let properties = triple
@@ -101,7 +101,7 @@ fn local_template_context(environment: &CompletionEnvironment) -> Result<Context
             if properties.is_empty() {
                 template_context.insert(
                     "local_context",
-                    &format!("{} ?qlue_ls_entity []", triple.text()),
+                    &format!("{} ?qls_entity []", triple.text()),
                 );
             } else {
                 let (last_prop, prev_prop) = properties.split_last().unwrap();
@@ -152,7 +152,7 @@ fn local_template_context(environment: &CompletionEnvironment) -> Result<Context
                     );
                     template_context.insert(
                         "local_context",
-                        &format!("{} ?qlue_ls_entity []", subject_string),
+                        &format!("{} ?qls_entity []", subject_string),
                     );
                 }
                 template_context.insert("context", &context);

@@ -2,7 +2,9 @@ use ll_sparql_parser::{SyntaxToken, parse_query, syntax_kind::SyntaxKind};
 
 use crate::server::message_handler::completion::environment::CompletionLocation;
 
-use super::{get_anchor_token, get_continuations, get_location, get_trigger_token};
+use super::{
+    get_anchor_token, get_continuations, get_following_token, get_location, get_trigger_token,
+};
 
 fn match_location_at_offset(input: &str, matcher: CompletionLocation, offset: u32) -> bool {
     location(input, offset) == matcher
@@ -402,4 +404,43 @@ fn localize_inline_data_index_beyond_declared_vars() {
         location(input, 38),
         CompletionLocation::InlineData((_, 2)),
     ));
+}
+
+/// Offset just after the object variable `?o`, where look-ahead happens.
+fn following_kind(input: &str, offset: u32) -> Option<SyntaxKind> {
+    let (root, _) = parse_query(input);
+    get_following_token(&root, offset.into()).map(|token| token.kind())
+}
+
+#[test]
+fn following_token_is_dot() {
+    //                          0123456789012345678901
+    assert_eq!(
+        following_kind("Select * {?s ?p ?o .}", 18),
+        Some(SyntaxKind::Dot)
+    );
+}
+
+#[test]
+fn following_token_is_semicolon() {
+    assert_eq!(
+        following_kind("Select * {?s ?p ?o ;}", 18),
+        Some(SyntaxKind::Semicolon)
+    );
+}
+
+#[test]
+fn following_token_skips_comment_before_dot() {
+    let input = "Select * {?s ?p ?o # comment\n.}";
+    // Offset right after `?o`, the `.` sits behind a comment line.
+    assert_eq!(following_kind(input, 18), Some(SyntaxKind::Dot));
+}
+
+#[test]
+fn following_token_without_terminator() {
+    // No `.`/`;` after the object -> the closing brace is the next token.
+    assert_eq!(
+        following_kind("Select * {?s ?p ?o }", 18),
+        Some(SyntaxKind::RCurly)
+    );
 }

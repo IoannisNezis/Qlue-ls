@@ -31,6 +31,10 @@ pub(super) struct CompletionEnvironment {
     pub(super) trigger_kind: CompletionTriggerKind,
     pub(super) trigger_character: Option<String>,
     pub(super) anchor_token: Option<SyntaxToken>,
+    /// Kind of the first non-trivia token at or after the trigger offset in the
+    /// *full* document parse (the `tree` field is truncated at the cursor and
+    /// can not be used for look-ahead).
+    pub(super) following_kind: Option<SyntaxKind>,
     pub(super) search_term: Option<String>,
     pub(super) replace_range: Range,
     pub(super) backend: Option<BackendConfiguration>,
@@ -326,6 +330,15 @@ impl CompletionEnvironment {
             })
             .or_else(|| server.state.get_default_backend().cloned());
         let anchor_token = trigger_token.and_then(get_anchor_token);
+        // NOTE: `tree` is parsed from the document truncated at the cursor, so it can
+        // not see tokens past the trigger offset. For look-ahead we use the full
+        // document parse (reusing the cache when possible).
+        let following_kind = server
+            .state
+            .get_cached_parse_tree(&document_position.text_document.uri)
+            .ok()
+            .and_then(|full| get_following_token(&full.tree, trigger_offset))
+            .map(|token| token.kind());
         let search_term = get_search_term(&tree, &anchor_token, trigger_offset);
         let continuations = get_continuations(&tree, &anchor_token);
         let location = get_location(&anchor_token, &continuations, trigger_offset);
@@ -339,12 +352,27 @@ impl CompletionEnvironment {
             trigger_kind,
             trigger_character,
             anchor_token,
+            following_kind,
             search_term,
             backend,
             context,
             replace_range,
         })
     }
+}
+
+/// Returns the first non-trivia token at or after `offset` in `root`.
+///
+/// Used for look-ahead past the cursor: trivia (whitespace and comments) are
+/// skipped so that e.g. a `.` sitting behind a comment is still found.
+fn get_following_token(root: &SyntaxNode, offset: TextSize) -> Option<SyntaxToken> {
+    let start = root.token_at_offset(offset).right_biased()?;
+    std::iter::once(start.clone())
+        .chain(std::iter::successors(
+            start.next_token(),
+            SyntaxToken::next_token,
+        ))
+        .find(|token| !token.kind().is_trivia())
 }
 
 fn get_search_term(
@@ -608,11 +636,7 @@ fn get_trigger_token(root: &SyntaxNode, offset: TextSize) -> Option<SyntaxToken>
                 .last()
         })
     } else {
-        match root.token_at_offset(offset) {
-            TokenAtOffset::Single(token) => Some(token),
-            TokenAtOffset::Between(token, _) => Some(token),
-            TokenAtOffset::None => None,
-        }
+        root.token_at_offset(offset).left_biased()
     }
 }
 

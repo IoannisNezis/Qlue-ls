@@ -15,14 +15,14 @@ use super::CompletionTransformer;
 /// This transformer adds a snippet suffix that completes the triple with a dot
 /// and positions the cursor on a new line, ready for the next triple.
 ///
-/// If the triple is already terminated by a `.` or continued with a `;`, the
-/// suffix is omitted to avoid producing invalid syntax. In that case the
-/// transformer only strips the trailing separator space the handlers append,
-/// so the completion sits flush against the existing terminator.
+/// If a separator (`.`/`;`/`,`) already follows the cursor, the suffix is
+/// omitted to avoid producing invalid syntax. In that case the transformer only
+/// strips the trailing separator space the handlers append, so the completion
+/// sits flush against the existing separator.
 pub struct ObjectSuffixTransformer {
     indent: String,
-    /// Whether the triple is already terminated (`.`/`;`) right after the cursor.
-    terminated: bool,
+    /// Whether a separator (`.`/`;`/`,`) already follows right after the cursor.
+    followed_by_separator: bool,
 }
 
 impl ObjectSuffixTransformer {
@@ -40,22 +40,25 @@ impl ObjectSuffixTransformer {
             return None;
         }
 
-        let terminated = matches!(
+        let followed_by_separator = matches!(
             env.following_kind,
             Some(SyntaxKind::Dot | SyntaxKind::Semicolon | SyntaxKind::Comma)
         );
         let indent = " "
             .repeat(brace_nesting_depth(env.anchor_token.as_ref()?))
             .repeat(server.settings.format.tab_size.unwrap_or(2) as usize);
-        Some(Self { indent, terminated })
+        Some(Self {
+            indent,
+            followed_by_separator,
+        })
     }
 }
 
 impl CompletionTransformer for ObjectSuffixTransformer {
     fn transform(&self, list: &mut CompletionList) {
-        // The triple already ends in a `.`/`;`: don't append a suffix, just drop
-        // the trailing separator space so the value sits flush against it.
-        if self.terminated {
+        // A separator (`.`/`;`/`,`) already follows: don't append a suffix, just
+        // drop the trailing separator space so the value sits flush against it.
+        if self.followed_by_separator {
             for item in list.items.iter_mut() {
                 if let Some(ref mut text_edit) = item.text_edit {
                     text_edit.new_text = text_edit.new_text.trim_end().to_string();
@@ -139,7 +142,7 @@ mod tests {
     fn rewrites_insert_text_with_suffix() {
         let transformer = ObjectSuffixTransformer {
             indent: "  ".to_string(),
-            terminated: false,
+            followed_by_separator: false,
         };
         let mut list = list_with(vec![item_with_insert_text("?foo")]);
 
@@ -152,7 +155,7 @@ mod tests {
     fn rewrites_text_edit_with_suffix() {
         let transformer = ObjectSuffixTransformer {
             indent: "    ".to_string(),
-            terminated: false,
+            followed_by_separator: false,
         };
         let mut list = list_with(vec![item_with_text_edit("wd:Q42")]);
 
@@ -168,7 +171,7 @@ mod tests {
     fn trims_trailing_whitespace_before_suffix() {
         let transformer = ObjectSuffixTransformer {
             indent: String::new(),
-            terminated: false,
+            followed_by_separator: false,
         };
         let mut list = list_with(vec![item_with_insert_text("?foo   ")]);
 
@@ -181,7 +184,7 @@ mod tests {
     fn empty_indent_produces_no_leading_spaces() {
         let transformer = ObjectSuffixTransformer {
             indent: String::new(),
-            terminated: false,
+            followed_by_separator: false,
         };
         let mut list = list_with(vec![item_with_insert_text("?foo")]);
 
@@ -194,7 +197,7 @@ mod tests {
     fn sets_snippet_format_and_trigger_command() {
         let transformer = ObjectSuffixTransformer {
             indent: "  ".to_string(),
-            terminated: false,
+            followed_by_separator: false,
         };
         let mut list = list_with(vec![item_with_insert_text("?foo")]);
 
@@ -210,7 +213,7 @@ mod tests {
     fn sets_item_defaults_to_insert_as_is() {
         let transformer = ObjectSuffixTransformer {
             indent: "  ".to_string(),
-            terminated: false,
+            followed_by_separator: false,
         };
         let mut list = list_with(vec![item_with_insert_text("?foo")]);
 
@@ -224,7 +227,7 @@ mod tests {
     fn rewrites_both_insert_text_and_text_edit() {
         let transformer = ObjectSuffixTransformer {
             indent: "  ".to_string(),
-            terminated: false,
+            followed_by_separator: false,
         };
         let mut item = item_with_text_edit("wd:Q42");
         item.insert_text = Some("?foo".to_string());
@@ -243,7 +246,7 @@ mod tests {
     fn transforms_all_items() {
         let transformer = ObjectSuffixTransformer {
             indent: String::new(),
-            terminated: false,
+            followed_by_separator: false,
         };
         let mut list = list_with(vec![
             item_with_insert_text("?a"),
@@ -260,7 +263,7 @@ mod tests {
     fn empty_list_is_noop_for_items() {
         let transformer = ObjectSuffixTransformer {
             indent: "  ".to_string(),
-            terminated: false,
+            followed_by_separator: false,
         };
         let mut list = list_with(vec![]);
 
@@ -272,10 +275,10 @@ mod tests {
     }
 
     #[test]
-    fn terminated_trims_trailing_space_on_insert_text() {
+    fn separator_trims_trailing_space_on_insert_text() {
         let transformer = ObjectSuffixTransformer {
             indent: "  ".to_string(),
-            terminated: true,
+            followed_by_separator: true,
         };
         let mut list = list_with(vec![item_with_insert_text("?foo ")]);
 
@@ -285,10 +288,10 @@ mod tests {
     }
 
     #[test]
-    fn terminated_trims_trailing_space_on_text_edit() {
+    fn separator_trims_trailing_space_on_text_edit() {
         let transformer = ObjectSuffixTransformer {
             indent: "  ".to_string(),
-            terminated: true,
+            followed_by_separator: true,
         };
         let mut list = list_with(vec![item_with_text_edit("wd:Q42 ")]);
 
@@ -298,10 +301,10 @@ mod tests {
     }
 
     #[test]
-    fn terminated_does_not_append_suffix_or_snippet() {
+    fn separator_does_not_append_suffix_or_snippet() {
         let transformer = ObjectSuffixTransformer {
             indent: "  ".to_string(),
-            terminated: true,
+            followed_by_separator: true,
         };
         let mut list = list_with(vec![item_with_insert_text("?foo ")]);
 

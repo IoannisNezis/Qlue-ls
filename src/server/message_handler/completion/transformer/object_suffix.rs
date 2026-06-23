@@ -42,7 +42,7 @@ impl ObjectSuffixTransformer {
 
         let terminated = matches!(
             env.following_kind,
-            Some(SyntaxKind::Dot | SyntaxKind::Semicolon)
+            Some(SyntaxKind::Dot | SyntaxKind::Semicolon | SyntaxKind::Comma)
         );
         let indent = " "
             .repeat(brace_nesting_depth(env.anchor_token.as_ref()?))

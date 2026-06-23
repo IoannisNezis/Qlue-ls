@@ -141,14 +141,16 @@ pub(super) async fn fetch_online_completions(
     tracing::info!("Result size: {}", result.results.bindings.len());
 
     let mut server = server_rc.lock().await;
-    Ok(result
+    result
         .results
         .bindings
         .into_iter()
         .map(|binding| {
-            let rdf_term = binding
-                .get("qls_entity")
-                .expect("Every completion query should provide a `qls_entity`");
+            let rdf_term = binding.get("qls_entity").ok_or_else(|| {
+                CompletionError::Request(
+                    "Completion query result is missing the `qls_entity` binding".to_string(),
+                )
+            })?;
             let (value, import_edit) =
                 render_rdf_term(&server, query_unit, rdf_term, &backend.name);
             let label = binding
@@ -180,16 +182,16 @@ pub(super) async fn fetch_online_completions(
                     .label_memory
                     .insert(value.clone(), label.clone());
             }
-            InternalCompletionItem {
+            Ok(InternalCompletionItem {
                 label,
                 detail,
                 value,
                 _filter_text: filter_text,
                 score,
                 import_edit,
-            }
+            })
         })
-        .collect())
+        .collect()
 }
 
 fn render_rdf_term(

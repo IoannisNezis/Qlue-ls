@@ -7,16 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### Fixed
-
-- the language server no longer crashes when a completion query result is
-  missing the `qls_entity` binding. It now returns an error response instead.
-
 ### Changed
 
 - **BREAKING** template variables are now prefixed with `qls_` instead of
   `qlue_ls_` for conciseness. Existing query templates using the `qlue_ls_`
   prefix must be updated to the new `qls_` prefix.
+
+### Fixed
+
+- the language server no longer crashes when a completion query result is
+  missing the `qls_entity` binding. It now returns an error response instead.
 
 ## [2.8.2] - 2026-06-11
 

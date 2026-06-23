@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - the language server no longer crashes when a completion query result is
   missing the `qls_entity` binding. It now returns an error response instead.
+- object completions no longer append a triple terminator or a stray trailing
+  space when the triple is already terminated by a `.` or continued with a `;`.
 
 ## [2.8.2] - 2026-06-11
 

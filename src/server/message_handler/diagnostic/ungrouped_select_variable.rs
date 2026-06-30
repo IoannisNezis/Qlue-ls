@@ -1,3 +1,10 @@
+//! Flags `SELECT` variables that are illegal in the presence of a `GROUP BY`.
+//!
+//! When a query groups its results, every projected variable must either appear
+//! in the `GROUP BY` clause or be used inside an aggregate. This reports both
+//! plainly selected variables and unaggregated variables in `SELECT`
+//! expressions that violate that rule.
+
 use crate::server::{
     Server,
     lsp::{

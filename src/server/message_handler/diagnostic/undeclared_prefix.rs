@@ -1,3 +1,9 @@
+//! Flags prefixed names whose prefix is never declared in the prologue.
+//!
+//! Every `PrefixedName` in the query is checked against the set of declared
+//! `PREFIX` labels; any name using an unknown prefix is reported as an error,
+//! carrying the prefix so a code action can declare it.
+
 use crate::server::{
     Server,
     lsp::{

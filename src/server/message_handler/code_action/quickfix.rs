@@ -33,6 +33,9 @@ pub(super) fn get_quickfix(
         Some(code) if code == &*diagnostic::same_subject::CODE => {
             contract_triples_from_diagnostic(server, document_uri, diagnostic)
         }
+        Some(code) if code == &*diagnostic::duplicate_prefix_declaration::CODE => {
+            remove_prefix_declaration(server, document_uri, diagnostic)
+        }
         Some(_) => {
             // NOTE:Not all diagnostics have a quickfix
             Ok(None)

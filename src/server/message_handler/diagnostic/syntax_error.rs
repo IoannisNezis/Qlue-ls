@@ -1,3 +1,9 @@
+//! Reports syntax errors produced by the parser.
+//!
+//! The document is re-parsed and the first parse error (if any) is surfaced as
+//! an error diagnostic at its span. Only the first error is reported to avoid
+//! cascading noise from a single mistake.
+
 use std::sync::LazyLock;
 
 use crate::server::{

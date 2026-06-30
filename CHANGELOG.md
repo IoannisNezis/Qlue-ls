@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- new `duplicate-prefix-declaration` diagnostic that warns when a prefix is
+  declared more than once in the prologue, with a quickfix to remove the
+  redundant declaration.
+
 ### Changed
 
 - **BREAKING** template variables are now prefixed with `qls_` instead of

@@ -1,3 +1,9 @@
+//! Suggests shortening full IRIs that could be written as a prefixed name.
+//!
+//! Every `iri` node in the query is checked against the server's known
+//! namespaces; when a matching prefix exists, an informational hint proposes
+//! the compacted CURIE and carries the prefix/namespace/CURIE for a code action.
+
 use std::sync::LazyLock;
 
 use crate::server::{

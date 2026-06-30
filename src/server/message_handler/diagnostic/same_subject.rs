@@ -1,3 +1,10 @@
+//! Detects groups of triples within the same graph pattern that share a
+//! subject and could be contracted into a single triple using the `;`
+//! predicate-object list separator.
+//!
+//! Each triple of such a group is reported as an informational hint, carrying
+//! the ranges of all triples in the group so a code action can merge them.
+
 use std::{collections::HashMap, sync::LazyLock};
 
 use crate::server::{

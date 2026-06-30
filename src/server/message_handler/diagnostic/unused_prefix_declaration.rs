@@ -1,3 +1,9 @@
+//! Flags `PREFIX` declarations in the prologue whose prefix is never used by
+//! any prefixed name in the rest of the query.
+//!
+//! Each unused declaration is reported as a warning, carrying the prefix so a
+//! code action can remove the declaration.
+
 use crate::server::{
     Server,
     lsp::{

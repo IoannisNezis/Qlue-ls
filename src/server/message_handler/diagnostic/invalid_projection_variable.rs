@@ -1,3 +1,10 @@
+//! Flags variables that are introduced by a projection assignment
+//! (`SELECT (... AS ?var)`) while `?var` is already bound in the query body.
+//!
+//! SPARQL forbids reusing a variable that is visible in the `WHERE` clause as
+//! the target of a `SELECT` expression, so each such assignment is reported as
+//! an error.
+
 use crate::server::{
     Server,
     lsp::{

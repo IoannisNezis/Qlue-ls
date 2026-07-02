@@ -20,7 +20,6 @@ use std::rc::Rc;
 use std::str::FromStr;
 use urlencoding::encode;
 use wasm_bindgen::JsCast;
-use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{AbortController, AbortSignal, Request, RequestInit, Response, WorkerGlobalScope};
 
@@ -47,8 +46,12 @@ async fn install_abort_signal(
         opts.set_signal(Some(&controller.signal()));
         server_rc.lock().await.state.add_running_request(
             query_id.to_string(),
+            // NOTE: abort without a custom reason: fetch then rejects with a
+            // standard "AbortError" DOMException in every browser. With a
+            // custom reason, chromium rejects with the raw reason value
+            // instead, which breaks cancellation detection in `fetch`.
             Box::new(move || {
-                controller.abort_with_reason(&JsValue::from_str("Query was canceled"));
+                controller.abort();
             }),
         );
     }
@@ -67,58 +70,59 @@ async fn fetch(request: &Request, query: &str) -> Result<Response, SparqlRequest
                 .map(|e| e.name() == "AbortError")
                 .unwrap_or(false);
             if was_canceled {
-                SparqlRequestError::_Canceled(CanceledError {
+                SparqlRequestError::Canceled(CanceledError {
                     query: query.to_string(),
                 })
             } else {
+                // NOTE: fetch rejects with an `Error` (or `DOMException`);
+                // extract its message instead of debug-printing the JsValue.
+                let message = err
+                    .dyn_ref::<js_sys::Error>()
+                    .map(|e| String::from(e.message()))
+                    .or_else(|| err.dyn_ref::<web_sys::DomException>().map(|e| e.message()))
+                    .or_else(|| err.as_string())
+                    .unwrap_or_else(|| format!("{err:?}"));
                 SparqlRequestError::Connection(ConnectionError {
-                    status_text: format!("{err:?}"),
+                    message,
                     query: query.to_string(),
                 })
             }
         })?;
-    Ok(resp_value.dyn_into().unwrap())
+    let resp = resp_value.dyn_into().unwrap();
+    Ok(resp)
 }
 
 /// Read a non-2xx response body and turn it into the most specific
 /// `SparqlRequestError` available: a `QLeverException` when the body is the
-/// expected JSON shape, otherwise a `Deserialization` error describing why it
-/// could not be parsed.
+/// expected JSON shape, otherwise an `Http` error carrying the status code
+/// and the raw body.
 async fn parse_error_response(resp: Response) -> SparqlRequestError {
-    let json_promise = match resp.json() {
-        Ok(p) => p,
-        Err(err) => {
-            return SparqlRequestError::Deserialization(format!(
-                "Query failed! Response did not provide a json body.\n{err:?}"
-            ));
-        }
+    let status = resp.status();
+    let status_text = resp.status_text();
+    let body = match read_reponse_body_as_text(resp).await {
+        Ok(body) => body,
+        Err(err) => return err,
     };
-    let js_value = match JsFuture::from(json_promise).await {
-        Ok(v) => v,
-        Err(err) => {
-            return SparqlRequestError::Deserialization(format!(
-                "Query failed! Response did not provide a json body but this could not be cast to rust JsValue.\n{err:?}"
-            ));
-        }
-    };
-    match serde_wasm_bindgen::from_value(js_value) {
+    match serde_json::from_str(&body) {
         Ok(err) => SparqlRequestError::QLeverException(err),
-        Err(err) => SparqlRequestError::Deserialization(format!(
-            "Could not deserialize error message: {err}"
-        )),
+        Err(_) => SparqlRequestError::Http(crate::server::sparql_operations::HttpError {
+            status,
+            status_text,
+            body,
+        }),
     }
 }
 
 async fn read_reponse_body_as_text(response: Response) -> Result<String, SparqlRequestError> {
-    JsFuture::from(
-        response.text().map_err(|err| {
-            SparqlRequestError::Response(format!("Response has no text:\n{err:?}"))
-        })?,
-    )
+    JsFuture::from(response.text().map_err(|err| {
+        SparqlRequestError::Deserialization(format!("Response has no text:\n{err:?}"))
+    })?)
     .await
-    .map_err(|err| SparqlRequestError::Response(format!("Could not read Response text:\n{err:?}")))?
+    .map_err(|err| {
+        SparqlRequestError::Deserialization(format!("Could not read Response text:\n{err:?}"))
+    })?
     .as_string()
-    .ok_or(SparqlRequestError::Response(
+    .ok_or(SparqlRequestError::Deserialization(
         "Could not read response body as utf-8 string".to_string(),
     ))
 }
@@ -211,7 +215,7 @@ async fn stream_lazy_query_results(
     match result {
         Ok(n) => Ok(n),
         Err(SparqlResultReaderError::Canceled) => {
-            Err(SparqlRequestError::_Canceled(CanceledError {
+            Err(SparqlRequestError::Canceled(CanceledError {
                 query: query.to_string(),
             }))
         }

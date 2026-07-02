@@ -61,7 +61,6 @@ async fn handle_normal_query(
     {
         Ok(res) => res,
 
-        #[cfg(target_arch = "wasm32")]
         Err(SparqlRequestError::QLeverException(exception)) => {
             return server_rc
                 .lock()
@@ -80,7 +79,16 @@ async fn handle_normal_query(
                     ExecuteOperationErrorData::Connection(error),
                 ));
         }
-        Err(SparqlRequestError::_Canceled(error)) => {
+        Err(SparqlRequestError::Http(error)) => {
+            return server_rc
+                .lock()
+                .await
+                .send_message(ExecuteOperationResponse::error(
+                    request.get_id(),
+                    ExecuteOperationErrorData::Http(error),
+                ));
+        }
+        Err(SparqlRequestError::Canceled(error)) => {
             tracing::info!("Sending cancel error");
             return server_rc
                 .lock()
@@ -158,7 +166,6 @@ async fn handle_construct_query(
 
     let result = match res {
         Ok(res) => res,
-        #[cfg(target_arch = "wasm32")]
         Err(SparqlRequestError::QLeverException(exception)) => {
             return server_rc
                 .lock()
@@ -177,7 +184,16 @@ async fn handle_construct_query(
                     ExecuteOperationErrorData::Connection(error),
                 ));
         }
-        Err(SparqlRequestError::_Canceled(error)) => {
+        Err(SparqlRequestError::Http(error)) => {
+            return server_rc
+                .lock()
+                .await
+                .send_message(ExecuteOperationResponse::error(
+                    request.get_id(),
+                    ExecuteOperationErrorData::Http(error),
+                ));
+        }
+        Err(SparqlRequestError::Canceled(error)) => {
             return server_rc
                 .lock()
                 .await

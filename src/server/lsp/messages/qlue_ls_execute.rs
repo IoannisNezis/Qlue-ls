@@ -8,7 +8,7 @@ use crate::{
             rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
             textdocument::TextDocumentIdentifier,
         },
-        sparql_operations::ConnectionError,
+        sparql_operations::{ConnectionError, HttpError},
     },
     sparql::results::SparqlResult,
 };
@@ -85,6 +85,9 @@ impl ExecuteOperationResponse {
                         ExecuteOperationErrorData::QLeverException(_) => "Qlever threw an error.",
                         ExecuteOperationErrorData::Connection(_) => {
                             "The connection to the endpoint failed."
+                        }
+                        ExecuteOperationErrorData::Http(_) => {
+                            "The endpoint returned an http error."
                         }
                         ExecuteOperationErrorData::Canceled(_) => "The query was canceled.",
                         ExecuteOperationErrorData::InvalidFormat {
@@ -317,6 +320,7 @@ pub struct ExecuteOperationError {
 pub enum ExecuteOperationErrorData {
     QLeverException(QLeverException),
     Connection(ConnectionError),
+    Http(HttpError),
     Canceled(CanceledError),
     InvalidFormat { query: String, message: String },
     Deserialization { query: String, message: String },

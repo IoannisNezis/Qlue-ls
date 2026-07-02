@@ -123,16 +123,18 @@ pub(super) async fn fetch_online_completions(
         crate::server::sparql_operations::SparqlRequestError::Connection(_err) => {
             CompletionError::Request("Completion query failed, connection errored".to_string())
         }
-        crate::server::sparql_operations::SparqlRequestError::_Canceled(_err) => {
+        crate::server::sparql_operations::SparqlRequestError::Canceled(_err) => {
             CompletionError::Request("Completion query was canceled".to_string())
         }
-        crate::server::sparql_operations::SparqlRequestError::Response(msg) => {
-            CompletionError::Request(msg)
+        crate::server::sparql_operations::SparqlRequestError::Http(err) => {
+            CompletionError::Request(format!(
+                "Completion query failed with status {} {}",
+                err.status, err.status_text
+            ))
         }
         crate::server::sparql_operations::SparqlRequestError::Deserialization(msg) => {
             CompletionError::Request(msg)
         }
-        #[cfg(target_arch = "wasm32")]
         crate::server::sparql_operations::SparqlRequestError::QLeverException(exception) => {
             CompletionError::Request(exception.exception)
         }

@@ -56,7 +56,6 @@ pub async fn completions(
         .any(|kind| environment.continuations.contains(kind))
     {
         let template_context = environment.template_context().await;
-        tracing::debug!("sending completio request");
         match dispatch_completion_query(
             server_rc.clone(),
             environment,

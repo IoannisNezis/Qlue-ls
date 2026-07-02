@@ -12,8 +12,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - new `duplicate-prefix-declaration` diagnostic that warns when a prefix is
   declared more than once in the prologue, with a quickfix to remove the
   redundant declaration.
+- operation error responses now include a new `Http` error type carrying the
+  status code, status text, and raw response body when the endpoint returns a
+  non-2xx response without a structured error message (e.g. an html 404 page).
+  Previously such failures were reported as an unknown error.
 
 ### Changed
+
+- **BREAKING** the `Connection` operation error's `statusText` field is renamed
+  to `message`, since it holds the underlying network error, not an http
+  status. Clients reading `statusText` from connection errors must be updated.
+- connection errors now report the actual browser/network error message (e.g.
+  `NetworkError when attempting to fetch resource.`) instead of a
+  debug-formatted JsValue.
+- on native targets, failed requests now report structured errors (including
+  QLever error messages) with status code and body, instead of a generic
+  "failed" message.
 
 - **BREAKING** template variables are now prefixed with `qls_` instead of
   `qlue_ls_` for conciseness. Existing query templates using the `qlue_ls_`

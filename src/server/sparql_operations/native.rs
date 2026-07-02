@@ -3,6 +3,7 @@ use crate::server::configuration::RequestMethod;
 use crate::server::lsp::ExecuteUpdateResponseResult;
 use crate::server::lsp::SparqlEngine;
 use crate::server::sparql_operations::ConnectionError;
+use crate::server::sparql_operations::HttpError;
 use crate::server::sparql_operations::SparqlRequestError;
 use crate::server::sparql_operations::utils::add_limit_offset_to_query;
 use crate::sparql::results::SparqlResult;
@@ -64,15 +65,28 @@ pub(crate) async fn execute_query(
         .map_err(|_| SparqlRequestError::Timeout)?
         .map_err(|err| {
             SparqlRequestError::Connection(ConnectionError {
-                status_text: err.to_string(),
+                message: err.to_string(),
                 query,
             })
-        })?
-        .error_for_status()
-        .map_err(|err| {
-            tracing::debug!("Error: {:?}", err.status());
-            SparqlRequestError::Response("failed".to_string())
         })?;
+
+    let status = response.status();
+    if !status.is_success() {
+        let body = response.text().await.unwrap_or_default();
+        // NOTE: mirror the wasm path: prefer a structured QLever error message
+        // over the raw http error when the body has the expected shape.
+        return Err(match serde_json::from_str(&body) {
+            Ok(exception) => SparqlRequestError::QLeverException(exception),
+            Err(_) => SparqlRequestError::Http(HttpError {
+                status: status.as_u16(),
+                status_text: status
+                    .canonical_reason()
+                    .unwrap_or("Unknown Status")
+                    .to_string(),
+                body,
+            }),
+        });
+    }
 
     let result = response
         .json::<SparqlResult>()

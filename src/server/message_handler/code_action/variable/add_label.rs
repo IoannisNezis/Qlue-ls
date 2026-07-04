@@ -55,7 +55,7 @@ pub(super) fn code_action(
         triple.properties_list_path().and_then(|path| {
             path.properties()
                 .last()
-                .map(|last| last.object.syntax().text_range().end())
+                .and_then(|last| Some(last.object.as_ref()?.syntax().text_range().end()))
         })?,
         &document.text,
     )?;

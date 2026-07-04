@@ -29,6 +29,12 @@ fn find_anchor_path() {
 #[test]
 fn localize_select_binding() {
     assert!(matches!(
+        //        012345678901234567890
+        location("Select ?a ? { )}", 11),
+        CompletionLocation::SelectBinding(_),
+    ));
+
+    assert!(matches!(
         //        0123456789
         location("Select  {}", 7),
         CompletionLocation::SelectBinding(_),

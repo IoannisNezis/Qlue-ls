@@ -44,7 +44,48 @@ pub fn parse_text(input: &str, entry: TopEntryPoint) -> (GreenNode, Vec<ParseErr
         .cloned()
         .collect();
     let output = entry.parse(parse_input);
-    build_tree(tokens, output)
+    build_tree(tokens, remove_empty_nodes(output))
+}
+
+/// Removes `Open`/`Close` pairs that contain no `Advance` event.
+///
+/// NOTE: The parser opens nodes speculatively during error recovery, which can
+/// produce zero-width nodes. These break tree navigation (e.g. rowan's
+/// `prev_token` gives up when a sibling subtree contains no tokens), so they
+/// are dropped before the tree is built. The root node is always kept.
+fn remove_empty_nodes(events: Vec<Event>) -> Vec<Event> {
+    let mut remove = vec![false; events.len()];
+    // INFO: stack of (index of `Open` event, node contains an `Advance`)
+    let mut stack: Vec<(usize, bool)> = Vec::new();
+    for (index, event) in events.iter().enumerate() {
+        match event {
+            Event::Open { .. } => stack.push((index, false)),
+            Event::Advance => {
+                if let Some(top) = stack.last_mut() {
+                    top.1 = true;
+                }
+            }
+            Event::Close => {
+                let (open_index, has_tokens) = stack
+                    .pop()
+                    .expect("Every \"Close\" event should occur after a open event");
+                if !has_tokens && !stack.is_empty() {
+                    remove[open_index] = true;
+                    remove[index] = true;
+                } else if has_tokens {
+                    if let Some(parent) = stack.last_mut() {
+                        parent.1 = true;
+                    }
+                }
+            }
+            Event::Error { .. } => {}
+        }
+    }
+    events
+        .into_iter()
+        .zip(remove)
+        .filter_map(|(event, remove)| (!remove).then_some(event))
+        .collect()
 }
 
 fn build_tree(

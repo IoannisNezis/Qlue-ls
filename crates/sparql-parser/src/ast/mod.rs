@@ -508,18 +508,25 @@ impl Triple {
 #[derive(Debug)]
 pub struct PropertyPath {
     pub verb: Path,
-    pub object: ObjectList,
+    // NOTE: `None` when the input is truncated after the verb (e.g. while typing)
+    pub object: Option<ObjectList>,
 }
 
 impl PropertyPath {
     pub fn text(&self) -> String {
-        format!("{} {}", self.verb.text(), self.object.text())
+        match &self.object {
+            Some(object) => format!("{} {}", self.verb.text(), object.text()),
+            None => self.verb.text(),
+        }
     }
 
     pub fn text_range(&self) -> TextRange {
         TextRange::new(
             self.verb.syntax().text_range().start(),
-            self.object.syntax.text_range().end(),
+            self.object
+                .as_ref()
+                .map(|object| object.syntax.text_range().end())
+                .unwrap_or_else(|| self.verb.syntax().text_range().end()),
         )
     }
 }
@@ -608,16 +615,10 @@ impl PropertyListPath {
             .children()
             .step_by(2)
             .filter_map(|child| {
-                match (
-                    Path::cast(child.clone()),
-                    child.next_sibling().and_then(ObjectList::cast),
-                ) {
-                    (None, None) | (None, Some(_)) | (Some(_), None) => None,
-                    (Some(path), Some(object_list)) => Some(PropertyPath {
-                        verb: path,
-                        object: object_list,
-                    }),
-                }
+                Path::cast(child.clone()).map(|path| PropertyPath {
+                    verb: path,
+                    object: child.next_sibling().and_then(ObjectList::cast),
+                })
             })
             .collect()
     }

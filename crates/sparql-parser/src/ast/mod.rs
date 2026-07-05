@@ -1444,9 +1444,7 @@ impl AstNode for GroupClause {
             .children()
             .into_iter()
             .filter_map(|group_condition| group_condition.last_child())
-            .filter_map(|node| {
-                Var::cast(node.clone()).or_else(|| Expression::cast(node)?.as_var())
-            })
+            .filter_map(|node| Var::cast(node.clone()).or_else(|| Expression::cast(node)?.as_var()))
             .collect()
     }
 }

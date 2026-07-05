@@ -1,0 +1,33 @@
+---
+source: tests/parse_tree.rs
+expression: "check_auto(\"ASK { ?s ?p ?o }\")"
+---
+QueryUnit@0..16
+  Query@0..16
+    AskQuery@0..16
+      ASK@0..3 "ASK"
+      WHITESPACE@3..4 " "
+      WhereClause@4..16
+        GroupGraphPattern@4..16
+          LCurly@4..5 "{"
+          WHITESPACE@5..6 " "
+          GroupGraphPatternSub@6..14
+            TriplesBlock@6..14
+              TriplesSameSubjectPath@6..14
+                VarOrTerm@6..8
+                  Var@6..8
+                    VAR1@6..8 "?s"
+                WHITESPACE@8..9 " "
+                PropertyListPathNotEmpty@9..14
+                  VerbSimple@9..11
+                    Var@9..11
+                      VAR1@9..11 "?p"
+                  WHITESPACE@11..12 " "
+                  ObjectListPath@12..14
+                    ObjectPath@12..14
+                      GraphNodePath@12..14
+                        VarOrTerm@12..14
+                          Var@12..14
+                            VAR1@12..14 "?o"
+          WHITESPACE@14..15 " "
+          RCurly@15..16 "}"

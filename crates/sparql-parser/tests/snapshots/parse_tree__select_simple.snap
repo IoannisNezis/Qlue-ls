@@ -1,0 +1,38 @@
+---
+source: tests/parse_tree.rs
+expression: "check_query(\"SELECT * WHERE { ?s ?p ?o }\")"
+---
+QueryUnit@0..27
+  Query@0..27
+    SelectQuery@0..27
+      SelectClause@0..8
+        SELECT@0..6 "SELECT"
+        WHITESPACE@6..7 " "
+        Star@7..8 "*"
+      WHITESPACE@8..9 " "
+      WhereClause@9..27
+        WHERE@9..14 "WHERE"
+        WHITESPACE@14..15 " "
+        GroupGraphPattern@15..27
+          LCurly@15..16 "{"
+          WHITESPACE@16..17 " "
+          GroupGraphPatternSub@17..25
+            TriplesBlock@17..25
+              TriplesSameSubjectPath@17..25
+                VarOrTerm@17..19
+                  Var@17..19
+                    VAR1@17..19 "?s"
+                WHITESPACE@19..20 " "
+                PropertyListPathNotEmpty@20..25
+                  VerbSimple@20..22
+                    Var@20..22
+                      VAR1@20..22 "?p"
+                  WHITESPACE@22..23 " "
+                  ObjectListPath@23..25
+                    ObjectPath@23..25
+                      GraphNodePath@23..25
+                        VarOrTerm@23..25
+                          Var@23..25
+                            VAR1@23..25 "?o"
+          WHITESPACE@25..26 " "
+          RCurly@26..27 "}"

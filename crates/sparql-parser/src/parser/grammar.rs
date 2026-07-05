@@ -5,7 +5,6 @@ use crate::SyntaxKind;
 pub(super) fn parse_QueryUnit(p: &mut Parser) {
     let marker = p.open();
     parse_Query(p);
-    // Add remaining tokens as a single error node.
     if !p.at(SyntaxKind::Eof) {
         let error_marker = p.open();
         while !p.at(SyntaxKind::Eof) {
@@ -57,6 +56,7 @@ pub(super) fn parse_Prologue(p: &mut Parser) {
     }
     let marker = p.open();
     while [SyntaxKind::BASE, SyntaxKind::PREFIX, SyntaxKind::VERSION].contains(&p.nth(0)) {
+        let checkpoint = p.pos();
         match p.nth(0) {
             SyntaxKind::BASE => {
                 parse_BaseDecl(p);
@@ -81,6 +81,9 @@ pub(super) fn parse_Prologue(p: &mut Parser) {
                 ]);
             }
         };
+        if p.pos() == checkpoint {
+            break;
+        }
     }
     p.close(marker, SyntaxKind::Prologue);
 }
@@ -89,7 +92,17 @@ pub(super) fn parse_SelectQuery(p: &mut Parser) {
     let marker = p.open();
     parse_SelectClause(p);
     while [SyntaxKind::FROM].contains(&p.nth(0)) {
+        let checkpoint = p.pos();
         parse_DatasetClause(p);
+        if p.pos() == checkpoint {
+            break;
+        }
+    }
+    if !p.at_any(&[SyntaxKind::WHERE, SyntaxKind::LCurly]) && !p.eof() {
+        p.error_until(
+            vec![SyntaxKind::WHERE, SyntaxKind::LCurly],
+            &[SyntaxKind::WHERE, SyntaxKind::LCurly],
+        );
     }
     parse_WhereClause(p);
     parse_SolutionModifier(p);
@@ -99,20 +112,46 @@ pub(super) fn parse_SelectQuery(p: &mut Parser) {
 pub(super) fn parse_ConstructQuery(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::CONSTRUCT);
+    if !p.at_any(&[SyntaxKind::WHERE, SyntaxKind::LCurly, SyntaxKind::FROM]) && !p.eof() {
+        p.error_until(
+            vec![SyntaxKind::WHERE, SyntaxKind::LCurly, SyntaxKind::FROM],
+            &[SyntaxKind::WHERE, SyntaxKind::LCurly, SyntaxKind::FROM],
+        );
+    }
     match p.nth(0) {
         SyntaxKind::LCurly => {
             parse_ConstructTemplate(p);
             while [SyntaxKind::FROM].contains(&p.nth(0)) {
+                let checkpoint = p.pos();
                 parse_DatasetClause(p);
+                if p.pos() == checkpoint {
+                    break;
+                }
+            }
+            if !p.at_any(&[SyntaxKind::WHERE, SyntaxKind::LCurly]) && !p.eof() {
+                p.error_until(
+                    vec![SyntaxKind::WHERE, SyntaxKind::LCurly],
+                    &[SyntaxKind::WHERE, SyntaxKind::LCurly],
+                );
             }
             parse_WhereClause(p);
             parse_SolutionModifier(p);
         }
         SyntaxKind::WHERE | SyntaxKind::FROM => {
             while [SyntaxKind::FROM].contains(&p.nth(0)) {
+                let checkpoint = p.pos();
                 parse_DatasetClause(p);
+                if p.pos() == checkpoint {
+                    break;
+                }
+            }
+            if !p.at_any(&[SyntaxKind::WHERE]) && !p.eof() {
+                p.error_until(vec![SyntaxKind::WHERE], &[SyntaxKind::WHERE]);
             }
             p.expect(SyntaxKind::WHERE);
+            if !p.at_any(&[SyntaxKind::LCurly]) && !p.eof() {
+                p.error_until(vec![SyntaxKind::LCurly], &[SyntaxKind::LCurly]);
+            }
             p.expect(SyntaxKind::LCurly);
             if p.at_any(&[
                 SyntaxKind::IRIREF,
@@ -145,6 +184,9 @@ pub(super) fn parse_ConstructQuery(p: &mut Parser) {
             ]) {
                 parse_TriplesTemplate(p);
             }
+            if !p.at_any(&[SyntaxKind::RCurly]) && !p.eof() {
+                p.error_until(vec![SyntaxKind::RCurly], &[SyntaxKind::RCurly]);
+            }
             p.expect(SyntaxKind::RCurly);
             parse_SolutionModifier(p);
         }
@@ -168,6 +210,34 @@ pub(super) fn parse_ConstructQuery(p: &mut Parser) {
 pub(super) fn parse_DescribeQuery(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::DESCRIBE);
+    if !p.at_any(&[
+        SyntaxKind::IRIREF,
+        SyntaxKind::PNAME_NS,
+        SyntaxKind::Star,
+        SyntaxKind::VAR1,
+        SyntaxKind::VAR2,
+        SyntaxKind::PNAME_LN,
+    ]) && !p.eof()
+    {
+        p.error_until(
+            vec![
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::Star,
+                SyntaxKind::VAR1,
+                SyntaxKind::VAR2,
+                SyntaxKind::PNAME_LN,
+            ],
+            &[
+                SyntaxKind::IRIREF,
+                SyntaxKind::PNAME_NS,
+                SyntaxKind::Star,
+                SyntaxKind::VAR1,
+                SyntaxKind::VAR2,
+                SyntaxKind::PNAME_LN,
+            ],
+        );
+    }
     match p.nth(0) {
         SyntaxKind::IRIREF
         | SyntaxKind::PNAME_NS
@@ -184,7 +254,11 @@ pub(super) fn parse_DescribeQuery(p: &mut Parser) {
             ]
             .contains(&p.nth(0))
             {
+                let checkpoint = p.pos();
                 parse_VarOrIri(p);
+                if p.pos() == checkpoint {
+                    break;
+                }
             }
         }
         SyntaxKind::Star => {
@@ -208,7 +282,11 @@ pub(super) fn parse_DescribeQuery(p: &mut Parser) {
         }
     };
     while [SyntaxKind::FROM].contains(&p.nth(0)) {
+        let checkpoint = p.pos();
         parse_DatasetClause(p);
+        if p.pos() == checkpoint {
+            break;
+        }
     }
     if p.at_any(&[SyntaxKind::WHERE, SyntaxKind::LCurly]) {
         parse_WhereClause(p);
@@ -221,7 +299,17 @@ pub(super) fn parse_AskQuery(p: &mut Parser) {
     let marker = p.open();
     p.expect(SyntaxKind::ASK);
     while [SyntaxKind::FROM].contains(&p.nth(0)) {
+        let checkpoint = p.pos();
         parse_DatasetClause(p);
+        if p.pos() == checkpoint {
+            break;
+        }
+    }
+    if !p.at_any(&[SyntaxKind::WHERE, SyntaxKind::LCurly]) && !p.eof() {
+        p.error_until(
+            vec![SyntaxKind::WHERE, SyntaxKind::LCurly],
+            &[SyntaxKind::WHERE, SyntaxKind::LCurly],
+        );
     }
     parse_WhereClause(p);
     parse_SolutionModifier(p);
@@ -263,7 +351,6 @@ pub(super) fn parse_UpdateUnit(p: &mut Parser) {
     }
     let marker = p.open();
     parse_Update(p);
-    // Add remaining tokens as a single error node.
     if !p.at(SyntaxKind::Eof) {
         let error_marker = p.open();
         while !p.at(SyntaxKind::Eof) {
@@ -418,6 +505,7 @@ pub(super) fn parse_SelectClause(p: &mut Parser) {
                 }
             };
             while [SyntaxKind::LParen, SyntaxKind::VAR1, SyntaxKind::VAR2].contains(&p.nth(0)) {
+                let checkpoint = p.pos();
                 match p.nth(0) {
                     SyntaxKind::VAR1 | SyntaxKind::VAR2 => {
                         parse_Var(p);
@@ -443,6 +531,9 @@ pub(super) fn parse_SelectClause(p: &mut Parser) {
                         ]);
                     }
                 };
+                if p.pos() == checkpoint {
+                    break;
+                }
             }
         }
         SyntaxKind::Star => {
@@ -769,6 +860,9 @@ pub(super) fn parse_GroupGraphPattern(p: &mut Parser) {
         }
         _ => {}
     };
+    if !p.at_any(&[SyntaxKind::RCurly]) && !p.eof() {
+        p.error_until(vec![SyntaxKind::RCurly], &[SyntaxKind::RCurly]);
+    }
     p.expect(SyntaxKind::RCurly);
     p.close(marker, SyntaxKind::GroupGraphPattern);
 }
@@ -858,7 +952,11 @@ pub(super) fn parse_GroupClause(p: &mut Parser) {
     ]
     .contains(&p.nth(0))
     {
+        let checkpoint = p.pos();
         parse_GroupCondition(p);
+        if p.pos() == checkpoint {
+            break;
+        }
     }
     p.close(marker, SyntaxKind::GroupClause);
 }
@@ -945,7 +1043,11 @@ pub(super) fn parse_HavingClause(p: &mut Parser) {
     ]
     .contains(&p.nth(0))
     {
+        let checkpoint = p.pos();
         parse_HavingCondition(p);
+        if p.pos() == checkpoint {
+            break;
+        }
     }
     p.close(marker, SyntaxKind::HavingClause);
 }
@@ -1037,7 +1139,11 @@ pub(super) fn parse_OrderClause(p: &mut Parser) {
     ]
     .contains(&p.nth(0))
     {
+        let checkpoint = p.pos();
         parse_OrderCondition(p);
+        if p.pos() == checkpoint {
+            break;
+        }
     }
     p.close(marker, SyntaxKind::OrderClause);
 }
@@ -2510,7 +2616,11 @@ pub(super) fn parse_Modify(p: &mut Parser) {
         }
     };
     while [SyntaxKind::USING].contains(&p.nth(0)) {
+        let checkpoint = p.pos();
         parse_UsingClause(p);
+        if p.pos() == checkpoint {
+            break;
+        }
     }
     p.expect(SyntaxKind::WHERE);
     parse_GroupGraphPattern(p);
@@ -2727,6 +2837,7 @@ pub(super) fn parse_Quads(p: &mut Parser) {
         parse_TriplesTemplate(p);
     }
     while [SyntaxKind::GRAPH].contains(&p.nth(0)) {
+        let checkpoint = p.pos();
         parse_QuadsNotTriples(p);
         if p.at_any(&[SyntaxKind::Dot]) {
             p.expect(SyntaxKind::Dot);
@@ -2761,6 +2872,9 @@ pub(super) fn parse_Quads(p: &mut Parser) {
             SyntaxKind::ANON,
         ]) {
             parse_TriplesTemplate(p);
+        }
+        if p.pos() == checkpoint {
+            break;
         }
     }
     p.close(marker, SyntaxKind::Quads);
@@ -2968,6 +3082,7 @@ pub(super) fn parse_GroupGraphPatternSub(p: &mut Parser) {
     ]
     .contains(&p.nth(0))
     {
+        let checkpoint = p.pos();
         parse_GraphPatternNotTriples(p);
         if p.at_any(&[SyntaxKind::Dot]) {
             p.expect(SyntaxKind::Dot);
@@ -3002,6 +3117,9 @@ pub(super) fn parse_GroupGraphPatternSub(p: &mut Parser) {
             SyntaxKind::ANON,
         ]) {
             parse_TriplesBlock(p);
+        }
+        if p.pos() == checkpoint {
+            break;
         }
     }
     p.close(marker, SyntaxKind::GroupGraphPatternSub);
@@ -3261,8 +3379,12 @@ pub(super) fn parse_GroupOrUnionGraphPattern(p: &mut Parser) {
     let marker = p.open();
     parse_GroupGraphPattern(p);
     while [SyntaxKind::UNION].contains(&p.nth(0)) {
+        let checkpoint = p.pos();
         p.expect(SyntaxKind::UNION);
         parse_GroupGraphPattern(p);
+        if p.pos() == checkpoint {
+            break;
+        }
     }
     p.close(marker, SyntaxKind::GroupOrUnionGraphPattern);
 }
@@ -3353,7 +3475,11 @@ pub(super) fn parse_InlineDataOneVar(p: &mut Parser) {
     ]
     .contains(&p.nth(0))
     {
+        let checkpoint = p.pos();
         parse_DataBlockValue(p);
+        if p.pos() == checkpoint {
+            break;
+        }
     }
     p.expect(SyntaxKind::RCurly);
     p.close(marker, SyntaxKind::InlineDataOneVar);
@@ -3368,7 +3494,11 @@ pub(super) fn parse_InlineDataFull(p: &mut Parser) {
         SyntaxKind::LParen => {
             p.expect(SyntaxKind::LParen);
             while [SyntaxKind::VAR1, SyntaxKind::VAR2].contains(&p.nth(0)) {
+                let checkpoint = p.pos();
                 parse_Var(p);
+                if p.pos() == checkpoint {
+                    break;
+                }
             }
             p.expect(SyntaxKind::RParen);
         }
@@ -3384,6 +3514,7 @@ pub(super) fn parse_InlineDataFull(p: &mut Parser) {
     };
     p.expect(SyntaxKind::LCurly);
     while [SyntaxKind::LParen, SyntaxKind::NIL].contains(&p.nth(0)) {
+        let checkpoint = p.pos();
         match p.nth(0) {
             SyntaxKind::LParen => {
                 p.expect(SyntaxKind::LParen);
@@ -3411,7 +3542,11 @@ pub(super) fn parse_InlineDataFull(p: &mut Parser) {
                 ]
                 .contains(&p.nth(0))
                 {
+                    let checkpoint = p.pos();
                     parse_DataBlockValue(p);
+                    if p.pos() == checkpoint {
+                        break;
+                    }
                 }
                 p.expect(SyntaxKind::RParen);
             }
@@ -3428,6 +3563,9 @@ pub(super) fn parse_InlineDataFull(p: &mut Parser) {
                 p.advance_with_error(vec![SyntaxKind::LParen, SyntaxKind::NIL]);
             }
         };
+        if p.pos() == checkpoint {
+            break;
+        }
     }
     p.expect(SyntaxKind::RCurly);
     p.close(marker, SyntaxKind::InlineDataFull);
@@ -3702,8 +3840,12 @@ pub(super) fn parse_ArgList(p: &mut Parser) {
             }
             parse_Expression(p);
             while [SyntaxKind::Comma].contains(&p.nth(0)) {
+                let checkpoint = p.pos();
                 p.expect(SyntaxKind::Comma);
                 parse_Expression(p);
+                if p.pos() == checkpoint {
+                    break;
+                }
             }
             p.expect(SyntaxKind::RParen);
         }
@@ -3730,8 +3872,12 @@ pub(super) fn parse_ExpressionList(p: &mut Parser) {
             p.expect(SyntaxKind::LParen);
             parse_Expression(p);
             while [SyntaxKind::Comma].contains(&p.nth(0)) {
+                let checkpoint = p.pos();
                 p.expect(SyntaxKind::Comma);
                 parse_Expression(p);
+                if p.pos() == checkpoint {
+                    break;
+                }
             }
             p.expect(SyntaxKind::RParen);
         }
@@ -3869,6 +4015,7 @@ pub(super) fn parse_PropertyListNotEmpty(p: &mut Parser) {
     parse_Verb(p);
     parse_ObjectList(p);
     while [SyntaxKind::Semicolon].contains(&p.nth(0)) {
+        let checkpoint = p.pos();
         p.expect(SyntaxKind::Semicolon);
         if p.at_any(&[
             SyntaxKind::IRIREF,
@@ -3880,6 +4027,9 @@ pub(super) fn parse_PropertyListNotEmpty(p: &mut Parser) {
         ]) {
             parse_Verb(p);
             parse_ObjectList(p);
+        }
+        if p.pos() == checkpoint {
+            break;
         }
     }
     p.close(marker, SyntaxKind::PropertyListNotEmpty);
@@ -3944,8 +4094,12 @@ pub(super) fn parse_ObjectList(p: &mut Parser) {
     let marker = p.open();
     parse_Object(p);
     while [SyntaxKind::Comma].contains(&p.nth(0)) {
+        let checkpoint = p.pos();
         p.expect(SyntaxKind::Comma);
         parse_Object(p);
+        if p.pos() == checkpoint {
+            break;
+        }
     }
     p.close(marker, SyntaxKind::ObjectList);
 }
@@ -4039,6 +4193,7 @@ pub(super) fn parse_Annotation(p: &mut Parser) {
     }
     let marker = p.open();
     while [SyntaxKind::Tilde, SyntaxKind::LCurlyPipe].contains(&p.nth(0)) {
+        let checkpoint = p.pos();
         match p.nth(0) {
             SyntaxKind::Tilde => {
                 parse_Reifier(p);
@@ -4056,6 +4211,9 @@ pub(super) fn parse_Annotation(p: &mut Parser) {
                 p.advance_with_error(vec![SyntaxKind::Tilde, SyntaxKind::LCurlyPipe]);
             }
         };
+        if p.pos() == checkpoint {
+            break;
+        }
     }
     p.close(marker, SyntaxKind::Annotation);
 }
@@ -4097,6 +4255,7 @@ pub(super) fn parse_PropertyListPathNotEmpty(p: &mut Parser) {
     };
     parse_ObjectListPath(p);
     while [SyntaxKind::Semicolon].contains(&p.nth(0)) {
+        let checkpoint = p.pos();
         p.expect(SyntaxKind::Semicolon);
         if p.at_any(&[
             SyntaxKind::IRIREF,
@@ -4144,6 +4303,9 @@ pub(super) fn parse_PropertyListPathNotEmpty(p: &mut Parser) {
             };
             parse_ObjectListPath(p);
         }
+        if p.pos() == checkpoint {
+            break;
+        }
     }
     p.close(marker, SyntaxKind::PropertyListPathNotEmpty);
 }
@@ -4186,8 +4348,12 @@ pub(super) fn parse_ObjectListPath(p: &mut Parser) {
     let marker = p.open();
     parse_ObjectPath(p);
     while [SyntaxKind::Comma].contains(&p.nth(0)) {
+        let checkpoint = p.pos();
         p.expect(SyntaxKind::Comma);
         parse_ObjectPath(p);
+        if p.pos() == checkpoint {
+            break;
+        }
     }
     p.close(marker, SyntaxKind::ObjectListPath);
 }
@@ -4287,6 +4453,7 @@ pub(super) fn parse_AnnotationPath(p: &mut Parser) {
     }
     let marker = p.open();
     while [SyntaxKind::Tilde, SyntaxKind::LCurlyPipe].contains(&p.nth(0)) {
+        let checkpoint = p.pos();
         match p.nth(0) {
             SyntaxKind::Tilde => {
                 parse_Reifier(p);
@@ -4304,6 +4471,9 @@ pub(super) fn parse_AnnotationPath(p: &mut Parser) {
                 p.advance_with_error(vec![SyntaxKind::Tilde, SyntaxKind::LCurlyPipe]);
             }
         };
+        if p.pos() == checkpoint {
+            break;
+        }
     }
     p.close(marker, SyntaxKind::AnnotationPath);
 }
@@ -4312,8 +4482,12 @@ pub(super) fn parse_PathAlternative(p: &mut Parser) {
     let marker = p.open();
     parse_PathSequence(p);
     while [SyntaxKind::Pipe].contains(&p.nth(0)) {
+        let checkpoint = p.pos();
         p.expect(SyntaxKind::Pipe);
         parse_PathSequence(p);
+        if p.pos() == checkpoint {
+            break;
+        }
     }
     p.close(marker, SyntaxKind::PathAlternative);
 }
@@ -4322,8 +4496,12 @@ pub(super) fn parse_PathSequence(p: &mut Parser) {
     let marker = p.open();
     parse_PathEltOrInverse(p);
     while [SyntaxKind::Slash].contains(&p.nth(0)) {
+        let checkpoint = p.pos();
         p.expect(SyntaxKind::Slash);
         parse_PathEltOrInverse(p);
+        if p.pos() == checkpoint {
+            break;
+        }
     }
     p.close(marker, SyntaxKind::PathSequence);
 }
@@ -4461,8 +4639,12 @@ pub(super) fn parse_PathNegatedPropertySet(p: &mut Parser) {
             ]) {
                 parse_PathOneInPropertySet(p);
                 while [SyntaxKind::Pipe].contains(&p.nth(0)) {
+                    let checkpoint = p.pos();
                     p.expect(SyntaxKind::Pipe);
                     parse_PathOneInPropertySet(p);
+                    if p.pos() == checkpoint {
+                        break;
+                    }
                 }
             }
             p.expect(SyntaxKind::RParen);
@@ -4575,7 +4757,11 @@ pub(super) fn parse_Collection(p: &mut Parser) {
     ]
     .contains(&p.nth(0))
     {
+        let checkpoint = p.pos();
         parse_GraphNode(p);
+        if p.pos() == checkpoint {
+            break;
+        }
     }
     p.expect(SyntaxKind::RParen);
     p.close(marker, SyntaxKind::Collection);
@@ -4624,7 +4810,11 @@ pub(super) fn parse_CollectionPath(p: &mut Parser) {
     ]
     .contains(&p.nth(0))
     {
+        let checkpoint = p.pos();
         parse_GraphNodePath(p);
+        if p.pos() == checkpoint {
+            break;
+        }
     }
     p.expect(SyntaxKind::RParen);
     p.close(marker, SyntaxKind::CollectionPath);
@@ -5032,8 +5222,12 @@ pub(super) fn parse_ConditionalOrExpression(p: &mut Parser) {
     let marker = p.open();
     parse_ConditionalAndExpression(p);
     while [SyntaxKind::DoublePipe].contains(&p.nth(0)) {
+        let checkpoint = p.pos();
         p.expect(SyntaxKind::DoublePipe);
         parse_ConditionalAndExpression(p);
+        if p.pos() == checkpoint {
+            break;
+        }
     }
     p.close(marker, SyntaxKind::ConditionalOrExpression);
 }
@@ -5042,8 +5236,12 @@ pub(super) fn parse_ConditionalAndExpression(p: &mut Parser) {
     let marker = p.open();
     parse_ValueLogical(p);
     while [SyntaxKind::DoubleAnd].contains(&p.nth(0)) {
+        let checkpoint = p.pos();
         p.expect(SyntaxKind::DoubleAnd);
         parse_ValueLogical(p);
+        if p.pos() == checkpoint {
+            break;
+        }
     }
     p.close(marker, SyntaxKind::ConditionalAndExpression);
 }
@@ -5145,6 +5343,7 @@ pub(super) fn parse_AdditiveExpression(p: &mut Parser) {
     ]
     .contains(&p.nth(0))
     {
+        let checkpoint = p.pos();
         match p.nth(0) {
             SyntaxKind::Plus => {
                 p.expect(SyntaxKind::Plus);
@@ -5189,6 +5388,7 @@ pub(super) fn parse_AdditiveExpression(p: &mut Parser) {
                     }
                 };
                 while [SyntaxKind::Star, SyntaxKind::Slash].contains(&p.nth(0)) {
+                    let checkpoint = p.pos();
                     match p.nth(0) {
                         SyntaxKind::Star => {
                             p.expect(SyntaxKind::Star);
@@ -5208,6 +5408,9 @@ pub(super) fn parse_AdditiveExpression(p: &mut Parser) {
                             p.advance_with_error(vec![SyntaxKind::Star, SyntaxKind::Slash]);
                         }
                     };
+                    if p.pos() == checkpoint {
+                        break;
+                    }
                 }
             }
             SyntaxKind::Eof => {
@@ -5229,6 +5432,9 @@ pub(super) fn parse_AdditiveExpression(p: &mut Parser) {
                 ]);
             }
         };
+        if p.pos() == checkpoint {
+            break;
+        }
     }
     p.close(marker, SyntaxKind::AdditiveExpression);
 }
@@ -5237,6 +5443,7 @@ pub(super) fn parse_MultiplicativeExpression(p: &mut Parser) {
     let marker = p.open();
     parse_UnaryExpression(p);
     while [SyntaxKind::Star, SyntaxKind::Slash].contains(&p.nth(0)) {
+        let checkpoint = p.pos();
         match p.nth(0) {
             SyntaxKind::Star => {
                 p.expect(SyntaxKind::Star);
@@ -5256,6 +5463,9 @@ pub(super) fn parse_MultiplicativeExpression(p: &mut Parser) {
                 p.advance_with_error(vec![SyntaxKind::Star, SyntaxKind::Slash]);
             }
         };
+        if p.pos() == checkpoint {
+            break;
+        }
     }
     p.close(marker, SyntaxKind::MultiplicativeExpression);
 }

@@ -1,0 +1,27 @@
+---
+source: tests/parse_tree.rs
+expression: "check_query(\"SELECT ?s WHERE { ?s\")"
+---
+QueryUnit@0..20
+  Query@0..20
+    SelectQuery@0..20
+      SelectClause@0..9
+        SELECT@0..6 "SELECT"
+        WHITESPACE@6..7 " "
+        Var@7..9
+          VAR1@7..9 "?s"
+      WHITESPACE@9..10 " "
+      WhereClause@10..20
+        WHERE@10..15 "WHERE"
+        WHITESPACE@15..16 " "
+        GroupGraphPattern@16..20
+          LCurly@16..17 "{"
+          WHITESPACE@17..18 " "
+          GroupGraphPatternSub@18..20
+            TriplesBlock@18..20
+              TriplesSameSubjectPath@18..20
+                VarOrTerm@18..20
+                  Var@18..20
+                    VAR1@18..20 "?s"
+---
+ParseError { span: 20..20, message: "Syntax Error: expected RCurly" }

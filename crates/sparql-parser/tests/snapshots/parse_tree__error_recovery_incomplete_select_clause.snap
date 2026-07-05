@@ -1,0 +1,25 @@
+---
+source: tests/parse_tree.rs
+expression: "check_query(\"SELECT ?a ? WHERE { }\")"
+---
+QueryUnit@0..21
+  Query@0..21
+    SelectQuery@0..21
+      SelectClause@0..9
+        SELECT@0..6 "SELECT"
+        WHITESPACE@6..7 " "
+        Var@7..9
+          VAR1@7..9 "?a"
+      WHITESPACE@9..10 " "
+      Error@10..11
+        QuestionMark@10..11 "?"
+      WHITESPACE@11..12 " "
+      WhereClause@12..21
+        WHERE@12..17 "WHERE"
+        WHITESPACE@17..18 " "
+        GroupGraphPattern@18..21
+          LCurly@18..19 "{"
+          WHITESPACE@19..20 " "
+          RCurly@20..21 "}"
+---
+ParseError { span: 10..11, message: "Syntax Error: expected WHERE or LCurly" }

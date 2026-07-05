@@ -92,7 +92,7 @@ fn build_tree(
     tokens: Vec<(Token, Range<usize>)>,
     events: Vec<Event>,
 ) -> (GreenNode, Vec<ParseError>) {
-    let mut tokens = tokens.into_iter().peekable();
+    let mut cursor = 0;
     let mut builder = GreenNodeBuilder::new();
     let mut erros: Vec<ParseError> = Vec::new();
 
@@ -104,55 +104,79 @@ fn build_tree(
             Event::Open { kind } => {
                 while !matches!(kind, SyntaxKind::QueryUnit | SyntaxKind::UpdateUnit)
                     && tokens
-                        .peek()
-                        .map_or(false, |(next, _span)| next.is_trivia())
+                        .get(cursor)
+                        .map_or(false, |(next, _)| next.is_trivia())
                 {
-                    let (token, _) = tokens.next().unwrap();
+                    let (token, _) = &tokens[cursor];
                     builder.token(token.kind.into(), &token.text);
+                    cursor += 1;
                 }
                 builder.start_node((*kind).into());
             }
             Event::Error { expected } => {
-                if let Some((_, span)) = tokens.peek() {
-                    erros.push(ParseError {
-                        span: TextRange::new(
+                // NOTE: the error is anchored to the next non-trivia token;
+                // if there is none, to the end of the last non-trivia token
+                let span = tokens[cursor..]
+                    .iter()
+                    .find(|(token, _)| !token.is_trivia())
+                    .map(|(_, span)| {
+                        TextRange::new(
                             TextSize::new(span.start as u32),
-                            TextSize::new(span.start as u32),
-                        ),
-                        message: if expected.is_empty() {
-                            "Syntax Error: unexpected token".to_string()
-                        } else {
-                            format!(
-                                "Syntax Error: expected {}",
-                                expected
-                                    .into_iter()
-                                    .map(|kind| format!("{kind:?}"))
-                                    .collect::<Vec<_>>()
-                                    .join(" or ")
-                            )
-                        },
+                            TextSize::new(span.end as u32),
+                        )
+                    })
+                    .unwrap_or_else(|| {
+                        let end = tokens[..cursor]
+                            .iter()
+                            .rev()
+                            .find(|(token, _)| !token.is_trivia())
+                            .map_or(0, |(_, span)| span.end as u32);
+                        TextRange::new(TextSize::new(end), TextSize::new(end))
                     });
-                }
+                erros.push(ParseError {
+                    span,
+                    message: if expected.is_empty() {
+                        "Syntax Error: unexpected token".to_string()
+                    } else {
+                        format!(
+                            "Syntax Error: expected {}",
+                            expected
+                                .into_iter()
+                                .map(|kind| format!("{kind:?}"))
+                                .collect::<Vec<_>>()
+                                .join(" or ")
+                        )
+                    },
+                });
             }
             Event::Close => {
                 builder.finish_node();
             }
 
             Event::Advance => {
-                while tokens.peek().map_or(false, |(next, _)| next.is_trivia()) {
-                    let (token, _) = tokens.next().unwrap();
+                while tokens
+                    .get(cursor)
+                    .map_or(false, |(next, _)| next.is_trivia())
+                {
+                    let (token, _) = &tokens[cursor];
                     builder.token(token.kind.into(), &token.text);
+                    cursor += 1;
                 }
-                let (token, _) = tokens.next().unwrap();
+                let (token, _) = &tokens[cursor];
                 builder.token(token.kind.into(), &token.text);
+                cursor += 1;
             }
         }
     }
     // Eat trailing trivia tokens
     assert!(matches!(events.last(), Some(Event::Close)));
-    while tokens.peek().map_or(false, |(next, _)| next.is_trivia()) {
-        let (token, _) = tokens.next().unwrap();
+    while tokens
+        .get(cursor)
+        .map_or(false, |(next, _)| next.is_trivia())
+    {
+        let (token, _) = &tokens[cursor];
         builder.token(token.kind.into(), &token.text);
+        cursor += 1;
     }
     builder.finish_node();
     (builder.finish(), erros)
@@ -176,6 +200,10 @@ enum Event {
     Close,
     Advance,
 }
+
+// NOTE: Tokens that reliably mark the start or end of a major construct.
+// Used by `advance_with_error` to synchronize after a syntax error.
+const RECOVERY_TOKENS: &[SyntaxKind] = &[SyntaxKind::WHERE, SyntaxKind::LCurly, SyntaxKind::RCurly];
 
 struct MarkOpened {
     index: usize,
@@ -246,10 +274,32 @@ impl Parser {
     }
 
     fn advance_with_error(&mut self, expected: Vec<SyntaxKind>) {
+        self.events.push(Event::Error { expected });
+        // NOTE: Recovery tokens are strong synchronization points. They are
+        // never consumed as part of an error; instead the error is reported
+        // and the token is left for an ancestor rule to consume.
+        if self.at_any(RECOVERY_TOKENS) {
+            return;
+        }
         let m = self.open();
         self.advance();
         self.close(m, SyntaxKind::Error);
-        self.events.push(Event::Error { expected });
+    }
+
+    fn error_until(&mut self, expected: Vec<SyntaxKind>, recovery: &[SyntaxKind]) {
+        self.events.push(Event::Error { expected }); // ONE diagnostic
+        if self.at_any(recovery) || self.eof() {
+            return; // nothing to skip
+        }
+        let m = self.open();
+        while !self.at_any(recovery) && !self.eof() {
+            self.advance(); // swallow all junk
+        }
+        self.close(m, SyntaxKind::Error); // ONE error node
+    }
+
+    pub(super) fn pos(&self) -> usize {
+        self.pos
     }
 }
 

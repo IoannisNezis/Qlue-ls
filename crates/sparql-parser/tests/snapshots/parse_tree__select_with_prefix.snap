@@ -1,0 +1,54 @@
+---
+source: tests/parse_tree.rs
+expression: "check_query(\"PREFIX foaf: <http://xmlns.com/foaf/0.1/>\\nSELECT ?name WHERE { ?person foaf:name ?name }\")"
+---
+QueryUnit@0..88
+  Query@0..88
+    Prologue@0..41
+      PrefixDecl@0..41
+        PREFIX@0..6 "PREFIX"
+        WHITESPACE@6..7 " "
+        PNAME_NS@7..12 "foaf:"
+        WHITESPACE@12..13 " "
+        IRIREF@13..41 "<http://xmlns.com/foa ..."
+    WHITESPACE@41..42 "\n"
+    SelectQuery@42..88
+      SelectClause@42..54
+        SELECT@42..48 "SELECT"
+        WHITESPACE@48..49 " "
+        Var@49..54
+          VAR1@49..54 "?name"
+      WHITESPACE@54..55 " "
+      WhereClause@55..88
+        WHERE@55..60 "WHERE"
+        WHITESPACE@60..61 " "
+        GroupGraphPattern@61..88
+          LCurly@61..62 "{"
+          WHITESPACE@62..63 " "
+          GroupGraphPatternSub@63..86
+            TriplesBlock@63..86
+              TriplesSameSubjectPath@63..86
+                VarOrTerm@63..70
+                  Var@63..70
+                    VAR1@63..70 "?person"
+                WHITESPACE@70..71 " "
+                PropertyListPathNotEmpty@71..86
+                  VerbPath@71..80
+                    Path@71..80
+                      PathAlternative@71..80
+                        PathSequence@71..80
+                          PathEltOrInverse@71..80
+                            PathElt@71..80
+                              PathPrimary@71..80
+                                iri@71..80
+                                  PrefixedName@71..80
+                                    PNAME_LN@71..80 "foaf:name"
+                  WHITESPACE@80..81 " "
+                  ObjectListPath@81..86
+                    ObjectPath@81..86
+                      GraphNodePath@81..86
+                        VarOrTerm@81..86
+                          Var@81..86
+                            VAR1@81..86 "?name"
+          WHITESPACE@86..87 " "
+          RCurly@87..88 "}"

@@ -1,0 +1,37 @@
+---
+source: tests/parse_tree.rs
+expression: "check_update(r#\"INSERT DATA { <a> <b> \"c\" . }\"#)"
+---
+UpdateUnit@0..29
+  Update@0..29
+    UpdateOne@0..29
+      InsertData@0..29
+        INSERT_DATA@0..11 "INSERT DATA"
+        WHITESPACE@11..12 " "
+        QuadData@12..29
+          LCurly@12..13 "{"
+          WHITESPACE@13..14 " "
+          Quads@14..27
+            TriplesTemplate@14..27
+              TriplesSameSubject@14..25
+                VarOrTerm@14..17
+                  iri@14..17
+                    IRIREF@14..17 "<a>"
+                WHITESPACE@17..18 " "
+                PropertyListNotEmpty@18..25
+                  Verb@18..21
+                    VarOrIri@18..21
+                      iri@18..21
+                        IRIREF@18..21 "<b>"
+                  WHITESPACE@21..22 " "
+                  ObjectList@22..25
+                    Object@22..25
+                      GraphNode@22..25
+                        VarOrTerm@22..25
+                          RDFLiteral@22..25
+                            String@22..25
+                              STRING_LITERAL2@22..25 "\"c\""
+              WHITESPACE@25..26 " "
+              Dot@26..27 "."
+          WHITESPACE@27..28 " "
+          RCurly@28..29 "}"

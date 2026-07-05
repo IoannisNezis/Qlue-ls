@@ -14,6 +14,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dev-dependencies]
 indoc = "2.0.5"
+insta = "1.48.0"
 
 [dependencies]
 logos = "0.16.0"

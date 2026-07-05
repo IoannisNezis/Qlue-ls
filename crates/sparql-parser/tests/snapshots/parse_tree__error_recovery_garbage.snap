@@ -1,0 +1,28 @@
+---
+source: tests/parse_tree.rs
+expression: "check_query(\"SELECT } WHERE ?? {\")"
+---
+QueryUnit@0..19
+  Query@0..19
+    SelectQuery@0..19
+      SelectClause@0..6
+        SELECT@0..6 "SELECT"
+      WHITESPACE@6..7 " "
+      Error@7..8
+        RCurly@7..8 "}"
+      WHITESPACE@8..9 " "
+      WhereClause@9..19
+        WHERE@9..14 "WHERE"
+        WHITESPACE@14..15 " "
+        GroupGraphPattern@15..19
+          Error@15..19
+            QuestionMark@15..16 "?"
+            QuestionMark@16..17 "?"
+            WHITESPACE@17..18 " "
+            LCurly@18..19 "{"
+---
+ParseError { span: 7..8, message: "Syntax Error: expected LParen or VAR1 or VAR2 or Star" }
+ParseError { span: 7..8, message: "Syntax Error: expected WHERE or LCurly" }
+ParseError { span: 15..16, message: "Syntax Error: expected LCurly" }
+ParseError { span: 15..16, message: "Syntax Error: expected RCurly" }
+ParseError { span: 19..19, message: "Syntax Error: expected RCurly" }

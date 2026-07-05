@@ -159,7 +159,12 @@ mod test {
         //           0123456789012345678
         let input = "SELECT WHERE { }";
         let root = parse_query(input).0;
-        assert_eq!(continuations_at(&root, 12.into()), None);
+        // NOTE: the SelectClause is broken, but error recovery leaves the
+        // WHERE token for the WhereClause, so continuations still work here
+        assert_eq!(
+            continuations_at(&root, 12.into()),
+            vec![SyntaxKind::GroupGraphPattern].into()
+        );
     }
 
     #[test]

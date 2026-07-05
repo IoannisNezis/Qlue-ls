@@ -31,6 +31,31 @@ pub fn generate() {
     }
 }
 
+// NOTE: rules that get Seq-level error synchronization; conservative
+// whitelist for now, may grow once the produced trees are validated
+const STRUCTURAL_RULES: &[&str] = &[
+    "SelectQuery",
+    "ConstructQuery",
+    "AskQuery",
+    "DescribeQuery",
+    "GroupGraphPattern",
+];
+
+/// FIRST of a sequence suffix: union of FIRSTs left to right,
+/// stopping at the first non-nullable element.
+fn seq_tail_first(first: &FirstSet, tail: &[Rule], grammar: &Grammar) -> Vec<Token> {
+    let mut set = std::collections::HashSet::new();
+    for rule in tail {
+        set.extend(first.get_first_of(rule, grammar));
+        if !is_nullable(rule, grammar) {
+            break;
+        }
+    }
+    let mut tokens: Vec<Token> = set.into_iter().collect();
+    tokens.sort();
+    tokens
+}
+
 fn generate_rule(
     grammar: &Grammar,
     rule: &Rule,
@@ -52,7 +77,34 @@ fn generate_rule(
         }
         Rule::Seq(rules) => rules
             .iter()
-            .map(|other| generate_rule(grammar, other, first, rule_root))
+            .enumerate()
+            .map(|(i, other)| {
+                let parse_rule = generate_rule(grammar, other, first, rule_root);
+                // NOTE: in structural rules, synchronize before each non-nullable
+                // element: skip junk into an error node until a token the
+                // remaining sequence can start with.
+                // No guard before the first element — junk before a rule
+                // starts is the caller's responsibility.
+                if i == 0
+                    || is_nullable(other, grammar)
+                    || !STRUCTURAL_RULES.contains(&rule_root.to_string().as_str())
+                {
+                    return parse_rule;
+                }
+                let sync_set: Vec<TokenStream> = seq_tail_first(first, &rules[i..], grammar)
+                    .iter()
+                    .map(|token| {
+                        let kind = generate_token_kind(&grammar[*token].name);
+                        quote! { SyntaxKind::#kind }
+                    })
+                    .collect();
+                quote! {
+                    if !p.at_any(&[#(#sync_set),*]) && !p.eof() {
+                        p.error_until(vec![#(#sync_set),*], &[#(#sync_set),*]);
+                    }
+                    #parse_rule
+                }
+            })
             .collect(),
         Rule::Alt(rules) => {
             let match_arms: Vec<TokenStream> = rules
@@ -125,7 +177,13 @@ fn generate_rule(
             let parse_rule = generate_rule(grammar, other_rule, first, rule_root);
             quote! {
                 while [#(#first_set),*].contains(&p.nth(0)) {
+                    let checkpoint = p.pos();
                     #parse_rule
+                    // NOTE: guard against non-consuming iterations,
+                    // error recovery may refuse to consume recovery tokens
+                    if p.pos() == checkpoint {
+                        break;
+                    }
                 }
             }
         }
@@ -410,12 +468,27 @@ fn generate_parser(grammar: &Grammar, first: &FirstSet) {
                 }
             },
         };
+        // NOTE: top-level entry points collect all remaining tokens into a
+        // single error node, to keep the tree lossless
+        let trailing = match name.as_str() {
+            "QueryUnit" | "UpdateUnit" => quote! {
+                if !p.at(SyntaxKind::Eof) {
+                    let error_marker = p.open();
+                    while !p.at(SyntaxKind::Eof) {
+                        p.advance();
+                    }
+                    p.close(error_marker, SyntaxKind::Error);
+                }
+            },
+            _ => quote! {},
+        };
         quote! {
             #[doc = #comment]
             pub (super) fn #function_name (p: &mut Parser){
                 #escape
                 let marker = p.open();
                 #rules
+                #trailing
                 p.close(marker, SyntaxKind::#tree_kind);
             }
         }

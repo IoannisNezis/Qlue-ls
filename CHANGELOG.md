@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- completions can now look past the cursor: variable completion in the
+  `SELECT` clause suggests the variables of the `WHERE` clause, even though
+  it comes after the cursor.
+- syntax diagnostics are more precise: the parser now recovers from errors at
+  structural keywords (e.g. `WHERE`, braces), so a single mistake no longer
+  cascades into errors for the rest of the query. Diagnostics point at the
+  offending token instead of the end of the previous one, and errors at the
+  end of the input (e.g. a missing closing brace) are now reported instead of
+  silently dropped.
+
 ## [3.1.0] - 2026-07-02
 
 ### Added

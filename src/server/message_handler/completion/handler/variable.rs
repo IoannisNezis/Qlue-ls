@@ -29,7 +29,7 @@ pub async fn completions(
     };
     let mut suggestions: Vec<CompletionItem> = HashSet::<String>::from_iter(
         environment
-            .tree
+            .full_tree
             .descendants()
             .filter_map(Var::cast)
             .filter(|var| !var.has_error())

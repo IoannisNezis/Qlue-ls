@@ -44,7 +44,7 @@ pub(super) async fn dispatch_completion_query(
 ) -> Result<CompletionList, CompletionError> {
     match environment.backend.as_ref() {
         Some(backend) => {
-            let query_unit = QueryUnit::cast(environment.tree.clone()).ok_or(
+            let query_unit = QueryUnit::cast(environment.truncated_tree.clone()).ok_or(
                 CompletionError::Resolve("Could not cast root to QueryUnit".to_string()),
             )?;
             Ok(to_completion_items(
@@ -279,6 +279,21 @@ pub(super) fn reduce_path(
                 .map(|sub_path| sub_path.text())
                 .collect::<Vec<_>>();
             let path_seq_len = sub_paths.len();
+            // NOTE: a dangling separator ("<p0>/") has no sub-path after the
+            // slash; the existing sub-paths become the prefix and the cursor
+            // position is the empty final element
+            if path
+                .syntax()
+                .last_child_or_token()
+                .is_some_and(|elt| elt.kind() == SyntaxKind::Slash)
+            {
+                return Some(format!(
+                    "{} {} ?qls_inner . ?qls_inner ?qls_entity {}",
+                    subject,
+                    sub_paths.join("/"),
+                    object
+                ));
+            }
             if path_seq_len > 1 {
                 let path_prefix = sub_paths[..path_seq_len - 1].join("/");
                 let prefix = format!("{} {} {}", subject, path_prefix, "?qls_inner");
@@ -478,6 +493,10 @@ mod test {
             .unwrap()
             .triples();
         let triple = triples.first().unwrap();
+        println!(
+            "{:#?}",
+            &triple.properties_list_path().unwrap().properties().last()
+        );
         let res = reduce_path(
             &triple.subject().unwrap().text(),
             &triple

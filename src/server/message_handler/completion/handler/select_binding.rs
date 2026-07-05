@@ -3,13 +3,25 @@ use super::super::{
 };
 use crate::server::lsp::{
     CompletionItem, CompletionItemBuilder, CompletionItemKind, CompletionList, InsertTextFormat,
-    ItemDefaults,
+    ItemDefaults, textdocument::TextEdit,
 };
-use ll_sparql_parser::{ast::AstNode, syntax_kind::SyntaxKind};
+use ll_sparql_parser::{
+    ast::{AstNode, QueryUnit},
+    syntax_kind::SyntaxKind,
+};
 use std::collections::HashSet;
 
 pub fn completions(context: &CompletionEnvironment) -> Result<CompletionList, CompletionError> {
-    if let CompletionLocation::SelectBinding(select_clause) = &context.location {
+    if let CompletionLocation::SelectBinding(_select_clause) = &context.location {
+        // NOTE: Here I replace the select_clause node.
+        // The one in the CompletionLocation is from the truncated tree.
+        // This tree does not have access to everything after the cursor.
+        let select_clause = QueryUnit::cast(context.full_tree.clone())
+            .unwrap()
+            .select_query()
+            .unwrap()
+            .select_clause()
+            .unwrap();
         let mut items = Vec::new();
         let search_term = context.search_term.as_deref();
         // NOTE: suggest keywords DISTINCT & REDUCED
@@ -70,14 +82,17 @@ pub fn completions(context: &CompletionEnvironment) -> Result<CompletionList, Co
             &group_vars
         } - &result_vars;
         items.extend(vars.into_iter().map(|var| {
-            CompletionItem::new(
-                &var,
-                Some("variable".to_string()),
-                None,
-                &format!("{} ", var),
-                CompletionItemKind::Variable,
-                None,
-            )
+            CompletionItemBuilder::new()
+                .label(&var)
+                .detail("variable")
+                .kind(CompletionItemKind::Variable)
+                .filter_text(&var)
+                .text_edit(TextEdit::new(
+                    context.replace_range.clone(),
+                    &format!("{} ", var),
+                ))
+                .insert_text_format(InsertTextFormat::PlainText)
+                .build()
         }));
         // NOTE: suggest aggregates
         let group_by = select_clause

@@ -27,7 +27,8 @@ pub(super) struct CompletionEnvironment {
     pub(super) location: CompletionLocation,
     pub(super) trigger_textdocument_position: Position,
     pub(super) continuations: HashSet<SyntaxKind>,
-    pub(super) tree: SyntaxNode,
+    pub(super) truncated_tree: SyntaxNode,
+    pub(super) full_tree: SyntaxNode,
     pub(super) trigger_kind: CompletionTriggerKind,
     pub(super) trigger_character: Option<String>,
     pub(super) anchor_token: Option<SyntaxToken>,
@@ -277,7 +278,7 @@ impl CompletionEnvironment {
         if let Some(ref context) = self.context {
             prefixes.extend(context.prefixes.clone());
         }
-        let prefix_declarations = get_prefix_declarations(&self.tree).await;
+        let prefix_declarations = get_prefix_declarations(&self.truncated_tree).await;
         template_context.insert("prefixes", &prefix_declarations);
         template_context.insert("search_term", &self.search_term);
         if let Some(search_term) = self.search_term.as_ref() {
@@ -321,26 +322,28 @@ impl CompletionEnvironment {
         let trigger_kind = request.get_completion_context().trigger_kind.clone();
         let trigger_character = request.get_completion_context().trigger_character.clone();
 
-        let tree = parse(&document.text[..trigger_offset.into()]).0;
-        let trigger_token = get_trigger_token(&tree, trigger_offset);
+        let truncated_tree = parse(&document.text[..trigger_offset.into()]).0;
+        let trigger_token = get_trigger_token(&truncated_tree, trigger_offset);
         let backend = trigger_token
             .as_ref()
             .and_then(|token| {
-                resolve_backend_at_token(&server, &QueryUnit::cast(tree.clone())?, token)
+                resolve_backend_at_token(&server, &QueryUnit::cast(truncated_tree.clone())?, token)
             })
             .or_else(|| server.state.get_default_backend().cloned());
         let anchor_token = trigger_token.and_then(get_anchor_token);
         // NOTE: `tree` is parsed from the document truncated at the cursor, so it can
         // not see tokens past the trigger offset. For look-ahead we use the full
         // document parse (reusing the cache when possible).
-        let following_kind = server
+        let full_tree = server
             .state
             .get_cached_parse_tree(&document_position.text_document.uri)
-            .ok()
-            .and_then(|full| get_following_token(&full.tree, trigger_offset))
-            .map(|token| token.kind());
-        let search_term = get_search_term(&tree, &anchor_token, trigger_offset);
-        let continuations = get_continuations(&tree, &anchor_token);
+            .map_err(|err| CompletionError::Localization(err.message))?
+            .tree;
+
+        let following_kind =
+            get_following_token(&full_tree, trigger_offset).map(|token| token.kind());
+        let search_term = get_search_term(&truncated_tree, &anchor_token, trigger_offset);
+        let continuations = get_continuations(&truncated_tree, &anchor_token);
         let location = get_location(&anchor_token, &continuations, trigger_offset);
         let context = context(&location);
         let replace_range = get_replace_range(&document_position.position, &search_term);
@@ -348,7 +351,8 @@ impl CompletionEnvironment {
             location,
             trigger_textdocument_position: document_position.position,
             continuations,
-            tree,
+            truncated_tree,
+            full_tree,
             trigger_kind,
             trigger_character,
             anchor_token,

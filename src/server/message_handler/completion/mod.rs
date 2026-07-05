@@ -28,14 +28,15 @@ pub(super) async fn handle_completion_request(
     let env = CompletionEnvironment::from_completion_request(server_rc.clone(), &request)
         .await
         .map_err(to_lsp_error)?;
-    // tracing::debug!("Completion env:\n{}", env);
+    // tracing::debug!("Completion env:\n{env}");
 
-    let mut completion_list = if env.trigger_kind == CompletionTriggerKind::TriggerCharacter
+    let mut completion_list = if (env.trigger_kind == CompletionTriggerKind::TriggerCharacter
         && env.trigger_character.as_ref().is_some_and(|tc| tc == "?")
         || env
             .search_term
             .as_ref()
-            .is_some_and(|search_term| search_term.starts_with("?"))
+            .is_some_and(|search_term| search_term.starts_with("?")))
+        && !matches!(env.location, CompletionLocation::SelectBinding(_))
     {
         Some(
             handler::variable::completions(server_rc.clone(), &env)

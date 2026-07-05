@@ -41,7 +41,7 @@ impl SemicolonTransformer {
         {
             return None;
         }
-        let document_text = env.tree.text().to_string();
+        let document_text = env.truncated_tree.text().to_string();
         let replace_range = env.replace_range.clone();
 
         let triple_block = TriplesBlock::cast(env.anchor_token.as_ref()?.parent()?)?;

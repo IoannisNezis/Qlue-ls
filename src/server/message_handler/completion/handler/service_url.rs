@@ -3,8 +3,7 @@ use crate::server::{
     Server,
     configuration::BackendConfiguration,
     lsp::{
-        CompletionItemBuilder, CompletionItemKind, CompletionList,
-        InsertTextFormat,
+        CompletionItemBuilder, CompletionItemKind, CompletionList, InsertTextFormat,
         textdocument::{Range, TextEdit},
     },
 };
@@ -18,7 +17,7 @@ pub async fn completions(
 ) -> Result<CompletionList, CompletionError> {
     let server = server_rc.lock().await;
     let default_backend = server.state.get_default_backend();
-    let query_unit = QueryUnit::cast(environment.tree.clone());
+    let query_unit = QueryUnit::cast(environment.truncated_tree.clone());
     Ok(CompletionList {
         is_incomplete: false,
         item_defaults: None,

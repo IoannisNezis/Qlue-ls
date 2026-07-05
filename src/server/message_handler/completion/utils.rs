@@ -28,7 +28,12 @@ use super::{environment::CompletionEnvironment, error::CompletionError};
 /// If no search term is provided (or it's empty), returns true to show all completions.
 pub(super) fn matches_search_term(label: &str, search_term: Option<&str>) -> bool {
     match search_term {
-        Some(term) if !term.is_empty() => label.to_uppercase().starts_with(&term.to_uppercase()),
+        // NOTE: byte-wise ASCII comparison, avoids allocating uppercased copies;
+        // slicing the bytes instead of the str avoids char-boundary panics
+        Some(term) if !term.is_empty() => {
+            label.len() >= term.len()
+                && label.as_bytes()[..term.len()].eq_ignore_ascii_case(term.as_bytes())
+        }
         _ => true,
     }
 }

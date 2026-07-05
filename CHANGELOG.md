@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- aggregate completions in the `SELECT` clause now work for partially typed
+  aggregates: typing e.g. `SELECT (S` suggests the matching
+  `(SUM(?var) AS ?alias)` and `(SAMPLE(?var) AS ?alias)` snippets, replacing
+  the already typed text. A `GROUP_CONCAT` snippet is now offered as well.
 - completions can now look past the cursor: variable completion in the
   `SELECT` clause suggests the variables of the `WHERE` clause, even though
   it comes after the cursor.

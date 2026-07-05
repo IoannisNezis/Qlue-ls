@@ -302,6 +302,310 @@ fn test_completion_s_prefix_returns_service_and_sub_select() {
     });
 }
 
+/// Helper: labels that contain the given substring
+fn labels_containing(response: &Value, substr: &str) -> Vec<String> {
+    get_completion_labels(response)
+        .into_iter()
+        .filter(|label| label.contains(substr))
+        .collect()
+}
+
+#[test]
+fn test_aggregate_completion_with_group_by_no_prefix() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        // Cursor in the (empty) select binding position, with GROUP BY present
+        client
+            //                                     0000000000111111111122222222223333333333
+            //                                     0123456789012345678901234567890123456789
+            .open_document(
+                "file:///test.sparql",
+                "SELECT  WHERE { ?s ?p ?o } GROUP BY ?s",
+            )
+            .await;
+
+        let id = client.complete("file:///test.sparql", 0, 7).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+
+        // All aggregate functions should be offered for the non-grouped variables
+        for aggregate in ["COUNT", "SUM", "MIN", "MAX", "AVG", "SAMPLE"] {
+            assert!(
+                !labels_containing(&response, &format!("{aggregate}(")).is_empty(),
+                "Should suggest {aggregate} aggregate, got: {:?}",
+                get_completion_labels(&response)
+            );
+        }
+    });
+}
+
+#[test]
+fn test_aggregate_completion_partial_s_suggests_sum_and_sample() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        // Partially written aggregate "(S" in the select clause
+        client
+            //                                     0000000000111111111122222222223333333333444
+            //                                     0123456789012345678901234567890123456789012
+            .open_document(
+                "file:///test.sparql",
+                "SELECT (S WHERE { ?s ?p ?o } GROUP BY ?s",
+            )
+            .await;
+
+        // Cursor right after "(S" (line 0, character 9)
+        let id = client.complete("file:///test.sparql", 0, 9).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+
+        // "S" should match SUM and SAMPLE
+        assert!(
+            !labels_containing(&response, "SUM(").is_empty(),
+            "Should suggest SUM for partial '(S', got: {:?}",
+            get_completion_labels(&response)
+        );
+        assert!(
+            !labels_containing(&response, "SAMPLE(").is_empty(),
+            "Should suggest SAMPLE for partial '(S', got: {:?}",
+            get_completion_labels(&response)
+        );
+
+        // "S" should NOT match the other aggregates
+        for aggregate in ["COUNT", "MIN", "MAX", "AVG"] {
+            assert!(
+                labels_containing(&response, &format!("{aggregate}(")).is_empty(),
+                "Should NOT suggest {aggregate} for partial '(S', got: {:?}",
+                get_completion_labels(&response)
+            );
+        }
+    });
+}
+
+#[test]
+fn test_aggregate_completion_partial_su_suggests_only_sum() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        client
+            //                                     0000000000111111111122222222223333333333444
+            //                                     0123456789012345678901234567890123456789012
+            .open_document(
+                "file:///test.sparql",
+                "SELECT (SU WHERE { ?s ?p ?o } GROUP BY ?s",
+            )
+            .await;
+
+        // Cursor right after "(SU" (line 0, character 10)
+        let id = client.complete("file:///test.sparql", 0, 10).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+
+        assert!(
+            !labels_containing(&response, "SUM(").is_empty(),
+            "Should suggest SUM for partial '(SU', got: {:?}",
+            get_completion_labels(&response)
+        );
+        for aggregate in ["COUNT", "MIN", "MAX", "AVG", "SAMPLE"] {
+            assert!(
+                labels_containing(&response, &format!("{aggregate}(")).is_empty(),
+                "Should NOT suggest {aggregate} for partial '(SU', got: {:?}",
+                get_completion_labels(&response)
+            );
+        }
+    });
+}
+
+#[test]
+fn test_aggregate_completion_partial_lowercase() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        client
+            //                                     0000000000111111111122222222223333333333444
+            //                                     0123456789012345678901234567890123456789012
+            .open_document(
+                "file:///test.sparql",
+                "SELECT (sa WHERE { ?s ?p ?o } GROUP BY ?s",
+            )
+            .await;
+
+        // Cursor right after "(sa" (line 0, character 10)
+        let id = client.complete("file:///test.sparql", 0, 10).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+
+        assert!(
+            !labels_containing(&response, "SAMPLE(").is_empty(),
+            "Should suggest SAMPLE for partial '(sa' (case-insensitive), got: {:?}",
+            get_completion_labels(&response)
+        );
+        assert!(
+            labels_containing(&response, "SUM(").is_empty(),
+            "Should NOT suggest SUM for partial '(sa', got: {:?}",
+            get_completion_labels(&response)
+        );
+    });
+}
+
+#[test]
+fn test_aggregate_completion_partial_c_includes_count_star() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        client
+            //                                     0000000000111111111122222222223333333333444
+            //                                     0123456789012345678901234567890123456789012
+            .open_document(
+                "file:///test.sparql",
+                "SELECT (C WHERE { ?s ?p ?o } GROUP BY ?s",
+            )
+            .await;
+
+        // Cursor right after "(C" (line 0, character 9)
+        let id = client.complete("file:///test.sparql", 0, 9).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+
+        assert!(
+            !labels_containing(&response, "COUNT(").is_empty(),
+            "Should suggest COUNT for partial '(C', got: {:?}",
+            get_completion_labels(&response)
+        );
+        assert!(
+            has_completion_label(&response, "(COUNT(*) AS ?count)"),
+            "Should suggest '(COUNT(*) AS ?count)' for partial '(C', got: {:?}",
+            get_completion_labels(&response)
+        );
+        for aggregate in ["SUM", "MIN", "MAX", "AVG", "SAMPLE"] {
+            assert!(
+                labels_containing(&response, &format!("{aggregate}(")).is_empty(),
+                "Should NOT suggest {aggregate} for partial '(C', got: {:?}",
+                get_completion_labels(&response)
+            );
+        }
+    });
+}
+
+#[test]
+fn test_aggregate_completion_partial_without_paren() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        // Partial aggregate without the opening paren
+        client
+            //                                     0000000000111111111122222222223333333333
+            //                                     0123456789012345678901234567890123456789
+            .open_document(
+                "file:///test.sparql",
+                "SELECT S WHERE { ?s ?p ?o } GROUP BY ?s",
+            )
+            .await;
+
+        // Cursor right after "S" (line 0, character 8)
+        let id = client.complete("file:///test.sparql", 0, 8).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+
+        assert!(
+            !labels_containing(&response, "SUM(").is_empty(),
+            "Should suggest SUM for partial 'S', got: {:?}",
+            get_completion_labels(&response)
+        );
+        assert!(
+            !labels_containing(&response, "SAMPLE(").is_empty(),
+            "Should suggest SAMPLE for partial 'S', got: {:?}",
+            get_completion_labels(&response)
+        );
+        for aggregate in ["COUNT", "MIN", "MAX", "AVG"] {
+            assert!(
+                labels_containing(&response, &format!("{aggregate}(")).is_empty(),
+                "Should NOT suggest {aggregate} for partial 'S', got: {:?}",
+                get_completion_labels(&response)
+            );
+        }
+    });
+}
+
+#[test]
+fn test_no_binding_snippets_inside_partial_aggregate() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        // Cursor inside a partially written aggregate call: this is an
+        // expression position, not a fresh select binding. Offering the
+        // "(AGG(?var) AS ?alias)" snippets here would replace the inner
+        // paren and produce garbage like "(SUM(SUM(?o) AS ?sum_o)".
+        client
+            //                                     0000000000111111111122222222223333333333444
+            //                                     0123456789012345678901234567890123456789012
+            .open_document(
+                "file:///test.sparql",
+                "SELECT (SUM( WHERE { ?s ?p ?o } GROUP BY ?s",
+            )
+            .await;
+
+        // Cursor right after the inner "(" (line 0, character 12)
+        let id = client.complete("file:///test.sparql", 0, 12).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+
+        assert!(
+            labels_containing(&response, " AS ?").is_empty(),
+            "Should NOT suggest binding snippets inside an aggregate call, got: {:?}",
+            get_completion_labels(&response)
+        );
+        assert!(
+            !has_completion_label(&response, "REDUCED"),
+            "Should NOT suggest REDUCED inside an aggregate call"
+        );
+    });
+}
+
+#[test]
+fn test_no_aggregate_completion_without_group_by_and_selected_var() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        // A variable is already selected and there is no GROUP BY:
+        // aggregates would be invalid here
+        client
+            //                                     000000000011111111112222222222
+            //                                     012345678901234567890123456789
+            .open_document("file:///test.sparql", "SELECT ?s  WHERE { ?s ?p ?o }")
+            .await;
+
+        let id = client.complete("file:///test.sparql", 0, 10).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+
+        for aggregate in ["COUNT", "SUM", "MIN", "MAX", "AVG", "SAMPLE"] {
+            assert!(
+                labels_containing(&response, &format!("{aggregate}(")).is_empty(),
+                "Should NOT suggest {aggregate} without GROUP BY when a variable is selected, got: {:?}",
+                get_completion_labels(&response)
+            );
+        }
+    });
+}
+
 #[test]
 fn test_completion_solution_modifier_group_prefix() {
     run_lsp_test(|| async {

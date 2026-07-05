@@ -110,41 +110,68 @@ pub fn completions(context: &CompletionEnvironment) -> Result<CompletionList, Co
                 }));
             let vars = &availible_vars - &grouped_vars;
 
+            let query = context.search_term.clone().map(|s| format!("({s}"));
             items.extend(
-                ["COUNT", "SUM", "MIN", "MAX", "AVG", "SAMPLE"]
-                    .into_iter()
-                    .flat_map(|aggregate| {
-                        vars.iter().map(move |var| {
-                            CompletionItemBuilder::new()
-                                .label(&format!(
-                                    "({aggregate}({var}) AS ?{}_{})",
-                                    aggregate.to_lowercase(),
-                                    var.split_at(1).1
-                                ))
-                                .kind(CompletionItemKind::Snippet)
-                                .insert_text(&format!(
-                                    "({aggregate}({var}) AS ?${{0:{}_{}}})",
-                                    aggregate.to_lowercase(),
-                                    var.split_at(1).1
-                                ))
-                                .insert_text_format(InsertTextFormat::Snippet)
-                                .build()
-                        })
+                vars.iter()
+                    .flat_map(|var| {
+                        ["COUNT", "SUM", "MIN", "MAX", "AVG", "SAMPLE"]
+                            .into_iter()
+                            .map(move |aggregate| {
+                                CompletionItemBuilder::new()
+                                    .label(&format!(
+                                        "({aggregate}({var}) AS ?{}_{})",
+                                        aggregate.to_lowercase(),
+                                        var.split_at(1).1
+                                    ))
+                                    .kind(CompletionItemKind::Snippet)
+                                    .text_edit(TextEdit::new(
+                                        context.replace_range.clone(),
+                                        &format!(
+                                            "({aggregate}({var}) AS ?${{0:{}_{}}})",
+                                            aggregate.to_lowercase(),
+                                            var.split_at(1).1
+                                        ),
+                                    ))
+                                    .insert_text_format(InsertTextFormat::Snippet)
+                                    .build()
+                            })
+                            .chain(std::iter::once(
+                                CompletionItemBuilder::new()
+                                    .label(&format!(
+                                        "(GROUP_CONCAT(DISTINCT {var}; SEPARATOR=\", \") AS ?concat_{})",
+                                        var.split_at(1).1
+                                    ))
+                                    .kind(CompletionItemKind::Snippet)
+                                    .text_edit(TextEdit::new(
+                                        context.replace_range.clone(),
+                                        &format!(
+                                            "(GROUP_CONCAT(DISTINCT {var}; SEPARATOR=\", \") AS ?${{0:concat_{}}})",
+                                            var.split_at(1).1
+                                        ),
+                                    ))
+                                    .insert_text_format(InsertTextFormat::Snippet)
+                                    .build(),
+                            ))
+                    })
+                    .chain(std::iter::once(
+                        CompletionItemBuilder::new()
+                            .label("(COUNT(*) AS ?count)")
+                            .kind(CompletionItemKind::Function)
+                            .text_edit(TextEdit::new(
+                                context.replace_range.clone(),
+                                "(COUNT(*) AS ?count)",
+                            ))
+                            .insert_text_format(InsertTextFormat::PlainText)
+                            .build(),
+                    ))
+                    .filter(|comp_item| {
+                        matches_search_term(&comp_item.label, query.as_ref().map(|s| s.as_str()))
                     }),
-            );
-
-            items.push(
-                CompletionItemBuilder::new()
-                    .label("(COUNT(*) AS ?count)")
-                    .kind(CompletionItemKind::Snippet)
-                    .insert_text("(COUNT(*) AS ?count)")
-                    .insert_text_format(InsertTextFormat::Snippet)
-                    .build(),
             );
         }
 
         Ok(CompletionList {
-            is_incomplete: false,
+            is_incomplete: true,
             item_defaults: Some(ItemDefaults {
                 edit_range: None,
                 commit_characters: None,

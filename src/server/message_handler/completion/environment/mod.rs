@@ -346,7 +346,21 @@ impl CompletionEnvironment {
         let continuations = get_continuations(&truncated_tree, &anchor_token);
         let location = get_location(&anchor_token, &continuations, trigger_offset);
         let context = context(&location);
-        let replace_range = get_replace_range(&document_position.position, &search_term);
+        let mut replace_range = get_replace_range(&document_position.position, &search_term);
+
+        // NOTE: In a select binding a partially typed aggregate may be preceded by
+        // an opening paren (e.g. "SELECT (S"). The aggregate completions insert a
+        // full "(AGG(?var) AS ?alias)" snippet, so the replace range has to start
+        // at the paren to avoid doubling it.
+        if matches!(location, CompletionLocation::SelectBinding(_))
+            && let Some(anchor) = anchor_token.as_ref()
+            && anchor.kind() == SyntaxKind::LParen
+            && let Some(pos) =
+                Position::from_byte_index(anchor.text_range().start(), &document.text)
+        {
+            replace_range.start = pos;
+        }
+
         Ok(Self {
             location,
             trigger_textdocument_position: document_position.position,
@@ -510,10 +524,14 @@ fn get_location(
             CompletionLocation::ServiceUrl
         }
         // NOTE: SelectBinding
-        else if continues_with!([SyntaxKind::Var])
+        else if (continues_with!([SyntaxKind::Var])
             && anchor
                 .parent_ancestors()
-                .any(|ancestor| ancestor.kind() == SyntaxKind::SelectClause)
+                .any(|ancestor| ancestor.kind() == SyntaxKind::SelectClause))
+            || (continues_with!([SyntaxKind::Expression])
+                && anchor
+                    .parent()
+                    .is_some_and(|parent| parent.kind() == SyntaxKind::SelectClause))
         {
             match anchor
                 .parent_ancestors()

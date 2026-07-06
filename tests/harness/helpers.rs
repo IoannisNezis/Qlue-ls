@@ -337,7 +337,7 @@ impl TestClient {
     }
 
     /// Request jump navigation.
-    pub async fn jump(&self, uri: &str, line: u32, character: u32, direction: &str) -> u32 {
+    pub async fn jump(&self, uri: &str, line: u32, character: u32, previous: bool) -> u32 {
         self.send_request(
             "qlueLs/jump",
             json!({
@@ -346,7 +346,11 @@ impl TestClient {
                     "line": line,
                     "character": character
                 },
-                "direction": direction
+                "previous": previous,
+                "options": {
+                    "tabSize": 2,
+                    "insertSpaces": true
+                }
             }),
         )
         .await

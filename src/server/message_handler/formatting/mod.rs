@@ -37,7 +37,7 @@ pub(super) async fn handle_format_request(
 }
 
 /// Main entry point for formatting. Handles contract_triples as a second pass.
-fn format_document(
+pub(super) fn format_document(
     document: &TextDocumentItem,
     root: SyntaxNode,
     options: &FormattingOptions,

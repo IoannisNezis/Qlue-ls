@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **breaking**: `qlueLs/jump` now formats the document server-side and returns
+  `{ edits, position }`: the edits (format + placeholder insertions) against
+  the request-time document and the final cursor position after applying them.
+  This replaces the previous `{ position, insertBefore, insertAfter }` result
+  and fixes the cursor drifting when format edits removed the line it was on.
+  `JumpParams` accepts optional `FormattingOptions` as `options`.
+
+## [3.1.1] - 2026-07-05
+
+### Changed
+
 - aggregate completions in the `SELECT` clause now work for partially typed
   aggregates: typing e.g. `SELECT (S` suggests the matching
   `(SUM(?var) AS ?alias)` and `(SAMPLE(?var) AS ?alias)` snippets, replacing

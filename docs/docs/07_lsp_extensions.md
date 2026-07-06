@@ -275,8 +275,9 @@ Stream partial SPARQL results as they become available.
 ### :hole: jump
 
 Enable "tab navigation" within SPARQL queries.
-The server provides the next (or previous) relevant position in the query.
-The LSP client should move the cursor to this position.
+The server formats the document, computes the next (or previous) relevant
+position in the formatted query and returns both in one atomic response.
+The LSP client should apply the edits and move the cursor to the returned position.
 
 *Request*:
 
@@ -286,8 +287,12 @@ The LSP client should move the cursor to this position.
 ```ts
 interface JumpParams extends TextDocumentPositionParams {
     previous?: boolean;
+    options?: FormattingOptions;
 }
 ```
+
+The `position` in the params is the cursor position in the document as it is
+**before** any edits are applied.
 
 *Response*:
 
@@ -295,11 +300,15 @@ interface JumpParams extends TextDocumentPositionParams {
 
 ```ts
 interface JumpResult {
-    position: Position;
-    insertBefore: string | null;
-    insertAfter: string | null;
+    edits: TextEdit[];
+    position: Position | null;
 }
 ```
+
+The `edits` are expressed against the document as it was in the request and
+contain the format edits as well as any placeholder text inserted at the jump
+target. The `position` is the cursor position in the document **after** all
+edits are applied; it is `null` if no jump target was found.
 
 ### :deciduous_tree: parseTree
 

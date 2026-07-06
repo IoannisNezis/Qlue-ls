@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::server::lsp::{
-    LspMessage,
+    FormattingOptions, LspMessage,
     rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
-    textdocument::Position,
+    textdocument::{Position, TextEdit},
 };
 
 use super::utils::TextDocumentPositionParams;
@@ -29,6 +29,8 @@ pub struct JumpParams {
     pub base: TextDocumentPositionParams,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub previous: Option<bool>,
+    // NOTE: The document is formatted before the jump target is computed.
+    pub options: Option<FormattingOptions>,
 }
 
 #[derive(Debug, Serialize, PartialEq)]
@@ -43,23 +45,12 @@ impl LspMessage for JumpResponse {}
 #[derive(Debug, Serialize, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct JumpResult {
-    pub position: Position,
-    pub insert_before: Option<String>,
-    pub insert_after: Option<String>,
-}
-
-impl JumpResult {
-    pub fn new(
-        position: Position,
-        insert_before: Option<&str>,
-        insert_after: Option<&str>,
-    ) -> Self {
-        Self {
-            position,
-            insert_before: insert_before.map(|s| s.to_string()),
-            insert_after: insert_after.map(|s| s.to_string()),
-        }
-    }
+    // NOTE: TextEdits against the document as it was in the request.
+    // They contain the format edits and the placeholder insertions.
+    pub edits: Vec<TextEdit>,
+    // NOTE: Cursor position in the document AFTER all edits are applied.
+    // `None` if no jump target was found.
+    pub position: Option<Position>,
 }
 
 impl JumpResponse {

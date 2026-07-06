@@ -110,14 +110,16 @@ Diagnostics come in severity: ❌ error, ⚠️ warning and ℹ️ info.
 
 Here is a complete list of diagnostics qlue-ls can provide:
 
-| Type        | Name                        | Description                                       |
-|:------------|:----------------------------|:--------------------------------------------------|
-| ❌ error    | undefined prefix            | a used prefix is not declared                     |
-| ❌ error    | ungrouped select variable   | a selected variable is not in the group by clause |
-| ❌ error    | invalid projection variable | projection variable is already defined            |
-| ⚠️  warning | unused prefix               | a declared prefix is not used                     |
-| ℹ️  info    | uncompacted uri             | a raw uncompacted uri is used                     |
-| ℹ️  info    | same subject                | multiple triples have the same subject            |
+| Type        | Name                         | Description                                       |
+|:------------|:-----------------------------|:--------------------------------------------------|
+| ❌ error    | syntax error                 | the query contains a syntax error                 |
+| ❌ error    | undeclared prefix            | a used prefix is not declared                     |
+| ❌ error    | ungrouped select variable    | a selected variable is not in the group by clause |
+| ❌ error    | invalid projection variable  | projection variable is already defined            |
+| ⚠️  warning | unused prefix                | a declared prefix is not used                     |
+| ⚠️  warning | duplicate prefix declaration | the same prefix is declared multiple times        |
+| ℹ️  info    | uncompacted uri              | a raw uncompacted uri is used                     |
+| ℹ️  info    | same subject                 | multiple triples have the same subject            |
 
 ## ℹ️ Hover
 
@@ -138,16 +140,18 @@ For example if the user hovers `osmrel:62768` and a hover request is send, Qlue-
 Code action suggest complex changes to your input.
 Often in the form of a *quickfix*, to fix a diagnostic.
 
-| name                     | description                             | diagnostic        |
-|:-------------------------|:----------------------------------------|:------------------|
-| shorten uri              | shorten uri into compacted form         | uncompacted uri   |
-| declare prefix           | declares undeclared prefix (if known)   | undeclared prefix |
-| contract triples         | contract triples with same subject      | same subject      |
-| shorten all uri's        | shorten all uri's into compacted form   |                   |
-| add to result            | add variable to selected result         |                   |
-| filter variable          | add filter for this variable            |                   |
-| add label                | add rdfs:label with a language filter   |                   |
-| lang-filter              | add language filter for object variable |                   |
-| transform into subselect | make a select into a subselect          |                   |
+| name                      | description                                    | diagnostic                             |
+|:--------------------------|:-----------------------------------------------|:---------------------------------------|
+| shorten uri               | shorten uri into compacted form                | uncompacted uri                        |
+| declare prefix            | declares undeclared prefix (if known)          | undeclared prefix                      |
+| remove prefix declaration | remove an unused or duplicate prefix           | unused prefix / duplicate prefix       |
+| contract triples          | contract triples with same subject             | same subject                           |
+| shorten all uri's         | shorten all uri's into compacted form          |                                        |
+| add to result             | add variable to selected result                |                                        |
+| add aggregate to result   | add aggregate (COUNT, MIN, …) over a variable  |                                        |
+| filter variable           | add filter for this variable                   |                                        |
+| add label                 | add rdfs:label with a language filter          |                                        |
+| lang-filter               | add language filter for object variable        |                                        |
+| transform into subselect  | make a select into a subselect                 |                                        |
 
 

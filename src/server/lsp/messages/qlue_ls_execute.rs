@@ -191,7 +191,7 @@ pub struct ComputeIdsTime {
 #[serde(untagged)]
 pub enum TripleWriteTime {
     Skipped(u64),
-    Detailed(TripleWriteTimeDetails),
+    Detailed(Box<TripleWriteTimeDetails>),
 }
 
 #[derive(Debug, Serialize, Deserialize)]

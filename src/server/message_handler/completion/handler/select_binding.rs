@@ -165,7 +165,7 @@ pub fn completions(context: &CompletionEnvironment) -> Result<CompletionList, Co
                             .build(),
                     ))
                     .filter(|comp_item| {
-                        matches_search_term(&comp_item.label, query.as_ref().map(|s| s.as_str()))
+                        matches_search_term(&comp_item.label, query.as_deref())
                     }),
             );
         }

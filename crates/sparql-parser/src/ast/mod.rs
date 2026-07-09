@@ -63,9 +63,18 @@ impl SolutionModifier {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct GroupClause {
     syntax: SyntaxNode,
+}
+
+impl GroupClause {
+    pub fn select_query(&self) -> Option<SelectQuery> {
+        self.syntax
+            .parent()
+            .and_then(|p| p.parent())
+            .and_then(SelectQuery::cast)
+    }
 }
 
 #[derive(Debug, PartialEq)]

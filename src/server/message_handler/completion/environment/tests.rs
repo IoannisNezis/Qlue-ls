@@ -289,6 +289,56 @@ fn localize_order_condition() {
     assert!(get_trigger_token(&root, 27.into()).is_some());
 }
 
+// --- GroupCondition location tests ---
+
+#[test]
+fn localize_group_condition_after_group_by() {
+    //           0         1         2
+    //           012345678901234567890123456
+    let input = "SELECT * WHERE {} GROUP BY ";
+    assert!(matches!(
+        location(input, 27),
+        CompletionLocation::GroupCondition(_)
+    ));
+}
+
+#[test]
+fn localize_group_condition_partial_variable() {
+    //           0         1         2
+    //           01234567890123456789012345678
+    let input = "SELECT * WHERE {} GROUP BY ?v";
+    assert!(matches!(
+        location(input, 29),
+        CompletionLocation::GroupCondition(_)
+    ));
+}
+// NOTE: After a complete group condition (e.g. "GROUP BY ?a ") the location is
+// SolutionModifier, since solution-modifier keywords are still valid there. It
+// is reclassified to GroupCondition only once a '?' is typed — covered by the
+// E2E test `test_group_condition_second_condition_suggests_variables`.
+
+#[test]
+fn localize_group_condition_bracketted_expression() {
+    //           0         1         2
+    //           0123456789012345678901234567
+    let input = "SELECT * WHERE {} GROUP BY (";
+    assert!(matches!(
+        location(input, 28),
+        CompletionLocation::GroupCondition(_)
+    ));
+}
+
+#[test]
+fn localize_group_condition_does_not_shadow_order_condition() {
+    //           0         1         2         3         4
+    //           0123456789012345678901234567890123456789012
+    let input = "SELECT * WHERE {} GROUP BY ?a ORDER BY ";
+    assert!(matches!(
+        location(input, 39),
+        CompletionLocation::OrderCondition
+    ));
+}
+
 // --- InlineData (VALUES) location tests ---
 
 #[test]

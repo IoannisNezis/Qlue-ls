@@ -33,7 +33,8 @@ pub async fn completions(
             .descendants()
             .filter_map(Var::cast)
             .filter(|var| !var.has_error())
-            .map(|var| format!("?{}", var.var_name())),
+            .map(|var| format!("?{}", var.var_name()))
+            .filter(|var| environment.search_term.as_ref().is_some_and(|st| st != var)),
     )
     .into_iter()
     .map(|var| {

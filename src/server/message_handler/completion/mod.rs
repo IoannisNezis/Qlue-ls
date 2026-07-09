@@ -36,8 +36,10 @@ pub(super) async fn handle_completion_request(
             .search_term
             .as_ref()
             .is_some_and(|search_term| search_term.starts_with("?")))
-        && !matches!(env.location, CompletionLocation::SelectBinding(_))
-    {
+        && !matches!(
+            env.location,
+            CompletionLocation::SelectBinding(_) | CompletionLocation::GroupCondition(_)
+        ) {
         Some(
             handler::variable::completions(server_rc.clone(), &env)
                 .await
@@ -86,6 +88,9 @@ pub(super) async fn handle_completion_request(
                 }
                 CompletionLocation::OrderCondition => {
                     handler::order_condition::completions(server_rc.clone(), &env).await
+                }
+                CompletionLocation::GroupCondition(_) => {
+                    handler::group_condition::completions(server_rc.clone(), &env).await
                 }
                 CompletionLocation::InlineData(..) => {
                     handler::inline_data::completions(server_rc.clone(), &env).await

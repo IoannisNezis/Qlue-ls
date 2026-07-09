@@ -15,7 +15,7 @@ use futures::lock::Mutex;
 use indoc::indoc;
 use ll_sparql_parser::{
     SyntaxNode, SyntaxToken,
-    ast::{AstNode, BlankPropertyList, InlineData, QueryUnit, SelectClause, Triple},
+    ast::{AstNode, BlankPropertyList, GroupClause, InlineData, QueryUnit, SelectClause, Triple},
     continuations_at, parse,
     syntax_kind::SyntaxKind,
 };
@@ -227,6 +227,17 @@ pub(super) enum CompletionLocation {
     /// ORDER BY >here<
     /// ```
     OrderCondition,
+    /// Group Condition
+    ///
+    /// ---
+    ///
+    /// **Example**
+    /// ```sparql
+    /// SELECT * WHERE {
+    /// }
+    /// GROUP BY >here<
+    /// ```
+    GroupCondition(GroupClause),
 
     /// Inline Data (aka VALUES clause)
     ///
@@ -344,7 +355,7 @@ impl CompletionEnvironment {
             get_following_token(&full_tree, trigger_offset).map(|token| token.kind());
         let search_term = get_search_term(&truncated_tree, &anchor_token, trigger_offset);
         let continuations = get_continuations(&truncated_tree, &anchor_token);
-        let location = get_location(&anchor_token, &continuations, trigger_offset);
+        let mut location = get_location(&anchor_token, &continuations, trigger_offset);
         let context = context(&location);
         let mut replace_range = get_replace_range(&document_position.position, &search_term);
 
@@ -359,6 +370,22 @@ impl CompletionEnvironment {
                 Position::from_byte_index(anchor.text_range().start(), &document.text)
         {
             replace_range.start = pos;
+        }
+
+        // NOTE: A partially typed variable after a complete group condition
+        // (e.g. "GROUP BY ?x ?la") does not lex as a valid Var token, so the
+        // truncated tree sees a finished GroupClause and the continuations point
+        // at the remaining solution-modifier clauses -> get_location yields
+        // SolutionModifier. A search term starting with '?' while the anchor sits
+        // inside a GroupClause means the user is typing another group condition,
+        // so reclassify to get variable completions instead of keywords.
+        if matches!(location, CompletionLocation::SolutionModifier)
+            && search_term.as_ref().is_some_and(|st| st.starts_with('?'))
+            && let Some(gc) = anchor_token
+                .as_ref()
+                .and_then(|anchor| anchor.parent_ancestors().find_map(GroupClause::cast))
+        {
+            location = CompletionLocation::GroupCondition(gc);
         }
 
         Ok(Self {
@@ -544,7 +571,15 @@ fn get_location(
                 }
                 _ => CompletionLocation::Unknown,
             }
-        } else if continues_with!([SyntaxKind::OrderCondition])
+        }
+        // NOTE: GroupCondition
+        else if continues_with!([SyntaxKind::GroupCondition, SyntaxKind::Expression])
+            && let Some(gc) = anchor.parent_ancestors().find_map(GroupClause::cast)
+        {
+            CompletionLocation::GroupCondition(gc)
+        }
+        // NOTE: OrderCondition
+        else if continues_with!([SyntaxKind::OrderCondition])
             | (continues_with!([SyntaxKind::BrackettedExpression])
                 && child_of!([SyntaxKind::OrderCondition]))
         {

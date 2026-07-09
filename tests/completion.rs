@@ -698,3 +698,172 @@ fn test_completion_solution_modifier_non_keyword_excludes_all() {
         );
     });
 }
+
+// --- GroupCondition (GROUP BY) completion tests ---
+
+#[test]
+fn test_group_condition_suggests_visible_variables() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        client
+            //                                     0000000000111111111122222222223333333333
+            //                                     0123456789012345678901234567890123456789
+            .open_document(
+                "file:///test.sparql",
+                "SELECT * WHERE { ?s ?p ?o } GROUP BY ",
+            )
+            .await;
+
+        // Cursor right after "GROUP BY " (line 0, character 37)
+        let id = client.complete("file:///test.sparql", 0, 37).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+
+        for variable in ["?s", "?p", "?o"] {
+            assert!(
+                !labels_containing(&response, variable).is_empty(),
+                "Should suggest {variable} after GROUP BY, got: {:?}",
+                get_completion_labels(&response)
+            );
+        }
+    });
+}
+
+#[test]
+fn test_group_condition_second_condition_suggests_variables() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        client
+            //   0000000000111111111122222222223333333333444
+            //   0123456789012345678901234567890123456789012
+            .open_document(
+                "file:///test.sparql",
+                "SELECT * WHERE { ?s ?p ?o } GROUP BY ?s ?",
+            )
+            .await;
+
+        // Cursor after "GROUP BY ?s " (line 0, character 41)
+        let id = client.complete("file:///test.sparql", 0, 41).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+
+        for variable in ["?p", "?o"] {
+            assert!(
+                !labels_containing(&response, variable).is_empty(),
+                "Should suggest {variable} as second group condition, got: {:?}",
+                get_completion_labels(&response)
+            );
+        }
+    });
+}
+
+#[test]
+fn test_group_condition_partial_variable_filters() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        client
+            //                                     000000000011111111112222222222333333333344444444
+            //                                     012345678901234567890123456789012345678901234567
+            .open_document(
+                "file:///test.sparql",
+                "SELECT * WHERE { ?name ?p ?o } GROUP BY ?n",
+            )
+            .await;
+
+        // Cursor right after "?n" (line 0, character 42)
+        let id = client.complete("file:///test.sparql", 0, 42).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+
+        assert!(
+            !labels_containing(&response, "?name").is_empty(),
+            "Should suggest ?name for partial '?n', got: {:?}",
+            get_completion_labels(&response)
+        );
+        assert!(
+            labels_containing(&response, "?p").is_empty(),
+            "Should NOT suggest ?p for partial '?n', got: {:?}",
+            get_completion_labels(&response)
+        );
+    });
+}
+
+#[test]
+fn test_group_condition_nested_sub_select_suggests_inner_variables() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        client
+            //                                     0000000000111111111122222222223333333333444444444455555555556666666666777777777788888888889999999999
+            //                                     0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
+            .open_document(
+                "file:///test.sparql",
+                "SELECT * WHERE { ?a ?b ?c { SELECT * WHERE { ?x ?y ?z { SELECT * WHERE { ?s ?p ?o } GROUP BY ",
+            )
+            .await;
+
+        // Cursor right after the innermost "GROUP BY " (line 0, character 93)
+        let id = client.complete("file:///test.sparql", 0, 93).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+
+        // Variables of the innermost sub-select should be suggested
+        for variable in ["?s", "?p", "?o"] {
+            assert!(
+                !labels_containing(&response, variable).is_empty(),
+                "Should suggest {variable} in nested sub-select GROUP BY, got: {:?}",
+                get_completion_labels(&response)
+            );
+        }
+        // Variables from enclosing scopes are not visible inside the sub-select
+        for variable in ["?a", "?x"] {
+            assert!(
+                labels_containing(&response, variable).is_empty(),
+                "Should NOT suggest outer variable {variable} in nested sub-select GROUP BY, got: {:?}",
+                get_completion_labels(&response)
+            );
+        }
+    });
+}
+
+#[test]
+fn test_group_condition_no_keyword_completions() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        client
+            //                                     0000000000111111111122222222223333333333
+            //                                     0123456789012345678901234567890123456789
+            .open_document(
+                "file:///test.sparql",
+                "SELECT * WHERE { ?s ?p ?o } GROUP BY ",
+            )
+            .await;
+
+        let id = client.complete("file:///test.sparql", 0, 37).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+
+        // Solution modifier keywords are not valid group conditions
+        for keyword in ["GROUP BY", "ORDER BY", "LIMIT", "OFFSET", "FILTER"] {
+            assert!(
+                !has_completion_label(&response, keyword),
+                "Should NOT suggest '{keyword}' as a group condition, got: {:?}",
+                get_completion_labels(&response)
+            );
+        }
+    });
+}

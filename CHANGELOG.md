@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- new diagnostic `groupby-star-selection` (error): flags `SELECT *` in queries
+  with a `GROUP BY` clause, where only grouped variables or aggregates may be
+  selected. Sub-selects are checked as well.
+
+## [3.2.0] - 2026-07-06
+
 ### Changed
 
 - **breaking**: `qlueLs/jump` now formats the document server-side and returns

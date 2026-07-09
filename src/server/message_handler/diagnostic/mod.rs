@@ -1,5 +1,6 @@
 mod auto_fix_prefixes;
 pub mod duplicate_prefix_declaration;
+pub mod groupby_star_selection;
 pub mod invalid_projection_variable;
 pub mod same_subject;
 pub mod syntax_error;
@@ -50,6 +51,7 @@ pub(super) async fn handle_diagnostic_request(
     add_diagnostic!(same_subject::diagnostics);
     add_diagnostic!(syntax_error::diagnostics);
     add_diagnostic!(duplicate_prefix_declaration::diagnostics);
+    add_diagnostic!(groupby_star_selection::diagnostics);
 
     if client_support_workspace_edits(&server) {
         auto_fix_prefixes(&mut server, &request, &diagnostic_accu);

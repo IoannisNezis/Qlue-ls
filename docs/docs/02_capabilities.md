@@ -115,6 +115,7 @@ Here is a complete list of diagnostics qlue-ls can provide:
 | ❌ error    | syntax error                 | the query contains a syntax error                 |
 | ❌ error    | undeclared prefix            | a used prefix is not declared                     |
 | ❌ error    | ungrouped select variable    | a selected variable is not in the group by clause |
+| ❌ error    | groupby star selection       | `*` is selected in a query with a group by clause |
 | ❌ error    | invalid projection variable  | projection variable is already defined            |
 | ⚠️  warning | unused prefix                | a declared prefix is not used                     |
 | ⚠️  warning | duplicate prefix declaration | the same prefix is declared multiple times        |

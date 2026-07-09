@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- variable completions in `GROUP BY` clauses: after `GROUP BY` (and while
+  typing further `?`-prefixed conditions) the variables visible in the query
+  are suggested, excluding those already grouped. Works in nested sub-selects,
+  where only the variables of the enclosing sub-select are offered. Solution
+  modifier keywords are no longer suggested in this position.
 - new diagnostic `groupby-star-selection` (error): flags `SELECT *` in queries
   with a `GROUP BY` clause, where only grouped variables or aggregates may be
   selected. Sub-selects are checked as well.

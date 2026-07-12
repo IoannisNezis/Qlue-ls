@@ -1,4 +1,4 @@
-use crate::{parse_query, syntax_kind::SyntaxKind};
+use crate::{parse_query, parse_update, syntax_kind::SyntaxKind};
 
 #[test]
 fn parse_tokens_after() {
@@ -13,8 +13,12 @@ fn parse_tokens_after() {
 
 #[test]
 fn parse_tokens_before() {
-    let input = "dings;\nCLEAR <GraphRef>;\n";
-    let _root = parse_query(input).0;
+    // NOTE: unexpected leading tokens must not produce an empty tree,
+    // the entry point always yields a lossless UpdateUnit node
+    let input = "dings\nCLEAR <GraphRef>;";
+    let root = parse_update(input).0;
+    assert_eq!(root.kind(), SyntaxKind::UpdateUnit);
+    assert_eq!(root.text().to_string(), input);
 }
 
 #[test]

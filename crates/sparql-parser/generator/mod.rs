@@ -460,7 +460,10 @@ fn generate_parser(grammar: &Grammar, first: &FirstSet) {
         let rules = generate_rule(grammar, rule, first, &tree_kind);
         let nullable = is_nullable(rule, grammar);
         let first_set = generate_first_set(first, rule, grammar);
-        let escape = match nullable {
+        // NOTE: entry points never escape on an empty first-set match,
+        // otherwise unexpected leading tokens would produce no tree at all
+        let is_entry_point = matches!(name.as_str(), "QueryUnit" | "UpdateUnit");
+        let escape = match nullable && !is_entry_point {
             false => quote! {},
             true => quote! {
                 if !p.at_any(&[#(#first_set),*]){

@@ -329,26 +329,6 @@ pub(super) fn parse_ValuesClause(p: &mut Parser) {
 }
 /// [8] UpdateUnit -> Update
 pub(super) fn parse_UpdateUnit(p: &mut Parser) {
-    if !p.at_any(&[
-        SyntaxKind::BASE,
-        SyntaxKind::PREFIX,
-        SyntaxKind::VERSION,
-        SyntaxKind::LOAD,
-        SyntaxKind::CLEAR,
-        SyntaxKind::DROP,
-        SyntaxKind::CREATE,
-        SyntaxKind::ADD,
-        SyntaxKind::MOVE,
-        SyntaxKind::COPY,
-        SyntaxKind::INSERT_DATA,
-        SyntaxKind::DELETE_DATA,
-        SyntaxKind::DELETE_WHERE,
-        SyntaxKind::WITH,
-        SyntaxKind::DELETE,
-        SyntaxKind::INSERT,
-    ]) {
-        return;
-    }
     let marker = p.open();
     parse_Update(p);
     if !p.at(SyntaxKind::Eof) {

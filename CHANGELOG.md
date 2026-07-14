@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- rename support (`textDocument/rename`): renaming a variable updates all
+  occurrences that denote the same variable, respecting scope boundaries —
+  sub-selects connect only through projected variables, and `UNION` branches
+  are treated as separate scopes unless bridged by an outer occurrence. The
+  new name is validated against the SPARQL `VARNAME` grammar, and a leading
+  `?` or `$` is tolerated.
+
 ## [3.2.1] - 2026-07-09
 
 ### Added

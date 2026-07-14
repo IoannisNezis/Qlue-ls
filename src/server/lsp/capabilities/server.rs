@@ -16,6 +16,10 @@ pub struct ServerCapabilities {
     pub execute_command_provider: ExecuteCommandOptions,
     pub folding_range_provider: bool,
     pub semantic_tokens_provider: SemanticTokensOptions,
+    pub rename_provider: bool,
+    // WARNING: This is not to spec, this could also be RenameOptions
+    // (workDoneProgress + prepareProvider, not implemented yet):
+    // https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#renameOptions
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -207,13 +211,14 @@ mod tests {
                 range: Some(BoolOrEmpty::Bool(true)),
                 full: Some(FullCapability::Bool(true)),
             },
+            rename_provider: true,
         };
 
         let serialized = serde_json::to_string(&server_capabilities).unwrap();
 
         pretty_assertions::assert_eq!(
             serialized,
-            r#"{"textDocumentSync":1,"hoverProvider":true,"completionProvider":{"triggerCharacters":["?"]},"documentFormattingProvider":{},"documentOnTypeFormattingProvider":{"firstTriggerCharacter":"\n"},"diagnosticProvider":{"identifier":"my-ls","interFileDependencies":false,"workspaceDiagnostics":false},"codeActionProvider":true,"executeCommandProvider":{"workDoneProgress":true,"commands":["foo"]},"foldingRangeProvider":true,"semanticTokensProvider":{"workDoneProgress":true,"legend":{"tokenTypes":["function","string"],"tokenModifiers":["async"]},"range":true,"full":true}}"#
+            r#"{"textDocumentSync":1,"hoverProvider":true,"completionProvider":{"triggerCharacters":["?"]},"documentFormattingProvider":{},"documentOnTypeFormattingProvider":{"firstTriggerCharacter":"\n"},"diagnosticProvider":{"identifier":"my-ls","interFileDependencies":false,"workspaceDiagnostics":false},"codeActionProvider":true,"executeCommandProvider":{"workDoneProgress":true,"commands":["foo"]},"foldingRangeProvider":true,"semanticTokensProvider":{"workDoneProgress":true,"legend":{"tokenTypes":["function","string"],"tokenModifiers":["async"]},"range":true,"full":true},"renameProvider":true}"#
         );
     }
 }

@@ -68,5 +68,6 @@ pub(super) fn create_capabilities() -> ServerCapabilities {
             range: Some(BoolOrEmpty::Bool(true)),
             full: Some(FullCapability::Bool(true)),
         },
+        rename_provider: true,
     }
 }

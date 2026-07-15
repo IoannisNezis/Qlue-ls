@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   are treated as separate scopes unless bridged by an outer occurrence. The
   new name is validated against the SPARQL `VARNAME` grammar, and a leading
   `?` or `$` is tolerated.
+- find references support (`textDocument/references`): lists all occurrences
+  of the variable under the cursor, using the same scope rules as rename.
+- document highlight support (`textDocument/documentHighlight`): placing the
+  cursor on a variable highlights all its occurrences in the query.
 
 ### Fixed
 

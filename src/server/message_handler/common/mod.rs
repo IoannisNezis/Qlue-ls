@@ -48,43 +48,13 @@ pub(crate) fn find_variable_occurrences(trigger: &Var) -> Vec<Var> {
 
     // NOTE: a sub-select is connected to its enclosing region iff it projects the variable
     for (id, node) in regions.iter().enumerate() {
-        if node.kind() == SyntaxKind::SubSelect
-            && SelectQuery::cast(node.clone()).is_some_and(|sub_select| {
-                sub_select
-                    .visible_variables()
-                    .iter()
-                    .any(|var| var.var_name() == name)
-            })
+        if let Some(sub_select) = SelectQuery::cast(node.clone())
+            && sub_select
+                .visible_variables()
+                .iter()
+                .any(|var| var.var_name() == name)
         {
             components.union(id, parent_region_id(node, &region_ids));
-        }
-    }
-
-    // NOTE: a union branch is connected to its enclosing region iff the variable
-    // occurs in the enclosing region's component. Connecting one branch can make
-    // another branch's condition true, so iterate until a fixpoint is reached.
-    let union_branches: Vec<(usize, usize)> = regions
-        .iter()
-        .enumerate()
-        .filter(|(_, node)| node.kind() != SyntaxKind::SubSelect && is_scope_boundary(node))
-        .map(|(id, node)| (id, parent_region_id(node, &region_ids)))
-        .collect();
-    loop {
-        let mut changed = false;
-        for &(branch, parent) in &union_branches {
-            if components.find(branch) != components.find(parent) {
-                let parent_component = components.find(parent);
-                if occurrence_regions
-                    .iter()
-                    .any(|&region| components.find(region) == parent_component)
-                {
-                    components.union(branch, parent);
-                    changed = true;
-                }
-            }
-        }
-        if !changed {
-            break;
         }
     }
 
@@ -141,23 +111,6 @@ fn is_var_name_char(c: char) -> bool {
         || matches!(c, '\u{00B7}' | '\u{0300}'..='\u{036F}' | '\u{203F}'..='\u{2040}')
 }
 
-/// A node that starts a new variable scope region:
-/// a sub-select or a branch of a (real, multi-branch) union.
-fn is_scope_boundary(node: &SyntaxNode) -> bool {
-    match node.kind() {
-        SyntaxKind::SubSelect => true,
-        SyntaxKind::GroupGraphPattern => node.parent().is_some_and(|parent| {
-            parent.kind() == SyntaxKind::GroupOrUnionGraphPattern
-                && parent
-                    .children()
-                    .filter(|child| child.kind() == SyntaxKind::GroupGraphPattern)
-                    .count()
-                    > 1
-        }),
-        _ => false,
-    }
-}
-
 /// Register all scope boundaries enclosing `node` and return the region id
 /// of the innermost one (the region `node` belongs to).
 fn register_regions(
@@ -166,7 +119,10 @@ fn register_regions(
     region_ids: &mut HashMap<SyntaxNode, usize>,
 ) -> usize {
     let mut innermost: Option<usize> = None;
-    for boundary in node.ancestors().filter(is_scope_boundary) {
+    for boundary in node
+        .ancestors()
+        .filter(|token| token.kind() == SyntaxKind::SubSelect)
+    {
         let id = *region_ids.entry(boundary.clone()).or_insert_with(|| {
             regions.push(boundary);
             regions.len() - 1
@@ -183,7 +139,7 @@ fn parent_region_id(boundary: &SyntaxNode, region_ids: &HashMap<SyntaxNode, usiz
         .parent()
         .into_iter()
         .flat_map(|parent| parent.ancestors())
-        .find(is_scope_boundary)
+        .find(|node| node.kind() == SyntaxKind::SubSelect)
         .and_then(|node| region_ids.get(&node).copied())
         .unwrap_or(0)
 }
@@ -355,71 +311,6 @@ mod tests {
         }";
         check(query, "a", 0, &[0, 1]);
         check(query, "a", 2, &[2]);
-    }
-
-    #[test]
-    fn union_branches_are_separate() {
-        let query = "SELECT * WHERE { { ?x <p> 1 } UNION { ?x <q> 2 } }";
-        check(query, "x", 0, &[0]);
-        check(query, "x", 1, &[1]);
-    }
-
-    #[test]
-    fn union_branches_connected_by_outer_occurrence() {
-        let query = "SELECT * WHERE {
-            ?x <r> ?y .
-            { ?x <p> 1 } UNION { ?x <q> 2 }
-        }";
-        check(query, "x", 1, &[0, 1, 2]);
-    }
-
-    #[test]
-    fn union_branches_connected_by_select_clause() {
-        // NOTE: the projection ?x lives in the enclosing scope and bridges the branches
-        check(
-            "SELECT ?x WHERE { { ?x <p> 1 } UNION { ?x <q> 2 } }",
-            "x",
-            1,
-            &[0, 1, 2],
-        );
-    }
-
-    #[test]
-    fn nested_union_branches_are_separate() {
-        let query = "SELECT * WHERE {
-            { { ?x <a> 1 } UNION { ?x <b> 2 } }
-            UNION
-            { ?x <c> 3 }
-        }";
-        check(query, "x", 0, &[0]);
-        check(query, "x", 1, &[1]);
-        check(query, "x", 2, &[2]);
-    }
-
-    #[test]
-    fn nested_union_branches_connected_by_occurrence_in_outer_branch() {
-        // NOTE: ?x occurs directly in the left outer branch, connecting the
-        // inner branches with it — but not with the right outer branch
-        let query = "SELECT * WHERE {
-            { ?x <d> 4 { ?x <a> 1 } UNION { ?x <b> 2 } }
-            UNION
-            { ?x <c> 3 }
-        }";
-        check(query, "x", 1, &[0, 1, 2]);
-        check(query, "x", 3, &[3]);
-    }
-
-    #[test]
-    fn union_branch_with_projected_sub_select_is_still_separate() {
-        // NOTE: the sub-select connects to its union branch, but the two
-        // branches stay separate since ?x does not occur in the outer scope
-        let query = "SELECT * WHERE {
-            { SELECT ?x WHERE { ?x <p> 1 } }
-            UNION
-            { ?x <q> 2 }
-        }";
-        check(query, "x", 0, &[0, 1]);
-        check(query, "x", 2, &[2]);
     }
 
     #[test]

@@ -16,6 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   new name is validated against the SPARQL `VARNAME` grammar, and a leading
   `?` or `$` is tolerated.
 
+### Fixed
+
+- on-type formatting no longer panics when a newline is typed inside an `ANON`
+  (`[ ]`) or `NIL` (`( )`) token, where the lexer folds the whitespace into the
+  token itself. Newlines inside any other token (e.g. long string literals) are
+  now left untouched instead of being re-indented.
+
 ## [3.2.1] - 2026-07-09
 
 ### Added

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [3.3.0] - 2027-07-15
+
 ### Added
 
 - rename support (`textDocument/rename`): renaming a variable updates all

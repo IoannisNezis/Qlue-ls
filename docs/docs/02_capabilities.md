@@ -155,4 +155,30 @@ Often in the form of a *quickfix*, to fix a diagnostic.
 | lang-filter               | add language filter for object variable        |                                        |
 | transform into subselect  | make a select into a subselect                 |                                        |
 
+## ✏️ Rename
+
+Rename a variable and all occurrences that denote the same variable.
+
+Scope boundaries are respected:
+sub-selects connect only through projected variables, and `UNION` branches
+are treated as separate scopes unless bridged by an outer occurrence.
+
+The new name is validated against the SPARQL
+[VARNAME](https://www.w3.org/TR/sparql11-query/#rVARNAME) grammar,
+a leading `?` or `$` is tolerated.
+
+## 🔍 Find References
+
+List all occurrences of the variable under the cursor.
+
+The result follows the same scope rules as [rename](#rename):
+only occurrences that denote the same variable are returned.
+
+## 🖍️ Document Highlight
+
+When the cursor rests on a variable, all occurrences of that variable
+in the query are highlighted.
+
+Like [find references](#find-references), this respects scope boundaries,
+but the highlights only cover the current document.
 

@@ -39,6 +39,7 @@ mod code_action;
 mod common;
 mod completion;
 mod diagnostic;
+mod document_highlight;
 mod execute;
 mod folding_range;
 pub(crate) mod formatting;
@@ -50,6 +51,7 @@ mod lifecycle;
 mod misc;
 mod on_type_formatting;
 mod parse_tree;
+mod references;
 mod rename;
 pub(crate) mod semantic_tokens;
 mod settings;
@@ -88,10 +90,12 @@ use crate::server::{
     message_handler::{
         backend::handle_get_backend_request,
         cancel::handle_cancel_notification,
+        document_highlight::handle_document_highlight_request,
         execute::handle_execute_request,
         folding_range::handle_folding_range_request,
         identification::handle_identify_request,
         parse_tree::handle_parse_tree_request,
+        references::handle_references_request,
         rename::handle_rename_request,
         semantic_tokens::{
             handle_semantic_tokens_full_request, handle_semantic_tokens_range_request,
@@ -152,6 +156,8 @@ pub(super) async fn dispatch(
         "textDocument/semanticTokens/full" => call!(handle_semantic_tokens_full_request),
         "textDocument/semanticTokens/range" => call!(handle_semantic_tokens_range_request),
         "textDocument/rename" => call!(handle_rename_request),
+        "textDocument/references" => call!(handle_references_request),
+        "textDocument/documentHighlight" => call!(handle_document_highlight_request),
         // NOTE: LSP extensions Requests
         "qlueLs/addBackend" => call!(handle_add_backend_notification),
         "qlueLs/getBackend" => call!(handle_get_backend_request),

@@ -69,5 +69,7 @@ pub(super) fn create_capabilities() -> ServerCapabilities {
             full: Some(FullCapability::Bool(true)),
         },
         rename_provider: true,
+        references_provider: true,
+        document_highlight_provider: true,
     }
 }

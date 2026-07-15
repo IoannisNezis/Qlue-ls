@@ -20,6 +20,14 @@ pub struct ServerCapabilities {
     // WARNING: This is not to spec, this could also be RenameOptions
     // (workDoneProgress + prepareProvider, not implemented yet):
     // https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#renameOptions
+    pub references_provider: bool,
+    // WARNING: This is not to spec, this could also be ReferenceOptions
+    // (workDoneProgress, not implemented yet):
+    // https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#referenceOptions
+    pub document_highlight_provider: bool,
+    // WARNING: This is not to spec, this could also be DocumentHighlightOptions
+    // (workDoneProgress, not implemented yet):
+    // https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#documentHighlightOptions
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -212,13 +220,15 @@ mod tests {
                 full: Some(FullCapability::Bool(true)),
             },
             rename_provider: true,
+            references_provider: true,
+            document_highlight_provider: true,
         };
 
         let serialized = serde_json::to_string(&server_capabilities).unwrap();
 
         pretty_assertions::assert_eq!(
             serialized,
-            r#"{"textDocumentSync":1,"hoverProvider":true,"completionProvider":{"triggerCharacters":["?"]},"documentFormattingProvider":{},"documentOnTypeFormattingProvider":{"firstTriggerCharacter":"\n"},"diagnosticProvider":{"identifier":"my-ls","interFileDependencies":false,"workspaceDiagnostics":false},"codeActionProvider":true,"executeCommandProvider":{"workDoneProgress":true,"commands":["foo"]},"foldingRangeProvider":true,"semanticTokensProvider":{"workDoneProgress":true,"legend":{"tokenTypes":["function","string"],"tokenModifiers":["async"]},"range":true,"full":true},"renameProvider":true}"#
+            r#"{"textDocumentSync":1,"hoverProvider":true,"completionProvider":{"triggerCharacters":["?"]},"documentFormattingProvider":{},"documentOnTypeFormattingProvider":{"firstTriggerCharacter":"\n"},"diagnosticProvider":{"identifier":"my-ls","interFileDependencies":false,"workspaceDiagnostics":false},"codeActionProvider":true,"executeCommandProvider":{"workDoneProgress":true,"commands":["foo"]},"foldingRangeProvider":true,"semanticTokensProvider":{"workDoneProgress":true,"legend":{"tokenTypes":["function","string"],"tokenModifiers":["async"]},"range":true,"full":true},"renameProvider":true,"referencesProvider":true,"documentHighlightProvider":true}"#
         );
     }
 }

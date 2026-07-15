@@ -343,6 +343,13 @@ impl fmt::Display for Position {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+// https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#location
+pub struct Location {
+    pub uri: String,
+    pub range: Range,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
 // https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#range
 // NOTE: Positions are zero based.
 // NOTE: The end position is exclusive.

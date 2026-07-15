@@ -113,21 +113,21 @@ fn handle_newline_trigger(
     };
     let indent = tab_unit.repeat(indentation_level);
 
-    // WARNING: The trigger token at byte_offset_position should always be WHITESPACE.
-    assert_eq!(
-        trigger_token.kind(),
-        SyntaxKind::WHITESPACE,
-        "trigger token at byte offset {} should be WHITESPACE, got {:?}",
-        byte_offset_position,
-        trigger_token.kind()
-    );
+    // NOTE: The typed newline is usually its own WHITESPACE token, but the lexer folds
+    // whitespace inside 'ANON' ("[ ]") and 'NIL' ("( )") into that single token. There,
+    // whitespace is insignificant, so indenting is still safe.
+    match trigger_token.kind() {
+        SyntaxKind::WHITESPACE | SyntaxKind::ANON | SyntaxKind::NIL => {}
+        // WARNING: A newline inside any other token (e.g. a long string literal) must not
+        // be re-indented — inserted whitespace would change the token's content.
+        _ => return server.send_message(OnTypeFormattingResponse::null(request.get_id())),
+    }
     // NOTE: count existing whitespace after the trigger position so the edit replaces it
     // rather than prepending to it. Spaces and tabs are ASCII, so char count == UTF-16 count.
     let existing_whitespace: u32 = document.text[byte_offset_position..]
         .chars()
         .take_while(|c| *c == ' ' || *c == '\t')
         .count() as u32;
-
     // NOTE: Walk backwards through tokens, skipping trivia, to find the last meaningful token
     // before the newline. If it is a Semicolon, the new line needs predicate-continuation indent.
     // NOTE: The semicolon token itself is passed to predicate_alignment_column because the

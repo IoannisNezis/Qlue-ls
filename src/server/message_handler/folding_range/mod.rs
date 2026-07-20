@@ -1,7 +1,10 @@
 use std::rc::Rc;
 
 use futures::lock::Mutex;
-use ll_sparql_parser::ast::{AstNode, Prologue};
+use ll_sparql_parser::{
+    ast::{AstNode, Prologue},
+    syntax_kind::SyntaxKind,
+};
 
 use crate::server::{
     Server,
@@ -37,6 +40,31 @@ pub(super) async fn handle_folding_range_request(
             kind: Some(FoldingRangeKind::Imports),
             collapsed_text: Some(prologue.text()),
         });
+    }
+    // Fold any block delimited by curly braces
+    for node in tree.descendants() {
+        if node.kind() != SyntaxKind::GroupGraphPattern {
+            continue;
+        }
+        let Some(content) = node.first_child() else {
+            continue;
+        };
+        let Some(open) = Range::from_byte_offset_range(node.text_range(), &document.text) else {
+            continue;
+        };
+        let Some(inner) = Range::from_byte_offset_range(content.text_range(), &document.text) else {
+            continue;
+        };
+        if inner.end.line > open.start.line {
+            result.push(FoldingRange {
+                start_line: open.start.line,
+                end_line: inner.end.line,
+                start_character: None,
+                end_character: None,
+                kind: None,
+                collapsed_text: None,
+            });
+        }
     }
     let mut response = FoldingRangeResponse::new(request.get_id());
     response.set_result(result);

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- folding ranges (`textDocument/foldingRange`) for every block delimited by
+  curly brackets, not just the top-level query body.
+
 ## [3.3.0] - 2027-07-15
 
 ### Added

@@ -183,7 +183,8 @@ pub(crate) fn contract_triples(
                     triples
                         .iter()
                         .skip(1)
-                        .map(|triple| triple.properties_list_path().unwrap().text())
+                        .filter_map(|triple| triple.properties_list_path())
+                        .map(|plp| plp.text())
                         .collect::<Vec<_>>()
                         .join(&format!(" ;\n{}", indent_string))
                 ),

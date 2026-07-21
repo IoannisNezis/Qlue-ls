@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - folding ranges (`textDocument/foldingRange`) for every block delimited by
   curly brackets, not just the top-level query body.
 
+### Fixed
+
+- the "contract triples" code action no longer panics when a triple in the
+  group has no properties list path.
+
 ## [3.3.0] - 2027-07-15
 
 ### Added

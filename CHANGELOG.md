@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [3.3.1] - 2027-07-21
+
 ### Added
 
 - folding ranges (`textDocument/foldingRange`) for every block delimited by

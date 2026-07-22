@@ -4,9 +4,16 @@ version = "3.3.1"
 edition = "2024"
 authors = ["Ioannis Nezis <ioannis@nezis.de>"]
 description = "A language server for SPARQL"
+documentation = "https://docs.qlue-ls.com"
 repository = "https://github.com/IoannisNezis/qlue-ls"
 license-file = "LICENSE"
 keywords = ["SPARQL", "rdf", "lsp", "lsp-server", "wasm"]
+
+[package.metadata.deb]
+maintainer = "Julian Mundhahs <mundhahj@tf.uni-freiburg.de>"
+extended-description = "TODO; the default (README) is not well suited for this"
+section = "devel"
+priority = "optional"
 
 [lib]
 path = "src/lib.rs"

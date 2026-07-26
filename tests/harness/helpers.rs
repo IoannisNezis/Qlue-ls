@@ -295,8 +295,8 @@ impl TestClient {
 
     /// Change server settings.
     ///
-    /// NOTE: This replaces all settings, so you must provide a complete Settings object.
-    /// All fields except `auto_line_break` require values (format, completion, etc.).
+    /// NOTE: The given values are merged into the current settings, so only the
+    /// keys that should change have to be provided.
     pub async fn change_settings(&self, settings: Value) {
         self.send_notification("qlueLs/changeSettings", settings)
             .await;

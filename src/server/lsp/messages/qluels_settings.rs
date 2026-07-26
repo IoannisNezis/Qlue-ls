@@ -47,4 +47,11 @@ pub struct ChangeSettingsNotification {
 }
 
 impl LspMessage for ChangeSettingsNotification {}
-pub type ChangeSettingsParams = Settings;
+/// The payload of `qlueLs/changeSettings`.
+///
+/// NOTE: kept as raw JSON on purpose. The notification carries a *partial*
+/// settings object that is merged into the current settings, so the handler has
+/// to distinguish "key absent" from "key set to its default value", which a
+/// deserialized [`Settings`] can no longer express.
+/// See `message_handler::settings::handle_change_settings_notification`.
+pub type ChangeSettingsParams = serde_json::Value;

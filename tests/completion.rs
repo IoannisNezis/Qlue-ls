@@ -877,14 +877,9 @@ fn test_group_condition_no_keyword_completions() {
 
 /// Settings payload for `qlueLs/changeSettings` with the given replacements.
 ///
-/// INFO: `changeSettings` replaces the whole settings object, `format` and
-/// `completion` fall back to their defaults when passed as `{}`.
+/// INFO: `changeSettings` merges, so only the changed key has to be sent.
 fn settings_with_replacements(replacements: Value) -> Value {
-    json!({
-        "format": {},
-        "completion": {},
-        "replacements": replacements
-    })
+    json!({ "replacements": replacements })
 }
 
 #[test]
@@ -1127,15 +1122,48 @@ fn test_object_variable_completion_with_empty_replacements_keeps_local_name() {
 }
 
 #[test]
-fn test_object_variable_completion_without_replacements_setting() {
+fn test_object_variable_completion_keeps_replacements_on_unrelated_settings_change() {
     run_lsp_test(|| async {
         let client = TestClient::new();
         client.initialize().await;
 
-        // WARNING: an omitted `replacements` key disables replacements
-        // entirely, it does not restore the defaults.
+        // NOTE: `changeSettings` merges, so a change that does not mention
+        // `replacements` leaves the defaults in place.
         client
-            .change_settings(json!({ "format": {}, "completion": {} }))
+            .change_settings(json!({ "format": { "alignPredicates": false } }))
+            .await;
+
+        client
+            .open_document(
+                "file:///test.sparql",
+                "PREFIX wdt: <http://x/>\nSELECT * WHERE { ?s wdt:hasAuthor ? }",
+            )
+            .await;
+
+        let id = client.complete("file:///test.sparql", 1, 35).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+        let labels = get_completion_labels(&response);
+
+        assert!(
+            labels.contains(&"?author".to_string()),
+            "Should still apply the default replacements, got: {:?}",
+            labels
+        );
+    });
+}
+
+#[test]
+fn test_object_variable_completion_with_replacements_disabled() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        // INFO: an explicit null is how replacements are turned off, an omitted
+        // key would be kept at its current value.
+        client
+            .change_settings(json!({ "replacements": null }))
             .await;
 
         client

@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `qlueLs/changeSettings` now merges the received settings into the current ones
+  instead of replacing them. Only the keys that change have to be sent, omitted
+  keys keep their value. Objects are merged recursively, arrays are replaced, and
+  an explicit `null` unsets an optional section.
+
 - variable completions in object position now keep the word boundaries of the
   predicate name, instead of gluing the words together. `wdt:hasBirthDate` and
   `has birth date` both suggest `?birth_date` where they previously suggested

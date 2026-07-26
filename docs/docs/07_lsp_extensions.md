@@ -170,11 +170,23 @@ Update server settings at runtime.
 *Notification*:
 
 - method: `qlueLs/changeSettings`
-- params: `Settings`
+- params: a partial `Settings` object
 
-!!! warning
+The provided values are merged into the current settings: every key that is
+present overrides the current value, every key that is omitted keeps it. Only
+the settings that actually change have to be sent.
 
-    This replaces all current settings with the provided values.
+```json
+{ "format": { "alignPredicates": false } }
+```
+
+Objects are merged recursively, all other values — including arrays — are
+replaced. To empty a list, send an empty array; to unset an optional section,
+send `null`:
+
+```json
+{ "replacements": null }
+```
 
 ## Query Execution
 

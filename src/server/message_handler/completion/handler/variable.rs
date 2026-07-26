@@ -3,7 +3,6 @@ use std::{collections::HashSet, rc::Rc};
 use super::super::{CompletionEnvironment, CompletionLocation, error::CompletionError};
 use crate::server::{
     Server,
-    configuration::Replacement,
     lsp::{
         Command, CompletionItem, CompletionItemBuilder, CompletionItemKind, CompletionList,
         InsertTextFormat, ItemDefaults, textdocument::TextEdit,
@@ -11,7 +10,6 @@ use crate::server::{
 };
 use futures::lock::Mutex;
 use ll_sparql_parser::ast::{AstNode, PrefixedName, Var, VarOrTerm};
-use regex::Regex;
 
 pub async fn completions(
     server_rc: Rc<Mutex<Server>>,
@@ -88,22 +86,8 @@ pub async fn completions(
         // "has_author" -> "author"
         // These replacements are configurable.
         // snace_case conversion is build in.
-        if let Some(replacements) = server
-            .settings
-            .replacements
-            .as_ref()
-            .map(|replacements| &replacements.object_variable)
-        {
-            for Replacement {
-                pattern,
-                replacement,
-            } in replacements.iter()
-            {
-                object_name = Regex::new(pattern)
-                    .unwrap()
-                    .replace_all(&object_name, replacement)
-                    .to_string();
-            }
+        if let Some(replacements) = server.settings.replacements.as_ref() {
+            object_name = replacements.apply_object_variable(&object_name);
         }
         let variable = to_sparql_variable(&object_name);
         suggestions.insert(
@@ -249,4 +233,64 @@ fn to_sparql_variable(s: &str) -> String {
         result.push_str("var");
     }
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::to_sparql_variable;
+    use crate::server::configuration::Replacements;
+
+    /// The full object variable name pipeline: configured replacements first,
+    /// then the built in snake_case conversion.
+    fn pipeline(name: &str) -> String {
+        to_sparql_variable(&Replacements::default().apply_object_variable(name))
+    }
+
+    #[test]
+    fn test_to_sparql_variable_converts_to_snake_case() {
+        assert_eq!(to_sparql_variable("BirthDate"), "birthdate");
+        assert_eq!(to_sparql_variable("birth date"), "birth_date");
+        assert_eq!(to_sparql_variable("part-of"), "part_of");
+        assert_eq!(to_sparql_variable("place.of.birth"), "place_of_birth");
+        assert_eq!(to_sparql_variable("label (english)"), "label_english");
+    }
+
+    #[test]
+    fn test_to_sparql_variable_strips_variable_prefix() {
+        assert_eq!(to_sparql_variable("?author"), "author");
+        assert_eq!(to_sparql_variable("$author"), "author");
+    }
+
+    #[test]
+    fn test_to_sparql_variable_produces_valid_names() {
+        assert_eq!(to_sparql_variable(""), "var");
+        assert_eq!(to_sparql_variable("   "), "var");
+        assert_eq!(to_sparql_variable("2020"), "_2020");
+        assert_eq!(to_sparql_variable("_private"), "_private");
+        assert_eq!(to_sparql_variable("a/b"), "a_b");
+    }
+
+    #[test]
+    fn test_to_sparql_variable_trims_and_collapses_whitespace() {
+        assert_eq!(to_sparql_variable("  date of  birth "), "date_of_birth");
+    }
+
+    #[test]
+    fn test_pipeline_with_default_replacements() {
+        assert_eq!(pipeline("hasAuthor"), "author");
+        assert_eq!(pipeline("authoredBy"), "author");
+        assert_eq!(pipeline("has author"), "author");
+        assert_eq!(pipeline("P31"), "p31");
+    }
+
+    #[test]
+    fn test_pipeline_default_replacements_defeat_snake_case() {
+        // WARNING: the default `([^a-zA-Z0-9_])` replacement strips the very
+        // separators `to_sparql_variable` would have turned into underscores,
+        // so multi word labels come out glued together.
+        assert_eq!(pipeline("has birth date"), "birthdate");
+        assert_eq!(pipeline("place of birth"), "placeofbirth");
+        // INFO: camelCase separation is not recovered either.
+        assert_eq!(pipeline("hasBirthDate"), "birthdate");
+    }
 }

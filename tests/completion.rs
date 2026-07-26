@@ -6,7 +6,7 @@ mod harness;
 
 use harness::TestClient;
 use harness::runtime::run_lsp_test;
-use serde_json::Value;
+use serde_json::{Value, json};
 
 /// Helper to extract completion labels from a completion response
 fn get_completion_labels(response: &Value) -> Vec<String> {
@@ -865,5 +865,318 @@ fn test_group_condition_no_keyword_completions() {
                 get_completion_labels(&response)
             );
         }
+    });
+}
+
+// NOTE: object variable completion replacements
+//
+// In object position the predicate's local name is offered as a variable name,
+// after the configured `replacements.objectVariable` regexes and the built in
+// snake_case conversion have been applied.
+// See `Replacements::apply_object_variable` and `to_sparql_variable`.
+
+/// Settings payload for `qlueLs/changeSettings` with the given replacements.
+///
+/// INFO: `changeSettings` replaces the whole settings object, `format` and
+/// `completion` fall back to their defaults when passed as `{}`.
+fn settings_with_replacements(replacements: Value) -> Value {
+    json!({
+        "format": {},
+        "completion": {},
+        "replacements": replacements
+    })
+}
+
+#[test]
+fn test_object_variable_completion_applies_default_has_replacement() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        client
+            .open_document(
+                "file:///test.sparql",
+                //                     0123456789012345678901234567890123456
+                "PREFIX wdt: <http://x/>\nSELECT * WHERE { ?s wdt:hasAuthor ? }",
+            )
+            .await;
+
+        let id = client.complete("file:///test.sparql", 1, 35).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+        let labels = get_completion_labels(&response);
+
+        // "hasAuthor" -> "Author" -> "?author"
+        assert!(
+            labels.contains(&"?author".to_string()),
+            "Should suggest ?author for predicate wdt:hasAuthor, got: {:?}",
+            labels
+        );
+        // The subject is a variable, so the combined name is offered too.
+        assert!(
+            labels.contains(&"?s_author".to_string()),
+            "Should suggest ?s_author for subject ?s, got: {:?}",
+            labels
+        );
+        assert!(
+            !labels.contains(&"?hasAuthor".to_string()),
+            "Should NOT suggest the unreplaced ?hasAuthor, got: {:?}",
+            labels
+        );
+    });
+}
+
+#[test]
+fn test_object_variable_completion_applies_default_ed_by_replacement() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        client
+            .open_document(
+                "file:///test.sparql",
+                "PREFIX wdt: <http://x/>\nSELECT * WHERE { ?s wdt:authoredBy ? }",
+            )
+            .await;
+
+        let id = client.complete("file:///test.sparql", 1, 36).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+        let labels = get_completion_labels(&response);
+
+        // "authoredBy" -> "author" -> "?author"
+        assert!(
+            labels.contains(&"?author".to_string()),
+            "Should suggest ?author for predicate wdt:authoredBy, got: {:?}",
+            labels
+        );
+    });
+}
+
+#[test]
+fn test_object_variable_completion_unmatched_predicate_is_lowercased_only() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        client
+            .open_document(
+                "file:///test.sparql",
+                "PREFIX wdt: <http://x/>\nSELECT * WHERE { ?s wdt:Author ? }",
+            )
+            .await;
+
+        let id = client.complete("file:///test.sparql", 1, 32).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+        let labels = get_completion_labels(&response);
+
+        // No replacement matches, only the snake_case conversion applies.
+        assert!(
+            labels.contains(&"?author".to_string()),
+            "Should suggest ?author for predicate wdt:Author, got: {:?}",
+            labels
+        );
+    });
+}
+
+#[test]
+fn test_object_variable_completion_triggered_by_question_mark() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        client
+            .open_document(
+                "file:///test.sparql",
+                "PREFIX wdt: <http://x/>\nSELECT * WHERE { ?s wdt:hasAuthor ? }",
+            )
+            .await;
+
+        // The "?" trigger character reaches the same code path.
+        let id = client
+            .complete_triggered("file:///test.sparql", 1, 35, "?")
+            .await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+        let labels = get_completion_labels(&response);
+
+        assert!(
+            labels.contains(&"?author".to_string()),
+            "Should suggest ?author on \"?\" trigger, got: {:?}",
+            labels
+        );
+    });
+}
+
+#[test]
+fn test_object_variable_completion_uses_custom_replacements() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        client
+            .change_settings(settings_with_replacements(json!({
+                "objectVariable": [
+                    { "pattern": r"^has(\w+)", "replacement": "my$1" }
+                ]
+            })))
+            .await;
+
+        client
+            .open_document(
+                "file:///test.sparql",
+                "PREFIX wdt: <http://x/>\nSELECT * WHERE { ?s wdt:hasAuthor ? }",
+            )
+            .await;
+
+        let id = client.complete("file:///test.sparql", 1, 35).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+        let labels = get_completion_labels(&response);
+
+        // "hasAuthor" -> "myAuthor" -> "?myauthor"
+        assert!(
+            labels.contains(&"?myauthor".to_string()),
+            "Should apply the configured replacement, got: {:?}",
+            labels
+        );
+        assert!(
+            !labels.contains(&"?author".to_string()),
+            "Should NOT apply the default replacements once overridden, got: {:?}",
+            labels
+        );
+    });
+}
+
+#[test]
+fn test_object_variable_completion_with_empty_replacements_keeps_local_name() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        client
+            .change_settings(settings_with_replacements(json!({
+                "objectVariable": []
+            })))
+            .await;
+
+        client
+            .open_document(
+                "file:///test.sparql",
+                "PREFIX wdt: <http://x/>\nSELECT * WHERE { ?s wdt:hasAuthor ? }",
+            )
+            .await;
+
+        let id = client.complete("file:///test.sparql", 1, 35).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+        let labels = get_completion_labels(&response);
+
+        // Only the built in snake_case conversion remains.
+        assert!(
+            labels.contains(&"?hasauthor".to_string()),
+            "Should fall back to the plain local name, got: {:?}",
+            labels
+        );
+    });
+}
+
+#[test]
+fn test_object_variable_completion_without_replacements_setting() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        // WARNING: an omitted `replacements` key disables replacements
+        // entirely, it does not restore the defaults.
+        client
+            .change_settings(json!({ "format": {}, "completion": {} }))
+            .await;
+
+        client
+            .open_document(
+                "file:///test.sparql",
+                "PREFIX wdt: <http://x/>\nSELECT * WHERE { ?s wdt:hasAuthor ? }",
+            )
+            .await;
+
+        let id = client.complete("file:///test.sparql", 1, 35).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+        let labels = get_completion_labels(&response);
+
+        assert!(
+            labels.contains(&"?hasauthor".to_string()),
+            "Should suggest the unreplaced local name, got: {:?}",
+            labels
+        );
+    });
+}
+
+#[test]
+fn test_object_variable_completion_with_non_variable_subject() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        client
+            .open_document(
+                "file:///test.sparql",
+                "PREFIX wdt: <http://x/>\nSELECT * WHERE { <http://a> wdt:hasAuthor ? }",
+            )
+            .await;
+
+        let id = client.complete("file:///test.sparql", 1, 43).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+        let labels = get_completion_labels(&response);
+
+        assert!(
+            labels.contains(&"?author".to_string()),
+            "Should suggest ?author, got: {:?}",
+            labels
+        );
+        // No subject variable, so no combined "?subject_object" suggestion.
+        assert!(
+            labels.iter().all(|label| !label.ends_with("_author")),
+            "Should NOT suggest a combined variable without a subject variable, got: {:?}",
+            labels
+        );
+    });
+}
+
+#[test]
+fn test_object_variable_completion_in_blank_node() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        client
+            .open_document(
+                "file:///test.sparql",
+                "PREFIX wdt: <http://x/>\nSELECT * WHERE { ?s wdt:p [ wdt:hasAuthor ? ] }",
+            )
+            .await;
+
+        let id = client.complete("file:///test.sparql", 1, 43).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+        let labels = get_completion_labels(&response);
+
+        assert!(
+            labels.contains(&"?author".to_string()),
+            "Should suggest ?author inside a blank node, got: {:?}",
+            labels
+        );
     });
 }

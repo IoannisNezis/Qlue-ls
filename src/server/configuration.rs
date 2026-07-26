@@ -33,6 +33,7 @@ use std::{collections::HashMap, fmt};
 
 #[cfg(not(target_arch = "wasm32"))]
 use config::{Config, ConfigError};
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use crate::server::lsp::{SparqlEngine, base_types::LSPAny};
@@ -248,6 +249,32 @@ impl Replacement {
 #[serde(rename_all = "camelCase")]
 pub struct Replacements {
     pub object_variable: Vec<Replacement>,
+}
+
+impl Replacements {
+    /// Applies the configured `object_variable` replacements to `name`, in order.
+    ///
+    /// Each replacement is a regex `pattern` and a `replacement` string that may
+    /// reference capture groups (`$1`, ...). Replacements are applied
+    /// sequentially, so a later pattern sees the output of the earlier ones.
+    ///
+    /// WARNING: patterns are user configurable and compiled on every call.
+    /// An invalid pattern panics.
+    pub fn apply_object_variable(&self, name: &str) -> String {
+        let mut name = name.to_string();
+        for Replacement {
+            pattern,
+            replacement,
+        } in self.object_variable.iter()
+        {
+            name = Regex::new(pattern)
+                .unwrap()
+                .replace_all(&name, replacement)
+                .to_string();
+            tracing::debug!("new name: {name}");
+        }
+        name
+    }
 }
 
 impl Default for Replacements {
@@ -580,5 +607,176 @@ mod tests {
         assert_eq!(wikidata.name, "Wikidata");
         assert!(wikidata.default);
         assert_eq!(wikidata.queries.len(), 2);
+    }
+
+    // NOTE: object variable replacements
+
+    #[test]
+    fn test_default_replacements_are_valid_regexes() {
+        for Replacement { pattern, .. } in Replacements::default().object_variable.iter() {
+            assert!(
+                Regex::new(pattern).is_ok(),
+                "default pattern {:?} is not a valid regex",
+                pattern
+            );
+        }
+    }
+
+    #[test]
+    fn test_default_replacements_strip_has_prefix_camel_case() {
+        let replacements = Replacements::default();
+
+        assert_eq!(replacements.apply_object_variable("hasAuthor"), "Author");
+        assert_eq!(
+            replacements.apply_object_variable("hasBirthDate"),
+            "BirthDate"
+        );
+        // INFO: a single trailing character is not an `\w*` match for `[A-Z]\w*`,
+        // but `[A-Z]` alone still matches because `\w*` may be empty.
+        assert_eq!(replacements.apply_object_variable("hasX"), "X");
+    }
+
+    #[test]
+    fn test_default_replacements_strip_has_prefix_space_separated() {
+        let replacements = Replacements::default();
+
+        assert_eq!(replacements.apply_object_variable("has author"), "author");
+        // WARNING: `^has (\w+)` only captures the first word, but the trailing
+        // whitespace stripping of the last pattern glues the remainder back on.
+        assert_eq!(
+            replacements.apply_object_variable("has birth date"),
+            "birthdate"
+        );
+    }
+
+    #[test]
+    fn test_default_replacements_strip_ed_by_suffix() {
+        let replacements = Replacements::default();
+
+        assert_eq!(replacements.apply_object_variable("authoredBy"), "author");
+        assert_eq!(replacements.apply_object_variable("directedBy"), "direct");
+    }
+
+    #[test]
+    fn test_default_replacements_strip_non_word_characters() {
+        let replacements = Replacements::default();
+
+        assert_eq!(
+            replacements.apply_object_variable("place of birth"),
+            "placeofbirth"
+        );
+        assert_eq!(replacements.apply_object_variable("P31/P279*"), "P31P279");
+        assert_eq!(replacements.apply_object_variable("part-of"), "partof");
+        assert_eq!(
+            replacements.apply_object_variable("under_score"),
+            "under_score"
+        );
+    }
+
+    #[test]
+    fn test_default_replacements_leave_unmatched_names_untouched() {
+        let replacements = Replacements::default();
+
+        assert_eq!(replacements.apply_object_variable("author"), "author");
+        // INFO: "has" is only stripped as a prefix followed by a space or an
+        // uppercase letter, not as a bare word or a lowercase continuation.
+        assert_eq!(replacements.apply_object_variable("hasty"), "hasty");
+        assert_eq!(replacements.apply_object_variable("has"), "has");
+        assert_eq!(
+            replacements.apply_object_variable("overhasAuthor"),
+            "overhasAuthor"
+        );
+    }
+
+    #[test]
+    fn test_replacements_are_applied_in_order() {
+        // NOTE: the second replacement must see the output of the first.
+        let replacements = Replacements {
+            object_variable: vec![
+                Replacement::new(r"^has(\w+)", "$1"),
+                Replacement::new(r"^Author$", "creator"),
+            ],
+        };
+
+        assert_eq!(replacements.apply_object_variable("hasAuthor"), "creator");
+    }
+
+    #[test]
+    fn test_empty_replacements_are_a_no_op() {
+        let replacements = Replacements {
+            object_variable: vec![],
+        };
+
+        assert_eq!(replacements.apply_object_variable("hasAuthor"), "hasAuthor");
+    }
+
+    #[test]
+    fn test_replacements_deserialize_from_yaml() {
+        let yaml = r#"
+            objectVariable:
+              - pattern: "^has (\\w+)"
+                replacement: "$1"
+              - pattern: "Suffix$"
+                replacement: ""
+        "#;
+
+        let replacements: Replacements = parse_yaml(yaml);
+
+        assert_eq!(
+            replacements.object_variable,
+            vec![
+                Replacement::new(r"^has (\w+)", "$1"),
+                Replacement::new(r"Suffix$", ""),
+            ]
+        );
+        assert_eq!(
+            replacements.apply_object_variable("has authorSuffix"),
+            "author"
+        );
+    }
+
+    #[test]
+    fn test_settings_replacements_deserialize_from_yaml() {
+        let yaml = r#"
+            format: {}
+            completion: {}
+            replacements:
+              objectVariable:
+                - pattern: "^is(\\w+)"
+                  replacement: "$1"
+        "#;
+
+        let settings: Settings = parse_yaml(yaml);
+        let replacements = settings
+            .replacements
+            .expect("replacements should be deserialized");
+
+        assert_eq!(replacements.object_variable.len(), 1);
+        assert_eq!(replacements.apply_object_variable("isPartOf"), "PartOf");
+    }
+
+    #[test]
+    fn test_settings_default_includes_default_replacements() {
+        let settings = Settings::default();
+
+        assert_eq!(
+            settings.replacements,
+            Some(Replacements::default()),
+            "default settings should carry the default replacements"
+        );
+    }
+
+    #[test]
+    fn test_settings_without_replacements_key_is_none() {
+        let yaml = r#"
+            format: {}
+            completion: {}
+        "#;
+
+        let settings: Settings = parse_yaml(yaml);
+
+        // WARNING: an omitted `replacements` key disables replacements entirely,
+        // it does NOT fall back to `Replacements::default()`.
+        assert_eq!(settings.replacements, None);
     }
 }

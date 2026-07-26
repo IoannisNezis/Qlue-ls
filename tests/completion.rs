@@ -928,6 +928,44 @@ fn test_object_variable_completion_applies_default_has_replacement() {
 }
 
 #[test]
+fn test_object_variable_completion_splits_camel_case_into_snake_case() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        client
+            .open_document(
+                "file:///test.sparql",
+                "PREFIX wdt: <http://x/>\nSELECT * WHERE { ?person wdt:hasBirthDate ? }",
+            )
+            .await;
+
+        let id = client.complete("file:///test.sparql", 1, 43).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+        let labels = get_completion_labels(&response);
+
+        // "hasBirthDate" -> "Birth_Date" -> "?birth_date"
+        assert!(
+            labels.contains(&"?birth_date".to_string()),
+            "Should suggest ?birth_date for predicate wdt:hasBirthDate, got: {:?}",
+            labels
+        );
+        assert!(
+            labels.contains(&"?person_birth_date".to_string()),
+            "Should suggest ?person_birth_date for subject ?person, got: {:?}",
+            labels
+        );
+        assert!(
+            !labels.contains(&"?birthdate".to_string()),
+            "Should NOT suggest the glued ?birthdate, got: {:?}",
+            labels
+        );
+    });
+}
+
+#[test]
 fn test_object_variable_completion_applies_default_ed_by_replacement() {
     run_lsp_test(|| async {
         let client = TestClient::new();

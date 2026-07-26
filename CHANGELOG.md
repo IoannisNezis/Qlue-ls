@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- variable completions in object position now keep the word boundaries of the
+  predicate name, instead of gluing the words together. `wdt:hasBirthDate` and
+  `has birth date` both suggest `?birth_date` where they previously suggested
+  `?birthdate`. The `replacements.objectVariable` defaults changed accordingly,
+  configured replacements are unaffected.
+
 ## [3.3.1] - 2027-07-21
 
 ### Added

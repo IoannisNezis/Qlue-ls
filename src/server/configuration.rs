@@ -281,10 +281,23 @@ impl Default for Replacements {
     fn default() -> Self {
         Self {
             object_variable: vec![
+                // NOTE: strip the "has" prefix and the "edBy" suffix.
+                // These run before the camelCase split below, because they
+                // match on the camelCase boundary themselves.
                 Replacement::new(r"^has (\w+)", "$1"),
                 Replacement::new(r"^has([A-Z]\w*)", "$1"),
                 Replacement::new(r"^(\w+)edBy", "$1"),
-                Replacement::new(r"([^a-zA-Z0-9_])", ""),
+                // NOTE: turn camelCase boundaries into snake_case separators,
+                // so "birthDate" becomes "birth_date" and not "birthdate".
+                // INFO: `${1}` instead of `$1`, otherwise "$1_" would be read
+                // as a reference to a capture group named "1_".
+                Replacement::new(r"([a-z0-9])([A-Z])", "${1}_${2}"),
+                // NOTE: collapse runs of invalid characters into a single
+                // separator instead of dropping them, so multi word names keep
+                // their word boundaries.
+                Replacement::new(r"[^a-zA-Z0-9_]+", "_"),
+                // NOTE: a leading or trailing separator is never meaningful.
+                Replacement::new(r"^_+|_+$", ""),
             ],
         }
     }
@@ -629,7 +642,7 @@ mod tests {
         assert_eq!(replacements.apply_object_variable("hasAuthor"), "Author");
         assert_eq!(
             replacements.apply_object_variable("hasBirthDate"),
-            "BirthDate"
+            "Birth_Date"
         );
         // INFO: a single trailing character is not an `\w*` match for `[A-Z]\w*`,
         // but `[A-Z]` alone still matches because `\w*` may be empty.
@@ -637,15 +650,33 @@ mod tests {
     }
 
     #[test]
+    fn test_default_replacements_split_camel_case() {
+        let replacements = Replacements::default();
+
+        // INFO: lowercasing is not done here, `to_sparql_variable` does it.
+        assert_eq!(
+            replacements.apply_object_variable("birthDate"),
+            "birth_Date"
+        );
+        assert_eq!(
+            replacements.apply_object_variable("placeOfBirth"),
+            "place_Of_Birth"
+        );
+        // INFO: no lowercase-to-uppercase boundary, so acronyms stay intact.
+        assert_eq!(replacements.apply_object_variable("ISBN"), "ISBN");
+        assert_eq!(replacements.apply_object_variable("hasISBN"), "ISBN");
+    }
+
+    #[test]
     fn test_default_replacements_strip_has_prefix_space_separated() {
         let replacements = Replacements::default();
 
         assert_eq!(replacements.apply_object_variable("has author"), "author");
-        // WARNING: `^has (\w+)` only captures the first word, but the trailing
-        // whitespace stripping of the last pattern glues the remainder back on.
+        // NOTE: `^has (\w+)` only captures the first word, the remaining words
+        // are joined by the separator collapsing of the later patterns.
         assert_eq!(
             replacements.apply_object_variable("has birth date"),
-            "birthdate"
+            "birth_date"
         );
     }
 
@@ -658,19 +689,37 @@ mod tests {
     }
 
     #[test]
-    fn test_default_replacements_strip_non_word_characters() {
+    fn test_default_replacements_collapse_non_word_characters() {
         let replacements = Replacements::default();
 
         assert_eq!(
             replacements.apply_object_variable("place of birth"),
-            "placeofbirth"
+            "place_of_birth"
         );
-        assert_eq!(replacements.apply_object_variable("P31/P279*"), "P31P279");
-        assert_eq!(replacements.apply_object_variable("part-of"), "partof");
+        assert_eq!(replacements.apply_object_variable("part-of"), "part_of");
         assert_eq!(
             replacements.apply_object_variable("under_score"),
             "under_score"
         );
+        // NOTE: a run of invalid characters collapses into a single separator.
+        assert_eq!(
+            replacements.apply_object_variable("date  of - birth"),
+            "date_of_birth"
+        );
+    }
+
+    #[test]
+    fn test_default_replacements_trim_leading_and_trailing_separators() {
+        let replacements = Replacements::default();
+
+        // WARNING: without the trim, the collapsing above would leave a
+        // trailing "_" here.
+        assert_eq!(replacements.apply_object_variable("P31/P279*"), "P31_P279");
+        assert_eq!(replacements.apply_object_variable(" author "), "author");
+        assert_eq!(replacements.apply_object_variable("(author)"), "author");
+        // INFO: a name made up entirely of invalid characters collapses to
+        // nothing, `to_sparql_variable` turns that into "var".
+        assert_eq!(replacements.apply_object_variable("///"), "");
     }
 
     #[test]
@@ -682,9 +731,10 @@ mod tests {
         // uppercase letter, not as a bare word or a lowercase continuation.
         assert_eq!(replacements.apply_object_variable("hasty"), "hasty");
         assert_eq!(replacements.apply_object_variable("has"), "has");
+        // INFO: the "has" here is not a prefix, so only the camelCase split applies.
         assert_eq!(
             replacements.apply_object_variable("overhasAuthor"),
-            "overhasAuthor"
+            "overhas_Author"
         );
     }
 

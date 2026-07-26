@@ -284,13 +284,21 @@ mod tests {
     }
 
     #[test]
-    fn test_pipeline_default_replacements_defeat_snake_case() {
-        // WARNING: the default `([^a-zA-Z0-9_])` replacement strips the very
-        // separators `to_sparql_variable` would have turned into underscores,
-        // so multi word labels come out glued together.
-        assert_eq!(pipeline("has birth date"), "birthdate");
-        assert_eq!(pipeline("place of birth"), "placeofbirth");
-        // INFO: camelCase separation is not recovered either.
-        assert_eq!(pipeline("hasBirthDate"), "birthdate");
+    fn test_pipeline_keeps_word_boundaries_as_snake_case() {
+        // NOTE: multi word names keep their boundaries, whether they are
+        // separated by whitespace, punctuation or camelCase.
+        assert_eq!(pipeline("has birth date"), "birth_date");
+        assert_eq!(pipeline("place of birth"), "place_of_birth");
+        assert_eq!(pipeline("hasBirthDate"), "birth_date");
+        assert_eq!(pipeline("birthDate"), "birth_date");
+        assert_eq!(pipeline("place-of-birth"), "place_of_birth");
+        assert_eq!(pipeline("hasPlaceOfBirth"), "place_of_birth");
+    }
+
+    #[test]
+    fn test_pipeline_produces_valid_names_for_degenerate_input() {
+        assert_eq!(pipeline("///"), "var");
+        assert_eq!(pipeline(""), "var");
+        assert_eq!(pipeline("P31/P279*"), "p31_p279");
     }
 }

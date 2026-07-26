@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [3.3.2] - 2027-07-26
+
 ### Fixed
 
 - an invalid regex in `replacements.objectVariable` no longer panics the server

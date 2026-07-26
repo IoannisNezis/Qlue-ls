@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- an invalid regex in `replacements.objectVariable` no longer panics the server
+  on the next completion request. Such a pattern is rejected when it arrives via
+  `qlueLs/changeSettings`, and skipped with a warning when it comes from a
+  configuration file.
+
 ### Changed
 
 - `qlueLs/changeSettings` now merges the received settings into the current ones

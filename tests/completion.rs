@@ -1155,6 +1155,41 @@ fn test_object_variable_completion_keeps_replacements_on_unrelated_settings_chan
 }
 
 #[test]
+fn test_object_variable_completion_survives_an_invalid_replacement_pattern() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+
+        // WARNING: this used to panic on the next completion request.
+        client
+            .change_settings(settings_with_replacements(json!({
+                "objectVariable": [{ "pattern": "([unclosed", "replacement": "" }]
+            })))
+            .await;
+
+        client
+            .open_document(
+                "file:///test.sparql",
+                "PREFIX wdt: <http://x/>\nSELECT * WHERE { ?s wdt:hasAuthor ? }",
+            )
+            .await;
+
+        let id = client.complete("file:///test.sparql", 1, 35).await;
+        let response = client
+            .get_response(id)
+            .expect("Should still receive completion response");
+        let labels = get_completion_labels(&response);
+
+        // The rejected change left the previous settings in place.
+        assert!(
+            labels.contains(&"?author".to_string()),
+            "Should keep the previous replacements, got: {:?}",
+            labels
+        );
+    });
+}
+
+#[test]
 fn test_object_variable_completion_with_replacements_disabled() {
     run_lsp_test(|| async {
         let client = TestClient::new();

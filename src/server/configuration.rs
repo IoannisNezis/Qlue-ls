@@ -29,7 +29,7 @@
 //! - [`super::Server`]: Stores settings in `Server.settings`
 //! - [`super::message_handler::settings`]: Handles runtime settings changes
 
-use std::{collections::HashMap, fmt};
+use std::{collections::HashMap, fmt, sync::OnceLock};
 
 #[cfg(not(target_arch = "wasm32"))]
 use config::{Config, ConfigError};
@@ -230,10 +230,24 @@ impl Default for PrefixesSettings {
         }
     }
 }
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Replacement {
     pub pattern: String,
     pub replacement: String,
+    /// Cache for the compiled [`Self::pattern`].
+    ///
+    /// INFO: not part of the configuration format, it is skipped in both
+    /// directions and starts out empty.
+    #[serde(skip)]
+    regex: OnceLock<Regex>,
+}
+
+// NOTE: `Regex` has no `PartialEq`, and the cache is derived from `pattern`
+// anyway, so only the configured values take part in the comparison.
+impl PartialEq for Replacement {
+    fn eq(&self, other: &Self) -> bool {
+        self.pattern == other.pattern && self.replacement == other.replacement
+    }
 }
 
 impl Replacement {
@@ -241,7 +255,20 @@ impl Replacement {
         Self {
             pattern: pattern.to_string(),
             replacement: replacement.to_string(),
+            regex: OnceLock::new(),
         }
+    }
+
+    /// The compiled [`Self::pattern`], compiled once and cached afterwards.
+    ///
+    /// Returns an error for an invalid pattern. Patterns come from user
+    /// configuration, so this is a normal outcome and not a bug.
+    pub fn regex(&self) -> Result<&Regex, regex::Error> {
+        if let Some(regex) = self.regex.get() {
+            return Ok(regex);
+        }
+        let regex = Regex::new(&self.pattern)?;
+        Ok(self.regex.get_or_init(|| regex))
     }
 }
 
@@ -258,22 +285,43 @@ impl Replacements {
     /// reference capture groups (`$1`, ...). Replacements are applied
     /// sequentially, so a later pattern sees the output of the earlier ones.
     ///
-    /// WARNING: patterns are user configurable and compiled on every call.
-    /// An invalid pattern panics.
+    /// WARNING: an invalid pattern is skipped with a warning, the remaining
+    /// replacements are still applied. Use [`Self::validate`] to reject invalid
+    /// patterns where they enter the server instead.
     pub fn apply_object_variable(&self, name: &str) -> String {
         let mut name = name.to_string();
-        for Replacement {
-            pattern,
-            replacement,
-        } in self.object_variable.iter()
-        {
-            name = Regex::new(pattern)
-                .unwrap()
-                .replace_all(&name, replacement)
-                .to_string();
-            tracing::debug!("new name: {name}");
+        for replacement in self.object_variable.iter() {
+            match replacement.regex() {
+                Ok(regex) => {
+                    name = regex
+                        .replace_all(&name, &replacement.replacement)
+                        .to_string();
+                    tracing::debug!("new name: {name}");
+                }
+                Err(error) => tracing::warn!(
+                    "Skipping object variable replacement with invalid pattern \"{}\": {}",
+                    replacement.pattern,
+                    error
+                ),
+            }
         }
         name
+    }
+
+    /// Checks that every configured pattern compiles.
+    ///
+    /// Compiled patterns are cached, so a successful validation also warms the
+    /// cache for the following [`Self::apply_object_variable`] calls.
+    pub fn validate(&self) -> Result<(), String> {
+        for replacement in self.object_variable.iter() {
+            replacement.regex().map_err(|error| {
+                format!(
+                    "invalid objectVariable pattern \"{}\": {}",
+                    replacement.pattern, error
+                )
+            })?;
+        }
+        Ok(())
     }
 }
 
@@ -350,6 +398,14 @@ impl Settings {
         match load_user_configuration() {
             Ok(settings) => {
                 tracing::info!("Loaded user configuration!!");
+                // NOTE: an invalid pattern does not invalidate the whole
+                // configuration file, it is skipped when the replacements are
+                // applied. Warn about it once here instead of on every
+                // completion request.
+                if let Some(Err(error)) = settings.replacements.as_ref().map(Replacements::validate)
+                {
+                    tracing::warn!("Ignoring a replacement from the user configuration: {error}");
+                }
                 settings
             }
             Err(error) => {
@@ -626,13 +682,85 @@ mod tests {
 
     #[test]
     fn test_default_replacements_are_valid_regexes() {
-        for Replacement { pattern, .. } in Replacements::default().object_variable.iter() {
-            assert!(
-                Regex::new(pattern).is_ok(),
-                "default pattern {:?} is not a valid regex",
-                pattern
-            );
-        }
+        assert_eq!(Replacements::default().validate(), Ok(()));
+    }
+
+    #[test]
+    fn test_validate_reports_an_invalid_pattern() {
+        let replacements = Replacements {
+            object_variable: vec![
+                Replacement::new(r"^has(\w+)", "$1"),
+                Replacement::new(r"([unclosed", ""),
+            ],
+        };
+
+        let error = replacements
+            .validate()
+            .expect_err("an unparsable pattern should be reported");
+
+        assert!(
+            error.contains("([unclosed"),
+            "the error should name the offending pattern, got: {}",
+            error
+        );
+    }
+
+    #[test]
+    fn test_invalid_pattern_is_skipped_instead_of_panicking() {
+        let replacements = Replacements {
+            object_variable: vec![
+                Replacement::new(r"([unclosed", ""),
+                Replacement::new(r"^has(\w+)", "$1"),
+            ],
+        };
+
+        // WARNING: this used to panic.
+        assert_eq!(replacements.apply_object_variable("hasAuthor"), "Author");
+    }
+
+    #[test]
+    fn test_only_the_invalid_pattern_is_skipped() {
+        let replacements = Replacements {
+            object_variable: vec![
+                Replacement::new(r"^has(\w+)", "$1"),
+                Replacement::new(r"*nope", ""),
+                Replacement::new(r"Author", "Creator"),
+            ],
+        };
+
+        assert_eq!(replacements.apply_object_variable("hasAuthor"), "Creator");
+    }
+
+    #[test]
+    fn test_regex_is_compiled_once_and_cached() {
+        let replacement = Replacement::new(r"^has(\w+)", "$1");
+
+        let first = replacement.regex().expect("should compile");
+        let second = replacement.regex().expect("should compile");
+
+        assert!(
+            std::ptr::eq(first, second),
+            "the compiled pattern should be cached, not recompiled"
+        );
+    }
+
+    #[test]
+    fn test_invalid_regex_reports_an_error_every_time() {
+        let replacement = Replacement::new(r"([unclosed", "");
+
+        // INFO: nothing is cached for an invalid pattern, but it keeps failing
+        // in the same way instead of panicking.
+        assert!(replacement.regex().is_err());
+        assert!(replacement.regex().is_err());
+    }
+
+    #[test]
+    fn test_replacement_equality_ignores_the_compiled_cache() {
+        let uncompiled = Replacement::new(r"^has(\w+)", "$1");
+        let compiled = Replacement::new(r"^has(\w+)", "$1");
+        compiled.regex().expect("should compile");
+
+        assert_eq!(uncompiled, compiled);
     }
 
     #[test]

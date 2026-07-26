@@ -51,12 +51,24 @@ fn merge_settings(settings: &Settings, patch: Value) -> Result<Settings, LSPErro
         )
     })?;
     merge_value(&mut merged, patch);
-    serde_json::from_value(merged).map_err(|error| {
+    let merged: Settings = serde_json::from_value(merged).map_err(|error| {
         LSPError::new(
             ErrorCode::InvalidParams,
             &format!("Could not apply the received settings: {}", error),
         )
-    })
+    })?;
+    // NOTE: reject invalid regex patterns here, where there is a client to
+    // report them to. Otherwise they would only surface as a warning on every
+    // completion request.
+    if let Some(replacements) = merged.replacements.as_ref() {
+        replacements.validate().map_err(|error| {
+            LSPError::new(
+                ErrorCode::InvalidParams,
+                &format!("Could not apply the received settings: {}", error),
+            )
+        })?;
+    }
+    Ok(merged)
 }
 
 /// Recursively merges `patch` into `target`.
@@ -254,6 +266,41 @@ mod tests {
                 .message
                 .contains("Could not apply the received settings")
         );
+    }
+
+    #[test]
+    fn test_invalid_replacement_pattern_is_rejected() {
+        let error = merge_settings(
+            &Settings::default(),
+            json!({
+                "replacements": { "objectVariable": [{ "pattern": "([unclosed", "replacement": "" }] }
+            }),
+        )
+        .expect_err("an unparsable pattern should be rejected");
+
+        assert!(
+            error.message.contains("([unclosed"),
+            "the error should name the offending pattern, got: {}",
+            error.message
+        );
+    }
+
+    #[test]
+    fn test_rejected_patch_leaves_the_settings_alone() {
+        let settings = Settings::default();
+
+        let result = merge_settings(
+            &settings,
+            json!({
+                "format": { "lineLength": 80 },
+                "replacements": { "objectVariable": [{ "pattern": "*nope", "replacement": "" }] }
+            }),
+        );
+
+        assert!(result.is_err());
+        // NOTE: the handler assigns only on success, so the valid part of a
+        // rejected patch is not applied either.
+        assert_eq!(settings, Settings::default());
     }
 
     #[test]

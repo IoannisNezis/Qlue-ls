@@ -2,6 +2,27 @@ use ll_sparql_parser::{
     ast::{AstNode, QueryUnit},
     parse_query,
 };
+use urlencoding::encode;
+
+use crate::server::{configuration::BackendConfiguration, lsp::SparqlEngine};
+
+/// Minimal query used to check whether an endpoint answers SPARQL requests.
+const HEALTH_CHECK_QUERY: &str = "SELECT * WHERE { VALUES ?x {1} } LIMIT 1";
+
+/// Build the URL used to check whether a backend is available.
+///
+/// An explicitly configured `health_check_url` wins. Otherwise QLever backends
+/// are pinged via their dedicated `/ping` endpoint (cheaper than running a
+/// query); every other engine gets a minimal SPARQL query.
+pub(crate) fn health_check_url(backend: &BackendConfiguration) -> String {
+    if let Some(url) = &backend.health_check_url {
+        return url.clone();
+    }
+    match backend.engine {
+        Some(SparqlEngine::QLever) => format!("{}/ping", backend.url.trim_end_matches('/')),
+        _ => format!("{}?query={}", backend.url, encode(HEALTH_CHECK_QUERY)),
+    }
+}
 
 /// Wrap a SELECT query in an outer `SELECT * WHERE { ... }` and append
 /// `LIMIT`/`OFFSET` clauses, leaving any surrounding prologue/values intact.

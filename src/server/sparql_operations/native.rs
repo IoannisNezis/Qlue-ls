@@ -1,4 +1,5 @@
 use crate::server::Server;
+use crate::server::configuration::BackendConfiguration;
 use crate::server::configuration::RequestMethod;
 use crate::server::lsp::ExecuteUpdateResponseResult;
 use crate::server::lsp::SparqlEngine;
@@ -6,6 +7,7 @@ use crate::server::sparql_operations::ConnectionError;
 use crate::server::sparql_operations::HttpError;
 use crate::server::sparql_operations::SparqlRequestError;
 use crate::server::sparql_operations::utils::add_limit_offset_to_query;
+use crate::server::sparql_operations::utils::health_check_url;
 use crate::sparql::results::SparqlResult;
 use futures::lock::Mutex;
 use reqwest::Client;
@@ -95,20 +97,26 @@ pub(crate) async fn execute_query(
     Ok(Some(result))
 }
 
-pub(crate) async fn check_server_availability(url: &str) -> bool {
-    use reqwest::Client;
-    let response = Client::new().get(url).send();
-    response.await.is_ok_and(|res| res.status() == 200)
-    // let opts = RequestInit::new();
-    // opts.set_method("GET");
-    // opts.set_mode(RequestMode::Cors);
-    // let request = Request::new_with_str_and_init(url, &opts).expect("Failed to create request");
-    // let resp_value = match JsFuture::from(worker_global.fetch_with_request(&request)).await {
-    //     Ok(resp) => resp,
-    //     Err(_) => return false,
-    // };
-    // let resp: Response = resp_value.dyn_into().unwrap();
-    // resp.ok()
+/// Check whether `backend` responds: QLever backends are pinged via `/ping`,
+/// every other engine gets a minimal SPARQL query (see [`health_check_url`]).
+pub(crate) async fn check_server_availability(backend: &BackendConfiguration) -> bool {
+    let url = health_check_url(backend);
+    let request = Client::new()
+        .get(&url)
+        .header("Accept", "application/sparql-results+json")
+        .header("User-Agent", "qlue-ls/1.0")
+        .send();
+    match timeout(Duration::from_secs(5), request).await {
+        Ok(Ok(response)) => response.status().is_success(),
+        Ok(Err(err)) => {
+            tracing::info!("health check for \"{}\" failed: {}", url, err);
+            false
+        }
+        Err(_) => {
+            tracing::info!("health check for \"{}\" timed out", url);
+            false
+        }
+    }
 }
 
 pub(crate) async fn execute_construct_query(
@@ -131,4 +139,3 @@ pub(crate) async fn execute_update(
 ) -> Result<ExecuteUpdateResponseResult, SparqlRequestError> {
     todo!()
 }
-

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- `qlueLs/pingBackend` now checks availability in an engine-aware way: QLever
+  backends are pinged via their `/ping` endpoint, all other engines receive a
+  minimal SPARQL query. An explicitly configured `healthCheckUrl` is still
+  requested as is. The check times out after 5 seconds and accepts any 2xx
+  response.
+
 ## [3.3.2] - 2027-07-26
 
 ### Fixed

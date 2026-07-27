@@ -1,4 +1,5 @@
 use crate::server::Server;
+use crate::server::configuration::BackendConfiguration;
 use crate::server::configuration::RequestMethod;
 use crate::server::lsp::CanceledError;
 use crate::server::lsp::ExecuteUpdateResponseResult;
@@ -7,6 +8,7 @@ use crate::server::lsp::SparqlEngine;
 use crate::server::sparql_operations::ConnectionError;
 use crate::server::sparql_operations::SparqlRequestError;
 use crate::server::sparql_operations::utils::add_limit_offset_to_query;
+use crate::server::sparql_operations::utils::health_check_url;
 use crate::sparql::results::RDFTerm;
 use crate::sparql::results::SparqlResult;
 use futures::lock::Mutex;
@@ -430,17 +432,31 @@ fn compress_result_uris(server: &Server, partial_result: &mut PartialResult) {
     }
 }
 
-pub(crate) async fn check_server_availability(url: &str) -> bool {
+/// Check whether `backend` responds: QLever backends are pinged via `/ping`,
+/// every other engine gets a minimal SPARQL query (see [`health_check_url`]).
+pub(crate) async fn check_server_availability(backend: &BackendConfiguration) -> bool {
     use web_sys::RequestMode;
 
+    let url = health_check_url(backend);
     let worker_global: WorkerGlobalScope = js_sys::global().unchecked_into();
     let opts = RequestInit::new();
     opts.set_method("GET");
     opts.set_mode(RequestMode::Cors);
-    let request = Request::new_with_str_and_init(url, &opts).expect("Failed to create request");
+    opts.set_signal(Some(&AbortSignal::timeout_with_u32(5000)));
+    let request = match Request::new_with_str_and_init(&url, &opts) {
+        Ok(request) => request,
+        Err(err) => {
+            tracing::info!("could not build health check request for \"{url}\": {err:?}");
+            return false;
+        }
+    };
+    set_header(&request, "Accept", ACCEPT_SPARQL_JSON);
     let resp_value = match JsFuture::from(worker_global.fetch_with_request(&request)).await {
         Ok(resp) => resp,
-        Err(_) => return false,
+        Err(err) => {
+            tracing::info!("health check for \"{url}\" failed: {err:?}");
+            return false;
+        }
     };
     let resp: Response = resp_value.dyn_into().unwrap();
     resp.ok()

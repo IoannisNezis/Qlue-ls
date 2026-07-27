@@ -59,8 +59,7 @@ pub(super) async fn handle_ping_backend_request(
                 )),
         }?
     };
-    let health_check_url = &backend.health_check_url.as_ref().unwrap_or(&backend.url);
-    let available = check_server_availability(health_check_url).await;
+    let available = check_server_availability(&backend).await;
     server_rc
         .lock()
         .await

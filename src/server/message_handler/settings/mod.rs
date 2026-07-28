@@ -38,7 +38,6 @@ pub(super) async fn handle_change_settings_notification(
 ) -> Result<(), LSPError> {
     let mut server = server_rc.lock().await;
     server.settings = merge_settings(&server.settings, request.params)?;
-    tracing::info!("Updated settings: {:?}", server.settings);
     Ok(())
 }
 

@@ -10,7 +10,7 @@ use crate::server::sparql_operations::SparqlRequestError;
 use crate::server::sparql_operations::utils::add_limit_offset_to_query;
 use crate::server::sparql_operations::utils::health_check_url;
 use crate::sparql::results::RDFTerm;
-use crate::sparql::results::SparqlResult;
+use crate::sparql::results::{SparqlResult, SparqlResultsBody};
 use futures::lock::Mutex;
 use js_sys::JsString;
 use lazy_sparql_result_reader::parser::PartialResult;
@@ -271,11 +271,13 @@ pub(crate) async fn execute_construct_query(
         SparqlRequestError::Deserialization("Could not read n-triples response".to_string())
     })?;
 
+    // INFO: a CONSTRUCT result is always a triple stream, so the vars are fixed.
+    let vars: Vec<String> = ["subject", "predicate", "object"]
+        .into_iter()
+        .map(str::to_string)
+        .collect();
     let result = SparqlResult::new(
-        ["subject", "predicate", "object"]
-            .into_iter()
-            .map(str::to_string)
-            .collect(),
+        vars.clone(),
         triples
             .into_iter()
             .map(|triple| {
@@ -293,23 +295,24 @@ pub(crate) async fn execute_construct_query(
     }
 
     let server = server_rc.lock().await;
-    let SparqlResult {
-        head,
-        results,
-        prefixes: _prefixes,
-    } = result;
+    let SparqlResult { body, .. } = result;
     server
         .send_message(PartialSparqlResultNotification::new(PartialResult::Header(
             Header {
-                head: Head { vars: head.vars },
+                head: Head { vars },
             },
         )))
         .expect("Response should be sendable");
+    let SparqlResultsBody::Results { bindings } = body else {
+        tracing::error!(
+            "The sparql result did not contain any bindings, likely because its not a select query. For non select queriesl, lazy mode is not supported.",
+        );
+        return Ok(None);
+    };
     server
         .send_message(PartialSparqlResultNotification::new(
             PartialResult::Bindings(
-                results
-                    .bindings
+                bindings
                     .into_iter()
                     .map(|binding| {
                         lazy_sparql_result_reader::sparql::Binding(HashMap::from_iter(

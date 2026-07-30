@@ -1,10 +1,13 @@
 use std::rc::Rc;
 
-use crate::server::{
-    Server,
-    lsp::errors::{ErrorCode, LSPError},
-    message_handler::misc::resolve_backend_at_token,
-    sparql_operations::execute_query,
+use crate::{
+    server::{
+        Server,
+        lsp::errors::{ErrorCode, LSPError},
+        message_handler::misc::resolve_backend_at_token,
+        sparql_operations::execute_query,
+    },
+    sparql::results::SparqlResultsBody,
 };
 use futures::lock::Mutex;
 use ll_sparql_parser::{
@@ -74,12 +77,19 @@ pub(super) async fn hover(
         )
         .await
         .map_err(|_err| LSPError::new(ErrorCode::InternalError, "hover query failed"))?;
-        match sparql_response
-            .expect("Non-lazy request should always return a result.")
-            .results
-            .bindings
-            .first()
-        {
+
+        let result = sparql_response.expect("Non-lazy request should always return a result.");
+
+        let SparqlResultsBody::Results { bindings } = result.body else {
+            tracing::error!(
+                "The SPARQL result of a completion query did not contain bindings. Likely because its not a SELECT query."
+            );
+            return Err(LSPError::new(
+                ErrorCode::InvalidParams,
+                "The SPARQL result of a completion query did not contain bindings. Likely because its not a SELECT query.",
+            ));
+        };
+        match bindings.first() {
             Some(binding) => binding
                 .get("qls_label")
                 .ok_or(LSPError::new(

@@ -10,7 +10,7 @@ use crate::{
         message_handler::execute::utils::get_timestamp,
         sparql_operations::{SparqlRequestError, execute_construct_query, execute_query},
     },
-    sparql::results::RDFTerm,
+    sparql::results::{RDFTerm, SparqlResultsBody},
 };
 use futures::lock::Mutex;
 use ll_sparql_parser::{QueryType, guess_query_type};
@@ -24,9 +24,10 @@ pub(super) async fn handle_execute_query_request(
     engine: Option<SparqlEngine>,
 ) -> Result<(), LSPError> {
     match guess_query_type(&query) {
-        Some(QueryType::SelectQuery | QueryType::DescribeQuery | QueryType::AskQuery) => {
+        Some(QueryType::SelectQuery | QueryType::DescribeQuery) => {
             handle_normal_query(server_rc, request, url, query, engine).await
         }
+        Some(QueryType::AskQuery) => handle_ask_query(server_rc, request, url, query, engine).await,
         Some(QueryType::ConstructQuery) => {
             handle_construct_query(server_rc, request, url, query, engine).await
         }
@@ -126,14 +127,19 @@ async fn handle_normal_query(
         let mut query_result =
             query_result.expect("Non-lazy request should always return a result.");
 
-        // NOTE: compress IRIs when possible.
-        for binding in query_result.results.bindings.iter_mut() {
-            for (_, rdf_term) in binding.iter_mut() {
-                if let RDFTerm::Uri { value, curie } = rdf_term {
-                    *curie = server
-                        .state
-                        .get_default_converter()
-                        .and_then(|converer| converer.compress(value).ok());
+        match query_result.body {
+            SparqlResultsBody::Boolean(_) => {}
+            SparqlResultsBody::Results { ref mut bindings } => {
+                // NOTE: compress IRIs when possible.
+                for binding in bindings.iter_mut() {
+                    for (_, rdf_term) in binding.iter_mut() {
+                        if let RDFTerm::Uri { value, curie } = rdf_term {
+                            *curie = server
+                                .state
+                                .get_default_converter()
+                                .and_then(|converer| converer.compress(value).ok());
+                        }
+                    }
                 }
             }
         }
@@ -235,4 +241,18 @@ async fn handle_construct_query(
                 result,
             }),
         ))
+}
+
+async fn handle_ask_query(
+    server_rc: Rc<Mutex<Server>>,
+    mut request: ExecuteOperationRequest,
+    url: String,
+    query: String,
+    engine: Option<SparqlEngine>,
+) -> Result<(), LSPError> {
+    // NOTE: an ASK result is a single boolean, so pagination and lazy loading do not apply.
+    request.params.max_result_size = None;
+    request.params.result_offset = None;
+    request.params.lazy = Some(false);
+    handle_normal_query(server_rc, request, url, query, engine).await
 }

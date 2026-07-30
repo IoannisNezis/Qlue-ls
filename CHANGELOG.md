@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- `qlueLs/executeOperation` no longer fails on `ASK` queries. The boolean
+  SPARQL result is now parsed and returned; pagination and lazy loading are
+  disabled for it, since the result is a single value.
+
 ### Changed
 
 - `qlueLs/pingBackend` now checks availability in an engine-aware way: QLever

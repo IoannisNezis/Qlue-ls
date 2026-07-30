@@ -19,7 +19,7 @@ use crate::{
         },
         sparql_operations::execute_query,
     },
-    sparql::results::RDFTerm,
+    sparql::results::{RDFTerm, SparqlResultsBody},
 };
 
 use super::{environment::CompletionEnvironment, error::CompletionError};
@@ -145,12 +145,17 @@ pub(super) async fn fetch_online_completions(
         }
     })?
     .expect("Non-lazy request should always return a result.");
-    tracing::info!("Result size: {}", result.results.bindings.len());
+
+    let SparqlResultsBody::Results { bindings } = result.body else {
+        tracing::error!(
+            "The SPARQL result of a completion query did not contain bindings. Likely because its not a SELECT query."
+        );
+        return Err(CompletionError::Resolve(            "The SPARQL result of a completion query did not contain bindings. Likely because its not a SELECT query.".to_string()));
+    };
+    tracing::info!("Result size: {}", bindings.len());
 
     let mut server = server_rc.lock().await;
-    result
-        .results
-        .bindings
+    bindings
         .into_iter()
         .map(|binding| {
             let rdf_term = binding.get("qls_entity").ok_or_else(|| {

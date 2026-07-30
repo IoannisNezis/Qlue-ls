@@ -9,33 +9,53 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SparqlResult {
     #[allow(dead_code)]
-    pub head: SparqlResultsVars,
-    pub results: SparqlResultsBindings,
+    pub head: SparqlResultsHead,
+    #[serde(flatten)]
+    pub body: SparqlResultsBody,
     #[serde(skip_deserializing)]
     pub prefixes: HashMap<String, String>,
 }
 
 #[cfg(target_arch = "wasm32")]
 impl SparqlResult {
-    pub fn new(vars: Vec<String>, bindings: Vec<HashMap<String, RDFTerm>>) -> Self {
+    pub fn new(vars: Vec<String>, bindings: Vec<Binding>) -> Self {
         Self {
-            head: SparqlResultsVars { vars },
-            results: SparqlResultsBindings { bindings },
+            head: SparqlResultsHead {
+                vars: Some(vars),
+                link: Vec::new(),
+            },
+            body: SparqlResultsBody::Results { bindings },
             prefixes: HashMap::new(),
         }
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct SparqlResultsVars {
-    #[allow(dead_code)]
-    pub vars: Vec<String>,
+#[cfg(test)]
+impl SparqlResult {
+    pub fn bindings(&self) -> Option<&Vec<Binding>> {
+        match &self.body {
+            SparqlResultsBody::Results { bindings } => Some(bindings),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct SparqlResultsBindings {
-    pub bindings: Vec<HashMap<String, RDFTerm>>,
+pub struct SparqlResultsHead {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vars: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub link: Vec<String>,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SparqlResultsBody {
+    Boolean(bool),
+    Results { bindings: Vec<Binding> },
+}
+
+type Binding = HashMap<String, RDFTerm>;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
@@ -190,13 +210,16 @@ mod test {
   }
 }"#;
         let results: SparqlResult = serde_json::from_str(result_str).unwrap();
-        assert_eq!(results.head.vars, vec!["first", "second"]);
+        assert_eq!(
+            results.head.vars.as_ref().unwrap(),
+            &vec!["first", "second"]
+        );
         assert!(matches!(
-            results.results.bindings[0].get("first").unwrap(),
+            results.bindings().unwrap()[0].get("first").unwrap(),
             RDFTerm::Uri { value: _, curie: _ }
         ));
         assert!(matches!(
-            results.results.bindings[0].get("second").unwrap(),
+            results.bindings().unwrap()[0].get("second").unwrap(),
             RDFTerm::Literal {
                 value: _,
                 lang: None,
@@ -204,7 +227,7 @@ mod test {
             }
         ));
         assert!(matches!(
-            results.results.bindings[1].get("first").unwrap(),
+            results.bindings().unwrap()[1].get("first").unwrap(),
             RDFTerm::Literal {
                 value: _,
                 lang: Some(_),
@@ -212,7 +235,7 @@ mod test {
             }
         ));
         assert!(matches!(
-            results.results.bindings[1].get("second").unwrap(),
+            results.bindings().unwrap()[1].get("second").unwrap(),
             RDFTerm::Literal {
                 value: _,
                 lang: None,
@@ -220,7 +243,7 @@ mod test {
             }
         ));
         assert!(matches!(
-            results.results.bindings[2].get("first").unwrap(),
+            results.bindings().unwrap()[2].get("first").unwrap(),
             RDFTerm::Bnode { value: _ }
         ));
     }

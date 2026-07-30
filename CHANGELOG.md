@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [3.4.1] - 2027-07-30
+
 ### Fixed
 
 - `qlueLs/executeOperation` no longer fails on `ASK` queries. The boolean

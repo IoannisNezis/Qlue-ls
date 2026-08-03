@@ -21,7 +21,7 @@ logos = "0.16.0"
 rowan = "0.16.1"
 
 [build-dependencies]
-prettyplease = "0.2.29"
+prettyplease = "0.3.0"
 proc-macro2 = "1.0.93"
 quote = "1.0.38"
 syn = "2.0.98"

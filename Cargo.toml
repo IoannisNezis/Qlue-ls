@@ -59,7 +59,6 @@ tokio = { version = "1.44.1", features = ["full"] }
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 dirs-next = "2.0.0"
 clap = { version = "4.5.16", features = ["derive"] }
-camino = "1.1.9"
 config = "0.15.0"
 notify = "8.0.0"
 reqwest = { version = "0.13.0", features = ["json", "form"] }

@@ -230,6 +230,8 @@ pub struct ExternalLocatedAndAdd {
     #[serde(rename(deserialize = "OPS"))]
     pub ops: PermutationLocateAdd,
     pub total: u64,
+    // INFO: not emitted by all QLever versions
+    #[serde(default)]
     pub transform_handles: u64,
 }
 
@@ -252,6 +254,8 @@ pub struct InternalLocatedAndAdd {
     #[serde(rename(deserialize = "POS"))]
     pub pos: PermutationLocateAdd,
     pub total: u64,
+    // INFO: not emitted by all QLever versions
+    #[serde(default)]
     pub transform_handles: u64,
 }
 

@@ -264,10 +264,15 @@ pub(super) async fn get_prefix_declarations(root: &SyntaxNode) -> Vec<(String, S
 
 pub(super) fn reduce_path(
     subject: &str,
-    path: &Path,
+    path: Option<&Path>,
     object: &str,
     offset: TextSize,
 ) -> Option<String> {
+    let path = if let Some(path) = path {
+        path
+    } else {
+        return Some(format!("{} ?qls_entity {}", subject, object));
+    };
     if path.syntax().text_range().start() >= offset {
         return Some(format!("{} ?qls_entity {}", subject, object));
     }
@@ -275,13 +280,13 @@ pub(super) fn reduce_path(
         SyntaxKind::PathPrimary | SyntaxKind::PathElt | SyntaxKind::Path | SyntaxKind::VerbPath => {
             reduce_path(
                 subject,
-                &Path::cast(path.syntax().first_child()?)?,
+                path.syntax().last_child().and_then(Path::cast).as_ref(),
                 object,
                 offset,
             )
         }
         SyntaxKind::PathAlternative => {
-            reduce_path(subject, &path.sub_paths().last()?, object, offset)
+            reduce_path(subject, Some(&path.sub_paths().last()?), object, offset)
         }
         SyntaxKind::PathSequence => {
             let sub_paths = path
@@ -310,31 +315,42 @@ pub(super) fn reduce_path(
                 Some(format!(
                     "{} . {}",
                     prefix,
-                    reduce_path("?qls_inner", &path.sub_paths().last()?, object, offset)?
+                    reduce_path(
+                        "?qls_inner",
+                        Some(&path.sub_paths().last()?),
+                        object,
+                        offset
+                    )?
                 ))
             } else {
-                reduce_path(subject, &path.sub_paths().last()?, object, offset)
+                reduce_path(subject, Some(&path.sub_paths().last()?), object, offset)
             }
         }
         SyntaxKind::PathEltOrInverse => {
             if path.syntax().first_child_or_token()?.kind() == SyntaxKind::Zirkumflex {
+                // NOTE: Swap subject and object
+                tracing::debug!("old path: {:?}", path);
+                tracing::debug!("old path syntax: {:?}", path);
+                tracing::debug!("new path: {:?}", path.syntax().last_child());
                 reduce_path(
                     object,
-                    &Path::cast(path.syntax().last_child()?)?,
+                    path.syntax().last_child().and_then(Path::cast).as_ref(),
                     subject,
                     offset,
                 )
             } else {
                 reduce_path(
                     subject,
-                    &Path::cast(path.syntax().last_child()?)?,
+                    path.syntax().last_child().and_then(Path::cast).as_ref(),
                     object,
                     offset,
                 )
             }
         }
         SyntaxKind::PathNegatedPropertySet => match path.syntax().last_child() {
-            Some(last_child) => reduce_path(subject, &Path::cast(last_child)?, object, offset),
+            Some(last_child) => {
+                reduce_path(subject, Path::cast(last_child).as_ref(), object, offset)
+            }
             _ => Some(format!("{} ?qls_entity {}", subject, object)),
         },
         SyntaxKind::PathOneInPropertySet => {
@@ -503,19 +519,17 @@ mod test {
             .unwrap()
             .triples();
         let triple = triples.first().unwrap();
-        println!(
-            "{:#?}",
-            &triple.properties_list_path().unwrap().properties().last()
-        );
         let res = reduce_path(
             &triple.subject().unwrap().text(),
-            &triple
-                .properties_list_path()
-                .unwrap()
-                .properties()
-                .last()
-                .unwrap()
-                .verb,
+            Some(
+                &triple
+                    .properties_list_path()
+                    .unwrap()
+                    .properties()
+                    .last()
+                    .unwrap()
+                    .verb,
+            ),
             "[]",
             offset.into(),
         )
@@ -545,13 +559,15 @@ mod test {
         let triple = triples.first().unwrap();
         let res = reduce_path(
             &triple.subject().unwrap().text(),
-            &triple
-                .properties_list_path()
-                .unwrap()
-                .properties()
-                .last()
-                .unwrap()
-                .verb,
+            Some(
+                &triple
+                    .properties_list_path()
+                    .unwrap()
+                    .properties()
+                    .last()
+                    .unwrap()
+                    .verb,
+            ),
             "[]",
             offset.into(),
         )
@@ -562,7 +578,7 @@ mod test {
     #[test]
     fn reduce_inverse_path() {
         //       012345678901234567890123456
-        let s = "Select * { ?a ^  <x>}";
+        let s = "Select * { ?a ^";
         let reduced = "[] ?qls_entity ?a";
         let offset = 15;
         let (tree, _) = parse_query(s);
@@ -581,24 +597,26 @@ mod test {
         let triple = triples.first().unwrap();
         let res = reduce_path(
             &triple.subject().unwrap().text(),
-            &triple
-                .properties_list_path()
-                .unwrap()
-                .properties()
-                .last()
-                .unwrap()
-                .verb,
+            Some(
+                &triple
+                    .properties_list_path()
+                    .unwrap()
+                    .properties()
+                    .last()
+                    .unwrap()
+                    .verb,
+            ),
             "[]",
             offset.into(),
         )
         .unwrap();
-        assert_eq!(res, reduced);
+        pretty_assertions::assert_eq!(res, reduced);
     }
 
     #[test]
     fn reduce_negated_path() {
         //       012345678901234567890123456
-        let s = "Select * { ?a !()}";
+        let s = "Select * { ?a !(";
         let reduced = "?a ?qls_entity []";
         let offset: u32 = 16;
         let (tree, _) = parse_query(&s[..offset as usize]);
@@ -617,13 +635,15 @@ mod test {
         let triple = triples.first().unwrap();
         let res = reduce_path(
             &triple.subject().unwrap().text(),
-            &triple
-                .properties_list_path()
-                .unwrap()
-                .properties()
-                .last()
-                .unwrap()
-                .verb,
+            Some(
+                &triple
+                    .properties_list_path()
+                    .unwrap()
+                    .properties()
+                    .last()
+                    .unwrap()
+                    .verb,
+            ),
             "[]",
             offset.into(),
         )
@@ -653,13 +673,15 @@ mod test {
         let triple = triples.first().unwrap();
         let res = reduce_path(
             &triple.subject().unwrap().text(),
-            &triple
-                .properties_list_path()
-                .unwrap()
-                .properties()
-                .last()
-                .unwrap()
-                .verb,
+            Some(
+                &triple
+                    .properties_list_path()
+                    .unwrap()
+                    .properties()
+                    .last()
+                    .unwrap()
+                    .verb,
+            ),
             "[]",
             offset.into(),
         )
@@ -668,8 +690,9 @@ mod test {
     }
     #[test]
     fn reduce_complex_path2() {
+        //       0         1         2         3         4
         //       01234567890123456789012345678901234567890
-        let s = "Select * { ?a <p0>|<p1>/(<p2>)/^<p2>/!(^)  <x>}";
+        let s = "Select * { ?a <p0>|<p1>/(<p2>)/^<p2>/!(^";
         let reduced = "?a <p1>/(<p2>)/^<p2> ?qls_inner . [] ?qls_entity ?qls_inner";
         let offset = 40;
         let (tree, _) = parse_query(s);
@@ -688,13 +711,15 @@ mod test {
         let triple = triples.first().unwrap();
         let res = reduce_path(
             &triple.subject().unwrap().text(),
-            &triple
-                .properties_list_path()
-                .unwrap()
-                .properties()
-                .last()
-                .unwrap()
-                .verb,
+            Some(
+                &triple
+                    .properties_list_path()
+                    .unwrap()
+                    .properties()
+                    .last()
+                    .unwrap()
+                    .verb,
+            ),
             "[]",
             offset.into(),
         )
@@ -704,8 +729,9 @@ mod test {
 
     #[test]
     fn reduce_complex_path3() {
-        //       0123456789012345678901234567890123456
-        let s = "Select * { ?a ^(^<a>/)  <x>}";
+        //       0         1         2
+        //       0123456789012345678901
+        let s = "Select * { ?a ^(^<a>/";
         let reduced = "[] ^<a> ?qls_inner . ?qls_inner ?qls_entity ?a";
         let offset = 21;
         let (tree, _) = parse_query(s);
@@ -724,13 +750,15 @@ mod test {
         let triple = triples.first().unwrap();
         let res = reduce_path(
             &triple.subject().unwrap().text(),
-            &triple
-                .properties_list_path()
-                .unwrap()
-                .properties()
-                .last()
-                .unwrap()
-                .verb,
+            Some(
+                &triple
+                    .properties_list_path()
+                    .unwrap()
+                    .properties()
+                    .last()
+                    .unwrap()
+                    .verb,
+            ),
             "[]",
             offset.into(),
         )
@@ -741,7 +769,7 @@ mod test {
     #[test]
     fn reduce_complex_path4() {
         //       01234567890123456
-        let s = "Select * { ?a !^  <x>}";
+        let s = "Select * { ?a !^";
         let reduced = "[] ?qls_entity ?a";
         let offset = 16;
 
@@ -761,13 +789,15 @@ mod test {
         let triple = triples.first().unwrap();
         let res = reduce_path(
             &triple.subject().unwrap().text(),
-            &triple
-                .properties_list_path()
-                .unwrap()
-                .properties()
-                .last()
-                .unwrap()
-                .verb,
+            Some(
+                &triple
+                    .properties_list_path()
+                    .unwrap()
+                    .properties()
+                    .last()
+                    .unwrap()
+                    .verb,
+            ),
             "[]",
             offset.into(),
         )

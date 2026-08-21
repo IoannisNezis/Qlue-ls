@@ -126,7 +126,7 @@ fn local_template_context(environment: &CompletionEnvironment) -> Result<Context
                         "local_context",
                         &reduce_path(
                             &subject_string,
-                            &last_prop.verb,
+                            Some(&last_prop.verb),
                             "[]",
                             environment
                                 .anchor_token

@@ -44,7 +44,7 @@ fn local_context(environment: &CompletionEnvironment) -> Option<String> {
             } else if properties.len() == 1 {
                 reduce_path(
                     "[]",
-                    &properties[0].verb,
+                    Some(&properties[0].verb),
                     "[]",
                     environment
                         .anchor_token
@@ -64,7 +64,7 @@ fn local_context(environment: &CompletionEnvironment) -> Option<String> {
                         .join(" ; "),
                     reduce_path(
                         "[]",
-                        &last_prop.verb,
+                        Some(&last_prop.verb),
                         "[]",
                         environment
                             .anchor_token

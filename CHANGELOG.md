@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - fix serializer for QLever update responses
+- completions inside inverse property paths (`^`) now suggest the correct
+  predicates again
 
 ## [3.4.1] - 2027-07-30
 

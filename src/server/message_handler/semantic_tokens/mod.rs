@@ -60,29 +60,63 @@ pub(super) async fn handle_semantic_tokens_range_request(
 
 fn collect_semantic_tokens(
     syntax_node: SyntaxNode,
-    range: Option<Range>,
+    request_range: Option<Range>,
 ) -> Vec<InternalSemanticToken> {
     let mut line: usize = 0;
-    let mut char: usize = 0;
+    let mut start_char_utf8: usize = 0;
+    let mut start_char_utf16: usize = 0;
     let mut semantic_tokens = Vec::new();
     let mut next_token = syntax_node.first_token();
     while let Some(ref token) = next_token {
-        let length = token.text_range().len().into();
-        let (end_line, end_char) = if token.kind() == SyntaxKind::WHITESPACE {
-            if let Some(offset) = token.text().rfind('\n') {
-                let line_break_count = token.text().chars().filter(|char| char == &'\n').count();
-                (line + line_break_count, length - offset - 1)
-            } else {
-                (line, char + token.text().len())
-            }
+        let length_utf8: usize = token.text_range().len().into();
+        let length_utf16 = token.text().encode_utf16().count();
+        let (end_line, end_char_utf8, end_char_utf16) = if token.kind() == SyntaxKind::WHITESPACE
+            && let Some(offset) = token.text().rfind('\n')
+        {
+            let tail = &token.text()[offset + 1..];
+            let line_break_count = token.text().chars().filter(|char| char == &'\n').count();
+            (
+                line + line_break_count,
+                tail.len(),
+                tail.encode_utf16().count(),
+            )
         } else {
-            (line, char + token.text().len())
+            (
+                line,
+                start_char_utf8 + length_utf8,
+                start_char_utf16 + length_utf16,
+            )
         };
-        let token_range = Range::new(line as u32, char as u32, end_line as u32, end_char as u32);
-        if range
+        let token_range = Range::new(
+            line as u32,
+            start_char_utf8 as u32,
+            end_line as u32,
+            end_char_utf8 as u32,
+        );
+        if request_range
             .as_ref()
             .is_none_or(|range| token_range.overlaps(range))
-            && let Some(semantic_token_type) = match token.kind() {
+            && let Some(semantic_token_type) = match_token_kind(token.kind())
+        {
+            semantic_tokens.push(InternalSemanticToken {
+                line,
+                start_char: start_char_utf16,
+                length: length_utf16,
+                token_type: semantic_token_type,
+                token_modifier: Vec::new(),
+            });
+        }
+
+        line = end_line;
+        start_char_utf8 = end_char_utf8;
+        start_char_utf16 = end_char_utf16;
+        next_token = token.next_token();
+    }
+    semantic_tokens
+}
+
+fn match_token_kind(kind: SyntaxKind) -> Option<SemanticTokenTypes> {
+    match kind {
             // Keywords
             SyntaxKind::SELECT
             | SyntaxKind::ASK
@@ -261,21 +295,7 @@ fn collect_semantic_tokens(
             | SyntaxKind::PNAME_NS => Some(SemanticTokenTypes::Namespace),
 
             _ => None,
-        } {
-            semantic_tokens.push(InternalSemanticToken {
-                line,
-                start_char: char,
-                length,
-                token_type: semantic_token_type,
-                token_modifier: Vec::new(),
-            });
         }
-
-        line = end_line;
-        char = end_char;
-        next_token = token.next_token();
-    }
-    semantic_tokens
 }
 
 fn encode_semantic_tokens(semantic_tokens: Vec<InternalSemanticToken>) -> Vec<u32> {
@@ -486,6 +506,96 @@ mod test {
                     start_char: 0,
                     length: 6,
                     token_type: SemanticTokenTypes::Function,
+                    token_modifier: Vec::new()
+                }
+            ]
+        );
+    }
+
+    #[test]
+    fn semantic_token_computation_non_ascii() {
+        // Positions and lengths are UTF-16 code units, not bytes:
+        // the em dash is 3 bytes but a single UTF-16 unit.
+        let input = "SELECT * WHERE {}\n# \u{2014}\n";
+        let tree = parse(input).0;
+        let semantic_tokens = collect_semantic_tokens(tree, None);
+
+        pretty_assertions::assert_eq!(
+            semantic_tokens.last(),
+            Some(&InternalSemanticToken {
+                line: 1,
+                start_char: 0,
+                length: 3,
+                token_type: SemanticTokenTypes::Comment,
+                token_modifier: Vec::new()
+            })
+        );
+    }
+
+    #[test]
+    fn semantic_token_computation_non_ascii_shifts_following_tokens() {
+        let input = "SELECT * WHERE { FILTER(?x = \"\u{2014}\") }";
+        let tree = parse(input).0;
+        let semantic_tokens = collect_semantic_tokens(tree, None);
+
+        pretty_assertions::assert_eq!(
+            semantic_tokens.last(),
+            Some(&InternalSemanticToken {
+                line: 0,
+                start_char: 29,
+                length: 3,
+                token_type: SemanticTokenTypes::String,
+                token_modifier: Vec::new()
+            })
+        );
+    }
+
+    #[test]
+    fn semantic_token_computation_surrogate_pairs() {
+        // "é" is 2 bytes / 1 UTF-16 unit, the emoji is 4 bytes / 2 UTF-16 units
+        // (a surrogate pair) and the em dash is 3 bytes / 1 UTF-16 unit.
+        // Both the length of the literal and the columns of everything after it
+        // must be counted in UTF-16 units.
+        let input = "SELECT * WHERE { FILTER(?x = \"\u{e9}\u{1f600}\u{2014}\" && ?y = \"b\") }";
+        let tree = parse(input).0;
+        let semantic_tokens = collect_semantic_tokens(tree, None);
+
+        pretty_assertions::assert_eq!(
+            &semantic_tokens[semantic_tokens.len() - 5..],
+            [
+                InternalSemanticToken {
+                    line: 0,
+                    start_char: 29,
+                    length: 6,
+                    token_type: SemanticTokenTypes::String,
+                    token_modifier: Vec::new()
+                },
+                InternalSemanticToken {
+                    line: 0,
+                    start_char: 36,
+                    length: 2,
+                    token_type: SemanticTokenTypes::Operator,
+                    token_modifier: Vec::new()
+                },
+                InternalSemanticToken {
+                    line: 0,
+                    start_char: 39,
+                    length: 2,
+                    token_type: SemanticTokenTypes::Variable,
+                    token_modifier: Vec::new()
+                },
+                InternalSemanticToken {
+                    line: 0,
+                    start_char: 42,
+                    length: 1,
+                    token_type: SemanticTokenTypes::Operator,
+                    token_modifier: Vec::new()
+                },
+                InternalSemanticToken {
+                    line: 0,
+                    start_char: 44,
+                    length: 3,
+                    token_type: SemanticTokenTypes::String,
                     token_modifier: Vec::new()
                 }
             ]

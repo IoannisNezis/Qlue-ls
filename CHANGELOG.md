@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- semantic tokens are now reported with UTF-16 character offsets, as required by
+  the LSP specification. Highlighting no longer drifts on lines containing
+  non-ASCII characters.
+
 ## [3.4.2] - 2026-08-21
 
 ### Fixed

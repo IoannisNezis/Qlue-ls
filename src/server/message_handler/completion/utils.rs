@@ -370,12 +370,17 @@ pub(super) fn reduce_path(
 }
 
 pub(super) fn to_completion_items(
-    items: Vec<InternalCompletionItem>,
+    mut items: Vec<InternalCompletionItem>,
     range: Range,
     command: Option<&str>,
     _limit: u32,
     search_term: Option<&str>,
 ) -> CompletionList {
+    // NOTE: Rank by score (e.g. `?qls_count`) descending, items without a score go last.
+    // The sort is stable, so items with equal (or missing) score keep the order the
+    // backend returned them in.
+    // INFO: `Option::None` sorts before `Some(_)`, hence the explicit `is_none()` first key.
+    items.sort_by_key(|item| (item.score.is_none(), std::cmp::Reverse(item.score)));
     let items: Vec<_> = items
         .into_iter()
         .enumerate()
@@ -427,6 +432,7 @@ pub(super) fn to_completion_items(
                         command: command.to_string(),
                         arguments: None,
                     }),
+                    data: None,
                 }
             },
         )

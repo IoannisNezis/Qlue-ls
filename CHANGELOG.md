@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- online completion items are now ordered by their `?qls_count` relevance score
+  instead of the order the SPARQL endpoint happened to return them in. Items
+  without a score are listed last.
+
 ## [3.4.3] - 2026-08-29
 
 ### Fixed

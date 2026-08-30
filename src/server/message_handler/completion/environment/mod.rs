@@ -341,7 +341,7 @@ impl CompletionEnvironment {
                 resolve_backend_at_token(&server, &QueryUnit::cast(truncated_tree.clone())?, token)
             })
             .or_else(|| server.state.get_default_backend().cloned());
-        let anchor_token = trigger_token.and_then(get_anchor_token);
+        let (anchor_token, continuations) = resolve_anchor(&truncated_tree, trigger_token);
         // NOTE: `tree` is parsed from the document truncated at the cursor, so it can
         // not see tokens past the trigger offset. For look-ahead we use the full
         // document parse (reusing the cache when possible).
@@ -354,7 +354,6 @@ impl CompletionEnvironment {
         let following_kind =
             get_following_token(&full_tree, trigger_offset).map(|token| token.kind());
         let search_term = get_search_term(&truncated_tree, &anchor_token, trigger_offset);
-        let continuations = get_continuations(&truncated_tree, &anchor_token);
         let mut location = get_location(&anchor_token, &continuations, trigger_offset);
         let context = context(&location);
         let mut replace_range = get_replace_range(&document_position.position, &search_term);
@@ -671,6 +670,35 @@ fn get_continuations(root: &SyntaxNode, anchor_token: &Option<SyntaxToken>) -> H
     } else {
         HashSet::new()
     }
+}
+
+/// Resolve the anchor token and the set of continuations that follow it.
+///
+/// Shared by the environment and its tests so both see the same anchor.
+fn resolve_anchor(
+    root: &SyntaxNode,
+    trigger_token: Option<SyntaxToken>,
+) -> (Option<SyntaxToken>, HashSet<SyntaxKind>) {
+    let anchor_token = trigger_token.and_then(get_anchor_token);
+    let continuations = get_continuations(root, &anchor_token);
+
+    // NOTE: The first word of a multi word keyword lexes as that keyword's
+    // token, so a partially typed "GROUP BY" parks the anchor on GROUP as soon
+    // as a space follows it ("GROUP ", "GROUP B") and leaves BY as the only
+    // continuation, which no location matches. The user is still typing the
+    // keyword though, so the anchor belongs before it -- that makes the search
+    // term the whole "GROUP B" and puts the location back where the single word
+    // case ("GROUP") already lands.
+    if continuations.len() == 1 && continuations.contains(&SyntaxKind::BY) {
+        let anchor_token = anchor_token
+            .as_ref()
+            .and_then(SyntaxToken::prev_token)
+            .and_then(get_anchor_token);
+        let continuations = get_continuations(root, &anchor_token);
+        return (anchor_token, continuations);
+    }
+
+    (anchor_token, continuations)
 }
 
 /// Get the last token before the trigger offset.

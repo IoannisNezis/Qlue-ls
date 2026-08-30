@@ -3,7 +3,7 @@ use ll_sparql_parser::{SyntaxToken, parse_query, syntax_kind::SyntaxKind};
 use crate::server::message_handler::completion::environment::CompletionLocation;
 
 use super::{
-    get_anchor_token, get_continuations, get_following_token, get_location, get_trigger_token,
+    get_anchor_token, get_following_token, get_location, get_trigger_token, resolve_anchor,
 };
 
 fn match_location_at_offset(input: &str, matcher: CompletionLocation, offset: u32) -> bool {
@@ -13,8 +13,7 @@ fn match_location_at_offset(input: &str, matcher: CompletionLocation, offset: u3
 fn location(input: &str, offset: u32) -> CompletionLocation {
     let (root, _) = parse_query(&input[..offset as usize]);
     let trigger_token = get_trigger_token(&root, offset.into());
-    let anchor = trigger_token.and_then(get_anchor_token);
-    let continuations = get_continuations(&root, &anchor);
+    let (anchor, continuations) = resolve_anchor(&root, trigger_token);
     get_location(&anchor, &continuations, offset.into())
 }
 
@@ -122,6 +121,40 @@ fn localize_solution_modifier() {
         input,
         CompletionLocation::SolutionModifier,
         12
+    ));
+}
+
+// NOTE: The first word of a multi word keyword lexes as that keyword's token,
+// so once a space follows it the anchor parks on GROUP/ORDER and the only
+// continuation is BY. The user is still typing the keyword, so the location has
+// to stay SolutionModifier for the keyword completions to be offered.
+#[test]
+fn localize_solution_modifier_partial_multi_word_keyword() {
+    //           0         1         2         3
+    //           01234567890123456789012345678901
+    let input = "Select * WHERE {}\nGROUP BY DUMMY";
+    for offset in [
+        24, /* "GROUP " */
+        25, /* "GROUP B" */
+        26, /* "GROUP BY" */
+    ] {
+        assert!(
+            match_location_at_offset(input, CompletionLocation::SolutionModifier, offset),
+            "offset {offset} should be SolutionModifier, got {:?}",
+            location(input, offset)
+        );
+    }
+}
+
+#[test]
+fn localize_solution_modifier_partial_order_by() {
+    //           0         1         2         3
+    //           01234567890123456789012345678901
+    let input = "Select * WHERE {}\nORDER BY DUMMY";
+    assert!(match_location_at_offset(
+        input,
+        CompletionLocation::SolutionModifier,
+        25
     ));
 }
 

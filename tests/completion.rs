@@ -1281,3 +1281,40 @@ fn test_object_variable_completion_in_blank_node() {
         );
     });
 }
+
+/// A partially typed multi word keyword keeps offering that keyword.
+///
+/// The first word lexes as its own keyword token, so once a space follows it
+/// the anchor parks on GROUP and the only continuation is BY. The location has
+/// to stay SolutionModifier for the keyword to still be suggested.
+#[test]
+fn test_completion_partial_multi_word_keyword() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+        //                                       0123456789
+        let document = "SELECT * WHERE {\n  ?a ?b ?c .\n}\nGROUP B";
+        client.open_document("file:///test.sparql", document).await;
+
+        let id = client.complete("file:///test.sparql", 3, 7).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+
+        assert!(
+            has_completion_label(&response, "GROUP BY"),
+            "Should suggest GROUP BY for 'GROUP B', got: {:?}",
+            get_completion_labels(&response)
+        );
+        assert!(
+            !has_completion_label(&response, "LIMIT"),
+            "Should NOT suggest LIMIT for 'GROUP B'"
+        );
+
+        // The edit has to span the whole term, so accepting it does not leave
+        // the "GROUP B" the user already typed behind.
+        let range = &response["result"]["items"][0]["textEdit"]["range"];
+        assert_eq!(range["start"], json!({"line": 3, "character": 0}));
+        assert_eq!(range["end"], json!({"line": 3, "character": 7}));
+    });
+}

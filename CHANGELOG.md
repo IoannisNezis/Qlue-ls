@@ -12,6 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - online completion items are now ordered by their `?qls_count` relevance score
   instead of the order the SPARQL endpoint happened to return them in. Items
   without a score are listed last.
+- a partially typed multi word keyword no longer loses its completions. The
+  first word lexes as that keyword's own token, so as soon as a space followed
+  it (`GROUP `, `GROUP B`) the location came out as `Unknown` and no
+  completions were offered at all.
+- solution modifier completions (`GROUP BY`, `HAVING`, `ORDER BY`, `LIMIT`,
+  `OFFSET`) now carry a text edit over the range they replace instead of a bare
+  insert text, so clients know where the term being completed starts.
 
 ## [3.4.3] - 2026-08-29
 

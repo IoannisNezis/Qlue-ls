@@ -9,7 +9,7 @@ use crate::server::{
     Server,
     lsp::{
         Command, CompletionItem, CompletionItemBuilder, CompletionItemKind, CompletionList,
-        InsertTextFormat,
+        InsertTextFormat, textdocument::Range, textdocument::TextEdit,
     },
 };
 use futures::lock::Mutex;
@@ -26,7 +26,7 @@ pub async fn completions(
             .continuations
             .contains(&SyntaxKind::GraphPatternNotTriples)
     {
-        static_completions()
+        static_completions(&environment.replace_range)
             .into_iter()
             .filter(|item| matches_search_term(&item.label, environment.search_term.as_deref()))
             .collect()
@@ -81,7 +81,10 @@ pub async fn completions(
     })
 }
 
-fn static_completions() -> Vec<CompletionItem> {
+/// `replace_range` covers the whole search term. Without it a client falls back
+/// to its own word scan, which stops at the space in a multi word label -- so
+/// accepting "Sub select" after typing "sub s" left the "sub " behind.
+fn static_completions(replace_range: &Range) -> Vec<CompletionItem> {
     let trigger_completion_command = Command {
         title: "triggerNewCompletion".to_string(),
         command: "triggerNewCompletion".to_string(),
@@ -93,7 +96,7 @@ fn static_completions() -> Vec<CompletionItem> {
             .kind(CompletionItemKind::Snippet)
             .detail("Filter the results")
             .sort_text("00001")
-            .insert_text("FILTER ($0)")
+            .text_edit(TextEdit::new(replace_range.clone(), "FILTER ($0)"))
             .insert_text_format(InsertTextFormat::Snippet)
             .command(trigger_completion_command.clone())
             .build(),
@@ -102,7 +105,7 @@ fn static_completions() -> Vec<CompletionItem> {
             .kind(CompletionItemKind::Snippet)
             .detail("Bind a new variable")
             .sort_text("00002")
-            .insert_text("BIND ($1 AS ?$0)")
+            .text_edit(TextEdit::new(replace_range.clone(), "BIND ($1 AS ?$0)"))
             .insert_text_format(InsertTextFormat::Snippet)
             .build(),
         CompletionItemBuilder::new()
@@ -110,7 +113,7 @@ fn static_completions() -> Vec<CompletionItem> {
             .kind(CompletionItemKind::Snippet)
             .detail("Inline data definition")
             .sort_text("00003")
-            .insert_text("VALUES ?$1 { $0 }")
+            .text_edit(TextEdit::new(replace_range.clone(), "VALUES ?$1 { $0 }"))
             .insert_text_format(InsertTextFormat::Snippet)
             .build(),
         CompletionItemBuilder::new()
@@ -118,7 +121,10 @@ fn static_completions() -> Vec<CompletionItem> {
             .kind(CompletionItemKind::Snippet)
             .detail("Collect data from a fedarated SPARQL endpoint")
             .sort_text("00004")
-            .insert_text("SERVICE $1 {\n  $0\n}")
+            .text_edit(TextEdit::new(
+                replace_range.clone(),
+                "SERVICE $1 {\n  $0\n}",
+            ))
             .insert_text_format(InsertTextFormat::Snippet)
             .build(),
         CompletionItemBuilder::new()
@@ -126,7 +132,7 @@ fn static_completions() -> Vec<CompletionItem> {
             .kind(CompletionItemKind::Snippet)
             .detail("Subtract data")
             .sort_text("00005")
-            .insert_text("MINUS { $0 }")
+            .text_edit(TextEdit::new(replace_range.clone(), "MINUS { $0 }"))
             .insert_text_format(InsertTextFormat::Snippet)
             .build(),
         CompletionItemBuilder::new()
@@ -134,7 +140,7 @@ fn static_completions() -> Vec<CompletionItem> {
             .kind(CompletionItemKind::Snippet)
             .detail("Optional graphpattern")
             .sort_text("00006")
-            .insert_text("OPTIONAL { $0 }")
+            .text_edit(TextEdit::new(replace_range.clone(), "OPTIONAL { $0 }"))
             .insert_text_format(InsertTextFormat::Snippet)
             .build(),
         CompletionItemBuilder::new()
@@ -142,7 +148,10 @@ fn static_completions() -> Vec<CompletionItem> {
             .kind(CompletionItemKind::Snippet)
             .detail("Union of two results")
             .sort_text("00007")
-            .insert_text("{\n  $1\n}\nUNION\n{\n  $0\n}")
+            .text_edit(TextEdit::new(
+                replace_range.clone(),
+                "{\n  $1\n}\nUNION\n{\n  $0\n}",
+            ))
             .insert_text_format(InsertTextFormat::Snippet)
             .build(),
         CompletionItemBuilder::new()
@@ -150,7 +159,10 @@ fn static_completions() -> Vec<CompletionItem> {
             .kind(CompletionItemKind::Snippet)
             .detail("Sub select query")
             .sort_text("00008")
-            .insert_text("{\n  SELECT * WHERE {\n    $0\n  }\n}")
+            .text_edit(TextEdit::new(
+                replace_range.clone(),
+                "{\n  SELECT * WHERE {\n    $0\n  }\n}",
+            ))
             .insert_text_format(InsertTextFormat::Snippet)
             .build(),
     ]
@@ -159,9 +171,11 @@ fn static_completions() -> Vec<CompletionItem> {
 #[cfg(test)]
 mod tests {
     use super::{matches_search_term, static_completions};
+    use crate::server::lsp::textdocument::Range;
 
     fn filter_completions(search_term: Option<&str>) -> Vec<String> {
-        static_completions()
+        let replace_range = Range::new(0, 0, 0, 0);
+        static_completions(&replace_range)
             .into_iter()
             .filter(|item| matches_search_term(&item.label, search_term))
             .map(|item| item.label)
@@ -180,6 +194,19 @@ mod tests {
         assert!(labels.contains(&"OPTIONAL".to_string()));
         assert!(labels.contains(&"UNION".to_string()));
         assert!(labels.contains(&"Sub select".to_string()));
+    }
+
+    #[test]
+    fn every_completion_replaces_the_search_term() {
+        // NOTE: without a range the client falls back to a word scan, which
+        // stops at the space in "sub s" and leaves the "sub " behind.
+        let replace_range = Range::new(1, 2, 1, 7);
+        for item in static_completions(&replace_range) {
+            let text_edit = item
+                .text_edit
+                .unwrap_or_else(|| panic!("{} has no text edit", item.label));
+            assert_eq!(text_edit.range, replace_range, "{}", item.label);
+        }
     }
 
     #[test]

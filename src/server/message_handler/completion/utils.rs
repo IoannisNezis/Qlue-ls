@@ -17,7 +17,7 @@ use crate::{
             CompletionList,
             textdocument::{Range, TextEdit},
         },
-        sparql_operations::execute_query,
+        sparql_operations::{SparqlRequestError, execute_query},
     },
     sparql::results::{RDFTerm, SparqlResultsBody},
 };
@@ -83,6 +83,69 @@ pub(super) struct InternalCompletionItem {
     import_edit: Option<TextEdit>,
 }
 
+const NO_BINDINGS_MESSAGE: &str = "The SPARQL result of a completion query did not contain bindings. Likely because its not a SELECT query.";
+
+fn now_ms() -> f64 {
+    #[cfg(target_arch = "wasm32")]
+    return js_sys::Date::now();
+    #[cfg(not(target_arch = "wasm32"))]
+    return 0.0;
+}
+
+/// Flattens a tera error and its source chain into one line.
+fn tera_error_message(error: &tera::Error) -> String {
+    let mut message = error.to_string();
+    let mut source = std::error::Error::source(error);
+    while let Some(error) = source {
+        message.push_str(&format!(": {}", error));
+        source = error.source();
+    }
+    message
+}
+
+fn request_error_message(error: SparqlRequestError) -> String {
+    match error {
+        SparqlRequestError::Timeout => "Completion query timed out".to_string(),
+        SparqlRequestError::Connection(_err) => {
+            "Completion query failed, connection errored".to_string()
+        }
+        SparqlRequestError::Canceled(_err) => "Completion query was canceled".to_string(),
+        SparqlRequestError::Http(err) => format!(
+            "Completion query failed with status {} {}",
+            err.status, err.status_text
+        ),
+        SparqlRequestError::Deserialization(msg) => msg,
+        SparqlRequestError::QLeverException(exception) => exception.exception,
+    }
+}
+
+/// Notifies the client about a completion query, so it can be inspected while a completion
+/// template is being edited. Diagnostic only, failures to send are ignored.
+fn report_completion_query(
+    server: &Server,
+    template: &str,
+    query: &str,
+    url: &str,
+    started: f64,
+    result_count: Option<usize>,
+    error: Option<String>,
+) {
+    #[cfg(not(target_arch = "wasm32"))]
+    let _ = (server, template, query, url, started, result_count, error);
+    #[cfg(target_arch = "wasm32")]
+    {
+        use crate::server::lsp::{CompletionQueryNotification, CompletionQueryParams};
+        let _ = server.send_message(CompletionQueryNotification::new(CompletionQueryParams {
+            template: template.to_string(),
+            query: query.to_string(),
+            url: url.to_string(),
+            duration_ms: (now_ms() - started) as u32,
+            result_count,
+            error,
+        }));
+    }
+}
+
 pub(super) async fn fetch_online_completions(
     server_rc: Rc<Mutex<Server>>,
     query_unit: &QueryUnit,
@@ -94,13 +157,27 @@ pub(super) async fn fetch_online_completions(
         let server = server_rc.lock().await;
         query_template_context.insert("limit", &server.settings.completion.result_size_limit);
         query_template_context.insert("offset", &0);
-        let query = server
+        let url = backend.url.clone();
+        let query = match server
             .tools
             .tera
             .render(query_template, &query_template_context)
-            .map_err(|err| CompletionError::Template(query_template.to_string(), err))?;
+        {
+            Ok(query) => query,
+            Err(err) => {
+                report_completion_query(
+                    &server,
+                    query_template,
+                    "",
+                    &url,
+                    now_ms(),
+                    None,
+                    Some(tera_error_message(&err)),
+                );
+                return Err(CompletionError::Template(query_template.to_string(), err));
+            }
+        };
 
-        let url = backend.url.clone();
         let timeout_ms = server.settings.completion.timeout_ms;
         let method = server.state.get_backend_request_method(&backend.name);
         (url, query, timeout_ms, method)
@@ -108,10 +185,11 @@ pub(super) async fn fetch_online_completions(
 
     tracing::debug!("Completion Query: \"{query_template}\"\n{query}");
 
+    let started = now_ms();
     let result = execute_query(
         server_rc.clone(),
-        url,
-        query,
+        url.clone(),
+        query.clone(),
         None,
         None,
         Some(timeout_ms),
@@ -120,41 +198,50 @@ pub(super) async fn fetch_online_completions(
         0,
         false,
     )
-    .await
-    .map_err(|err| match err {
-        crate::server::sparql_operations::SparqlRequestError::Timeout => {
-            CompletionError::Request("Completion query timed out".to_string())
+    .await;
+
+    let result = match result {
+        Ok(result) => result.expect("Non-lazy request should always return a result."),
+        Err(err) => {
+            let message = request_error_message(err);
+            report_completion_query(
+                &*server_rc.lock().await,
+                query_template,
+                &query,
+                &url,
+                started,
+                None,
+                Some(message.clone()),
+            );
+            return Err(CompletionError::Request(message));
         }
-        crate::server::sparql_operations::SparqlRequestError::Connection(_err) => {
-            CompletionError::Request("Completion query failed, connection errored".to_string())
-        }
-        crate::server::sparql_operations::SparqlRequestError::Canceled(_err) => {
-            CompletionError::Request("Completion query was canceled".to_string())
-        }
-        crate::server::sparql_operations::SparqlRequestError::Http(err) => {
-            CompletionError::Request(format!(
-                "Completion query failed with status {} {}",
-                err.status, err.status_text
-            ))
-        }
-        crate::server::sparql_operations::SparqlRequestError::Deserialization(msg) => {
-            CompletionError::Request(msg)
-        }
-        crate::server::sparql_operations::SparqlRequestError::QLeverException(exception) => {
-            CompletionError::Request(exception.exception)
-        }
-    })?
-    .expect("Non-lazy request should always return a result.");
+    };
 
     let SparqlResultsBody::Results { bindings } = result.body else {
-        tracing::error!(
-            "The SPARQL result of a completion query did not contain bindings. Likely because its not a SELECT query."
+        tracing::error!("{}", NO_BINDINGS_MESSAGE);
+        report_completion_query(
+            &*server_rc.lock().await,
+            query_template,
+            &query,
+            &url,
+            started,
+            None,
+            Some(NO_BINDINGS_MESSAGE.to_string()),
         );
-        return Err(CompletionError::Resolve(            "The SPARQL result of a completion query did not contain bindings. Likely because its not a SELECT query.".to_string()));
+        return Err(CompletionError::Resolve(NO_BINDINGS_MESSAGE.to_string()));
     };
     tracing::info!("Result size: {}", bindings.len());
 
     let mut server = server_rc.lock().await;
+    report_completion_query(
+        &server,
+        query_template,
+        &query,
+        &url,
+        started,
+        Some(bindings.len()),
+        None,
+    );
     bindings
         .into_iter()
         .map(|binding| {
@@ -329,9 +416,6 @@ pub(super) fn reduce_path(
         SyntaxKind::PathEltOrInverse => {
             if path.syntax().first_child_or_token()?.kind() == SyntaxKind::Zirkumflex {
                 // NOTE: Swap subject and object
-                tracing::debug!("old path: {:?}", path);
-                tracing::debug!("old path syntax: {:?}", path);
-                tracing::debug!("new path: {:?}", path.syntax().last_child());
                 reduce_path(
                     object,
                     path.syntax().last_child().and_then(Path::cast).as_ref(),

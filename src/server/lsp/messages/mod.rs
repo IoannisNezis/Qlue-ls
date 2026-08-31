@@ -5,6 +5,8 @@ mod progress;
 mod qlue_ls_execute;
 mod qluels_addbackend;
 mod qluels_cancelquery;
+#[cfg(target_arch = "wasm32")]
+mod qluels_completionquery;
 mod qluels_getbackend;
 mod qluels_jump;
 mod qluels_listbackends;
@@ -39,6 +41,8 @@ pub use progress::*;
 pub use qlue_ls_execute::*;
 pub use qluels_addbackend::*;
 pub use qluels_cancelquery::*;
+#[cfg(target_arch = "wasm32")]
+pub use qluels_completionquery::*;
 pub use qluels_getbackend::*;
 pub use qluels_jump::*;
 pub use qluels_listbackends::*;

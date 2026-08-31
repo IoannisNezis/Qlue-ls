@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- new `qlueLs/completionQuery` notification (web assembly only), sent after
+  every completion query. It carries the rendered query, the endpoint URL, the
+  duration and either the number of returned bindings or the reason the query
+  failed. Clients can use it to inspect completion queries while a completion
+  template is being edited; previously the rendered query was only written to
+  the log.
+
 ## [3.4.4] - 2026-08-31
 
 ### Fixed

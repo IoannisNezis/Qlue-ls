@@ -133,6 +133,8 @@ pub struct CompletionItem {
     pub additional_text_edits: Option<Vec<TextEdit>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub command: Option<Command>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<LSPAny>,
 }
 
 impl CompletionItem {
@@ -157,6 +159,7 @@ impl CompletionItem {
             insert_text_format: None,
             additional_text_edits,
             command: None,
+            data: None,
         }
     }
 }
@@ -225,6 +228,7 @@ pub struct CompletionItemBuilder {
     pub insert_text_format: Option<InsertTextFormat>,
     pub additional_text_edits: Option<Vec<TextEdit>>,
     pub command: Option<Command>,
+    pub data: Option<LSPAny>,
 }
 
 impl CompletionItemBuilder {
@@ -386,6 +390,15 @@ impl CompletionItemBuilder {
         self
     }
 
+    /// Set the data of the completion.
+    ///
+    /// A data entry field that is preserved on a completion item between
+    /// a completion and a completion resolve request.
+    pub fn data(mut self, data: LSPAny) -> CompletionItemBuilder {
+        self.data = Some(data);
+        self
+    }
+
     /// Build the completion item.
     /// **Panics** if the label has not been set.
     pub fn build(self) -> CompletionItem {
@@ -402,6 +415,7 @@ impl CompletionItemBuilder {
             insert_text_format: self.insert_text_format,
             additional_text_edits: self.additional_text_edits,
             command: self.command,
+            data: self.data,
         }
     }
 }
@@ -464,6 +478,7 @@ mod tests {
             kind: Some(CompletionItemKind::Snippet),
             insert_text_format: Some(InsertTextFormat::Snippet),
             additional_text_edits: None,
+            data: None,
         };
         let completion_list = CompletionList {
             is_incomplete: true,

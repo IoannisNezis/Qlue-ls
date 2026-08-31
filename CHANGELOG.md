@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [3.4.4] - 2026-08-31
+
 ### Fixed
 
 - online completion items are now ordered by their `?qls_count` relevance score

@@ -296,7 +296,6 @@ impl Replacements {
                     name = regex
                         .replace_all(&name, &replacement.replacement)
                         .to_string();
-                    tracing::debug!("new name: {name}");
                 }
                 Err(error) => tracing::warn!(
                     "Skipping object variable replacement with invalid pattern \"{}\": {}",

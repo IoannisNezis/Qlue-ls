@@ -4,7 +4,7 @@ use ll_sparql_parser::{
     ast::{AstNode, Path, Prologue, QueryUnit},
     syntax_kind::SyntaxKind,
 };
-use std::rc::Rc;
+use std::{collections::HashMap, rc::Rc};
 use tera::Context;
 use text_size::TextSize;
 
@@ -15,6 +15,7 @@ use crate::{
         lsp::{
             Command, CompletionItem, CompletionItemKind, CompletionItemLabelDetails,
             CompletionList,
+            base_types::LSPAny,
             textdocument::{Range, TextEdit},
         },
         sparql_operations::{SparqlRequestError, execute_query},
@@ -76,12 +77,29 @@ pub(super) async fn dispatch_completion_query(
 
 pub(super) struct InternalCompletionItem {
     label: String,
-    detail: Option<String>,
+    /// Alternative labels of the entity, in the order the backend returned them.
+    aliases: Vec<String>,
+    /// The facts of a literal, `None` for an IRI or a blank node.
+    literal: Option<LiteralFacts>,
     value: String,
     _filter_text: Option<String>,
     score: Option<usize>,
     import_edit: Option<TextEdit>,
 }
+
+pub(super) struct LiteralFacts {
+    /// The lexical form, without the quotes `value` carries.
+    value: String,
+    language: Option<String>,
+    /// The datatype, shortened to a curie where the prefix map allows it.
+    datatype: Option<String>,
+}
+
+/// Separator a completion query uses to pack several aliases into one
+/// `?qls_alias` binding, as `GROUP_CONCAT(?alias; SEPARATOR="\t")`. A backend
+/// that returns one binding per alias instead needs none of this — those rows
+/// are grouped by entity all the same.
+const ALIAS_SEPARATOR: char = '\t';
 
 const NO_BINDINGS_MESSAGE: &str = "The SPARQL result of a completion query did not contain bindings. Likely because its not a SELECT query.";
 
@@ -242,55 +260,92 @@ pub(super) async fn fetch_online_completions(
         Some(bindings.len()),
         None,
     );
-    bindings
-        .into_iter()
-        .map(|binding| {
-            let rdf_term = binding.get("qls_entity").ok_or_else(|| {
-                CompletionError::Request(
-                    "Completion query result is missing the `qls_entity` binding".to_string(),
-                )
-            })?;
-            let (value, import_edit) =
-                render_rdf_term(&server, query_unit, rdf_term, &backend.name);
-            let label = binding
-                .get("qls_label")
-                .map_or(String::new(), |rdf_term| rdf_term.value().to_string());
-            let detail = binding
-                .get("qls_alias")
-                .map(|rdf_term: &RDFTerm| rdf_term.value().to_string());
-            let score = binding
-                .get("qls_count")
-                .and_then(|rdf_term: &RDFTerm| rdf_term.value().parse().ok());
-            // NOTE: This is the text the in editor filter uses.
-            // If a compressed IRI is used as search term i.e. "wdt:p" the expanded iri is used as
-            // filter text. Otherwise the label and detail is used as filter text.
-            // This is currently not used, but should be redone at some point
-            let filter_text = query_template_context
-                .get("search_term_uncompressed")
-                .is_some()
-                .then_some(value.to_string())
-                .or((!label.is_empty()).then_some(format!(
-                    "{}{}",
-                    label,
-                    detail.as_ref().unwrap_or(&String::new())
-                )))
-                .or(Some(rdf_term.to_string()));
-            if !label.is_empty() {
-                server
-                    .state
-                    .label_memory
-                    .insert(value.clone(), label.clone());
+    // NOTE: an entity with several aliases comes back as one binding per alias,
+    // so rows are grouped by `?qls_entity` and their aliases collected into one
+    // item. `items` keeps the order the backend returned, `index` maps an
+    // already seen entity to its position in it.
+    let mut items: Vec<InternalCompletionItem> = Vec::new();
+    let mut index: HashMap<String, usize> = HashMap::new();
+    for binding in bindings {
+        let rdf_term = binding.get("qls_entity").ok_or_else(|| {
+            CompletionError::Request(
+                "Completion query result is missing the `qls_entity` binding".to_string(),
+            )
+        })?;
+        let aliases: Vec<String> = binding
+            .get("qls_alias")
+            .map(|rdf_term: &RDFTerm| rdf_term.value())
+            .unwrap_or_default()
+            .split(ALIAS_SEPARATOR)
+            .filter(|alias| !alias.is_empty())
+            .map(str::to_string)
+            .collect();
+        if let Some(position) = index.get(&rdf_term.to_string()).copied() {
+            let known = &mut items[position].aliases;
+            for alias in aliases {
+                if !known.contains(&alias) {
+                    known.push(alias);
+                }
             }
-            Ok(InternalCompletionItem {
-                label,
-                detail,
+            continue;
+        }
+        let (value, import_edit) = render_rdf_term(&server, query_unit, rdf_term, &backend.name);
+        let label = binding
+            .get("qls_label")
+            .map_or(String::new(), |rdf_term| rdf_term.value().to_string());
+        let score = binding
+            .get("qls_count")
+            .and_then(|rdf_term: &RDFTerm| rdf_term.value().parse().ok());
+        // NOTE: This is the text the in editor filter uses.
+        // If a compressed IRI is used as search term i.e. "wdt:p" the expanded iri is used as
+        // filter text. Otherwise the label and aliases are used as filter text.
+        // This is currently not used, but should be redone at some point
+        let filter_text = query_template_context
+            .get("search_term_uncompressed")
+            .is_some()
+            .then_some(value.to_string())
+            .or((!label.is_empty()).then_some(format!("{}{}", label, aliases.concat())))
+            .or(Some(rdf_term.to_string()));
+        if !label.is_empty() {
+            server
+                .state
+                .label_memory
+                .insert(value.clone(), label.clone());
+        }
+        let literal = match rdf_term {
+            RDFTerm::Literal {
                 value,
-                _filter_text: filter_text,
-                score,
-                import_edit,
-            })
-        })
-        .collect()
+                lang,
+                datatype,
+            } => Some(LiteralFacts {
+                value: value.clone(),
+                language: lang.clone(),
+                datatype: datatype
+                    .as_ref()
+                    .map(|datatype| shorten_datatype(&server, datatype, &backend.name)),
+            }),
+            _ => None,
+        };
+        index.insert(rdf_term.to_string(), items.len());
+        items.push(InternalCompletionItem {
+            label,
+            aliases,
+            literal,
+            value,
+            _filter_text: filter_text,
+            score,
+            import_edit,
+        });
+    }
+    Ok(items)
+}
+
+/// Renders a datatype IRI as a curie, falling back to the IRI when the
+/// backend's prefix map has no prefix for it.
+fn shorten_datatype(server: &Server, datatype: &str, backend_name: &str) -> String {
+    server
+        .shorten_uri(datatype, Some(backend_name))
+        .map_or_else(|| datatype.to_string(), |(_, _, curie)| curie)
 }
 
 fn render_rdf_term(
@@ -473,30 +528,32 @@ pub(super) fn to_completion_items(
                 idx,
                 InternalCompletionItem {
                     label,
-                    detail,
+                    aliases,
+                    literal,
                     value,
                     _filter_text,
                     score,
                     import_edit,
                 },
             )| {
+                // NOTE: a literal has no readable-name-plus-curie split — its
+                // value is all there is — so it carries no label details and a
+                // client renders it on one line.
+                let (label_details, data) = match &literal {
+                    Some(literal) => (None, literal_data(literal, score)),
+                    None => (
+                        Some(CompletionItemLabelDetails {
+                            detail: label.clone(),
+                            description: (!aliases.is_empty()).then(|| aliases.join(", ")),
+                        }),
+                        entity_data(&label, &aliases, score),
+                    ),
+                };
                 CompletionItem {
                     label: value.clone(),
-                    label_details: Some(CompletionItemLabelDetails {
-                        detail: format!(
-                            "{}{}",
-                            &label,
-                            detail
-                                .as_ref()
-                                .map_or(String::new(), |detail| format!("/{detail}"))
-                        ),
-                    }),
+                    label_details,
                     detail: None,
-                    documentation: Some(format!(
-                        "Label: {label}\nAlias: {}\nScore: {}",
-                        detail.unwrap_or_default(),
-                        score.map_or("None".to_string(), |score| score.to_string()),
-                    )),
+                    documentation: None,
                     // NOTE: The first 100 ID's are reserved
                     sort_text: Some(format!("{:0>5}", idx + 100)),
                     insert_text: None,
@@ -516,7 +573,12 @@ pub(super) fn to_completion_items(
                         command: command.to_string(),
                         arguments: None,
                     }),
-                    data: None,
+                    // NOTE: `label`, `labelDetails` and `sortText` carry these
+                    // values as presentation only. The structured copy under
+                    // `data` is what a client reads them back from, since
+                    // `detail` and `documentation` are human fields the other
+                    // completion kinds use for their own purposes.
+                    data: Some(data),
                 }
             },
         )
@@ -526,6 +588,61 @@ pub(super) fn to_completion_items(
         items,
         item_defaults: None,
     }
+}
+
+/// The structured payload of a literal completion, sent as `CompletionItem.data`.
+///
+/// `value` is the lexical form alone: the item's own label carries the literal
+/// as SPARQL writes it, quotes and tag included.
+fn literal_data(literal: &LiteralFacts, score: Option<usize>) -> LSPAny {
+    let mut data = HashMap::from([
+        ("kind".to_string(), LSPAny::String("literal".to_string())),
+        ("value".to_string(), LSPAny::String(literal.value.clone())),
+    ]);
+    if let Some(language) = &literal.language {
+        data.insert("language".to_string(), LSPAny::String(language.clone()));
+    }
+    if let Some(datatype) = &literal.datatype {
+        data.insert("datatype".to_string(), LSPAny::String(datatype.clone()));
+    }
+    insert_score(&mut data, score);
+    qlue_ls_data(data)
+}
+
+/// The structured payload of an entity completion, sent as `CompletionItem.data`.
+///
+/// Namespaced under a `qlueLs` key: `data` is opaque to the protocol and round
+/// trips through `completionItem/resolve`, so the namespace keeps room for other
+/// payloads and marks the blob as server specific.
+fn entity_data(label: &str, aliases: &[String], score: Option<usize>) -> LSPAny {
+    let mut data = HashMap::from([
+        ("kind".to_string(), LSPAny::String("entity".to_string())),
+        ("label".to_string(), LSPAny::String(label.to_string())),
+        (
+            "aliases".to_string(),
+            LSPAny::LSPArray(
+                aliases
+                    .iter()
+                    .map(|alias| LSPAny::String(alias.clone()))
+                    .collect(),
+            ),
+        ),
+    ]);
+    insert_score(&mut data, score);
+    qlue_ls_data(data)
+}
+
+fn insert_score(data: &mut HashMap<String, LSPAny>, score: Option<usize>) {
+    if let Some(score) = score.and_then(|score| u32::try_from(score).ok()) {
+        data.insert("score".to_string(), LSPAny::Uinteger(score));
+    }
+}
+
+fn qlue_ls_data(data: HashMap<String, LSPAny>) -> LSPAny {
+    LSPAny::LSPObject(HashMap::from([(
+        "qlueLs".to_string(),
+        LSPAny::LSPObject(data),
+    )]))
 }
 
 #[cfg(test)]

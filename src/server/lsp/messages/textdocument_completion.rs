@@ -165,8 +165,14 @@ impl CompletionItem {
 }
 
 #[derive(Debug, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct CompletionItemLabelDetails {
     pub detail: String,
+
+    /// An optional string which is rendered less prominently after
+    /// `CompletionItem.labelDetails.detail`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
 }
 
 #[derive(Debug, Serialize_repr, PartialEq)]
@@ -251,6 +257,7 @@ impl CompletionItemBuilder {
     pub fn label_details(mut self, detail: &str) -> CompletionItemBuilder {
         self.label_details = Some(CompletionItemLabelDetails {
             detail: detail.to_string(),
+            description: None,
         });
         self
     }

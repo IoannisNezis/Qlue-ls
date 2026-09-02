@@ -5,7 +5,27 @@ All notable changes to the "Qlue-ls" project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [3.6.0] - 2026-09-02
+
+### Changed
+
+- entity and literal completion items now carry their facts in
+  `CompletionItem.data` under a `qlueLs` key instead of encoding them into
+  `labelDetails.detail` and `documentation`. An entity carries its label, its
+  aliases (as a list) and its usage score; a literal carries its lexical form,
+  its language and its datatype. `detail` and `documentation` are now plain
+  human readable fields again, and `sortText` stays the authoritative ranking.
+- an entity whose aliases arrive across several bindings is now reported as a
+  single completion item, and aliases packed into one binding with
+  `GROUP_CONCAT(?alias; SEPARATOR="\t")` are split apart.
+
+### Fixed
+
+- static subject completions (such as `Sub select`) now carry a text edit over
+  the term being completed, so accepting them no longer leaves the already
+  typed prefix in front of the inserted snippet.
+
+## [3.5.0] - 2026-08-31
 
 ### Added
 

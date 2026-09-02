@@ -18,7 +18,7 @@ insta = "1.48.0"
 
 [dependencies]
 logos = "0.16.0"
-rowan = "0.16.1"
+rowan = "0.17.0"
 
 [build-dependencies]
 prettyplease = "0.3.0"

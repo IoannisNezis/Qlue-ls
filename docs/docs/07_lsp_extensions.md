@@ -385,3 +385,34 @@ interface IdentifyOperationTypeResult {
 
 type OperationType = "Query" | "Update" | "Unknown";
 ```
+
+## Diagnostics
+
+### :stopwatch: completionQuery
+
+Report a completion query that was just rendered and (attempted to be) executed.
+Purely diagnostic: it lets the client show the rendered query, its result size
+and its failure reason while a completion template is being edited.
+
+!!! note
+
+    This is a server-to-client notification, only available in WASM builds.
+    It is sent for every completion query, including those that fail to render.
+
+*Notification* (server to client):
+
+- method: `qlueLs/completionQuery`
+- params: `CompletionQueryParams` defined as follows:
+
+```ts
+interface CompletionQueryParams {
+    template: string;      // Template name, as registered in tera: `{backend}-{template}`
+    query: string;         // The rendered query. Empty if rendering the template failed
+    url: string;           // The endpoint the query was sent to
+    durationMs: number;
+    resultCount?: number;  // Number of bindings returned, before search-term filtering
+    error?: string;        // Present when rendering or executing the query failed
+}
+```
+
+Exactly one of `resultCount` and `error` is present.

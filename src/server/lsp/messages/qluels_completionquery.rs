@@ -1,6 +1,9 @@
 use serde::Serialize;
 
-use crate::server::lsp::{LspMessage, rpc::NotificationMessageBase};
+use crate::server::lsp::{
+    LspMessage,
+    rpc::{NotificationMessageBase, RequestId},
+};
 
 /// Reports a completion query that was just rendered and (attempted to be) executed.
 ///
@@ -27,6 +30,10 @@ impl LspMessage for CompletionQueryNotification {}
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CompletionQueryParams {
+    /// Id of the `textDocument/completion` request this query was issued for.
+    /// Several queries can share it: a location can dispatch more than one
+    /// template, and only the first result to arrive reaches the client.
+    pub request_id: RequestId,
     /// Template name, as registered in tera: `"{backend}-{template}"`.
     pub template: String,
     /// The rendered query. Empty if rendering the template failed.

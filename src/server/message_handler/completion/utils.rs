@@ -16,6 +16,7 @@ use crate::{
             Command, CompletionItem, CompletionItemKind, CompletionItemLabelDetails,
             CompletionList,
             base_types::LSPAny,
+            rpc::RequestId,
             textdocument::{Range, TextEdit},
         },
         sparql_operations::{SparqlRequestError, execute_query},
@@ -60,6 +61,7 @@ pub(super) async fn dispatch_completion_query(
                     backend,
                     &format!("{}-{}", backend.name, completion_template),
                     template_context,
+                    &environment.request_id,
                 )
                 .await?,
                 environment.replace_range.clone(),
@@ -141,6 +143,7 @@ fn request_error_message(error: SparqlRequestError) -> String {
 /// template is being edited. Diagnostic only, failures to send are ignored.
 fn report_completion_query(
     server: &Server,
+    request_id: &RequestId,
     template: &str,
     query: &str,
     url: &str,
@@ -151,11 +154,21 @@ fn report_completion_query(
     // NOTE: On native the body below is compiled out, leaving every parameter unused.
     // Discarding them here marks them as used and avoids `unused_variables` warnings.
     #[cfg(not(target_arch = "wasm32"))]
-    let _ = (server, template, query, url, started, result_count, error);
+    let _ = (
+        server,
+        request_id,
+        template,
+        query,
+        url,
+        started,
+        result_count,
+        error,
+    );
     #[cfg(target_arch = "wasm32")]
     {
         use crate::server::lsp::{CompletionQueryNotification, CompletionQueryParams};
         let _ = server.send_message(CompletionQueryNotification::new(CompletionQueryParams {
+            request_id: request_id.clone(),
             template: template.to_string(),
             query: query.to_string(),
             url: url.to_string(),
@@ -172,6 +185,7 @@ pub(super) async fn fetch_online_completions(
     backend: &BackendConfiguration,
     query_template: &str,
     mut query_template_context: Context,
+    request_id: &RequestId,
 ) -> Result<Vec<InternalCompletionItem>, CompletionError> {
     let (url, query, timeout_ms, method) = {
         let server = server_rc.lock().await;
@@ -187,6 +201,7 @@ pub(super) async fn fetch_online_completions(
             Err(err) => {
                 report_completion_query(
                     &server,
+                    request_id,
                     query_template,
                     "",
                     &url,
@@ -226,6 +241,7 @@ pub(super) async fn fetch_online_completions(
             let message = request_error_message(err);
             report_completion_query(
                 &*server_rc.lock().await,
+                request_id,
                 query_template,
                 &query,
                 &url,
@@ -241,6 +257,7 @@ pub(super) async fn fetch_online_completions(
         tracing::error!("{}", NO_BINDINGS_MESSAGE);
         report_completion_query(
             &*server_rc.lock().await,
+            request_id,
             query_template,
             &query,
             &url,
@@ -255,6 +272,7 @@ pub(super) async fn fetch_online_completions(
     let mut server = server_rc.lock().await;
     report_completion_query(
         &server,
+        request_id,
         query_template,
         &query,
         &url,

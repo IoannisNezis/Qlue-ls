@@ -6,6 +6,7 @@ use crate::server::{
     configuration::BackendConfiguration,
     lsp::{
         CompletionRequest, CompletionTriggerKind,
+        rpc::RequestId,
         textdocument::{Position, Range},
     },
     message_handler::misc::resolve_backend_at_token,
@@ -24,6 +25,9 @@ use text_size::{TextRange, TextSize};
 
 #[derive(Debug, Clone)]
 pub(super) struct CompletionEnvironment {
+    /// Id of the completion request this environment was built for. Used to
+    /// correlate the diagnostic notifications of the queries it dispatches.
+    pub(super) request_id: RequestId,
     pub(super) location: CompletionLocation,
     pub(super) trigger_textdocument_position: Position,
     pub(super) continuations: HashSet<SyntaxKind>,
@@ -388,6 +392,7 @@ impl CompletionEnvironment {
         }
 
         Ok(Self {
+            request_id: request.get_id().clone(),
             location,
             trigger_textdocument_position: document_position.position,
             continuations,

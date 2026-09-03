@@ -406,6 +406,7 @@ and its failure reason while a completion template is being edited.
 
 ```ts
 interface CompletionQueryParams {
+    requestId: number | string;  // Id of the `textDocument/completion` request
     template: string;      // Template name, as registered in tera: `{backend}-{template}`
     query: string;         // The rendered query. Empty if rendering the template failed
     url: string;           // The endpoint the query was sent to
@@ -416,3 +417,12 @@ interface CompletionQueryParams {
 ```
 
 Exactly one of `resultCount` and `error` is present.
+
+Notifications are correlated by `requestId`, not one per completion request:
+
+- A location can dispatch several templates for one request — predicate completions
+  race a context-sensitive and a context-insensitive query, and only the first
+  result to arrive reaches the client. Both are reported, under the same
+  `requestId`, and the losing one may arrive after the completion response.
+- Locations that are answered without a backend (keywords, variables, aggregates)
+  send no notification at all.

@@ -11,6 +11,7 @@ use text_size::TextSize;
 use crate::{
     server::{
         Server,
+        common::get_timestamp_ms,
         configuration::BackendConfiguration,
         lsp::{
             Command, CompletionItem, CompletionItemKind, CompletionItemLabelDetails,
@@ -105,13 +106,6 @@ const ALIAS_SEPARATOR: char = '\t';
 
 const NO_BINDINGS_MESSAGE: &str = "The SPARQL result of a completion query did not contain bindings. Likely because its not a SELECT query.";
 
-fn now_ms() -> f64 {
-    #[cfg(target_arch = "wasm32")]
-    return js_sys::Date::now();
-    #[cfg(not(target_arch = "wasm32"))]
-    return 0.0;
-}
-
 /// Flattens a tera error and its source chain into one line.
 fn tera_error_message(error: &tera::Error) -> String {
     let mut message = error.to_string();
@@ -172,7 +166,7 @@ fn report_completion_query(
             template: template.to_string(),
             query: query.to_string(),
             url: url.to_string(),
-            duration_ms: (now_ms() - started) as u32,
+            duration_ms: (get_timestamp_ms() - started) as u32,
             result_count,
             error,
         }));
@@ -205,7 +199,7 @@ pub(super) async fn fetch_online_completions(
                     query_template,
                     "",
                     &url,
-                    now_ms(),
+                    get_timestamp_ms(),
                     None,
                     Some(tera_error_message(&err)),
                 );
@@ -220,7 +214,7 @@ pub(super) async fn fetch_online_completions(
 
     tracing::debug!("Completion Query: \"{query_template}\"\n{query}");
 
-    let started = now_ms();
+    let started = get_timestamp_ms();
     let result = execute_query(
         server_rc.clone(),
         url.clone(),

@@ -28,6 +28,7 @@
 
 use crate::server::configuration::{BackendConfiguration, RequestMethod};
 
+use super::common::get_timestamp_ms;
 use super::lsp::{
     TextDocumentContentChangeEvent,
     errors::{ErrorCode, LSPError},
@@ -259,25 +260,4 @@ impl ServerState {
 pub struct TimedParseResult {
     pub tree: SyntaxNode,
     pub parse_time_ms: f64,
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-fn get_timestamp_ms() -> f64 {
-    use std::time::SystemTime;
-    SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .expect("system time should be after epoch")
-        .as_secs_f64()
-        * 1000.0
-}
-
-#[cfg(target_arch = "wasm32")]
-fn get_timestamp_ms() -> f64 {
-    use wasm_bindgen::JsCast;
-    use web_sys::WorkerGlobalScope;
-    let worker_global: WorkerGlobalScope = js_sys::global().unchecked_into();
-    worker_global
-        .performance()
-        .expect("performance should be available")
-        .now()
 }

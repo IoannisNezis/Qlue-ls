@@ -40,3 +40,34 @@ where
 /// - `curie`: The compact URI (CURIE).
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UncompactedUrisDiagnosticData(pub String, pub String, pub String);
+
+/// Milliseconds since an arbitrary epoch.
+///
+/// WARNING: Only differences between two calls are meaningful. The native and
+/// web assembly implementations count from different epochs (Unix time and
+/// `performance.now()` respectively), so the absolute value must not be
+/// reported as a timestamp.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) fn get_timestamp_ms() -> f64 {
+    use std::time::SystemTime;
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .expect("system time should be after epoch")
+        .as_secs_f64()
+        * 1000.0
+}
+
+/// See the native implementation for the epoch caveat.
+///
+/// NOTE: Resolves `performance` on the worker global scope, the language server
+/// always runs inside a web worker.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn get_timestamp_ms() -> f64 {
+    use wasm_bindgen::JsCast;
+    use web_sys::WorkerGlobalScope;
+    let worker_global: WorkerGlobalScope = js_sys::global().unchecked_into();
+    worker_global
+        .performance()
+        .expect("performance should be available")
+        .now()
+}

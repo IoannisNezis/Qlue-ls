@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.7.0] - 2026-09-04
+
 ### Added
 
 - completion queries can bind an optional `?qls_description` to a prose

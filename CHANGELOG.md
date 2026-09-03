@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- completion queries can bind an optional `?qls_description` to a prose
+  description of the entity (e.g. "large city in Baden-Württemberg, Germany").
+  It is sent as the completion item's `detail` and in the `qlueLs` data payload
+  as `description`.
+
 ### Changed
 
 - the `qlueLs/completionQuery` notification now carries the `requestId` of the

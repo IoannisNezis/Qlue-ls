@@ -6,15 +6,29 @@ The user has to define a query template for each type of online-completion.
 
 ## Completion Query Anatomy
 
-Each completion query result **MUST** contain the following variables:
+Each completion query result **MUST** bind `?qls_entity`:
 
-| Variable          | Content                             | Example               |
-| ----------------- | ----------------------------------- | --------------------- |
-| `?qls_entity` | RDF term, value to be completed     | \<book_1\>            |
-| `?qls_label`  | representation of completion item   | book title            |
-| `?qls_alias` | description of the completion item  | Book from author ...  |
+| Variable      | Content                         | Example      |
+| ------------- | ------------------------------- | ------------ |
+| `?qls_entity` | RDF term, value to be completed | \<book_1\>   |
 
-Optionally, you can include `?qls_count` to provide a relevance score (e.g., occurrence count) for sorting results.
+These variables are optional:
+
+| Variable           | Content                                   | Example                                    |
+| ------------------ | ----------------------------------------- | ------------------------------------------ |
+| `?qls_label`       | human readable name of the entity         | Freiburg                                   |
+| `?qls_alias`       | alternative name of the entity            | Freiburg im Breisgau                       |
+| `?qls_description` | prose description of the entity           | large city in Baden-Württemberg, Germany   |
+| `?qls_count`       | relevance score (e.g. occurrence count), used for sorting | 1204                       |
+
+An entity with several aliases may be returned as one row per alias: rows are
+grouped by `?qls_entity` and their `?qls_alias` values collected. Alternatively a
+single row can pack them into one `?qls_alias` binding separated by tabs, e.g.
+`GROUP_CONCAT(?alias; SEPARATOR="\t")`. The remaining variables are taken from
+the first row that binds them.
+
+`?qls_description` becomes the completion item's `detail`, so a client shows it
+beside the item.
 
 ## Query Types
 
@@ -101,7 +115,7 @@ Below are simplified, generic examples for each query type. These can be adapted
 ```sparql
 {% include "prefix_declarations" %}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?qls_entity ?qls_label ?qls_alias ?qls_count WHERE {
+SELECT ?qls_entity ?qls_label ?qls_description ?qls_count WHERE {
   {
     SELECT ?qls_entity (COUNT(*) AS ?qls_count) WHERE {
       ?qls_entity ?p ?o .
@@ -115,7 +129,7 @@ SELECT ?qls_entity ?qls_label ?qls_alias ?qls_count WHERE {
     LIMIT {{ limit }}
   }
   OPTIONAL { ?qls_entity rdfs:label ?qls_label }
-  OPTIONAL { ?qls_entity rdfs:comment ?qls_alias }
+  OPTIONAL { ?qls_entity rdfs:comment ?qls_description }
 }
 ```
 
@@ -124,7 +138,7 @@ SELECT ?qls_entity ?qls_label ?qls_alias ?qls_count WHERE {
 ```sparql
 {% include "prefix_declarations" %}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?qls_entity ?qls_label ?qls_alias ?qls_count WHERE {
+SELECT ?qls_entity ?qls_label ?qls_description ?qls_count WHERE {
   {
     SELECT ?qls_entity (COUNT(*) AS ?qls_count) WHERE {
       {{ context }} {{ local_context }}
@@ -134,7 +148,7 @@ SELECT ?qls_entity ?qls_label ?qls_alias ?qls_count WHERE {
     LIMIT {{ limit }}
   }
   OPTIONAL { ?qls_entity rdfs:label ?qls_label }
-  OPTIONAL { ?qls_entity rdfs:comment ?qls_alias }
+  OPTIONAL { ?qls_entity rdfs:comment ?qls_description }
 }
 ```
 
@@ -143,7 +157,7 @@ SELECT ?qls_entity ?qls_label ?qls_alias ?qls_count WHERE {
 ```sparql
 {% include "prefix_declarations" %}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?qls_entity ?qls_label ?qls_alias ?qls_count WHERE {
+SELECT ?qls_entity ?qls_label ?qls_description ?qls_count WHERE {
   {
     SELECT ?qls_entity (COUNT(*) AS ?qls_count) WHERE {
       {{ local_context }}
@@ -153,7 +167,7 @@ SELECT ?qls_entity ?qls_label ?qls_alias ?qls_count WHERE {
     LIMIT {{ limit }}
   }
   OPTIONAL { ?qls_entity rdfs:label ?qls_label }
-  OPTIONAL { ?qls_entity rdfs:comment ?qls_alias }
+  OPTIONAL { ?qls_entity rdfs:comment ?qls_description }
 }
 ```
 
@@ -162,7 +176,7 @@ SELECT ?qls_entity ?qls_label ?qls_alias ?qls_count WHERE {
 ```sparql
 {% include "prefix_declarations" %}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?qls_entity ?qls_label ?qls_alias ?qls_count WHERE {
+SELECT ?qls_entity ?qls_label ?qls_description ?qls_count WHERE {
   {
     SELECT ?qls_entity (COUNT(*) AS ?qls_count) WHERE {
       {{ context }} {{ local_context }}
@@ -172,7 +186,7 @@ SELECT ?qls_entity ?qls_label ?qls_alias ?qls_count WHERE {
     LIMIT {{ limit }}
   }
   OPTIONAL { ?qls_entity rdfs:label ?qls_label }
-  OPTIONAL { ?qls_entity rdfs:comment ?qls_alias }
+  OPTIONAL { ?qls_entity rdfs:comment ?qls_description }
   {% if search_term %}
   FILTER(CONTAINS(LCASE(STR(?qls_label)), LCASE("{{ search_term }}")) || CONTAINS(LCASE(STR(?alias)), LCASE("{{ search_term }}")))
   {% endif %}
@@ -184,7 +198,7 @@ SELECT ?qls_entity ?qls_label ?qls_alias ?qls_count WHERE {
 ```sparql
 {% include "prefix_declarations" %}
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT ?qls_entity ?qls_label ?qls_alias ?qls_count WHERE {
+SELECT ?qls_entity ?qls_label ?qls_description ?qls_count WHERE {
   {
     SELECT ?qls_entity (COUNT(*) AS ?qls_count) WHERE {
       {{ local_context }}
@@ -194,7 +208,7 @@ SELECT ?qls_entity ?qls_label ?qls_alias ?qls_count WHERE {
     LIMIT {{ limit }}
   }
   OPTIONAL { ?qls_entity rdfs:label ?qls_label }
-  OPTIONAL { ?qls_entity rdfs:comment ?qls_alias }
+  OPTIONAL { ?qls_entity rdfs:comment ?qls_description }
   {% if search_term %}
   FILTER(CONTAINS(LCASE(STR(?qls_label)), LCASE("{{ search_term }}")) || CONTAINS(LCASE(STR(?alias)), LCASE("{{ search_term }}")))
   {% endif %}
@@ -226,16 +240,18 @@ The `context` will contain the connected triples `?s rdf:type <Book> . ?s <title
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX wikibase: <http://wikiba.se/ontology#>
-SELECT ?qls_entity ?qls_label (GROUP_CONCAT(DISTINCT ?alias; SEPARATOR=", ") AS ?qls_alias) ?qls_count WHERE {
+PREFIX schema: <http://schema.org/>
+SELECT ?qls_entity ?qls_label ?qls_description (GROUP_CONCAT(DISTINCT ?alias; SEPARATOR="\t") AS ?qls_alias) ?qls_count WHERE {
   {{ context }} {{ local_context }}
   ?qls_entity wikibase:sitelinks ?qls_count .
   OPTIONAL { ?qls_entity rdfs:label ?qls_label . FILTER(LANG(?qls_label) = "en") }
   OPTIONAL { ?qls_entity skos:altLabel ?alias . FILTER(LANG(?alias) = "en") }
+  OPTIONAL { ?qls_entity schema:description ?qls_description . FILTER(LANG(?qls_description) = "en") }
   {% if search_term %}
   FILTER(CONTAINS(LCASE(STR(?qls_label)), LCASE("{{ search_term }}")) || CONTAINS(LCASE(STR(?alias)), LCASE("{{ search_term }}")))
   {% endif %}
 }
-GROUP BY ?qls_entity ?qls_label ?qls_count
+GROUP BY ?qls_entity ?qls_label ?qls_description ?qls_count
 ORDER BY DESC(?qls_count)
 LIMIT {{ limit }}
 ```
@@ -249,16 +265,18 @@ The context-insensitive variant uses only the `local_context` (the `BIND` expres
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX wikibase: <http://wikiba.se/ontology#>
-SELECT ?qls_entity ?qls_label (GROUP_CONCAT(DISTINCT ?alias; SEPARATOR=", ") AS ?qls_alias) ?qls_count WHERE {
+PREFIX schema: <http://schema.org/>
+SELECT ?qls_entity ?qls_label ?qls_description (GROUP_CONCAT(DISTINCT ?alias; SEPARATOR="\t") AS ?qls_alias) ?qls_count WHERE {
   {{ local_context }}
   ?qls_entity wikibase:sitelinks ?qls_count .
   OPTIONAL { ?qls_entity rdfs:label ?qls_label . FILTER(LANG(?qls_label) = "en") }
   OPTIONAL { ?qls_entity skos:altLabel ?alias . FILTER(LANG(?alias) = "en") }
+  OPTIONAL { ?qls_entity schema:description ?qls_description . FILTER(LANG(?qls_description) = "en") }
   {% if search_term %}
   FILTER(CONTAINS(LCASE(STR(?qls_label)), LCASE("{{ search_term }}")) || CONTAINS(LCASE(STR(?alias)), LCASE("{{ search_term }}")))
   {% endif %}
 }
-GROUP BY ?qls_entity ?qls_label ?qls_count
+GROUP BY ?qls_entity ?qls_label ?qls_description ?qls_count
 ORDER BY DESC(?qls_count)
 LIMIT {{ limit }}
 ```
@@ -325,7 +343,7 @@ Use the `variable` test to adapt queries based on whether the subject is bound:
 Sub-select queries are a powerful technique to speed up completion queries. By performing aggregation and limiting in an inner query, you reduce the number of entities that need label/detail lookups:
 
 ```sparql
-SELECT ?qls_entity ?qls_label ?qls_alias ?qls_count WHERE {
+SELECT ?qls_entity ?qls_label ?qls_description ?qls_count WHERE {
   {
     # Inner query: find and rank entities efficiently
     SELECT ?qls_entity (COUNT(*) AS ?qls_count) WHERE {
@@ -337,7 +355,7 @@ SELECT ?qls_entity ?qls_label ?qls_alias ?qls_count WHERE {
   }
   # Outer query: fetch labels only for the top results
   OPTIONAL { ?qls_entity rdfs:label ?qls_label }
-  OPTIONAL { ?qls_entity rdfs:comment ?qls_alias }
+  OPTIONAL { ?qls_entity rdfs:comment ?qls_description }
 }
 ```
 
@@ -353,7 +371,7 @@ Use OPTIONAL for non-critical fields:
 
 ```sparql
 OPTIONAL { ?qls_entity rdfs:label ?qls_label }
-OPTIONAL { ?qls_entity rdfs:comment ?qls_alias }
+OPTIONAL { ?qls_entity rdfs:comment ?qls_description }
 ```
 
 ### Performance Tips

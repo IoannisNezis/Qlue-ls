@@ -82,6 +82,8 @@ pub(super) struct InternalCompletionItem {
     label: String,
     /// Alternative labels of the entity, in the order the backend returned them.
     aliases: Vec<String>,
+    /// A prose description of the entity, `None` when the query binds none.
+    description: Option<String>,
     /// The facts of a literal, `None` for an IRI or a blank node.
     literal: Option<LiteralFacts>,
     /// The absolute IRI, `None` for a literal or a blank node.
@@ -296,12 +298,21 @@ pub(super) async fn fetch_online_completions(
             .filter(|alias| !alias.is_empty())
             .map(str::to_string)
             .collect();
+        let description = binding
+            .get("qls_description")
+            .map(|rdf_term: &RDFTerm| rdf_term.value().to_string())
+            .filter(|description| !description.is_empty());
         if let Some(position) = index.get(&rdf_term.to_string()).copied() {
-            let known = &mut items[position].aliases;
+            let item = &mut items[position];
             for alias in aliases {
-                if !known.contains(&alias) {
-                    known.push(alias);
+                if !item.aliases.contains(&alias) {
+                    item.aliases.push(alias);
                 }
+            }
+            // NOTE: the grouped rows of one entity should agree on the
+            // description; the first row that binds one wins.
+            if item.description.is_none() {
+                item.description = description;
             }
             continue;
         }
@@ -353,6 +364,7 @@ pub(super) async fn fetch_online_completions(
         items.push(InternalCompletionItem {
             label,
             aliases,
+            description,
             literal,
             uri,
             value,
@@ -553,6 +565,7 @@ pub(super) fn to_completion_items(
                 InternalCompletionItem {
                     label,
                     aliases,
+                    description,
                     literal,
                     uri,
                     value,
@@ -565,19 +578,25 @@ pub(super) fn to_completion_items(
                 // value is all there is — so it carries no label details and a
                 // client renders it on one line.
                 let (label_details, data) = match &literal {
-                    Some(literal) => (None, literal_data(literal, score)),
+                    Some(literal) => (None, literal_data(literal, score, description.as_deref())),
                     None => (
                         Some(CompletionItemLabelDetails {
                             detail: label.clone(),
                             description: (!aliases.is_empty()).then(|| aliases.join(", ")),
                         }),
-                        entity_data(&label, &aliases, score, uri.as_deref()),
+                        entity_data(
+                            &label,
+                            &aliases,
+                            score,
+                            uri.as_deref(),
+                            description.as_deref(),
+                        ),
                     ),
                 };
                 CompletionItem {
                     label: value.clone(),
                     label_details,
-                    detail: None,
+                    detail: description,
                     documentation: None,
                     // NOTE: The first 100 ID's are reserved
                     sort_text: Some(format!("{:0>5}", idx + 100)),
@@ -619,7 +638,7 @@ pub(super) fn to_completion_items(
 ///
 /// `value` is the lexical form alone: the item's own label carries the literal
 /// as SPARQL writes it, quotes and tag included.
-fn literal_data(literal: &LiteralFacts, score: Option<usize>) -> LSPAny {
+fn literal_data(literal: &LiteralFacts, score: Option<usize>, description: Option<&str>) -> LSPAny {
     let mut data = HashMap::from([
         ("kind".to_string(), LSPAny::String("literal".to_string())),
         ("value".to_string(), LSPAny::String(literal.value.clone())),
@@ -630,6 +649,7 @@ fn literal_data(literal: &LiteralFacts, score: Option<usize>) -> LSPAny {
     if let Some(datatype) = &literal.datatype {
         data.insert("datatype".to_string(), LSPAny::String(datatype.clone()));
     }
+    insert_description(&mut data, description);
     insert_score(&mut data, score);
     qlue_ls_data(data)
 }
@@ -644,6 +664,7 @@ fn entity_data(
     aliases: &[String],
     score: Option<usize>,
     uri: Option<&str>,
+    description: Option<&str>,
 ) -> LSPAny {
     let mut data = HashMap::from([
         ("kind".to_string(), LSPAny::String("entity".to_string())),
@@ -661,8 +682,18 @@ fn entity_data(
     if let Some(uri) = uri {
         data.insert("uri".to_string(), LSPAny::String(uri.to_string()));
     }
+    insert_description(&mut data, description);
     insert_score(&mut data, score);
     qlue_ls_data(data)
+}
+
+fn insert_description(data: &mut HashMap<String, LSPAny>, description: Option<&str>) {
+    if let Some(description) = description {
+        data.insert(
+            "description".to_string(),
+            LSPAny::String(description.to_string()),
+        );
+    }
 }
 
 fn insert_score(data: &mut HashMap<String, LSPAny>, score: Option<usize>) {

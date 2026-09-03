@@ -8,9 +8,7 @@
 use super::{undeclared_prefix, unused_prefix_declaration};
 use crate::server::{
     Server,
-    lsp::{
-        DiagnosticRequest, WorkspaceEditRequest, base_types::LSPAny, diagnostic::Diagnostic,
-    },
+    lsp::{DiagnosticRequest, WorkspaceEditRequest, base_types::LSPAny, diagnostic::Diagnostic},
     message_handler::code_action::{declare_prefix, remove_prefix_declaration},
 };
 use std::{

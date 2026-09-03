@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::server::lsp::LspMessage;
-use crate::server::lsp::rpc::{NotificationMessageBase, RequestId, RequestMessageBase, ResponseMessageBase};
+use crate::server::lsp::rpc::{
+    NotificationMessageBase, RequestId, RequestMessageBase, ResponseMessageBase,
+};
 use crate::server::lsp::textdocument::{DocumentUri, TextDocumentIdentifier};
 
 use super::diagnostic::Diagnostic;

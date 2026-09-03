@@ -35,11 +35,7 @@ pub(super) fn code_actions(var: &Var, document: &TextDocumentItem) -> Option<Vec
         });
     if group_vars.is_some_and(|vars| !vars.contains(&var.var_name())) {
         let end = Position::from_byte_index(
-            select_query
-                .select_clause()?
-                .syntax()
-                .text_range()
-                .end(),
+            select_query.select_clause()?.syntax().text_range().end(),
             &document.text,
         )?;
         let last_child = select_query

@@ -51,10 +51,7 @@ pub(crate) fn diagnostics(
                     severity: DiagnosticSeverity::Information,
                     code: Some((*CODE).clone()),
                     source: None,
-                    message: format!(
-                        "Triple with same subject \"{}\" can be contracted",
-                        subject
-                    ),
+                    message: format!("Triple with same subject \"{}\" can be contracted", subject),
                     data: Some(ranges.clone()),
                 })
             })

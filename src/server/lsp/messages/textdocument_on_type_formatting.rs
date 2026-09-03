@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::server::lsp::{
+    FormattingOptions, LspMessage,
     rpc::{RequestId, RequestMessageBase, ResponseMessageBase},
     textdocument::{Position, TextDocumentIdentifier, TextEdit},
-    FormattingOptions, LspMessage,
 };
 
 #[derive(Debug, Deserialize, PartialEq)]

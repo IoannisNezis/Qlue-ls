@@ -14,7 +14,7 @@ use crate::{
         common::get_timestamp_ms,
         configuration::BackendConfiguration,
         lsp::{
-            Command, CompletionItem, CompletionItemKind, CompletionItemLabelDetails,
+            Command, CompletionItemBuilder, CompletionItemKind, CompletionItemLabelDetails,
             CompletionList,
             base_types::LSPAny,
             rpc::RequestId,
@@ -305,8 +305,11 @@ pub(super) async fn fetch_online_completions(
             .get("search_term_uncompressed")
             .is_some()
             .then_some(value.to_string())
-            .or((!label.is_empty())
-                .then_some(format!("{}{}", label, alias.clone().unwrap_or_default())))
+            .or((!label.is_empty()).then_some(format!(
+                "{}{}",
+                label,
+                alias.clone().unwrap_or_default()
+            )))
             .or(Some(rdf_term.to_string()));
         if !label.is_empty() {
             server
@@ -567,37 +570,44 @@ pub(super) fn to_completion_items(
                         ),
                     ),
                 };
-                CompletionItem {
-                    label: value.clone(),
-                    label_details,
-                    detail: description,
-                    documentation: None,
+                let mut builder = CompletionItemBuilder::new()
+                    .label(&value)
+                    .kind(CompletionItemKind::Value)
                     // NOTE: The first 100 ID's are reserved
-                    sort_text: Some(format!("{:0>5}", idx + 100)),
-                    insert_text: None,
-                    // NOTE: Use the search term as filter_text for all items.
-                    // This gives all items the same fuzzy match score in Monaco,
-                    // forcing it to fall back to sortText for ordering.
-                    filter_text: search_term.map(|s| s.to_string()),
-                    text_edit: Some(TextEdit {
+                    .sort_text(&format!("{:0>5}", idx + 100))
+                    .text_edit(TextEdit {
                         range: range.clone(),
                         new_text: format!("{} ", value),
-                    }),
-                    kind: Some(CompletionItemKind::Value),
-                    insert_text_format: None,
-                    additional_text_edits: import_edit.map(|edit| vec![edit]),
-                    command: command.map(|command| Command {
-                        title: command.to_string(),
-                        command: command.to_string(),
-                        arguments: None,
-                    }),
+                    })
                     // NOTE: `label`, `labelDetails` and `sortText` carry these
                     // values as presentation only. The structured copy under
                     // `data` is what a client reads them back from, since
                     // `detail` and `documentation` are human fields the other
                     // completion kinds use for their own purposes.
-                    data: Some(data),
+                    .data(data);
+                if let Some(label_details) = label_details {
+                    builder = builder.label_details_full(label_details);
                 }
+                if let Some(description) = &description {
+                    builder = builder.detail(description);
+                }
+                if let Some(edit) = import_edit {
+                    builder = builder.additional_text_edits(vec![edit]);
+                }
+                // NOTE: Use the search term as filter_text for all items.
+                // This gives all items the same fuzzy match score in Monaco,
+                // forcing it to fall back to sortText for ordering.
+                if let Some(search_term) = search_term {
+                    builder = builder.filter_text(search_term);
+                }
+                if let Some(command) = command {
+                    builder = builder.command(Command {
+                        title: command.to_string(),
+                        command: command.to_string(),
+                        arguments: None,
+                    });
+                }
+                builder.build()
             },
         )
         .collect();

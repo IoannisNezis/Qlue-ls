@@ -1,16 +1,16 @@
 use std::{collections::HashMap, rc::Rc};
 
-use futures::lock::Mutex;
-use ll_sparql_parser::{ast::AstNode, ast::Var, syntax_kind::SyntaxKind};
 use crate::{
     Server,
-    server::message_handler::common::{find_variable_occurrences, is_valid_variable_name},
     server::lsp::{
         RenameRequest, RenameResponse, WorkspaceEdit,
         errors::{ErrorCode, LSPError},
         textdocument::{Range, TextEdit},
     },
+    server::message_handler::common::{find_variable_occurrences, is_valid_variable_name},
 };
+use futures::lock::Mutex;
+use ll_sparql_parser::{ast::AstNode, ast::Var, syntax_kind::SyntaxKind};
 
 pub(super) async fn handle_rename_request(
     server_rc: Rc<Mutex<Server>>,

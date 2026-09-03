@@ -262,6 +262,18 @@ impl CompletionItemBuilder {
         self
     }
 
+    /// Set both halves of the label details of the completion.
+    ///
+    /// Unlike [`CompletionItemBuilder::label_details`] this also sets the
+    /// `description`, the string rendered less prominently after the detail.
+    pub fn label_details_full(
+        mut self,
+        label_details: CompletionItemLabelDetails,
+    ) -> CompletionItemBuilder {
+        self.label_details = Some(label_details);
+        self
+    }
+
     /// Set the kind of the completion.
     /// The kind of this completion item. Based of the kind
     /// an icon is chosen by the editor. The standardized set

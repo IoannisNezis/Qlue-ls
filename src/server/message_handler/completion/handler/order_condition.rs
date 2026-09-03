@@ -6,8 +6,7 @@ use ll_sparql_parser::syntax_kind::SyntaxKind;
 use crate::server::{
     Server,
     lsp::{
-        CompletionItemBuilder, CompletionItemKind, CompletionList,
-        InsertTextFormat, ItemDefaults,
+        CompletionItemBuilder, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
     },
     message_handler::completion::{CompletionEnvironment, CompletionError, handler::variable},
 };

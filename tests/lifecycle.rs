@@ -4,8 +4,8 @@
 
 mod harness;
 
-use harness::runtime::run_lsp_test;
 use harness::TestClient;
+use harness::runtime::run_lsp_test;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
@@ -29,7 +29,9 @@ fn test_initialize_returns_capabilities() {
             )
             .await;
 
-        let response = client.get_response(id).expect("Should receive initialize response");
+        let response = client
+            .get_response(id)
+            .expect("Should receive initialize response");
 
         // Verify we got a result, not an error
         assert!(
@@ -56,8 +58,7 @@ fn test_initialize_returns_capabilities() {
 
         // Check server info
         assert_eq!(
-            response["result"]["serverInfo"]["name"],
-            "Qlue-ls",
+            response["result"]["serverInfo"]["name"], "Qlue-ls",
             "Server name should be Qlue-ls"
         );
     });
@@ -70,7 +71,9 @@ fn test_full_lifecycle() {
 
         // Initialize
         let init_id = client.initialize().await;
-        let init_response = client.get_response(init_id).expect("Should receive init response");
+        let init_response = client
+            .get_response(init_id)
+            .expect("Should receive init response");
         assert!(
             init_response["result"]["capabilities"].is_object(),
             "Should return capabilities"
@@ -112,11 +115,15 @@ fn test_document_sync() {
         client.initialize().await;
 
         // Open a document
-        let mut doc = client.open("file:///test.sparql", "SELECT * WHERE { }").await;
+        let mut doc = client
+            .open("file:///test.sparql", "SELECT * WHERE { }")
+            .await;
 
         // Verify we can request operations on it
         let format_id = doc.format().await;
-        let response = client.get_response(format_id).expect("Should get format response");
+        let response = client
+            .get_response(format_id)
+            .expect("Should get format response");
         assert!(response["result"].is_array());
 
         // Change the document
@@ -124,7 +131,9 @@ fn test_document_sync() {
 
         // Request formatting again
         let format_id2 = doc.format().await;
-        let response2 = client.get_response(format_id2).expect("Should get format response");
+        let response2 = client
+            .get_response(format_id2)
+            .expect("Should get format response");
         assert!(response2["result"].is_array());
 
         // Close the document
@@ -150,8 +159,12 @@ fn test_multiple_documents() {
         let format1_id = client.format("file:///doc1.sparql").await;
         let format2_id = client.format("file:///doc2.sparql").await;
 
-        let response1 = client.get_response(format1_id).expect("Should get response for doc1");
-        let response2 = client.get_response(format2_id).expect("Should get response for doc2");
+        let response1 = client
+            .get_response(format1_id)
+            .expect("Should get response for doc1");
+        let response2 = client
+            .get_response(format2_id)
+            .expect("Should get response for doc2");
 
         assert!(response1["result"].is_array());
         assert!(response2["result"].is_array());

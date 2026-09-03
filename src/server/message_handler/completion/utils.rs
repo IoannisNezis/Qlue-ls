@@ -148,6 +148,8 @@ fn report_completion_query(
     result_count: Option<usize>,
     error: Option<String>,
 ) {
+    // NOTE: On native the body below is compiled out, leaving every parameter unused.
+    // Discarding them here marks them as used and avoids `unused_variables` warnings.
     #[cfg(not(target_arch = "wasm32"))]
     let _ = (server, template, query, url, started, result_count, error);
     #[cfg(target_arch = "wasm32")]

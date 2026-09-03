@@ -5,6 +5,14 @@ All notable changes to the "Qlue-ls" project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- the `qlueLs/completionQuery` notification now carries the `requestId` of the
+  completion request it belongs to, so clients can group the queries of one
+  request. Note that a request can send several notifications, or none.
+
 ## [3.6.0] - 2026-09-02
 
 ### Changed

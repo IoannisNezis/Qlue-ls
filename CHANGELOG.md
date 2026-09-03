@@ -16,6 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- a completion item's `qlueLs` data payload carries a single `alias` string
+  instead of an `aliases` list, and result rows are no longer grouped by
+  entity: one row is one completion item. A completion query is expected to
+  return an entity once, binding at most the one `?qls_alias` that matched the
+  search term — collecting every alias only made the query slow.
+
+  To migrate, read `data.qlueLs.alias` as an optional string where you read
+  `data.qlueLs.aliases`, and drop any `GROUP_CONCAT` over aliases from your
+  completion queries — `SAMPLE(?alias)` on a query that already filters aliases
+  by the search term is enough.
 - the `qlueLs/completionQuery` notification now carries the `requestId` of the
   completion request it belongs to, so clients can group the queries of one
   request. Note that a request can send several notifications, or none.

@@ -21,11 +21,10 @@ These variables are optional:
 | `?qls_description` | prose description of the entity           | large city in Baden-Württemberg, Germany   |
 | `?qls_count`       | relevance score (e.g. occurrence count), used for sorting | 1204                       |
 
-An entity with several aliases may be returned as one row per alias: rows are
-grouped by `?qls_entity` and their `?qls_alias` values collected. Alternatively a
-single row can pack them into one `?qls_alias` binding separated by tabs, e.g.
-`GROUP_CONCAT(?alias; SEPARATOR="\t")`. The remaining variables are taken from
-the first row that binds them.
+One result row becomes one completion item, so a query **MUST NOT** return an
+entity more than once. In particular bind at most one `?qls_alias` per entity —
+the one that matched the search term. Collecting every alias of an entity makes
+the query slow for no gain, since only one is shown.
 
 `?qls_description` becomes the completion item's `detail`, so a client shows it
 beside the item.
@@ -241,7 +240,7 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX wikibase: <http://wikiba.se/ontology#>
 PREFIX schema: <http://schema.org/>
-SELECT ?qls_entity ?qls_label ?qls_description (GROUP_CONCAT(DISTINCT ?alias; SEPARATOR="\t") AS ?qls_alias) ?qls_count WHERE {
+SELECT ?qls_entity ?qls_label ?qls_description (SAMPLE(?alias) AS ?qls_alias) ?qls_count WHERE {
   {{ context }} {{ local_context }}
   ?qls_entity wikibase:sitelinks ?qls_count .
   OPTIONAL { ?qls_entity rdfs:label ?qls_label . FILTER(LANG(?qls_label) = "en") }
@@ -266,7 +265,7 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX wikibase: <http://wikiba.se/ontology#>
 PREFIX schema: <http://schema.org/>
-SELECT ?qls_entity ?qls_label ?qls_description (GROUP_CONCAT(DISTINCT ?alias; SEPARATOR="\t") AS ?qls_alias) ?qls_count WHERE {
+SELECT ?qls_entity ?qls_label ?qls_description (SAMPLE(?alias) AS ?qls_alias) ?qls_count WHERE {
   {{ local_context }}
   ?qls_entity wikibase:sitelinks ?qls_count .
   OPTIONAL { ?qls_entity rdfs:label ?qls_label . FILTER(LANG(?qls_label) = "en") }

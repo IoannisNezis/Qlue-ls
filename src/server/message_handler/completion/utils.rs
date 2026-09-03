@@ -80,8 +80,9 @@ pub(super) async fn dispatch_completion_query(
 
 pub(super) struct InternalCompletionItem {
     label: String,
-    /// Alternative labels of the entity, in the order the backend returned them.
-    aliases: Vec<String>,
+    /// The alternative label that matched the search term, `None` when the
+    /// query binds none.
+    alias: Option<String>,
     /// A prose description of the entity, `None` when the query binds none.
     description: Option<String>,
     /// The facts of a literal, `None` for an IRI or a blank node.
@@ -101,12 +102,6 @@ pub(super) struct LiteralFacts {
     /// The datatype, shortened to a curie where the prefix map allows it.
     datatype: Option<String>,
 }
-
-/// Separator a completion query uses to pack several aliases into one
-/// `?qls_alias` binding, as `GROUP_CONCAT(?alias; SEPARATOR="\t")`. A backend
-/// that returns one binding per alias instead needs none of this — those rows
-/// are grouped by entity all the same.
-const ALIAS_SEPARATOR: char = '\t';
 
 const NO_BINDINGS_MESSAGE: &str = "The SPARQL result of a completion query did not contain bindings. Likely because its not a SELECT query.";
 
@@ -278,44 +273,23 @@ pub(super) async fn fetch_online_completions(
         Some(bindings.len()),
         None,
     );
-    // NOTE: an entity with several aliases comes back as one binding per alias,
-    // so rows are grouped by `?qls_entity` and their aliases collected into one
-    // item. `items` keeps the order the backend returned, `index` maps an
-    // already seen entity to its position in it.
+    // NOTE: one result row is one completion item, in the order the backend
+    // returned them.
     let mut items: Vec<InternalCompletionItem> = Vec::new();
-    let mut index: HashMap<String, usize> = HashMap::new();
     for binding in bindings {
         let rdf_term = binding.get("qls_entity").ok_or_else(|| {
             CompletionError::Request(
                 "Completion query result is missing the `qls_entity` binding".to_string(),
             )
         })?;
-        let aliases: Vec<String> = binding
+        let alias = binding
             .get("qls_alias")
-            .map(|rdf_term: &RDFTerm| rdf_term.value())
-            .unwrap_or_default()
-            .split(ALIAS_SEPARATOR)
-            .filter(|alias| !alias.is_empty())
-            .map(str::to_string)
-            .collect();
+            .map(|rdf_term: &RDFTerm| rdf_term.value().to_string())
+            .filter(|alias| !alias.is_empty());
         let description = binding
             .get("qls_description")
             .map(|rdf_term: &RDFTerm| rdf_term.value().to_string())
             .filter(|description| !description.is_empty());
-        if let Some(position) = index.get(&rdf_term.to_string()).copied() {
-            let item = &mut items[position];
-            for alias in aliases {
-                if !item.aliases.contains(&alias) {
-                    item.aliases.push(alias);
-                }
-            }
-            // NOTE: the grouped rows of one entity should agree on the
-            // description; the first row that binds one wins.
-            if item.description.is_none() {
-                item.description = description;
-            }
-            continue;
-        }
         let (value, import_edit) = render_rdf_term(&server, query_unit, rdf_term, &backend.name);
         let label = binding
             .get("qls_label")
@@ -325,13 +299,14 @@ pub(super) async fn fetch_online_completions(
             .and_then(|rdf_term: &RDFTerm| rdf_term.value().parse().ok());
         // NOTE: This is the text the in editor filter uses.
         // If a compressed IRI is used as search term i.e. "wdt:p" the expanded iri is used as
-        // filter text. Otherwise the label and aliases are used as filter text.
+        // filter text. Otherwise the label and alias are used as filter text.
         // This is currently not used, but should be redone at some point
         let filter_text = query_template_context
             .get("search_term_uncompressed")
             .is_some()
             .then_some(value.to_string())
-            .or((!label.is_empty()).then_some(format!("{}{}", label, aliases.concat())))
+            .or((!label.is_empty())
+                .then_some(format!("{}{}", label, alias.clone().unwrap_or_default())))
             .or(Some(rdf_term.to_string()));
         if !label.is_empty() {
             server
@@ -360,10 +335,9 @@ pub(super) async fn fetch_online_completions(
             RDFTerm::Uri { value, .. } => Some(value.clone()),
             _ => None,
         };
-        index.insert(rdf_term.to_string(), items.len());
         items.push(InternalCompletionItem {
             label,
-            aliases,
+            alias,
             description,
             literal,
             uri,
@@ -564,7 +538,7 @@ pub(super) fn to_completion_items(
                 idx,
                 InternalCompletionItem {
                     label,
-                    aliases,
+                    alias,
                     description,
                     literal,
                     uri,
@@ -582,11 +556,11 @@ pub(super) fn to_completion_items(
                     None => (
                         Some(CompletionItemLabelDetails {
                             detail: label.clone(),
-                            description: (!aliases.is_empty()).then(|| aliases.join(", ")),
+                            description: alias.clone(),
                         }),
                         entity_data(
                             &label,
-                            &aliases,
+                            alias.as_deref(),
                             score,
                             uri.as_deref(),
                             description.as_deref(),
@@ -661,7 +635,7 @@ fn literal_data(literal: &LiteralFacts, score: Option<usize>, description: Optio
 /// payloads and marks the blob as server specific.
 fn entity_data(
     label: &str,
-    aliases: &[String],
+    alias: Option<&str>,
     score: Option<usize>,
     uri: Option<&str>,
     description: Option<&str>,
@@ -669,16 +643,10 @@ fn entity_data(
     let mut data = HashMap::from([
         ("kind".to_string(), LSPAny::String("entity".to_string())),
         ("label".to_string(), LSPAny::String(label.to_string())),
-        (
-            "aliases".to_string(),
-            LSPAny::LSPArray(
-                aliases
-                    .iter()
-                    .map(|alias| LSPAny::String(alias.clone()))
-                    .collect(),
-            ),
-        ),
     ]);
+    if let Some(alias) = alias {
+        data.insert("alias".to_string(), LSPAny::String(alias.to_string()));
+    }
     if let Some(uri) = uri {
         data.insert("uri".to_string(), LSPAny::String(uri.to_string()));
     }

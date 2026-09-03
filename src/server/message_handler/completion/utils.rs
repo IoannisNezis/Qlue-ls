@@ -84,6 +84,8 @@ pub(super) struct InternalCompletionItem {
     aliases: Vec<String>,
     /// The facts of a literal, `None` for an IRI or a blank node.
     literal: Option<LiteralFacts>,
+    /// The absolute IRI, `None` for a literal or a blank node.
+    uri: Option<String>,
     value: String,
     _filter_text: Option<String>,
     score: Option<usize>,
@@ -340,11 +342,19 @@ pub(super) async fn fetch_online_completions(
             }),
             _ => None,
         };
+        // NOTE: `value` is the curie the query will read; a client that wants to
+        // resolve the entity needs the IRI it stands for, and reconstructing it
+        // from the prefix map is this server's job rather than the client's.
+        let uri = match rdf_term {
+            RDFTerm::Uri { value, .. } => Some(value.clone()),
+            _ => None,
+        };
         index.insert(rdf_term.to_string(), items.len());
         items.push(InternalCompletionItem {
             label,
             aliases,
             literal,
+            uri,
             value,
             _filter_text: filter_text,
             score,
@@ -544,6 +554,7 @@ pub(super) fn to_completion_items(
                     label,
                     aliases,
                     literal,
+                    uri,
                     value,
                     _filter_text,
                     score,
@@ -560,7 +571,7 @@ pub(super) fn to_completion_items(
                             detail: label.clone(),
                             description: (!aliases.is_empty()).then(|| aliases.join(", ")),
                         }),
-                        entity_data(&label, &aliases, score),
+                        entity_data(&label, &aliases, score, uri.as_deref()),
                     ),
                 };
                 CompletionItem {
@@ -628,7 +639,12 @@ fn literal_data(literal: &LiteralFacts, score: Option<usize>) -> LSPAny {
 /// Namespaced under a `qlueLs` key: `data` is opaque to the protocol and round
 /// trips through `completionItem/resolve`, so the namespace keeps room for other
 /// payloads and marks the blob as server specific.
-fn entity_data(label: &str, aliases: &[String], score: Option<usize>) -> LSPAny {
+fn entity_data(
+    label: &str,
+    aliases: &[String],
+    score: Option<usize>,
+    uri: Option<&str>,
+) -> LSPAny {
     let mut data = HashMap::from([
         ("kind".to_string(), LSPAny::String("entity".to_string())),
         ("label".to_string(), LSPAny::String(label.to_string())),
@@ -642,6 +658,9 @@ fn entity_data(label: &str, aliases: &[String], score: Option<usize>) -> LSPAny 
             ),
         ),
     ]);
+    if let Some(uri) = uri {
+        data.insert("uri".to_string(), LSPAny::String(uri.to_string()));
+    }
     insert_score(&mut data, score);
     qlue_ls_data(data)
 }

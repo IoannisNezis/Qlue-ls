@@ -125,7 +125,7 @@ pub async fn completions(
                 "INSERT WHERE",
                 Some("Insert with a where clause.".to_string()),
                 None,
-                "Insert {\n  ${1}\n}\nWHERE {\n  ${0}\n}",
+                "INSERT {\n  ${1}\n}\nWHERE {\n  ${0}\n}",
                 CompletionItemKind::Snippet,
                 None,
             ),

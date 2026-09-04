@@ -475,7 +475,12 @@ fn get_location(
                     };
                 }
         // NOTE: START
-        if anchor.kind() == SyntaxKind::WHITESPACE && anchor.text_range().start() == 0.into() {
+        // INFO: Leading comments are trivia, so the anchor can start after offset 0
+        //       while still having no meaningful token before it.
+        if anchor.kind().is_trivia()
+            && std::iter::successors(anchor.prev_token(), |token| token.prev_token())
+                .all(|token| token.kind().is_trivia())
+        {
             CompletionLocation::Start
         }
         // NOTE: Predicate

@@ -114,6 +114,17 @@ fn localize_start_2() {
 }
 
 #[test]
+fn localize_start_after_comment() {
+    //           0123456789 0 1234
+    let input = "# comment\n\nSele";
+    assert!(match_location_at_offset(
+        input,
+        CompletionLocation::Start,
+        15
+    ));
+}
+
+#[test]
 fn localize_solution_modifier() {
     //           0123456789012
     let input = "Select * {} \n";

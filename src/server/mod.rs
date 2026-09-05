@@ -154,11 +154,13 @@ impl Server {
                 .add_raw_template(&format!("{}-{}", &backend_name, &key), &value)
                 .map_err(|err| {
                     tracing::error!("{}", err);
+                    // INFO: tera v2 renders a source-annotated report via `Display`,
+                    // pass it on so the user can see *why* the template is invalid.
                     LSPError::new(
                         ErrorCode::InvalidParams,
                         &format!(
-                            "Could not load template: {} of backend {}",
-                            &key, &backend_name
+                            "Could not load template: {} of backend {}\n{}",
+                            &key, &backend_name, err
                         ),
                     )
                 })?;

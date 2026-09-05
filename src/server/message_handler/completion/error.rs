@@ -22,7 +22,7 @@ pub(super) fn to_lsp_error(completion_error: CompletionError) -> LSPError {
             LSPError::new(ErrorCode::InternalError, &message)
         }
         CompletionError::Template(template, error) => {
-            let message = format!("Could not render template \"{}\"\n{:?}", template, error);
+            let message = format!("Could not render template \"{}\"\n{}", template, error);
             tracing::error!("{}", message);
             LSPError::new(ErrorCode::InternalError, &message)
         }

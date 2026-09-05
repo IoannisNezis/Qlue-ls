@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- the templating engine for completion and hover queries was updated to Tera
+  v2. Two changes affect existing query templates:
+
+  - numeric field access is gone: `{{ prefix.0 }}` has to be written as
+    `{{ prefix[0] }}`. This only matters if you iterate `prefixes` yourself
+    instead of using `{% include "prefix_declarations" %}`.
+  - macros (`{% macro %}` / `{% import %}`) were removed in favor of
+    components, see the [Tera migration
+    guide](https://github.com/Keats/tera/blob/master/MIGRATION.md).
+
+  Everything else in the documented templates keeps working, including
+  `{% if search_term_uncompressed %}` on an undefined variable.
+
+- a template that fails to load or render now reports *why*: the error message
+  contains Tera's source-annotated report pointing at the offending part of the
+  template.
+
 ## [3.8.0] - 2026-09-05
 
 ### Added

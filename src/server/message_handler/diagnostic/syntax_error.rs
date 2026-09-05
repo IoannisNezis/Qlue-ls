@@ -13,14 +13,14 @@ use crate::server::{
         textdocument::{Range, TextDocumentItem},
     },
 };
-use ll_sparql_parser::{ast::QueryUnit, parse};
+use ll_sparql_parser::{ast::Unit, parse};
 
 pub static CODE: LazyLock<DiagnosticCode> =
     LazyLock::new(|| DiagnosticCode::String("syntax-error".to_string()));
 
 pub(super) fn diagnostics(
     document: &TextDocumentItem,
-    _query_unit: &QueryUnit,
+    _ast: &Unit,
     _server: &Server,
 ) -> Option<Vec<Diagnostic>> {
     let (_, errors) = parse(&document.text);

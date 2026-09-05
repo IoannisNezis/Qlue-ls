@@ -1285,16 +1285,16 @@ checksum = "6373607a59f0be73a39b6fe456b8192fcc3585f602af20751600e974dd455e77"
 
 [[package]]
 name = "ll-sparql-parser"
-version = "3.3.1"
+version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "994a8c1d956e8159595c6f53568a35e8df6ff8212b5c464c898d381bf48a77e6"
+checksum = "3cce2be257bc176f4238f7b01769806a7255bf5594b112cc166a964dd0923f86"
 dependencies = [
  "logos",
  "prettyplease",
  "proc-macro2",
  "quote",
  "rowan",
- "syn 2.0.117",
+ "syn 3.0.0",
  "ungrammar",
 ]
 
@@ -1669,12 +1669,12 @@ dependencies = [
 
 [[package]]
 name = "prettyplease"
-version = "0.2.37"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "479ca8adacdd7ce8f1fb39ce9ecccbfe93a3f1344b3d0d97f20bc0196208f62b"
+checksum = "2bfe0f4c752e450fc2faf62654f1c134747922825d5b04ca717b8874f41a40c0"
 dependencies = [
  "proc-macro2",
- "syn 2.0.117",
+ "syn 3.0.0",
 ]
 
 [[package]]
@@ -2579,7 +2579,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "82a72c767771b47409d2345987fda8628641887d5466101319899796367354a0"
 dependencies = [
  "fastrand",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",

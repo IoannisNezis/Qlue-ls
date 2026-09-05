@@ -7,31 +7,27 @@ use crate::{
         textdocument::{Range, TextDocumentItem},
     },
 };
-use ll_sparql_parser::ast::{AstNode, QueryUnit, SelectQuery};
+use ll_sparql_parser::ast::{AstNode, SelectQuery, Unit};
 
 pub static CODE: LazyLock<DiagnosticCode> =
     LazyLock::new(|| DiagnosticCode::String("groupby-star-selection".to_string()));
 
 pub(super) fn diagnostics(
     document: &TextDocumentItem,
-    query_unit: &QueryUnit,
+    ast: &Unit,
     _server: &Server,
 ) -> Option<Vec<Diagnostic>> {
-    let select_queries = collect_select_queries(query_unit);
+    let query_unit = ast.as_query()?;
+    let select_queries: Vec<SelectQuery> = query_unit
+        .syntax()
+        .descendants()
+        .filter_map(SelectQuery::cast)
+        .collect();
     let diagnostics: Vec<_> = select_queries
         .into_iter()
         .filter_map(|select_query| invalid_selection(&select_query, document))
         .collect();
     (!diagnostics.is_empty()).then_some(diagnostics)
-}
-
-fn collect_select_queries(query_unit: &QueryUnit) -> Vec<SelectQuery> {
-    // NOTE: SelectQuery::cast accepts both SelectQuery and SubSelect nodes
-    query_unit
-        .syntax()
-        .descendants()
-        .filter_map(SelectQuery::cast)
-        .collect()
 }
 
 fn invalid_selection(

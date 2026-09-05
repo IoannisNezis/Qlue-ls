@@ -12,7 +12,7 @@ use crate::server::{
         textdocument::{Range, TextDocumentItem},
     },
 };
-use ll_sparql_parser::ast::{AstNode, QueryUnit};
+use ll_sparql_parser::ast::{AstNode, Unit};
 use std::{collections::HashSet, sync::LazyLock};
 
 pub static CODE: LazyLock<DiagnosticCode> =
@@ -20,9 +20,10 @@ pub static CODE: LazyLock<DiagnosticCode> =
 
 pub(super) fn diagnostics(
     document: &TextDocumentItem,
-    query_unit: &QueryUnit,
+    ast: &Unit,
     _server: &Server,
 ) -> Option<Vec<Diagnostic>> {
+    let query_unit = ast.as_query()?;
     let projected_variables: Vec<_> = query_unit
         .select_query()?
         .select_clause()?

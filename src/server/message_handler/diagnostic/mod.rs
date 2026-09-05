@@ -15,7 +15,7 @@ use crate::server::{
 };
 use auto_fix_prefixes::{auto_fix_prefixes, client_support_workspace_edits};
 use futures::lock::Mutex;
-use ll_sparql_parser::ast::{AstNode, QueryUnit};
+use ll_sparql_parser::ast::{AstNode, Unit};
 use std::rc::Rc;
 
 #[tracing::instrument(skip_all, fields(id = %request.get_id(), uri = %request.params.text_document.uri))]
@@ -31,11 +31,10 @@ pub(super) async fn handle_diagnostic_request(
         .state
         .get_cached_parse_tree(&request.params.text_document.uri)?
         .tree;
-    let ast = QueryUnit::cast(tree).ok_or(LSPError::new(
-        crate::server::lsp::errors::ErrorCode::InternalError,
-        "diagnostics are currently only supported for query operations",
-    ))?;
+
+    let ast = Unit::cast(tree).expect("tree should be of kind QueryUnit or UpdateUnit");
     let mut diagnostic_accu = Vec::new();
+
     macro_rules! add_diagnostic {
         ($diagnostic_provider:path) => {
             if let Some(diagnostics) = $diagnostic_provider(document, &ast, &server) {

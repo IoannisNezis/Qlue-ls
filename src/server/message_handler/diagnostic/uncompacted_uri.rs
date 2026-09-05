@@ -14,24 +14,19 @@ use crate::server::{
         textdocument::{Range, TextDocumentItem},
     },
 };
-use ll_sparql_parser::{
-    ast::{AstNode, Iri, QueryUnit},
-    syntax_kind::SyntaxKind,
-};
+use ll_sparql_parser::ast::{AstNode, Iri, Unit};
 
 pub static CODE: LazyLock<DiagnosticCode> =
     LazyLock::new(|| DiagnosticCode::String("uncompacted-uri".to_string()));
 
 pub(super) fn diagnostics(
     document: &TextDocumentItem,
-    query_unit: &QueryUnit,
+    ast: &Unit,
     server: &Server,
 ) -> Option<Vec<Diagnostic>> {
     Some(
-        query_unit
-            .select_query()?
-            .preorder_find_kind(SyntaxKind::iri)
-            .into_iter()
+        ast.strip_prologue()?
+            .descendants()
             .filter_map(Iri::cast)
             .filter_map(|iri| match iri.raw_iri() {
                 Some(raw_iri) => match server.shorten_uri(&raw_iri, None) {

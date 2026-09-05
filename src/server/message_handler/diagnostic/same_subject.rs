@@ -15,16 +15,17 @@ use crate::server::{
         textdocument::{Range, TextDocumentItem},
     },
 };
-use ll_sparql_parser::ast::{AstNode, GroupGraphPattern, QueryUnit, Triple};
+use ll_sparql_parser::ast::{AstNode, GroupGraphPattern, QueryUnit, Triple, Unit};
 
 pub static CODE: LazyLock<DiagnosticCode> =
     LazyLock::new(|| DiagnosticCode::String("same-subject".to_string()));
 
 pub(crate) fn diagnostics(
     document: &TextDocumentItem,
-    query_unit: &QueryUnit,
+    ast: &Unit,
     _server: &Server,
 ) -> Option<Vec<Diagnostic>> {
+    let query_unit = ast.as_query()?;
     let groups = find_all_triple_groups(query_unit);
     Some(
         groups

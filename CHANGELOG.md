@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.8.0] - 2026-09-05
+
+### Added
+
+- diagnostics are now reported for update operations (`INSERT`, `DELETE`,
+  `LOAD`, `CLEAR`, ...). Previously a diagnostic request on an update failed
+  with "diagnostics are currently only supported for query operations".
+
 ### Fixed
 
 - keyword completions at the start of a query are offered again when the query

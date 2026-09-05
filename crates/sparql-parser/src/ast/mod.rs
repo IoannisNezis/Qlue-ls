@@ -18,19 +18,95 @@ impl QueryUnit {
         )
     }
 
-    pub fn strip_prologue(&self) -> Option<SyntaxNode> {
-        self.syntax
-            .children()
-            .skip_while(|node| node.kind() == SyntaxKind::Prologue)
-            .next()
-    }
-
     pub fn prologue(&self) -> Option<Prologue> {
         Prologue::cast(
             self.syntax
                 .first_child()?
                 .first_child_by_kind(&Prologue::can_cast)?,
         )
+    }
+
+    /// The first child of the unit that is not the `Prologue`.
+    ///
+    /// NOTE: The `Prologue` is a child of the inner `Query`/`Update` node, not
+    ///       of the unit itself, hence the `first_child()` hop.
+    pub fn strip_prologue(&self) -> Option<SyntaxNode> {
+        self.syntax
+            .first_child()?
+            .children()
+            .find(|node| node.kind() != SyntaxKind::Prologue)
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct UpdateUnit {
+    syntax: SyntaxNode,
+}
+
+impl UpdateUnit {
+    /// The `Prologue` of the first `Update` in the unit.
+    ///
+    /// NOTE: Chained updates (`... ; ...`) nest an `Update` inside an `Update`,
+    ///       each carrying its own `Prologue`. This returns the outermost one.
+    pub fn prologue(&self) -> Option<Prologue> {
+        Prologue::cast(
+            self.syntax
+                .first_child()?
+                .first_child_by_kind(&Prologue::can_cast)?,
+        )
+    }
+
+    /// The first child of the unit that is not the `Prologue`.
+    ///
+    /// NOTE: The `Prologue` is a child of the inner `Query`/`Update` node, not
+    ///       of the unit itself, hence the `first_child()` hop.
+    pub fn strip_prologue(&self) -> Option<SyntaxNode> {
+        self.syntax
+            .first_child()?
+            .children()
+            .find(|node| node.kind() != SyntaxKind::Prologue)
+    }
+
+    /// All `UpdateOne` nodes of the unit, in order.
+    pub fn update_ones(&self) -> Vec<SyntaxNode> {
+        self.preorder_find_kind(SyntaxKind::UpdateOne)
+    }
+}
+
+/// A parsed top level unit: either a query or an update.
+#[derive(Debug, PartialEq)]
+pub enum Unit {
+    Query(QueryUnit),
+    Update(UpdateUnit),
+}
+
+impl Unit {
+    pub fn prologue(&self) -> Option<Prologue> {
+        match self {
+            Unit::Query(query_unit) => query_unit.prologue(),
+            Unit::Update(update_unit) => update_unit.prologue(),
+        }
+    }
+
+    pub fn as_query(&self) -> Option<&QueryUnit> {
+        match self {
+            Unit::Query(query_unit) => Some(query_unit),
+            Unit::Update(_) => None,
+        }
+    }
+
+    pub fn as_update(&self) -> Option<&UpdateUnit> {
+        match self {
+            Unit::Update(update_unit) => Some(update_unit),
+            Unit::Query(_) => None,
+        }
+    }
+
+    pub fn strip_prologue(&self) -> Option<SyntaxNode> {
+        match self {
+            Unit::Query(query_unit) => query_unit.strip_prologue(),
+            Unit::Update(update_unit) => update_unit.strip_prologue(),
+        }
     }
 }
 
@@ -1505,6 +1581,64 @@ impl AstNode for QueryUnit {
         self.select_query()
             .map(|select_query| select_query.visible_variables())
             .unwrap_or_default()
+    }
+}
+
+impl AstNode for UpdateUnit {
+    #[inline]
+    fn kind() -> SyntaxKind {
+        SyntaxKind::UpdateUnit
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        vec![]
+    }
+}
+
+impl AstNode for Unit {
+    #[inline]
+    fn kind() -> SyntaxKind {
+        SyntaxKind::QueryUnit
+    }
+
+    fn can_cast(kind: SyntaxKind) -> bool {
+        matches!(kind, SyntaxKind::QueryUnit | SyntaxKind::UpdateUnit)
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        match syntax.kind() {
+            SyntaxKind::QueryUnit => Some(Unit::Query(QueryUnit::cast(syntax)?)),
+            SyntaxKind::UpdateUnit => Some(Unit::Update(UpdateUnit::cast(syntax)?)),
+            _ => None,
+        }
+    }
+
+    #[inline]
+    fn syntax(&self) -> &SyntaxNode {
+        match self {
+            Unit::Query(query_unit) => query_unit.syntax(),
+            Unit::Update(update_unit) => update_unit.syntax(),
+        }
+    }
+
+    fn visible_variables(&self) -> Vec<Var> {
+        match self {
+            Unit::Query(query_unit) => query_unit.visible_variables(),
+            Unit::Update(update_unit) => update_unit.visible_variables(),
+        }
     }
 }
 

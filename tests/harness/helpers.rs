@@ -257,8 +257,8 @@ impl TestClient {
     // ========== Custom Extension Methods (qlueLs/*) ==========
 
     /// Add a SPARQL backend.
-    pub async fn add_backend(&self, name: &str, url: &str, default: bool) {
-        self.send_notification(
+    pub async fn add_backend(&self, name: &str, url: &str, default: bool) -> u32 {
+        self.send_request(
             "qlueLs/addBackend",
             json!({
                 "service": {
@@ -269,12 +269,12 @@ impl TestClient {
                 "prefixMap": {}
             }),
         )
-        .await;
+        .await
     }
 
     /// Add a backend with custom configuration.
-    pub async fn add_backend_with(&self, config: Value) {
-        self.send_notification("qlueLs/addBackend", config).await;
+    pub async fn add_backend_with(&self, config: Value) -> u32 {
+        self.send_request("qlueLs/addBackend", config).await
     }
 
     /// Get current backend information.

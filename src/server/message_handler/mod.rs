@@ -61,7 +61,7 @@ mod workspace;
 use std::rc::Rc;
 
 use backend::{
-    handle_add_backend_notification, handle_list_backends_request, handle_ping_backend_request,
+    handle_add_backend_request, handle_list_backends_request, handle_ping_backend_request,
     handle_update_backend_default_notification,
 };
 use code_action::handle_codeaction_request;
@@ -159,7 +159,7 @@ pub(super) async fn dispatch(
         "textDocument/references" => call!(handle_references_request),
         "textDocument/documentHighlight" => call!(handle_document_highlight_request),
         // NOTE: LSP extensions Requests
-        "qlueLs/addBackend" => call!(handle_add_backend_notification),
+        "qlueLs/addBackend" => call!(handle_add_backend_request),
         "qlueLs/getBackend" => call!(handle_get_backend_request),
         "qlueLs/listBackends" => call!(handle_list_backends_request),
         "qlueLs/updateDefaultBackend" => call!(handle_update_backend_default_notification),

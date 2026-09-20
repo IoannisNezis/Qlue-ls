@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **BREAKING**: `qlueLs/addBackend` is now a request instead of a notification.
+  Clients have to send it with an `id` and will receive a response with a `null`
+  result once the backend has been registered. Errors while loading the prefix
+  map or the query templates are now reported back to the client.
+
 - predicate completions inside a blank node property list (`?s :p [ | ]`) now
   take the surrounding query into account: the completion query is constrained
   by the triples connected to the enclosing subject, including the other

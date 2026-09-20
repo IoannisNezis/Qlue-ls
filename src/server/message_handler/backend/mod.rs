@@ -5,8 +5,8 @@ use futures::lock::Mutex;
 use crate::server::{
     Server,
     lsp::{
-        AddBackendNotification, GetBackendRequest, GetBackendResponse, ListBackendsRequest,
-        ListBackendsResponse, PingBackendRequest, PingBackendResponse,
+        AddBackendRequest, AddBackendResponse, GetBackendRequest, GetBackendResponse,
+        ListBackendsRequest, ListBackendsResponse, PingBackendRequest, PingBackendResponse,
         UpdateDefaultBackendNotification,
         errors::{ErrorCode, LSPError},
     },
@@ -66,10 +66,10 @@ pub(super) async fn handle_ping_backend_request(
         .send_message(PingBackendResponse::new(request.get_id(), available))
 }
 
-#[tracing::instrument(skip_all, fields(backend = %request.params.name))]
-pub(super) async fn handle_add_backend_notification(
+#[tracing::instrument(skip_all, fields(id = %request.get_id(), backend = %request.params.name))]
+pub(super) async fn handle_add_backend_request(
     server_rc: Rc<Mutex<Server>>,
-    request: AddBackendNotification,
+    request: AddBackendRequest,
 ) -> Result<(), LSPError> {
     let mut server = server_rc.lock().await;
 
@@ -83,7 +83,7 @@ pub(super) async fn handle_add_backend_notification(
     if default {
         server.state.set_default_backend(backend_name);
     }
-    Ok(())
+    server.send_message(AddBackendResponse::new(&request.base.id))
 }
 
 #[tracing::instrument(skip_all, fields(id = %request.get_id()))]

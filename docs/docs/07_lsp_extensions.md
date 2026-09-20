@@ -18,7 +18,7 @@ for completions, hover information, and query execution.
 
 Register a SPARQL endpoint with the language server.
 
-*Notification*:
+*Request*:
 
 - method: `qlueLs/addBackend`
 - params: `AddBackendParams` defined as follows:
@@ -36,6 +36,11 @@ interface AddBackendParams {
     additionalData?: any;
 }
 ```
+
+*Response*:
+
+- result: `null`
+- error: present when the backend configuration could not be loaded
 
 ### :mag: getBackend
 

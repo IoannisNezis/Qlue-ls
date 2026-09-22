@@ -23,6 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   take the surrounding query into account the same way, with a context
   insensitive query as a fallback.
 
+### Fixed
+
+- queries that declare a prefix or a base (`PREFIX ex: <...>`, `BASE <...>`) no
+  longer lose most select query features. The declarations shadowed the select
+  query when it was looked up, so the `ungrouped-select-var` and
+  `invalid-projection-var` diagnostics, the `SELECT` clause and `GROUP BY`
+  completions, and `qlueLs/jump` silently did nothing on them.
+
 ## [3.9.0] - 2026-09-09
 
 ### Added

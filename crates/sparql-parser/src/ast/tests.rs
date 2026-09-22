@@ -2,7 +2,8 @@ use rowan::TextRange;
 
 use crate::{
     ast::{
-        AstNode, BlankPropertyList, GroupGraphPattern, QueryUnit, Triple, TriplesBlock, WhereClause,
+        AstNode, BlankPropertyList, GroupGraphPattern, QueryUnit, Triple, TriplesBlock, UpdateUnit,
+        WhereClause,
     },
     parse, parse_query, print_full_tree, SyntaxNode,
 };
@@ -250,4 +251,56 @@ fn ast_triple() {
     let root = parse_query(input).0;
     let node = walk(root, vec![0, 0, 1, 0, 0, 0, 0]).unwrap();
     let triple = Triple::cast(node).unwrap();
+}
+
+/// WARNING: A non-empty `Prologue` precedes the `SelectQuery` inside the
+///          `Query` node, so these accessors must not just take the first
+///          child. Only an empty `Prologue` is absent from the tree, which is
+///          why the prefix-less variants alone would not catch a regression.
+#[test]
+fn accessors_look_past_the_prologue() {
+    for input in [
+        "SELECT ?a ?b { } GROUP BY ?a",
+        "PREFIX ex: <http://example.org/> SELECT ?a ?b { } GROUP BY ?a",
+        "BASE <http://example.org/> SELECT ?a ?b { } GROUP BY ?a",
+    ] {
+        let query = QueryUnit::cast(parse(input).0).unwrap();
+        let select_query = query
+            .select_query()
+            .unwrap_or_else(|| panic!("no SelectQuery in {input:?}"));
+        assert_eq!(
+            select_query
+                .select_clause()
+                .unwrap()
+                .variables()
+                .into_iter()
+                .map(|var| var.text())
+                .collect::<Vec<_>>(),
+            vec!["?a", "?b"],
+            "select clause of {input:?}"
+        );
+        assert!(
+            select_query
+                .soulution_modifier()
+                .and_then(|modifier| modifier.group_clause())
+                .is_some(),
+            "group clause of {input:?}"
+        );
+    }
+}
+
+#[test]
+fn update_prologue() {
+    let update = UpdateUnit::cast(parse("PREFIX ex: <http://example.org/> CLEAR DEFAULT").0)
+        .expect("CLEAR is an update");
+    assert_eq!(
+        update
+            .prologue()
+            .unwrap()
+            .prefix_declarations()
+            .into_iter()
+            .filter_map(|declaration| declaration.prefix())
+            .collect::<Vec<_>>(),
+        vec!["ex"]
+    );
 }

@@ -10,12 +10,20 @@ pub struct QueryUnit {
 }
 
 impl QueryUnit {
+    /// WARNING: The `SelectQuery` is not necessarily the first child of the
+    ///          inner `Query` node: a non-empty `Prologue` precedes it.
     pub fn select_query(&self) -> Option<SelectQuery> {
-        SelectQuery::cast(self.syntax.first_child()?.first_child()?)
+        self.syntax
+            .first_child()?
+            .children()
+            .find_map(SelectQuery::cast)
     }
 
     pub fn prologue(&self) -> Option<Prologue> {
-        Prologue::cast(self.syntax.first_child()?.first_child()?)
+        self.syntax
+            .first_child()?
+            .children()
+            .find_map(Prologue::cast)
     }
 
     /// The first child of the unit that is not the `Prologue`.
@@ -41,7 +49,10 @@ impl UpdateUnit {
     /// NOTE: Chained updates (`... ; ...`) nest an `Update` inside an `Update`,
     ///       each carrying its own `Prologue`. This returns the outermost one.
     pub fn prologue(&self) -> Option<Prologue> {
-        Prologue::cast(self.syntax.first_child()?.first_child()?)
+        self.syntax
+            .first_child()?
+            .children()
+            .find_map(Prologue::cast)
     }
 
     /// The first child of the unit that is not the `Prologue`.

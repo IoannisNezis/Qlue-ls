@@ -84,6 +84,7 @@ pub(super) fn format_document(
     } else {
         simplified_edits
     };
+    let simpified_comments = retain_covered_comments(simpified_comments, &simplified_edits);
     let comments = transform_comments(simpified_comments, &document.text);
     let mut edits = transform_edits(simplified_edits, &document.text);
     edits.sort_by(|a, b| {
@@ -184,6 +185,9 @@ impl CommentMarker {
 #[derive(Debug)]
 struct SimplifiedCommentMarker {
     text: String,
+    /// The range of the comment itself in the original document
+    range: TextRange,
+    /// The byte position the comment is attached to
     position: TextSize,
     indentation_level: u8,
     trailing: bool,
@@ -941,6 +945,7 @@ impl<'a> Walker<'a> {
             .is_some_and(|s| !s.contains("\n"));
         SimplifiedCommentMarker {
             text: comment_node.to_string(),
+            range: comment_node.text_range(),
             position: match attach.kind() {
                 SyntaxKind::QueryUnit | SyntaxKind::UpdateUnit => TextSize::new(0),
                 _ => attach.text_range().end(),
@@ -1173,6 +1178,35 @@ fn get_separator(kind: SyntaxKind) -> Seperator {
     }
 }
 
+/// Drops comments that are not removed by any edit.
+///
+/// NOTE: Comments are re-inserted by `merge_comments`. This only makes sense for comments
+/// that an edit deletes from the original text. Comments that no edit covers (e.g. inside
+/// unformatted parts of the tree) stay in the original text and would otherwise be duplicated.
+/// For Example: "(#\n*"
+fn retain_covered_comments(
+    comments: Vec<SimplifiedCommentMarker>,
+    edits: &[SimplifiedTextEdit],
+) -> Vec<SimplifiedCommentMarker> {
+    let mut edit_ranges: Vec<TextRange> = edits.iter().map(|edit| edit.range).collect();
+    edit_ranges.sort_by_key(|range| range.start());
+    // INFO: max_ends[i] is the largest end of all edits starting at or before edit_ranges[i]
+    let max_ends: Vec<TextSize> = edit_ranges
+        .iter()
+        .scan(TextSize::new(0), |max_end, range| {
+            *max_end = (*max_end).max(range.end());
+            Some(*max_end)
+        })
+        .collect();
+    comments
+        .into_iter()
+        .filter(|comment| {
+            let idx = edit_ranges.partition_point(|range| range.start() <= comment.range.start());
+            idx > 0 && max_ends[idx - 1] >= comment.range.end()
+        })
+        .collect()
+}
+
 fn transform_comments(
     mut comments: Vec<SimplifiedCommentMarker>,
     text: &str,
@@ -1394,6 +1428,14 @@ fn merge_comments(
                     // * {}
                     // In this case this edits needs to be split into two edits.
                     let (previous_edit, next_edit) = consolidated_edit.split_at(comment.position);
+                    // NOTE: If no edit ends after the comment, the comment is not covered by
+                    // any edit (e.g. inside an unformatted error node). It is still present in
+                    // the original text and must not be inserted again.
+                    // For Example: " (#\n*"
+                    if next_edit.edits.is_empty() {
+                        consolidated_edit = previous_edit;
+                        continue;
+                    }
                     let (mut previous_edit, mut next_edit) = (previous_edit, next_edit.fuse());
                     // WARNING: This could cause issues.
                     // The amout of chars is not neccesarily equal to the amout of

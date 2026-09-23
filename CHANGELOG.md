@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   declarations. A newline is only added before it if it would otherwise share a
   line with preceding text, and after it only if the following text does not
   already start on a new line.
+- the formatter no longer crashes or duplicates comments when a comment
+  directly follows a token that is not reformatted, for example `VERSION#`.
 
 ## [3.11.1] - 2026-09-22
 

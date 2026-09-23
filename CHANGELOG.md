@@ -5,6 +5,16 @@ All notable changes to the "Qlue-ls" project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- the "Declare prefix" and "Shorten URI" quickfixes no longer insert unneeded
+  blank lines. The new `PREFIX` declaration now goes directly after the existing
+  declarations. A newline is only added before it if it would otherwise share a
+  line with preceding text, and after it only if the following text does not
+  already start on a new line.
+
 ## [3.11.1] - 2026-09-22
 
 ### Changed

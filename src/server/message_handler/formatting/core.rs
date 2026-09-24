@@ -824,6 +824,7 @@ impl<'a> Walker<'a> {
                     false => Some(" ".to_string()),
                 }
             }
+            SyntaxKind::Pipe => Some(" ".to_string()),
             _ => None,
         }?;
         Some(SimplifiedTextEdit::new(
@@ -924,6 +925,7 @@ impl<'a> Walker<'a> {
                     })
                     .or(Some(self.get_linebreak(indentation.saturating_sub(1))))
             }
+            SyntaxKind::Pipe => Some(" ".to_string()),
             _ => None,
         }?;
         Some(SimplifiedTextEdit::new(
@@ -1129,6 +1131,8 @@ fn get_separator(kind: SyntaxKind) -> Seperator {
         | SyntaxKind::PathEltOrInverse
         | SyntaxKind::PathElt
         | SyntaxKind::PathPrimary
+        | SyntaxKind::PathAlternative
+        | SyntaxKind::PathNegatedPropertySet
         | SyntaxKind::PNAME_NS
         | SyntaxKind::BlankNodePropertyListPath
         | SyntaxKind::BlankNodePropertyList
@@ -1189,7 +1193,6 @@ fn get_separator(kind: SyntaxKind) -> Seperator {
         | SyntaxKind::UsingClause
         | SyntaxKind::Path
         | SyntaxKind::TriplesSameSubjectPath
-        | SyntaxKind::PathAlternative
         | SyntaxKind::RelationalExpression
         | SyntaxKind::ConditionalAndExpression
         | SyntaxKind::ConditionalOrExpression

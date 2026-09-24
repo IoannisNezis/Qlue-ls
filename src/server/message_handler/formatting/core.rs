@@ -737,17 +737,19 @@ impl<'a> Walker<'a> {
             | SyntaxKind::ConstructQuery
             | SyntaxKind::DescribeQuery
             | SyntaxKind::AskQuery
+            | SyntaxKind::TriplesBlock
                 if node
                     .as_node()
                     .is_some_and(|node| node.prev_sibling().is_some()) =>
             {
                 Some(self.get_linebreak(indentation))
             }
-            SyntaxKind::TriplesBlock => {
-                let syntax_node = node.as_node()?;
-                // Only add linebreak if this is a nested TriplesBlock
-                syntax_node.prev_sibling()?;
-                Some(self.get_linebreak(indentation))
+            SyntaxKind::GraphNode | SyntaxKind::GraphNodePath
+                if node
+                    .as_node()
+                    .is_some_and(|node| node.prev_sibling().is_some()) =>
+            {
+                Some(" ".to_string())
             }
             SyntaxKind::GraphPatternNotTriples
                 if node
@@ -1163,7 +1165,9 @@ fn get_separator(kind: SyntaxKind) -> Seperator {
         | SyntaxKind::PropertyListNotEmpty
         | SyntaxKind::QuadPattern
         | SyntaxKind::QuadsNotTriples
-        | SyntaxKind::Bind => Seperator::Empty,
+        | SyntaxKind::Bind
+        | SyntaxKind::Collection
+        | SyntaxKind::CollectionPath => Seperator::Empty,
         SyntaxKind::BaseDecl
         | SyntaxKind::PrefixDecl
         | SyntaxKind::WhereClause

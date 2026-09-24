@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- the formatter now formats negated property sets in property paths, for
+  example `!(rdf:type    |    a)` becomes `!(rdf:type | a)`.
+- the formatter now formats collections, for example `(   ?b   ?c ?d )`
+  becomes `(?b ?c ?d)`.
+- the formatter now formats triple terms in expressions, for example
+  `BIND(<<(?s   ?p   ?o)>> AS ?t)` becomes `BIND (<<( ?s ?p ?o )>> AS ?t)`.
+
 ### Fixed
 
 - the "Declare prefix" and "Shorten URI" quickfixes no longer insert unneeded
@@ -27,6 +36,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - the formatter no longer glues a `VALUES` clause at the end of a subquery to
   the preceding token (for example `GROUP BY ?xVALUES`), which produced invalid
   output. `VALUES` now starts on its own line.
+- the formatter now removes whitespace around the datatype and language tag of
+  a literal, for example `"a"   ^^   xsd:string` becomes `"a"^^xsd:string` and
+  `"a"   @en` becomes `"a"@en`.
+- the formatter now removes whitespace inside an empty list, `(   )` becomes `()`.
+- the formatter now normalizes the whitespace in `GRAPH <g> { ... }` patterns.
+- the formatter now removes superfluous whitespace in inline `VALUES` data,
+  for example `VALUES ( ?a   ?b ) { ( 1    2 ) }` becomes
+  `VALUES (?a ?b) { (1 2) }`.
+- comma separated arguments of function calls and built-in functions (for
+  example `CONCAT`, `REGEX`, `SUBSTR`, `REPLACE`, `COALESCE`, `IF`) are now
+  formatted consistently: no whitespace inside the parentheses and a single
+  space after each comma, for example `CONCAT( ?a ,?b,   "c" )` becomes
+  `CONCAT(?a, ?b, "c")`. `DISTINCT` in arguments and aggregates is followed by
+  a single space, and `NOT EXISTS` is formatted like `EXISTS`.
 
 ## [3.11.1] - 2026-09-22
 

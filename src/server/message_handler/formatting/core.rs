@@ -205,7 +205,6 @@ fn inc_indent(node: &SyntaxNode) -> u8 {
         SyntaxKind::BlankNodePropertyListPath
         | SyntaxKind::BlankNodePropertyList
         | SyntaxKind::GroupGraphPattern
-        | SyntaxKind::BrackettedExpression
         | SyntaxKind::ConstructTemplate
         | SyntaxKind::Quads
         | SyntaxKind::QuadsNotTriples => 1,
@@ -499,7 +498,11 @@ impl<'a> Walker<'a> {
             SyntaxKind::ExpressionList
             | SyntaxKind::ObjectList
             | SyntaxKind::ObjectListPath
-            | SyntaxKind::ArgList => children
+            | SyntaxKind::ArgList
+            | SyntaxKind::BuiltInCall
+            | SyntaxKind::RegexExpression
+            | SyntaxKind::SubstringExpression
+            | SyntaxKind::StrReplaceExpression => children
                 .iter()
                 .filter_map(|child| match child.kind() {
                     SyntaxKind::Comma | SyntaxKind::DISTINCT => Some(SimplifiedTextEdit::new(
@@ -1090,8 +1093,9 @@ fn get_separator(kind: SyntaxKind) -> Seperator {
         | SyntaxKind::QuadData
         | SyntaxKind::ObjectList
         | SyntaxKind::ObjectListPath
-        | SyntaxKind::SubstringExpression
         | SyntaxKind::RegexExpression
+        | SyntaxKind::SubstringExpression
+        | SyntaxKind::StrReplaceExpression
         | SyntaxKind::ArgList
         | SyntaxKind::OrderCondition
         | SyntaxKind::Aggregate
@@ -1142,6 +1146,7 @@ fn get_separator(kind: SyntaxKind) -> Seperator {
         | SyntaxKind::LimitClause
         | SyntaxKind::OffsetClause
         | SyntaxKind::ExistsFunc
+        | SyntaxKind::NotExistsFunc
         | SyntaxKind::Filter
         | SyntaxKind::Load
         | SyntaxKind::Clear

@@ -1,0 +1,12 @@
+SELECT * WHERE {
+  FILTER(<http://example.org/f>(  ?a ,?b,   ?c  ))
+  FILTER(<http://example.org/g>( ))
+  FILTER(<http://example.org/h>()  )
+  BIND(<http://example.org/f>(DISTINCT   ?a,?b) AS ?x)
+  BIND(<http://example.org/f>(
+    ?a
+    ,
+    "str"@en
+  ) AS ?y)
+  FILTER(<http://example.org/f>(<http://example.org/g>( ?a , 1 ),2))
+}

@@ -369,42 +369,13 @@ impl<'a> Walker<'a> {
                         } else if child.kind() == SyntaxKind::AS
                             || children[idx].kind() == SyntaxKind::AS
                         {
-                            Some(SimplifiedTextEdit::new(
-                                TextRange::empty(child.text_range().start()),
-                                " ",
-                            ))
+                            None
                         } else if idx > 0 && line_too_long {
                             // NOTE: SELECT has a width of 6, plus one space, plus the indentation
                             let indent = 7 + indentation * 2;
                             Some(SimplifiedTextEdit::new(
                                 TextRange::empty(child.text_range().start()),
                                 &format!("\n{}", " ".repeat(indent as usize)),
-                            ))
-                        } else {
-                            Some(SimplifiedTextEdit::new(
-                                TextRange::empty(child.text_range().start()),
-                                " ",
-                            ))
-                        }
-                    }
-                })
-                .collect(),
-            SyntaxKind::GroupCondition => children
-                .iter()
-                .enumerate()
-                .filter_map(|(idx, child)| match child.kind() {
-                    SyntaxKind::RParen => None,
-                    _ => {
-                        if idx > 0
-                            && children
-                                .get(idx - 1)
-                                .is_some_and(|prev| prev.kind() == SyntaxKind::LParen)
-                        {
-                            None
-                        } else if idx > 0 {
-                            Some(SimplifiedTextEdit::new(
-                                TextRange::empty(child.text_range().start()),
-                                " ",
                             ))
                         } else {
                             None
@@ -525,19 +496,19 @@ impl<'a> Walker<'a> {
                     _ => None,
                 })
                 .collect(),
-
-            SyntaxKind::ExpressionList | SyntaxKind::ObjectList | SyntaxKind::ObjectListPath => {
-                children
-                    .iter()
-                    .filter_map(|child| match child.kind() {
-                        SyntaxKind::Comma => {
-                            Some(SimplifiedTextEdit::new(child.text_range(), ", "))
-                        }
-                        _ => None,
-                    })
-                    .collect()
-            }
-
+            SyntaxKind::ExpressionList
+            | SyntaxKind::ObjectList
+            | SyntaxKind::ObjectListPath
+            | SyntaxKind::ArgList => children
+                .iter()
+                .filter_map(|child| match child.kind() {
+                    SyntaxKind::Comma | SyntaxKind::DISTINCT => Some(SimplifiedTextEdit::new(
+                        TextRange::empty(child.text_range().end()),
+                        " ",
+                    )),
+                    _ => None,
+                })
+                .collect(),
             SyntaxKind::DescribeQuery => children
                 .iter()
                 .filter_map(|child| match child.kind() {
@@ -600,21 +571,6 @@ impl<'a> Walker<'a> {
                 })
                 .collect(),
             SyntaxKind::ANON => vec![SimplifiedTextEdit::new(node.text_range(), "[]")],
-            SyntaxKind::Bind => children
-                .iter()
-                .filter_map(|child| match child.kind() {
-                    SyntaxKind::LParen => Some(vec![SimplifiedTextEdit::new(
-                        TextRange::empty(child.text_range().start()),
-                        " ",
-                    )]),
-                    SyntaxKind::AS => Some(vec![
-                        SimplifiedTextEdit::new(TextRange::empty(child.text_range().start()), " "),
-                        SimplifiedTextEdit::new(TextRange::empty(child.text_range().end()), " "),
-                    ]),
-                    _ => None,
-                })
-                .flatten()
-                .collect(),
             SyntaxKind::INTEGER_POSITIVE
             | SyntaxKind::DECIMAL_POSITIVE
             | SyntaxKind::DOUBLE_POSITIVE
@@ -746,13 +702,6 @@ impl<'a> Walker<'a> {
             {
                 Some(self.get_linebreak(indentation))
             }
-            SyntaxKind::GraphNode | SyntaxKind::GraphNodePath
-                if node
-                    .as_node()
-                    .is_some_and(|node| node.prev_sibling().is_some()) =>
-            {
-                Some(" ".to_string())
-            }
             SyntaxKind::GraphPatternNotTriples
                 if node
                     .as_node()
@@ -838,7 +787,6 @@ impl<'a> Walker<'a> {
                     false => Some(" ".to_string()),
                 }
             }
-            SyntaxKind::Pipe => Some(" ".to_string()),
             _ => None,
         }?;
         Some(SimplifiedTextEdit::new(
@@ -939,7 +887,6 @@ impl<'a> Walker<'a> {
                     })
                     .or(Some(self.get_linebreak(indentation.saturating_sub(1))))
             }
-            SyntaxKind::Pipe => Some(" ".to_string()),
             _ => None,
         }?;
         Some(SimplifiedTextEdit::new(
@@ -1073,7 +1020,11 @@ impl Iterator for Walker<'_> {
                 )),
                 Seperator::Space => Some(SimplifiedTextEdit::new(
                     TextRange::new(node1.text_range().end(), node2.text_range().start()),
-                    " ",
+                    if node1.kind() == SyntaxKind::LParen || node2.kind() == SyntaxKind::RParen {
+                        ""
+                    } else {
+                        " "
+                    },
                 )),
                 Seperator::Empty if node2.kind() == SyntaxKind::Error => {
                     Some(SimplifiedTextEdit::new(
@@ -1150,8 +1101,6 @@ fn get_separator(kind: SyntaxKind) -> Seperator {
         | SyntaxKind::PathEltOrInverse
         | SyntaxKind::PathElt
         | SyntaxKind::PathPrimary
-        | SyntaxKind::PathAlternative
-        | SyntaxKind::PathNegatedPropertySet
         | SyntaxKind::PNAME_NS
         | SyntaxKind::BlankNodePropertyListPath
         | SyntaxKind::BlankNodePropertyList
@@ -1161,17 +1110,19 @@ fn get_separator(kind: SyntaxKind) -> Seperator {
         | SyntaxKind::Modify
         | SyntaxKind::Update
         | SyntaxKind::UpdateOne
-        | SyntaxKind::SelectClause
-        | SyntaxKind::GroupCondition
         | SyntaxKind::PropertyListPathNotEmpty
         | SyntaxKind::PropertyListNotEmpty
         | SyntaxKind::QuadPattern
         | SyntaxKind::QuadsNotTriples
+        | SyntaxKind::RDFLiteral => Seperator::Empty,
+        SyntaxKind::SelectClause
+        | SyntaxKind::GroupCondition
         | SyntaxKind::Bind
+        | SyntaxKind::PathNegatedPropertySet
+        | SyntaxKind::PathAlternative
         | SyntaxKind::Collection
         | SyntaxKind::CollectionPath
-        | SyntaxKind::RDFLiteral => Seperator::Empty,
-        SyntaxKind::BaseDecl
+        | SyntaxKind::BaseDecl
         | SyntaxKind::PrefixDecl
         | SyntaxKind::WhereClause
         | SyntaxKind::DatasetClause
@@ -1215,7 +1166,8 @@ fn get_separator(kind: SyntaxKind) -> Seperator {
         | SyntaxKind::ConditionalOrExpression
         | SyntaxKind::MultiplicativeExpression
         | SyntaxKind::AdditiveExpression
-        | SyntaxKind::GraphGraphPattern => Seperator::Space,
+        | SyntaxKind::GraphGraphPattern
+        | SyntaxKind::InlineDataFull => Seperator::Space,
 
         _ => Seperator::Unknown,
     }
@@ -1394,14 +1346,17 @@ impl fmt::Display for ConsolidatedTextEdit {
 
 impl ConsolidatedTextEdit {
     fn fuse(&self) -> TextEdit {
-        TextEdit::new(
-            self.range(),
-            &self
-                .edits
-                .iter()
-                .flat_map(|edit| edit.new_text.chars())
-                .collect::<String>(),
-        )
+        // NOTE: Separator and augmentation edits can meet at the same gap
+        // (e.g. " " + "\n  "), which would leave trailing whitespace.
+        // Spaces and tabs directly before a newline are dropped.
+        let mut fused = String::new();
+        for char in self.edits.iter().flat_map(|edit| edit.new_text.chars()) {
+            if char == '\n' {
+                fused.truncate(fused.trim_end_matches([' ', '\t']).len());
+            }
+            fused.push(char);
+        }
+        TextEdit::new(self.range(), &fused)
     }
 
     fn range(&self) -> Range {

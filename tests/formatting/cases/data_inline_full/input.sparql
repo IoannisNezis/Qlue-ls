@@ -1,0 +1,9 @@
+SELECT * WHERE {
+  VALUES ( ?a   ?b ) {
+  ()
+    ("sdf"    "ads" )
+    () 
+    
+    (   2    3    4   5   2  )
+}
+}

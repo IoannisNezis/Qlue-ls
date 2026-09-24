@@ -1118,7 +1118,9 @@ fn get_separator(kind: SyntaxKind) -> Seperator {
         | SyntaxKind::PropertyListNotEmpty
         | SyntaxKind::QuadPattern
         | SyntaxKind::QuadsNotTriples
-        | SyntaxKind::RDFLiteral => Seperator::Empty,
+        | SyntaxKind::RDFLiteral
+        | SyntaxKind::UnaryExpression
+        | SyntaxKind::iriOrFunction => Seperator::Empty,
         SyntaxKind::SelectClause
         | SyntaxKind::GroupCondition
         | SyntaxKind::Bind
@@ -1172,7 +1174,8 @@ fn get_separator(kind: SyntaxKind) -> Seperator {
         | SyntaxKind::MultiplicativeExpression
         | SyntaxKind::AdditiveExpression
         | SyntaxKind::GraphGraphPattern
-        | SyntaxKind::InlineDataFull => Seperator::Space,
+        | SyntaxKind::InlineDataFull
+        | SyntaxKind::ExprTripleTerm => Seperator::Space,
 
         _ => Seperator::Unknown,
     }

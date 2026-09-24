@@ -1,0 +1,33 @@
+SELECT * WHERE {
+  FILTER(   ?a||  ?b   &&?c   )
+      FILTER(  ?a   =   ?b  )
+  FILTER (?a!=
+     ?b)
+  FILTER(?a<?b    ||?a>  ?b||
+  ?a<=?b ||   ?a>=?b)
+  FILTER(?a IN(  1 ,2  )&&?b NOT   IN  (   ) )
+  BIND(   ?a+?b  -  ?c AS ?add)
+  BIND(?a  *?b/   ?c    AS    ?mul)
+  BIND(?a    +1 AS ?pos)
+  BIND(  ?a -1   AS ?neg)
+  BIND(?a   -2*  ?b /3 AS ?neg_mul)
+  BIND(?a +2.5   *    ?b AS ?pos_mul)
+  FILTER(  !?a  )
+  FILTER(!   !    ?a)
+  BIND(-    ?a AS ?minus)
+  BIND(  +   ?a   AS ?plus)
+  BIND(-(    ?a    +    ?b   ) AS ?minus_bracketed)
+  BIND((  (?a+?b)  *
+
+  ( ?c-?d ) ) AS ?bracketed)
+  FILTER(  !(   ?a &&   ?b ))
+  BIND(STRLEN(   ?a )   +<http://example.org/f>(   ?b ) AS ?call)
+  BIND(ex:f( ?a    )*   ex:g(    ) AS ?prefixed_call)
+  FILTER(?a=true||   ?b  =false)
+  FILTER(?a  ="a"@en   ||?b=   "1"^^xsd:integer)
+  FILTER(  ?a=-1.5e3||?b  =  +2  )
+  BIND(<<(   ?s   ?p   ?o   )>> AS ?t1)
+  BIND(<<(ex:s    a <<(?s ex:p    "o")>>    )>> AS    ?t2)
+  FILTER(?t   =<<(
+    ?s ?p 42 )>>   )
+}

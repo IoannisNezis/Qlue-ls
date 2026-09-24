@@ -720,10 +720,6 @@ impl<'a> Walker<'a> {
         indentation: u8,
     ) -> Option<SimplifiedTextEdit> {
         let insert = match node.kind() {
-            // NOTE: `inc_indent` only affects the children of a node, while the linebreak
-            // before the node itself uses the indentation of its parent. In the short form of
-            // CONSTRUCT (`CONSTRUCT WHERE { TriplesTemplate }`) the first triple has to be
-            // indented one level deeper than the ConstructQuery.
             SyntaxKind::TriplesTemplate
                 if node
                     .parent()
@@ -735,7 +731,18 @@ impl<'a> Walker<'a> {
             | SyntaxKind::SolutionModifier
             | SyntaxKind::TriplesTemplate
             | SyntaxKind::DatasetClause
-            | SyntaxKind::UNION => Some(self.get_linebreak(indentation)),
+            | SyntaxKind::UNION
+            | SyntaxKind::ValuesClause => Some(self.get_linebreak(indentation)),
+            SyntaxKind::SelectQuery
+            | SyntaxKind::ConstructQuery
+            | SyntaxKind::DescribeQuery
+            | SyntaxKind::AskQuery
+                if node
+                    .as_node()
+                    .is_some_and(|node| node.prev_sibling().is_some()) =>
+            {
+                Some(self.get_linebreak(indentation))
+            }
             SyntaxKind::TriplesBlock => {
                 let syntax_node = node.as_node()?;
                 // Only add linebreak if this is a nested TriplesBlock
@@ -1109,11 +1116,16 @@ enum Seperator {
 
 fn get_separator(kind: SyntaxKind) -> Seperator {
     match kind {
+        SyntaxKind::Prologue | SyntaxKind::SolutionModifier | SyntaxKind::LimitOffsetClauses => {
+            Seperator::LineBreak
+        }
         SyntaxKind::Query
-        | SyntaxKind::Prologue
-        | SyntaxKind::SolutionModifier
-        | SyntaxKind::LimitOffsetClauses => Seperator::LineBreak,
-        SyntaxKind::ExpressionList
+        | SyntaxKind::ConstructQuery
+        | SyntaxKind::SelectQuery
+        | SyntaxKind::SubSelect
+        | SyntaxKind::AskQuery
+        | SyntaxKind::DescribeQuery
+        | SyntaxKind::ExpressionList
         | SyntaxKind::GroupGraphPattern
         | SyntaxKind::GroupGraphPatternSub
         | SyntaxKind::GroupOrUnionGraphPattern
@@ -1142,11 +1154,6 @@ fn get_separator(kind: SyntaxKind) -> Seperator {
         | SyntaxKind::TriplesBlock
         | SyntaxKind::Quads
         | SyntaxKind::ConstructTriples
-        | SyntaxKind::ConstructQuery
-        | SyntaxKind::SelectQuery
-        | SyntaxKind::SubSelect
-        | SyntaxKind::AskQuery
-        | SyntaxKind::DescribeQuery
         | SyntaxKind::Modify
         | SyntaxKind::Update
         | SyntaxKind::UpdateOne

@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   input. Before, formatting the output a second time could change it.
 - solution modifiers like `LIMIT` and `ORDER BY` after the short
   `CONSTRUCT WHERE { ... }` form are no longer indented.
+- the formatter no longer glues a `VALUES` clause at the end of a subquery to
+  the preceding token (for example `GROUP BY ?xVALUES`), which produced invalid
+  output. `VALUES` now starts on its own line.
 
 ## [3.11.1] - 2026-09-22
 

@@ -1167,7 +1167,8 @@ fn get_separator(kind: SyntaxKind) -> Seperator {
         | SyntaxKind::QuadsNotTriples
         | SyntaxKind::Bind
         | SyntaxKind::Collection
-        | SyntaxKind::CollectionPath => Seperator::Empty,
+        | SyntaxKind::CollectionPath
+        | SyntaxKind::RDFLiteral => Seperator::Empty,
         SyntaxKind::BaseDecl
         | SyntaxKind::PrefixDecl
         | SyntaxKind::WhereClause

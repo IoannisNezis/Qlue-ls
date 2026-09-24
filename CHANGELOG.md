@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - the formatter no longer produces invalid output for `CONSTRUCT FROM <g> WHERE { ... }`
   (the short `CONSTRUCT WHERE` form with a dataset clause). `FROM` and `WHERE`
   now each start on their own line, like in the other query forms.
+- formatting a blank node property list with a single predicate, for example
+  `[ :p 1 ; ]`, now gives the same result regardless of the whitespace in the
+  input. Before, formatting the output a second time could change it.
 
 ## [3.11.1] - 2026-09-22
 

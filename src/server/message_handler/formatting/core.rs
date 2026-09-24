@@ -786,21 +786,18 @@ impl<'a> Walker<'a> {
             SyntaxKind::PropertyListPathNotEmpty | SyntaxKind::PropertyListNotEmpty => {
                 match node.parent().map(|parent| parent.kind()) {
                     Some(SyntaxKind::BlankNodePropertyListPath)
-                    | Some(SyntaxKind::BlankNodePropertyList)
+                    | Some(SyntaxKind::BlankNodePropertyList) => {
+                        // NOTE: `children()` only counts nodes, not tokens. Trivia and `;`
+                        // are ignored, so each predicate contributes two nodes (verb and
+                        // object list). More than one predicate goes on separate lines.
                         if node
                             .as_node()
-                            .map(|node| node.children_with_tokens().count() > 3)
-                            .unwrap_or(false) =>
-                    {
-                        Some(self.get_linebreak(indentation))
-                    }
-                    Some(SyntaxKind::BlankNodePropertyListPath)
-                    | Some(SyntaxKind::BlankNodePropertyList)
-                        if node
-                            .as_node()
-                            .is_some_and(|node| node.children_with_tokens().count() <= 3) =>
-                    {
-                        Some(" ".to_string())
+                            .is_some_and(|node| node.children().count() > 3)
+                        {
+                            Some(self.get_linebreak(indentation))
+                        } else {
+                            Some(" ".to_string())
+                        }
                     }
                     _ => None,
                 }

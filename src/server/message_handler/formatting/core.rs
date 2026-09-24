@@ -416,11 +416,30 @@ impl<'a> Walker<'a> {
                 .collect(),
             SyntaxKind::ConstructQuery => children
                 .iter()
-                .filter_map(|child| match child.kind() {
+                .enumerate()
+                .filter_map(|(idx, child)| match child.kind() {
+                    SyntaxKind::CONSTRUCT
+                        if children
+                            .get(idx + 1)
+                            .is_some_and(|next| next.kind() == SyntaxKind::DatasetClause) =>
+                    {
+                        None
+                    }
                     SyntaxKind::CONSTRUCT => Some(SimplifiedTextEdit::new(
                         TextRange::new(child.text_range().end(), child.text_range().end()),
                         " ",
                     )),
+                    SyntaxKind::WHERE
+                        if idx > 0
+                            && children
+                                .get(idx - 1)
+                                .is_some_and(|prev| prev.kind() == SyntaxKind::DatasetClause) =>
+                    {
+                        Some(SimplifiedTextEdit::new(
+                            TextRange::empty(child.text_range().start()),
+                            &self.get_linebreak(indentation),
+                        ))
+                    }
                     SyntaxKind::LCurly => Some(SimplifiedTextEdit::new(
                         TextRange::empty(child.text_range().start()),
                         " ",
@@ -703,9 +722,12 @@ impl<'a> Walker<'a> {
         indentation: u8,
     ) -> Option<SimplifiedTextEdit> {
         let insert = match node.kind() {
+            // NOTE: DatasetClause only occurs in top-level queries, so it is always on
+            // indentation level 0. The short form of CONSTRUCT increases the indentation of
+            // its children (for the TriplesTemplate), which must not apply here.
+            SyntaxKind::DatasetClause => Some(self.get_linebreak(0)),
             SyntaxKind::ConstructTriples
             | SyntaxKind::SolutionModifier
-            | SyntaxKind::DatasetClause
             | SyntaxKind::TriplesTemplate
             | SyntaxKind::UNION => Some(self.get_linebreak(indentation)),
             SyntaxKind::TriplesBlock => {

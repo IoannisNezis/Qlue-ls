@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   already start on a new line.
 - the formatter no longer crashes or duplicates comments when a comment
   directly follows a token that is not reformatted, for example `VERSION#`.
+- the formatter no longer produces invalid output for `CONSTRUCT FROM <g> WHERE { ... }`
+  (the short `CONSTRUCT WHERE` form with a dataset clause). `FROM` and `WHERE`
+  now each start on their own line, like in the other query forms.
 
 ## [3.11.1] - 2026-09-22
 

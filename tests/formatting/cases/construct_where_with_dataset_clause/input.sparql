@@ -1,0 +1,1 @@
+CONSTRUCT  FROM <a>	FROM NAMED <b>   WHERE { ?s ?p ?o }

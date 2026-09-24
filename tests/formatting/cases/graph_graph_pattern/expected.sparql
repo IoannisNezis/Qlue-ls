@@ -1,0 +1,10 @@
+SELECT * {
+  GRAPH <http://example.org/g1> {
+    ?a ?b ?c .
+    {
+      GRAPH <http://example.org/g2> {
+        ?d ?e ?f
+      }
+    }
+  }
+}

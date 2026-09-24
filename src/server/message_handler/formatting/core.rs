@@ -1214,7 +1214,8 @@ fn get_separator(kind: SyntaxKind) -> Seperator {
         | SyntaxKind::ConditionalAndExpression
         | SyntaxKind::ConditionalOrExpression
         | SyntaxKind::MultiplicativeExpression
-        | SyntaxKind::AdditiveExpression => Seperator::Space,
+        | SyntaxKind::AdditiveExpression
+        | SyntaxKind::GraphGraphPattern => Seperator::Space,
 
         _ => Seperator::Unknown,
     }

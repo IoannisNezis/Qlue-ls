@@ -1,0 +1,4 @@
+CONSTRUCT WHERE {
+  ?s ?p ?o
+}
+LIMIT 1

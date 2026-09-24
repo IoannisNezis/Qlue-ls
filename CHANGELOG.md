@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - formatting a blank node property list with a single predicate, for example
   `[ :p 1 ; ]`, now gives the same result regardless of the whitespace in the
   input. Before, formatting the output a second time could change it.
+- solution modifiers like `LIMIT` and `ORDER BY` after the short
+  `CONSTRUCT WHERE { ... }` form are no longer indented.
 
 ## [3.11.1] - 2026-09-22
 

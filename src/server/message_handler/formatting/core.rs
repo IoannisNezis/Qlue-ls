@@ -45,13 +45,6 @@
 // handle overlapping/adjacent ranges correctly. This also supports `split_at()` for
 // inserting comments in the middle of a consolidated edit.
 
-use core::fmt;
-use std::vec;
-
-use ll_sparql_parser::{SyntaxElement, SyntaxNode, syntax_kind::SyntaxKind};
-use text_size::{TextRange, TextSize};
-use unicode_width::UnicodeWidthStr;
-
 use crate::server::{
     configuration::FormatSettings,
     lsp::{
@@ -61,6 +54,11 @@ use crate::server::{
     },
     message_handler::formatting::utils::subtree_width,
 };
+use core::fmt;
+use ll_sparql_parser::{SyntaxElement, SyntaxNode, syntax_kind::SyntaxKind};
+use std::vec;
+use text_size::{TextRange, TextSize};
+use unicode_width::UnicodeWidthStr;
 
 use super::utils::KEYWORDS;
 
@@ -211,10 +209,10 @@ fn inc_indent(node: &SyntaxNode) -> u8 {
         | SyntaxKind::ConstructTemplate
         | SyntaxKind::Quads
         | SyntaxKind::QuadsNotTriples => 1,
-        SyntaxKind::ConstructQuery
+        SyntaxKind::TriplesTemplate
             if node
-                .first_child()
-                .is_some_and(|node| node.kind() != SyntaxKind::ConstructTemplate) =>
+                .parent()
+                .is_some_and(|parent| parent.kind() == SyntaxKind::ConstructQuery) =>
         {
             1
         }
@@ -722,13 +720,21 @@ impl<'a> Walker<'a> {
         indentation: u8,
     ) -> Option<SimplifiedTextEdit> {
         let insert = match node.kind() {
-            // NOTE: DatasetClause only occurs in top-level queries, so it is always on
-            // indentation level 0. The short form of CONSTRUCT increases the indentation of
-            // its children (for the TriplesTemplate), which must not apply here.
-            SyntaxKind::DatasetClause => Some(self.get_linebreak(0)),
+            // NOTE: `inc_indent` only affects the children of a node, while the linebreak
+            // before the node itself uses the indentation of its parent. In the short form of
+            // CONSTRUCT (`CONSTRUCT WHERE { TriplesTemplate }`) the first triple has to be
+            // indented one level deeper than the ConstructQuery.
+            SyntaxKind::TriplesTemplate
+                if node
+                    .parent()
+                    .is_some_and(|parent| parent.kind() == SyntaxKind::ConstructQuery) =>
+            {
+                Some(self.get_linebreak(indentation + 1))
+            }
             SyntaxKind::ConstructTriples
             | SyntaxKind::SolutionModifier
             | SyntaxKind::TriplesTemplate
+            | SyntaxKind::DatasetClause
             | SyntaxKind::UNION => Some(self.get_linebreak(indentation)),
             SyntaxKind::TriplesBlock => {
                 let syntax_node = node.as_node()?;

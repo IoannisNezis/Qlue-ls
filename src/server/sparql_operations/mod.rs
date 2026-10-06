@@ -1,5 +1,18 @@
-#[cfg(not(target_arch = "wasm32"))]
+// The SPARQL-over-HTTP functions (`execute_query`, `check_server_availability`, etc.)
+// live in `native.rs` and require `reqwest`. When qlue-ls is used purely as a library
+// — e.g. a standalone SPARQL formatter or parser — the HTTP stack is unnecessary.
+// Gating it behind the `http-client` feature lets such consumers build with
+// `default-features = false`, which drops `reqwest` (and its transitive TLS /
+// Apple-framework dependencies) and enables cross-compilation to macOS targets
+// from a Linux builder without a macOS SDK.
+//
+// When `http-client` is off, `native_stub.rs` provides the same function
+// signatures returning "not available" errors so the rest of the server code
+// compiles unchanged.
+#[cfg(all(not(target_arch = "wasm32"), feature = "http-client"))]
 mod native;
+#[cfg(all(not(target_arch = "wasm32"), not(feature = "http-client")))]
+mod native_stub;
 mod utils;
 #[cfg(target_arch = "wasm32")]
 mod wasm;
@@ -7,8 +20,10 @@ use crate::server::lsp::CanceledError;
 use crate::server::lsp::QLeverException;
 use serde::{Deserialize, Serialize};
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "http-client"))]
 pub(crate) use native::*;
+#[cfg(all(not(target_arch = "wasm32"), not(feature = "http-client")))]
+pub(crate) use native_stub::*;
 #[cfg(target_arch = "wasm32")]
 pub(crate) use wasm::*;
 

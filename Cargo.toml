@@ -17,8 +17,20 @@ name = "qlue-ls"
 path = "src/main.rs"
 
 [features]
-default = ["console_error_panic_hook"]
+default = ["console_error_panic_hook", "http-client"]
 console_error_panic_hook = ["dep:console_error_panic_hook"]
+# `http-client` pulls in `reqwest` for talking to remote SPARQL endpoints
+# (query execution, backend health checks). It is on by default so the language
+# server and CLI behave as before.
+#
+# Why gate it? Consumers that embed qlue-ls purely as a library — e.g. a
+# standalone SPARQL *formatter* or parser — never touch the network. For them
+# `reqwest` is dead weight that also drags in `rustls-platform-verifier`, which
+# links the macOS Security/SystemConfiguration/CoreFoundation frameworks. That
+# breaks cross-compilation to `*-apple-darwin` from a Linux builder (no macOS
+# SDK). Such consumers set `default-features = false` to drop the whole TLS
+# stack and cross-compile cleanly.
+http-client = ["dep:reqwest"]
 integration-tests = []
 
 [dependencies]
@@ -61,7 +73,10 @@ dirs-next = "2.0.0"
 clap = { version = "4.5.16", features = ["derive"] }
 config = "0.15.0"
 notify = "8.0.0"
-reqwest = { version = "0.13.0", features = ["json", "form"] }
+# Optional: only compiled when the `http-client` feature is enabled. Keeping it
+# optional lets library-only users (e.g. a standalone formatter) build without a
+# TLS stack and cross-compile to macOS targets. See the [features] section above.
+reqwest = { version = "0.13.0", features = ["json", "form"], optional = true }
 
 # WASM-only dependencies
 [target.'cfg(target_family = "wasm")'.dependencies]

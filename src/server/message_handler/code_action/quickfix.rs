@@ -190,10 +190,10 @@ pub(crate) fn declare_prefix(
     diagnostic: Diagnostic,
 ) -> Result<Option<CodeAction>, LSPError> {
     if let Some(LSPAny::String(prefix)) = &diagnostic.data {
-        if let Some(Ok(record)) = server
+        if let Some(record) = server
             .state
             .get_default_converter()
-            .map(|converter| converter.find_by_prefix(prefix))
+            .and_then(|converter| converter.find_by_prefix(prefix))
         {
             let insert_edit =
                 prefix_declaration_insert_edit(server, document_uri, prefix, &record.uri_prefix)?;

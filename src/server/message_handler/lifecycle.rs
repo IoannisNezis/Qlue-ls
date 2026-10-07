@@ -92,7 +92,7 @@ pub(super) async fn handle_initialize_request(
                 for backend_config in backend_configs.into_iter() {
                     server
                         .state
-                        .load_prefix_map(backend_config.name.clone(), &backend_config.prefix_map)?;
+                        .load_prefix_map(backend_config.name.clone(), &backend_config.prefix_map);
                     server.load_templates(&backend_config.name, backend_config.queries.clone())?;
                     server.state.add_backend(backend_config.clone());
                     if backend_config.default {

@@ -34,6 +34,7 @@ mod lsp;
 mod sparql_operations;
 mod state;
 mod tools;
+mod uri_converter;
 
 pub(crate) mod message_handler;
 
@@ -138,8 +139,8 @@ impl Server {
         let converter = backend_name
             .and_then(|name| self.state.get_converter(name))
             .or(self.state.get_default_converter())?;
-        let record = converter.find_by_uri(uri).ok()?;
-        let curie = converter.compress(uri).ok()?;
+        let record = converter.find_by_uri(uri)?;
+        let curie = converter.compress(uri)?;
         Some((record.prefix.clone(), record.uri_prefix.clone(), curie))
     }
 

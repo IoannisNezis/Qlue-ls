@@ -50,7 +50,7 @@ pub(super) async fn hover(
         context.insert(
             "prefixes",
             &iri.prefixed_name()
-                .and_then(|prefixed_name| converter.find_by_prefix(&prefixed_name.prefix()).ok())
+                .and_then(|prefixed_name| converter.find_by_prefix(&prefixed_name.prefix()))
                 .map(|record| vec![(record.prefix.clone(), record.uri_prefix.clone())])
                 .unwrap_or_default(),
         );

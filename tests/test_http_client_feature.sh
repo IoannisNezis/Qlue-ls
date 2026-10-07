@@ -4,7 +4,7 @@
 # Verifies the http-client feature gate:
 #   (a) With http-client (default): builds, tests pass, reqwest 0.13 is present.
 #   (b) Without http-client: builds, tests pass, and the dependency tree contains
-#       no rustls-platform-verifier and no security-framework -- the crates that
+#       no reqwest (of any version), no rustls-platform-verifier and no security-framework -- the crates that
 #       emit Apple-framework linker flags and break cross-compilation to macOS.
 #
 # Usage:
@@ -18,7 +18,10 @@ set -euo pipefail
 CROSS_TARGET="${1:-}"
 
 pass() { echo "PASS: $1"; }
-fail() { echo "FAIL: $1"; exit 1; }
+fail() {
+  echo "FAIL: $1"
+  exit 1
+}
 
 echo "(a) http-client on (default features)"
 
@@ -50,10 +53,10 @@ pass "cargo test"
 
 TREE_OUT=$(cargo tree --no-default-features $TARGET_FLAG 2>/dev/null)
 
-if echo "$TREE_OUT" | grep -q "reqwest v0.13"; then
-  fail "reqwest 0.13 still in dep tree without http-client"
+if echo "$TREE_OUT" | grep -q "reqwest v"; then
+  fail "reqwest still in dep tree without http-client"
 fi
-pass "reqwest 0.13 absent from dep tree"
+pass "reqwest absent from dep tree"
 
 if echo "$TREE_OUT" | grep -q "rustls-platform-verifier"; then
   fail "rustls-platform-verifier still in dep tree without http-client"

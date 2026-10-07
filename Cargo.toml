@@ -46,9 +46,6 @@ serde_repr = "0.1.19"
 ll-sparql-parser = "3.5.1"
 # ll-sparql-parser = { path = "./crates/sparql-parser/" }
 
-# URI compression
-curies = "0.1.3"
-
 # Templating
 tera = { version = "2.3.0", default-features = false }
 

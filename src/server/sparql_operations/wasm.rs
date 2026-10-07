@@ -428,7 +428,7 @@ fn compress_result_uris(server: &Server, partial_result: &mut PartialResult) {
                     *curie = server
                         .state
                         .get_default_converter()
-                        .and_then(|converer| converer.compress(value).ok());
+                        .and_then(|converter| converter.compress(value));
                 }
             }
         }

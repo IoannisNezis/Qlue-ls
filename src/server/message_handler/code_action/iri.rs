@@ -86,12 +86,10 @@ mod test {
             additional_data: None,
         });
         state.set_default_backend("test".to_string());
-        state
-            .load_prefix_map(
-                "test".to_string(),
-                &HashMap::from_iter([("schema".to_string(), "https://schema.org/".to_string())]),
-            )
-            .unwrap();
+        state.load_prefix_map(
+            "test".to_string(),
+            &HashMap::from_iter([("schema".to_string(), "https://schema.org/".to_string())]),
+        );
         let document = TextDocumentItem::new("uri", text);
         state.add_document(document);
         state

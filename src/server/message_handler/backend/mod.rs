@@ -75,7 +75,7 @@ pub(super) async fn handle_add_backend_request(
 
     server
         .state
-        .load_prefix_map(request.params.name.clone(), &request.params.prefix_map)?;
+        .load_prefix_map(request.params.name.clone(), &request.params.prefix_map);
     server.load_templates(&request.params.name, request.params.queries.clone())?;
     let backend_name = request.params.name.clone();
     let default = request.params.default;

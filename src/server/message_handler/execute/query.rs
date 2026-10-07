@@ -137,7 +137,7 @@ async fn handle_normal_query(
                             *curie = server
                                 .state
                                 .get_default_converter()
-                                .and_then(|converer| converer.compress(value).ok());
+                                .and_then(|converter| converter.compress(value));
                         }
                     }
                 }

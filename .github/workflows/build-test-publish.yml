@@ -31,6 +31,10 @@ jobs:
         run: cargo build --release
       - name: cargo test
         run: cargo test --release
+      - name: Add aarch64-apple-darwin target (for dep-tree cross-check)
+        run: rustup target add aarch64-apple-darwin
+      - name: Verify http-client feature gate (default on, and off has no Apple-framework deps)
+        run: ./tests/test_http_client_feature.sh aarch64-apple-darwin
 
   publish-cratesio:
     name: 📦 Publish to crates.io

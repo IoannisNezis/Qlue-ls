@@ -16,7 +16,7 @@ use futures::lock::Mutex;
 use indoc::indoc;
 use ll_sparql_parser::{
     SyntaxNode, SyntaxToken,
-    ast::{AstNode, BlankPropertyList, GroupClause, InlineData, QueryUnit, SelectClause, Triple},
+    ast::{AstNode, BlankPropertyList, GroupClause, InlineData, SelectClause, Triple, Unit},
     continuations_at, parse,
     syntax_kind::SyntaxKind,
 };
@@ -342,7 +342,7 @@ impl CompletionEnvironment {
         let backend = trigger_token
             .as_ref()
             .and_then(|token| {
-                resolve_backend_at_token(&server, &QueryUnit::cast(truncated_tree.clone())?, token)
+                resolve_backend_at_token(&server, &Unit::cast(truncated_tree.clone())?, token)
             })
             .or_else(|| server.state.get_default_backend().cloned());
         let (anchor_token, continuations) = resolve_anchor(&truncated_tree, trigger_token);

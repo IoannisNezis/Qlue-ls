@@ -1,6 +1,6 @@
 use ll_sparql_parser::{
     SyntaxToken,
-    ast::{AstNode, QueryUnit, ServiceGraphPattern},
+    ast::{AstNode, ServiceGraphPattern, Unit},
 };
 
 use crate::server::{Server, configuration::BackendConfiguration};
@@ -9,7 +9,7 @@ use crate::server::{Server, configuration::BackendConfiguration};
 /// Currently only works for Query operations.
 pub(super) fn resolve_backend_at_token(
     server: &Server,
-    query_unit: &QueryUnit,
+    query_unit: &Unit,
     token: &SyntaxToken,
 ) -> Option<BackendConfiguration> {
     token

@@ -6,13 +6,14 @@ use crate::{
         lsp::errors::{ErrorCode, LSPError},
         message_handler::misc::resolve_backend_at_token,
         sparql_operations::execute_query,
+        uri_converter::Converter,
     },
     sparql::results::SparqlResultsBody,
 };
 use futures::lock::Mutex;
 use ll_sparql_parser::{
     SyntaxNode, SyntaxToken,
-    ast::{AstNode, Iri, QueryUnit},
+    ast::{AstNode, Iri, Unit},
 };
 use tera::Context;
 
@@ -26,20 +27,15 @@ pub(super) async fn hover(
         Some(value) => value,
         None => return Ok(None),
     };
-    let mut context = Context::new();
-    context.insert("entity", &iri.text());
-    let query_unit = QueryUnit::cast(root).ok_or(LSPError::new(
-        ErrorCode::InternalError,
-        "Hover is currently only supported for Query operations",
-    ))?;
-    let backend =
-        resolve_backend_at_token(&server, &query_unit, &hovered_token).ok_or(LSPError::new(
-            ErrorCode::InternalError,
-            "Could not determine backend for hover location",
-        ))?;
     if let Some(label) = server.state.label_memory.get(&iri.text()) {
         Ok(Some(label.clone()))
     } else {
+        let ast = Unit::cast(root).expect("tree should be of kind QueryUnit or UpdateUnit");
+        let backend =
+            resolve_backend_at_token(&server, &ast, &hovered_token).ok_or(LSPError::new(
+                ErrorCode::InternalError,
+                "Could not determine backend for hover location",
+            ))?;
         let converter = server
             .state
             .get_converter(&backend.name)
@@ -47,11 +43,12 @@ pub(super) async fn hover(
                 ErrorCode::InternalError,
                 "Could not get uri converter",
             ))?;
+        let mut context = Context::new();
+        context.insert("entity", &iri.text());
         context.insert(
             "prefixes",
-            &iri.prefixed_name()
-                .and_then(|prefixed_name| converter.find_by_prefix(&prefixed_name.prefix()))
-                .map(|record| vec![(record.prefix.clone(), record.uri_prefix.clone())])
+            &get_iri_prefix_declaration(&iri, &ast, converter)
+                .map(|prefix_pair| vec![prefix_pair])
                 .unwrap_or_default(),
         );
         let query = server
@@ -100,4 +97,33 @@ pub(super) async fn hover(
             None => Ok(None),
         }
     }
+}
+
+// Creates the the prefix declaration for any IRI.
+// If the iri is raw (no prefix used) None is returned.
+// If the iri is a prefixed name the uri prefix is resolved in this order.
+// 1. Is there a prefix declaration at the top of the document declaring this prefix.
+//    The first prefix found is used.
+// 2. Is this prefix stored in the iri converter of the given backend.
+fn get_iri_prefix_declaration(
+    iri: &Iri,
+    ast: &Unit,
+    converter: &Converter,
+) -> Option<(String, String)> {
+    let used_prefix = iri.prefixed_name()?.prefix();
+    let prologue_def = ast.prologue().and_then(|prologue| {
+        prologue
+            .prefix_declarations()
+            .iter()
+            .find_map(|prefix_declaration| {
+                let prefix = prefix_declaration.prefix()?;
+                let uri_prefix = prefix_declaration.raw_uri_prefix()?;
+                (used_prefix == prefix).then_some((prefix, uri_prefix))
+            })
+    });
+    let storred_def = converter
+        .find_by_prefix(&used_prefix)
+        .cloned()
+        .map(|record| (used_prefix, record.uri_prefix));
+    prologue_def.or(storred_def)
 }

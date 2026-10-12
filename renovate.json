@@ -6,6 +6,10 @@
   "labels": [
     "renovate"
   ],
+  "timezone": "Europe/Berlin",
+  "schedule": [
+    "* * * * 5"
+  ],
   "packageRules": [
     {
       "matchDatasources": [

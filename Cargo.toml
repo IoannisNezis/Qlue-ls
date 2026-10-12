@@ -69,7 +69,6 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 dirs-next = "2.0.0"
 clap = { version = "4.5.16", features = ["derive"] }
 config = "0.15.0"
-notify = "8.0.0"
 # Optional: only compiled when the `http-client` feature is enabled. Keeping it
 # optional lets library-only users (e.g. a standalone formatter) build without a
 # TLS stack and cross-compile to macOS targets. See the [features] section above.

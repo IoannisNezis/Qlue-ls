@@ -1,3 +1,4 @@
+#![cfg(feature = "http-client")]
 //! End-to-end tests for hovering IRIs
 //!
 //! Hovering a prefixed name renders the backend's `hover` template and sends the

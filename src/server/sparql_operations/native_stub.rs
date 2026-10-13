@@ -1,14 +1,7 @@
 //! Stub implementations of the SPARQL-over-HTTP functions for builds without
 //! the `http-client` feature. Every function immediately returns an error (or
-//! `false` for the health check) so the crate compiles and links without
-//! `reqwest` and its transitive TLS dependencies.
-//!
-//! This exists so that consumers who embed qlue-ls purely as a standalone
-//! SPARQL formatter or parser (i.e. they never execute queries against a remote
-//! endpoint) can build with `default-features = false` and avoid linking the
-//! macOS Security/SystemConfiguration/CoreFoundation frameworks that `reqwest`'s
-//! TLS stack requires — which in turn enables cross-compilation to
-//! `*-apple-darwin` targets from Linux builders without a macOS SDK.
+//! `false` for the health check) so the crate compiles without `reqwest`.
+//! See the `[features]` section in `Cargo.toml` for why the feature exists.
 
 use crate::server::Server;
 use crate::server::configuration::BackendConfiguration;
@@ -43,7 +36,8 @@ pub(crate) async fn execute_query(
     }))
 }
 
-pub(crate) async fn check_server_availability(_backend: &BackendConfiguration) -> bool {
+pub(crate) async fn check_server_availability(backend: &BackendConfiguration) -> bool {
+    tracing::warn!("health check for \"{}\" skipped: {}", backend.url, NO_HTTP);
     false
 }
 

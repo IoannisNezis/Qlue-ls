@@ -16,6 +16,11 @@ crate-type = ["cdylib", "rlib"]
 name = "qlue-ls"
 path = "src/main.rs"
 
+[[test]]
+name = "hover"
+path = "tests/hover.rs"
+required-features = ["http-client"]
+
 [features]
 default = ["console_error_panic_hook", "http-client"]
 console_error_panic_hook = ["dep:console_error_panic_hook"]
@@ -69,9 +74,7 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 dirs-next = "2.0.0"
 clap = { version = "4.5.16", features = ["derive"] }
 config = "0.15.0"
-# Optional: only compiled when the `http-client` feature is enabled. Keeping it
-# optional lets library-only users (e.g. a standalone formatter) build without a
-# TLS stack and cross-compile to macOS targets. See the [features] section above.
+# NOTE: optional, see the `http-client` feature above.
 reqwest = { version = "0.13.0", features = ["json", "form"], optional = true }
 
 # WASM-only dependencies

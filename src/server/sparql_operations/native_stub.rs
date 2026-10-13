@@ -50,26 +50,26 @@ pub(crate) async fn check_server_availability(_backend: &BackendConfiguration) -
 pub(crate) async fn execute_construct_query(
     _server_rc: Rc<Mutex<Server>>,
     _url: &str,
-    _query: &str,
+    query: &str,
     _query_id: Option<&str>,
     _engine: Option<SparqlEngine>,
     _lazy: bool,
 ) -> Result<Option<SparqlResult>, SparqlRequestError> {
     Err(SparqlRequestError::Connection(ConnectionError {
         message: NO_HTTP.to_string(),
-        query: String::new(),
+        query: query.to_string(),
     }))
 }
 
 pub(crate) async fn execute_update(
     _server_rc: Rc<Mutex<Server>>,
     _url: &str,
-    _query: &str,
+    query: &str,
     _query_id: Option<&str>,
     _access_token: Option<&str>,
 ) -> Result<ExecuteUpdateResponseResult, SparqlRequestError> {
     Err(SparqlRequestError::Connection(ConnectionError {
         message: NO_HTTP.to_string(),
-        query: String::new(),
+        query: query.to_string(),
     }))
 }

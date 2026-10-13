@@ -32,7 +32,7 @@ jobs:
       - name: cargo test
         run: cargo test --release
       - name: cargo test (without http-client)
-        run: cargo test --no-default-features
+        run: cargo test --release --no-default-features
       - name: Install Python (for cargo-zigbuild)
         uses: actions/setup-python@v6
         with:

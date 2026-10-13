@@ -31,10 +31,23 @@ jobs:
         run: cargo build --release
       - name: cargo test
         run: cargo test --release
-      - name: Add aarch64-apple-darwin target (for dep-tree cross-check)
+      - name: cargo test (without http-client)
+        run: cargo test --no-default-features
+      - name: Install Python (for cargo-zigbuild)
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+      # WARNING: cargo-zigbuild 0.23.4 breaks cdylib links on Apple targets
+      # (rust-cross/cargo-zigbuild#479, fixed upstream in #480). Unpin once a
+      # release newer than 0.23.4 is out.
+      - name: Install cargo-zigbuild
+        run: pip install cargo-zigbuild==0.23.3
+      - name: Add aarch64-apple-darwin target
         run: rustup target add aarch64-apple-darwin
-      - name: Verify http-client feature gate (default on, and off has no Apple-framework deps)
-        run: ./tests/test_http_client_feature.sh aarch64-apple-darwin
+      # NOTE: Cross-links for macOS from Linux without a macOS SDK (see #364).
+      # Fails if anything in the dependency tree links an Apple framework.
+      - name: cargo zigbuild (aarch64-apple-darwin, without http-client)
+        run: cargo zigbuild --no-default-features --target aarch64-apple-darwin
 
   publish-cratesio:
     name: 📦 Publish to crates.io

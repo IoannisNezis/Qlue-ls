@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.12.0] - 2026-10-19
+
 ### Added
 
 - new `http-client` cargo feature (enabled by default) that gates the HTTP
@@ -67,7 +69,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Clients have to send it with an `id` and will receive a response with a `null`
   result once the backend has been registered. Errors while loading the prefix
   map or the query templates are now reported back to the client.
-
 - predicate completions inside a blank node property list (`?s :p [ | ]`) now
   take the surrounding query into account: the completion query is constrained
   by the triples connected to the enclosing subject, including the other
@@ -110,7 +111,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   Everything else in the documented templates keeps working, including
   `{% if search_term_uncompressed %}` on an undefined variable.
-
 - a template that fails to load or render now reports *why*: the error message
   contains Tera's source-annotated report pointing at the offending part of the
   template.
@@ -353,7 +353,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - on native targets, failed requests now report structured errors (including
   QLever error messages) with status code and body, instead of a generic
   "failed" message.
-
 - **BREAKING** template variables are now prefixed with `qls_` instead of
   `qlue_ls_` for conciseness. Existing query templates using the `qlue_ls_`
   prefix must be updated to the new `qls_` prefix.
@@ -801,7 +800,6 @@ The result schema of this request also changed.
 
 - capability to execute queries
 
-
 ## [0.17.1] - 2025-10-21
 
 ### Fixed
@@ -1061,9 +1059,8 @@ The result schema of this request also changed.
 ### Changed
 
 - backends configuration in demo editor is now yaml not json
-- completion details are in completion item label_details instead of detail 
+- completion details are in completion item label_details instead of detail
   (gets always rendered in monaco, not just when hovering)
-
 
 ### Fixed
 
@@ -1073,13 +1070,11 @@ The result schema of this request also changed.
 - textual rendering of rdf-terms
 - various completion query templates
 
-
 ## [0.5.6] - 2025-04-01
 
 ### Fixed
 
 - formatting comments with correct indentation
-
 
 ## [0.5.3] - 2025-03-15
 

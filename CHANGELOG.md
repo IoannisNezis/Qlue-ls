@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- new `http-client` cargo feature (enabled by default) that gates the HTTP
+  client used for query execution and backend health checks. Library consumers
+  that only need the formatter or parser can set `default-features = false` to
+  drop `reqwest` and its TLS stack, which makes cross-compiling to
+  `*-apple-darwin` from Linux possible (#364).
+
 ### Changed
 
 - the formatter now formats negated property sets in property paths, for

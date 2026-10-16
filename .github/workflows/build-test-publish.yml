@@ -34,7 +34,7 @@ jobs:
       - name: cargo test (without http-client)
         run: cargo test --release --no-default-features
       - name: Install Python (for cargo-zigbuild)
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.x"
       # WARNING: cargo-zigbuild 0.23.4 breaks cdylib links on Apple targets

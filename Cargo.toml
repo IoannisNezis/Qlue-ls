@@ -4,9 +4,25 @@ version = "3.12.0"
 edition = "2024"
 authors = ["Ioannis Nezis <ioannis@nezis.de>"]
 description = "A language server for SPARQL"
+documentation = "https://docs.qlue-ls.com"
 repository = "https://github.com/IoannisNezis/qlue-ls"
 license-file = "LICENSE"
 keywords = ["SPARQL", "rdf", "lsp", "lsp-server", "wasm"]
+
+[package.metadata.deb]
+maintainer = "Julian Mundhahs <mundhahj@tf.uni-freiburg.de>"
+extended-description = """\
+qlue-ls is a language server for SPARQL. It provides completion, formatting, \
+hover, diagnostics and code actions for any editor that supports the \
+Language Server Protocol."""
+section = "devel"
+priority = "optional"
+# NOTE: explicit assets, otherwise cargo-deb's `$auto` also ships the cdylib
+# (`libqlue_ls.so`), which only exists for the WASM build.
+assets = [
+	["target/release/qlue-ls", "usr/bin/", "755"],
+	["README.md", "usr/share/doc/qlue-ls/", "644"],
+]
 
 [lib]
 path = "src/lib.rs"

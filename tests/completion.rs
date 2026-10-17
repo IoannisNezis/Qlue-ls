@@ -1318,3 +1318,194 @@ fn test_completion_partial_multi_word_keyword() {
         assert_eq!(range["end"], json!({"line": 3, "character": 7}));
     });
 }
+
+// ── Insert text format (#368) ─────────────────────────────────────
+
+/// Initialize like Eglot: no `snippetSupport` and no `completionList.itemDefaults`.
+async fn initialize_without_snippet_support(client: &TestClient) {
+    client
+        .initialize_with(json!({
+            "processId": null,
+            "capabilities": {
+                "textDocument": {
+                    "completion": {
+                        "completionItem": {
+                            "snippetSupport": false
+                        }
+                    }
+                }
+            },
+            "rootUri": "file:///test"
+        }))
+        .await;
+}
+
+/// Initialize like VS Code: snippets and `itemDefaults.insertTextFormat` supported.
+async fn initialize_with_item_defaults(client: &TestClient, snippet_support: bool) {
+    client
+        .initialize_with(json!({
+            "processId": null,
+            "capabilities": {
+                "textDocument": {
+                    "completion": {
+                        "completionItem": {
+                            "snippetSupport": snippet_support
+                        },
+                        "completionList": {
+                            "itemDefaults": ["insertTextFormat"]
+                        }
+                    }
+                }
+            },
+            "rootUri": "file:///test"
+        }))
+        .await;
+}
+
+/// The text an item inserts, from `textEdit` or `insertText`.
+fn inserted_text(item: &Value) -> &str {
+    item["textEdit"]["newText"]
+        .as_str()
+        .or(item["insertText"].as_str())
+        .unwrap_or_default()
+}
+
+#[test]
+fn test_start_completions_set_insert_text_format_on_each_item() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        client.initialize().await;
+        client.open_document("file:///test.sparql", "\n").await;
+
+        let id = client.complete("file:///test.sparql", 0, 0).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+
+        // Clients without `itemDefaults` support must still see the snippet format.
+        assert!(
+            response["result"]["itemDefaults"]["insertTextFormat"].is_null(),
+            "insertTextFormat should not be sent as an item default: {response}"
+        );
+        let items = response["result"]["items"].as_array().unwrap();
+        assert!(has_completion_label(&response, "CONSTRUCT"));
+        for item in items {
+            assert_eq!(
+                item["insertTextFormat"], 2,
+                "{} should be a snippet",
+                item["label"]
+            );
+        }
+    });
+}
+
+#[test]
+fn test_start_completions_without_snippet_support_are_plain_text() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        initialize_without_snippet_support(&client).await;
+        client.open_document("file:///test.sparql", "\n").await;
+
+        let id = client.complete("file:///test.sparql", 0, 0).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+
+        let items = response["result"]["items"].as_array().unwrap();
+        assert!(!items.is_empty());
+        for item in items {
+            assert_eq!(
+                item["insertTextFormat"], 1,
+                "{} should be plain text",
+                item["label"]
+            );
+            assert!(
+                !inserted_text(item).contains('$'),
+                "{} still contains snippet syntax: {:?}",
+                item["label"],
+                inserted_text(item)
+            );
+        }
+        let select = items.iter().find(|item| item["label"] == "SELECT").unwrap();
+        assert_eq!(inserted_text(select), "SELECT * WHERE {\n\t?s ?p ?o\n}");
+    });
+}
+
+#[test]
+fn test_subject_completions_without_snippet_support_are_plain_text() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        initialize_without_snippet_support(&client).await;
+        client
+            .open_document(
+                "file:///test.sparql",
+                "SELECT * WHERE {\n  ?s ?p ?o .\n  \n}",
+            )
+            .await;
+
+        let id = client.complete("file:///test.sparql", 2, 2).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+
+        let items = response["result"]["items"].as_array().unwrap();
+        let filter = items.iter().find(|item| item["label"] == "FILTER").unwrap();
+        assert_eq!(filter["insertTextFormat"], 1);
+        assert_eq!(inserted_text(filter), "FILTER ()");
+    });
+}
+
+#[test]
+fn test_start_completions_keep_item_defaults_if_supported() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        initialize_with_item_defaults(&client, true).await;
+        client.open_document("file:///test.sparql", "\n").await;
+
+        let id = client.complete("file:///test.sparql", 0, 0).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+
+        assert_eq!(response["result"]["itemDefaults"]["insertTextFormat"], 2);
+        let items = response["result"]["items"].as_array().unwrap();
+        let construct = items
+            .iter()
+            .find(|item| item["label"] == "CONSTRUCT")
+            .unwrap();
+        assert!(construct["insertTextFormat"].is_null());
+        assert!(inserted_text(construct).contains("${1:?s ?p ?o}"));
+    });
+}
+
+#[test]
+fn test_start_completions_with_item_defaults_without_snippet_support_are_plain_text() {
+    run_lsp_test(|| async {
+        let client = TestClient::new();
+        initialize_with_item_defaults(&client, false).await;
+        client.open_document("file:///test.sparql", "\n").await;
+
+        let id = client.complete("file:///test.sparql", 0, 0).await;
+        let response = client
+            .get_response(id)
+            .expect("Should receive completion response");
+
+        let items = response["result"]["items"].as_array().unwrap();
+        for item in items {
+            assert!(
+                !inserted_text(item).contains('$'),
+                "{} still contains snippet syntax: {:?}",
+                item["label"],
+                inserted_text(item)
+            );
+        }
+        let construct = items
+            .iter()
+            .find(|item| item["label"] == "CONSTRUCT")
+            .unwrap();
+        assert_eq!(
+            inserted_text(construct),
+            "CONSTRUCT {\n  ?s ?p ?o\n} WHERE {\n  ?s ?p ?o .\n}"
+        );
+    });
+}

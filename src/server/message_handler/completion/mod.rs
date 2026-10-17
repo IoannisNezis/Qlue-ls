@@ -16,7 +16,7 @@ use crate::server::{
         errors::LSPError,
     },
     message_handler::completion::transformer::{
-        CompletionTransformer, ObjectSuffixTransformer, SemicolonTransformer,
+        CompletionTransformer, ObjectSuffixTransformer, PlainTextTransformer, SemicolonTransformer,
     },
 };
 
@@ -114,8 +114,28 @@ pub(super) async fn handle_completion_request(
     if let Some(transformer) = SemicolonTransformer::try_from_env(&server, &env) {
         transformer.transform(&mut completion_list);
     }
+    // Not every client supports `itemDefaults` or snippets (e.g. Eglot).
+    if !client_supports_item_default(&server, "insertTextFormat") {
+        completion_list.resolve_insert_text_format();
+    }
+    if let Some(transformer) = PlainTextTransformer::try_from_env(&server) {
+        transformer.transform(&mut completion_list);
+    }
 
     server.send_message(CompletionResponse::new(request.get_id(), completion_list))
+}
+
+/// Whether the client announced support for `property` in
+/// `CompletionList.itemDefaults` (LSP 3.17).
+fn client_supports_item_default(server: &Server, property: &str) -> bool {
+    server
+        .client_capabilities
+        .as_ref()
+        .and_then(|capabilities| capabilities.text_document.as_ref())
+        .and_then(|text_document| text_document.completion.as_ref())
+        .and_then(|completion| completion.completion_list.as_ref())
+        .and_then(|completion_list| completion_list.item_defaults.as_ref())
+        .is_some_and(|item_defaults| item_defaults.iter().any(|name| name == property))
 }
 
 fn merge_completions(
@@ -125,9 +145,62 @@ fn merge_completions(
     match (completion_list, variable_completions) {
         (None, None) => None,
         (None, Some(list)) | (Some(list), None) => Some(list),
-        (Some(mut list1), Some(list2)) => {
+        (Some(mut list1), Some(mut list2)) => {
+            // A list's default insertTextFormat only applies to its own items,
+            // and the merged list can't carry two different defaults. So this
+            // is needed even for clients that support `itemDefaults`.
+            list1.resolve_insert_text_format();
+            list2.resolve_insert_text_format();
             list1.items.extend(list2.items);
             Some(list1)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::merge_completions;
+    use crate::server::lsp::{
+        CompletionItem, CompletionItemKind, CompletionList, InsertTextFormat, ItemDefaults,
+    };
+
+    fn list(insert_text_format: InsertTextFormat, insert_text: &str) -> CompletionList {
+        CompletionList {
+            is_incomplete: false,
+            item_defaults: Some(ItemDefaults {
+                commit_characters: None,
+                edit_range: None,
+                insert_text_format: Some(insert_text_format),
+                insert_text_mode: None,
+                data: None,
+            }),
+            items: vec![CompletionItem::new(
+                insert_text,
+                None,
+                None,
+                insert_text,
+                CompletionItemKind::Snippet,
+                None,
+            )],
+        }
+    }
+
+    #[test]
+    fn merge_keeps_default_insert_text_format_per_list() {
+        let merged = merge_completions(
+            Some(list(InsertTextFormat::Snippet, "FILTER ($0)")),
+            Some(list(InsertTextFormat::PlainText, "?price$")),
+        )
+        .unwrap();
+
+        assert_eq!(merged.item_defaults, None);
+        assert_eq!(
+            merged.items[0].insert_text_format,
+            Some(InsertTextFormat::Snippet)
+        );
+        assert_eq!(
+            merged.items[1].insert_text_format,
+            Some(InsertTextFormat::PlainText)
+        );
     }
 }

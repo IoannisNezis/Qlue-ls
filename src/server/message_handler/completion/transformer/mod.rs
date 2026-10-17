@@ -1,7 +1,9 @@
 mod object_suffix;
+mod plain_text;
 mod semicolon;
 
 pub use object_suffix::ObjectSuffixTransformer;
+pub use plain_text::PlainTextTransformer;
 pub use semicolon::SemicolonTransformer;
 
 use crate::server::lsp::CompletionList;

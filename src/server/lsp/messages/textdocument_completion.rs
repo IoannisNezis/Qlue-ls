@@ -82,6 +82,28 @@ pub struct CompletionList {
     pub items: Vec<CompletionItem>,
 }
 
+impl CompletionList {
+    /// Move the default `insertTextFormat` onto the items that don't set one.
+    ///
+    /// `itemDefaults` is an LSP 3.17 feature that not every client supports
+    /// (e.g. Eglot ignores it and inserts snippets literally). It also only
+    /// applies to the items of its own list, so lists must be resolved before
+    /// they are merged.
+    pub fn resolve_insert_text_format(&mut self) {
+        let Some(defaults) = self.item_defaults.as_mut() else {
+            return;
+        };
+        if let Some(format) = defaults.insert_text_format.take() {
+            for item in self.items.iter_mut() {
+                item.insert_text_format.get_or_insert(format);
+            }
+        }
+        if defaults.is_empty() {
+            self.item_defaults = None;
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ItemDefaults {
@@ -104,6 +126,21 @@ pub struct ItemDefaults {
     /// A default data value.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<LSPAny>,
+}
+
+impl ItemDefaults {
+    fn is_empty(&self) -> bool {
+        matches!(
+            self,
+            ItemDefaults {
+                commit_characters: None,
+                edit_range: None,
+                insert_text_format: None,
+                insert_text_mode: None,
+                data: None,
+            }
+        )
+    }
 }
 
 /// https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionItem
@@ -206,7 +243,7 @@ pub enum CompletionItemKind {
     TypeParameter = 25,
 }
 
-#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Clone, Copy)]
 #[repr(u8)]
 pub enum InsertTextFormat {
     PlainText = 1,
@@ -509,5 +546,55 @@ mod tests {
         let expected_message = r#"{"jsonrpc":"2.0","id":1337,"result":{"isIncomplete":true,"items":[{"label":"SELECT","kind":15,"detail":"Select query","insertText":"SELECT ${1:*} WHERE {\n  $0\n}","insertTextFormat":2}]}}"#;
         let actual_message = serde_json::to_string(&completion_response).unwrap();
         assert_eq!(actual_message, expected_message);
+    }
+
+    #[test]
+    fn resolve_insert_text_format_moves_default_onto_items() {
+        let mut snippet = CompletionItem::new(
+            "SELECT",
+            None,
+            None,
+            "SELECT $0",
+            CompletionItemKind::Snippet,
+            None,
+        );
+        snippet.insert_text_format = Some(InsertTextFormat::PlainText);
+        let mut list = CompletionList {
+            is_incomplete: false,
+            item_defaults: Some(super::ItemDefaults {
+                commit_characters: None,
+                edit_range: None,
+                insert_text_format: Some(InsertTextFormat::Snippet),
+                insert_text_mode: Some(super::InsertTextMode::AsIs),
+                data: None,
+            }),
+            items: vec![
+                snippet,
+                CompletionItem::new(
+                    "ASK",
+                    None,
+                    None,
+                    "ASK $0",
+                    CompletionItemKind::Snippet,
+                    None,
+                ),
+            ],
+        };
+
+        list.resolve_insert_text_format();
+
+        // An item's own format wins over the default.
+        assert_eq!(
+            list.items[0].insert_text_format,
+            Some(InsertTextFormat::PlainText)
+        );
+        assert_eq!(
+            list.items[1].insert_text_format,
+            Some(InsertTextFormat::Snippet)
+        );
+        // Other defaults are kept.
+        let defaults = list.item_defaults.unwrap();
+        assert_eq!(defaults.insert_text_format, None);
+        assert_eq!(defaults.insert_text_mode, Some(super::InsertTextMode::AsIs));
     }
 }

@@ -1421,7 +1421,7 @@ dependencies = [
 
 [[package]]
 name = "qlue-ls"
-version = "3.12.0"
+version = "3.12.1"
 dependencies = [
  "clap",
  "config",

@@ -59,3 +59,59 @@ pub(super) fn diagnostics(
             .collect(),
     )
 }
+
+#[cfg(test)]
+mod test {
+    use super::{CODE, diagnostics};
+    use crate::server::{
+        lsp::{base_types::LSPAny, diagnostic::DiagnosticSeverity, textdocument::Range},
+        message_handler::diagnostic::test_utils::run,
+    };
+    use indoc::indoc;
+
+    #[test]
+    fn triggered_by_undeclared_prefix() {
+        let result = run(diagnostics, "SELECT * WHERE { ?s schema:name ?o }");
+        assert_eq!(result.len(), 1);
+        let diagnostic = &result[0];
+        assert_eq!(diagnostic.range, Range::new(0, 20, 0, 31));
+        assert_eq!(diagnostic.severity, DiagnosticSeverity::Error);
+        assert_eq!(diagnostic.code, Some((*CODE).clone()));
+        assert_eq!(diagnostic.data, Some(LSPAny::String("schema".to_string())));
+    }
+
+    #[test]
+    fn triggered_only_for_undeclared_prefix() {
+        let result = run(
+            diagnostics,
+            indoc!(
+                "PREFIX schema: <https://schema.org/>
+                 SELECT * WHERE { ?s schema:name ex:o }"
+            ),
+        );
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].range, Range::new(1, 32, 1, 36));
+        assert_eq!(result[0].data, Some(LSPAny::String("ex".to_string())));
+    }
+
+    #[test]
+    fn not_triggered_by_declared_prefix() {
+        let result = run(
+            diagnostics,
+            indoc!(
+                "PREFIX schema: <https://schema.org/>
+                 SELECT * WHERE { ?s schema:name ?o }"
+            ),
+        );
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn not_triggered_without_prefixed_names() {
+        let result = run(
+            diagnostics,
+            "SELECT * WHERE { ?s <https://schema.org/name> ?o }",
+        );
+        assert!(result.is_empty());
+    }
+}

@@ -51,3 +51,49 @@ fn invalid_selection(
     }
     )
 }
+
+#[cfg(test)]
+mod test {
+    use super::{CODE, diagnostics};
+    use crate::server::{
+        lsp::{diagnostic::DiagnosticSeverity, textdocument::Range},
+        message_handler::diagnostic::test_utils::run,
+    };
+    use indoc::indoc;
+
+    #[test]
+    fn triggered_by_star_with_group_by() {
+        let result = run(diagnostics, "SELECT * WHERE { ?s ?p ?o } GROUP BY ?s");
+        assert_eq!(result.len(), 1);
+        let diagnostic = &result[0];
+        assert_eq!(diagnostic.range, Range::new(0, 7, 0, 8));
+        assert_eq!(diagnostic.severity, DiagnosticSeverity::Error);
+        assert_eq!(diagnostic.code, Some((*CODE).clone()));
+    }
+
+    #[test]
+    fn triggered_in_sub_select() {
+        let result = run(
+            diagnostics,
+            indoc!(
+                "SELECT ?s WHERE {
+                   { SELECT * WHERE { ?s ?p ?o } GROUP BY ?s }
+                 }"
+            ),
+        );
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].range, Range::new(1, 11, 1, 12));
+    }
+
+    #[test]
+    fn not_triggered_by_star_without_group_by() {
+        let result = run(diagnostics, "SELECT * WHERE { ?s ?p ?o }");
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn not_triggered_by_explicit_projection_with_group_by() {
+        let result = run(diagnostics, "SELECT ?s WHERE { ?s ?p ?o } GROUP BY ?s");
+        assert!(result.is_empty());
+    }
+}

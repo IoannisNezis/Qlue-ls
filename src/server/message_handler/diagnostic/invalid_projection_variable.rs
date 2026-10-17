@@ -67,3 +67,44 @@ pub(super) fn diagnostics(
             .collect(),
     )
 }
+
+#[cfg(test)]
+mod test {
+    use super::{CODE, diagnostics};
+    use crate::server::{
+        lsp::{diagnostic::DiagnosticSeverity, textdocument::Range},
+        message_handler::diagnostic::test_utils::run,
+    };
+
+    #[test]
+    fn triggered_by_assignment_to_body_variable() {
+        let result = run(diagnostics, "SELECT (?o AS ?s) WHERE { ?s ?p ?o }");
+        assert_eq!(result.len(), 1);
+        let diagnostic = &result[0];
+        assert_eq!(diagnostic.range, Range::new(0, 14, 0, 16));
+        assert_eq!(diagnostic.severity, DiagnosticSeverity::Error);
+        assert_eq!(diagnostic.code, Some((*CODE).clone()));
+    }
+
+    #[test]
+    fn triggered_only_for_bound_variables() {
+        let result = run(
+            diagnostics,
+            "SELECT (?o AS ?x) (?o AS ?p) WHERE { ?s ?p ?o }",
+        );
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].range, Range::new(0, 25, 0, 27));
+    }
+
+    #[test]
+    fn not_triggered_by_fresh_variable() {
+        let result = run(diagnostics, "SELECT (?o AS ?x) WHERE { ?s ?p ?o }");
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn not_triggered_without_assignments() {
+        let result = run(diagnostics, "SELECT ?s WHERE { ?s ?p ?o }");
+        assert!(result.is_empty());
+    }
+}

@@ -89,3 +89,69 @@ pub(crate) fn find_all_triple_groups(query_unit: &QueryUnit) -> Vec<(String, Vec
     }
     result
 }
+
+#[cfg(test)]
+mod test {
+    use super::{CODE, diagnostics};
+    use crate::server::{
+        lsp::{diagnostic::DiagnosticSeverity, textdocument::Range},
+        message_handler::diagnostic::test_utils::run,
+    };
+    use indoc::indoc;
+
+    #[test]
+    fn triggered_by_triples_with_same_subject() {
+        let mut result = run(
+            diagnostics,
+            indoc!(
+                "SELECT * WHERE {
+                   ?s ?p ?o .
+                   ?s ?q ?r
+                 }"
+            ),
+        );
+        result.sort_by_key(|diagnostic| diagnostic.range.start.line);
+        assert_eq!(
+            result.iter().map(|d| d.range.clone()).collect::<Vec<_>>(),
+            vec![Range::new(1, 2, 1, 10), Range::new(2, 2, 2, 10)]
+        );
+        for diagnostic in result {
+            assert_eq!(diagnostic.severity, DiagnosticSeverity::Information);
+            assert_eq!(diagnostic.code, Some((*CODE).clone()));
+        }
+    }
+
+    #[test]
+    fn not_triggered_by_different_subjects() {
+        let result = run(
+            diagnostics,
+            indoc!(
+                "SELECT * WHERE {
+                   ?s ?p ?o .
+                   ?o ?q ?r
+                 }"
+            ),
+        );
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn not_triggered_by_contracted_triple() {
+        let result = run(diagnostics, "SELECT * WHERE { ?s ?p ?o ; ?q ?r }");
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn not_triggered_across_group_graph_patterns() {
+        let result = run(
+            diagnostics,
+            indoc!(
+                "SELECT * WHERE {
+                   ?s ?p ?o .
+                   OPTIONAL { ?s ?q ?r }
+                 }"
+            ),
+        );
+        assert!(result.is_empty());
+    }
+}

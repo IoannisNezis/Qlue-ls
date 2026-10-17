@@ -108,3 +108,67 @@ pub(super) fn diagnostics(
             .collect(),
     )
 }
+
+#[cfg(test)]
+mod test {
+    use super::{CODE, diagnostics};
+    use crate::server::{
+        lsp::{diagnostic::DiagnosticSeverity, textdocument::Range},
+        message_handler::diagnostic::test_utils::run,
+    };
+
+    #[test]
+    fn triggered_by_ungrouped_selected_variable() {
+        let result = run(diagnostics, "SELECT ?s ?o WHERE { ?s ?p ?o } GROUP BY ?s");
+        assert_eq!(result.len(), 1);
+        let diagnostic = &result[0];
+        assert_eq!(diagnostic.range, Range::new(0, 10, 0, 12));
+        assert_eq!(diagnostic.severity, DiagnosticSeverity::Error);
+        assert_eq!(diagnostic.code, Some((*CODE).clone()));
+    }
+
+    #[test]
+    fn triggered_by_unaggregated_variable_in_assignment() {
+        let result = run(
+            diagnostics,
+            "SELECT ?s (?o AS ?x) WHERE { ?s ?p ?o } GROUP BY ?s",
+        );
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].range, Range::new(0, 11, 0, 13));
+    }
+
+    #[test]
+    fn triggered_by_reference_to_later_assignment() {
+        // NOTE: `?d` is derived after it is used, so it is not yet available.
+        let result = run(
+            diagnostics,
+            "SELECT ?s (?d + 1 AS ?c) (COUNT(?o) AS ?d) WHERE { ?s ?p ?o } GROUP BY ?s",
+        );
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].range, Range::new(0, 11, 0, 13));
+    }
+
+    #[test]
+    fn not_triggered_by_grouped_or_aggregated_variables() {
+        let result = run(
+            diagnostics,
+            "SELECT ?s (COUNT(?o) AS ?c) WHERE { ?s ?p ?o } GROUP BY ?s",
+        );
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn not_triggered_by_reference_to_earlier_assignment() {
+        let result = run(
+            diagnostics,
+            "SELECT ?s (COUNT(?o) AS ?c) (?c + 1 AS ?d) WHERE { ?s ?p ?o } GROUP BY ?s",
+        );
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn not_triggered_without_group_by() {
+        let result = run(diagnostics, "SELECT ?s ?o WHERE { ?s ?p ?o }");
+        assert!(result.is_empty());
+    }
+}

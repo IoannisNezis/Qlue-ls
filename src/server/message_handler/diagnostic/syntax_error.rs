@@ -40,3 +40,38 @@ pub(super) fn diagnostics(
             .collect(),
     )
 }
+
+#[cfg(test)]
+mod test {
+    use super::{CODE, diagnostics};
+    use crate::server::{
+        lsp::diagnostic::DiagnosticSeverity, message_handler::diagnostic::test_utils::run,
+    };
+
+    #[test]
+    fn triggered_by_invalid_query() {
+        let result = run(diagnostics, "SELECT * WHERE { ?s ?p }");
+        assert_eq!(result.len(), 1);
+        let diagnostic = &result[0];
+        assert_eq!(diagnostic.severity, DiagnosticSeverity::Error);
+        assert_eq!(diagnostic.code, Some((*CODE).clone()));
+    }
+
+    #[test]
+    fn triggered_only_once_for_multiple_errors() {
+        let result = run(diagnostics, "SELECT * WHERE { ?s ?p . ?a . ?b }");
+        assert_eq!(result.len(), 1);
+    }
+
+    #[test]
+    fn not_triggered_by_valid_query() {
+        let result = run(diagnostics, "SELECT * WHERE { ?s ?p ?o }");
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn not_triggered_by_valid_update() {
+        let result = run(diagnostics, "INSERT DATA { <a> <b> <c> }");
+        assert!(result.is_empty());
+    }
+}

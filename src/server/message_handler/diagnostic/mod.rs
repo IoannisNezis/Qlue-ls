@@ -58,3 +58,37 @@ pub(super) async fn handle_diagnostic_request(
 
     server.send_message(DiagnosticResponse::new(request.get_id(), diagnostic_accu))
 }
+
+#[cfg(test)]
+pub(super) mod test_utils {
+    use crate::server::{
+        Server,
+        lsp::{diagnostic::Diagnostic, textdocument::TextDocumentItem},
+    };
+    use ll_sparql_parser::{
+        ast::{AstNode, Unit},
+        parse,
+    };
+
+    pub(super) type DiagnosticProvider =
+        fn(&TextDocumentItem, &Unit, &Server) -> Option<Vec<Diagnostic>>;
+
+    /// Run a single diagnostic provider on `text` with a freshly created server.
+    ///
+    /// NOTE: Providers signal "nothing to report" either with `None` or an empty
+    /// `Vec`; both are mapped to an empty `Vec`.
+    pub(super) fn run(provider: DiagnosticProvider, text: &str) -> Vec<Diagnostic> {
+        run_with_server(provider, &Server::new(|_message| {}), text)
+    }
+
+    pub(super) fn run_with_server(
+        provider: DiagnosticProvider,
+        server: &Server,
+        text: &str,
+    ) -> Vec<Diagnostic> {
+        let document = TextDocumentItem::new("uri", text);
+        let (tree, _) = parse(text);
+        let ast = Unit::cast(tree).expect("tree should be of kind QueryUnit or UpdateUnit");
+        provider(&document, &ast, server).unwrap_or_default()
+    }
+}

@@ -55,3 +55,91 @@ pub(super) fn diagnostics(
             .collect(),
     )
 }
+
+#[cfg(test)]
+mod test {
+    use super::{CODE, diagnostics};
+    use crate::server::{
+        Server,
+        configuration::BackendConfiguration,
+        lsp::{base_types::LSPAny, diagnostic::DiagnosticSeverity, textdocument::Range},
+        message_handler::diagnostic::test_utils::{run, run_with_server},
+    };
+    use indoc::indoc;
+    use std::collections::HashMap;
+
+    fn setup_server() -> Server {
+        let mut server = Server::new(|_message| {});
+        server.state.add_backend(BackendConfiguration {
+            name: "test".to_string(),
+            url: "".to_string(),
+            health_check_url: None,
+            engine: None,
+            request_method: None,
+            prefix_map: HashMap::new(),
+            default: true,
+            queries: HashMap::new(),
+            additional_data: None,
+        });
+        server.state.set_default_backend("test".to_string());
+        server.state.load_prefix_map(
+            "test".to_string(),
+            &HashMap::from_iter([("schema".to_string(), "https://schema.org/".to_string())]),
+        );
+        server
+    }
+
+    #[test]
+    fn triggered_by_compactable_iri() {
+        let result = run_with_server(
+            diagnostics,
+            &setup_server(),
+            "SELECT * WHERE { ?s <https://schema.org/name> ?o }",
+        );
+        assert_eq!(result.len(), 1);
+        let diagnostic = &result[0];
+        assert_eq!(diagnostic.range, Range::new(0, 20, 0, 45));
+        assert_eq!(diagnostic.severity, DiagnosticSeverity::Information);
+        assert_eq!(diagnostic.code, Some((*CODE).clone()));
+        assert_eq!(
+            diagnostic.data,
+            Some(LSPAny::LSPArray(vec![
+                LSPAny::String("schema".to_string()),
+                LSPAny::String("https://schema.org/".to_string()),
+                LSPAny::String("schema:name".to_string()),
+            ]))
+        );
+    }
+
+    #[test]
+    fn not_triggered_by_unknown_namespace() {
+        let result = run_with_server(
+            diagnostics,
+            &setup_server(),
+            "SELECT * WHERE { ?s <http://example.org/name> ?o }",
+        );
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn not_triggered_by_prefixed_name_or_prologue() {
+        let result = run_with_server(
+            diagnostics,
+            &setup_server(),
+            indoc!(
+                "PREFIX schema: <https://schema.org/>
+                 SELECT * WHERE { ?s schema:name ?o }"
+            ),
+        );
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn not_triggered_without_prefix_map() {
+        let result = run(
+            diagnostics,
+            "SELECT * WHERE { ?s <https://schema.org/name> ?o }",
+        );
+        assert!(result.is_empty());
+    }
+}

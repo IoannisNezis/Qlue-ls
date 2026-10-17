@@ -56,3 +56,63 @@ pub(super) fn diagnostics(
             .collect(),
     )
 }
+
+#[cfg(test)]
+mod test {
+    use super::{CODE, diagnostics};
+    use crate::server::{
+        lsp::{base_types::LSPAny, diagnostic::DiagnosticSeverity, textdocument::Range},
+        message_handler::diagnostic::test_utils::run,
+    };
+    use indoc::indoc;
+
+    #[test]
+    fn triggered_by_unused_prefix() {
+        let result = run(
+            diagnostics,
+            indoc!(
+                "PREFIX schema: <https://schema.org/>
+                 SELECT * WHERE { ?s ?p ?o }"
+            ),
+        );
+        assert_eq!(result.len(), 1);
+        let diagnostic = &result[0];
+        assert_eq!(diagnostic.range, Range::new(0, 0, 0, 36));
+        assert_eq!(diagnostic.severity, DiagnosticSeverity::Warning);
+        assert_eq!(diagnostic.code, Some((*CODE).clone()));
+        assert_eq!(diagnostic.data, Some(LSPAny::String("schema".to_string())));
+    }
+
+    #[test]
+    fn triggered_only_for_unused_prefix() {
+        let result = run(
+            diagnostics,
+            indoc!(
+                "PREFIX schema: <https://schema.org/>
+                 PREFIX ex: <http://example.org/>
+                 SELECT * WHERE { ?s schema:name ?o }"
+            ),
+        );
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].range, Range::new(1, 0, 1, 32));
+        assert_eq!(result[0].data, Some(LSPAny::String("ex".to_string())));
+    }
+
+    #[test]
+    fn not_triggered_by_used_prefix() {
+        let result = run(
+            diagnostics,
+            indoc!(
+                "PREFIX schema: <https://schema.org/>
+                 SELECT * WHERE { ?s schema:name ?o }"
+            ),
+        );
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn not_triggered_without_prologue() {
+        let result = run(diagnostics, "SELECT * WHERE { ?s ?p ?o }");
+        assert!(result.is_empty());
+    }
+}

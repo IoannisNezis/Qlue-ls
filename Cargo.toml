@@ -11,9 +11,18 @@ keywords = ["SPARQL", "rdf", "lsp", "lsp-server", "wasm"]
 
 [package.metadata.deb]
 maintainer = "Julian Mundhahs <mundhahj@tf.uni-freiburg.de>"
-extended-description = "TODO; the default (README) is not well suited for this"
+extended-description = """\
+qlue-ls is a language server for SPARQL. It provides completion, formatting, \
+hover, diagnostics and code actions for any editor that supports the \
+Language Server Protocol."""
 section = "devel"
 priority = "optional"
+# NOTE: explicit assets, otherwise cargo-deb's `$auto` also ships the cdylib
+# (`libqlue_ls.so`), which only exists for the WASM build.
+assets = [
+	["target/release/qlue-ls", "usr/bin/", "755"],
+	["README.md", "usr/share/doc/qlue-ls/", "644"],
+]
 
 [lib]
 path = "src/lib.rs"

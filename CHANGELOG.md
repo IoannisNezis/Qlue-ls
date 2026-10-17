@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- snippet completions, for example `CONSTRUCT`, `ASK` and `PREFIX` at the start
+  of a query, are no longer inserted as raw snippet text like `${1:?s ?p ?o}` in
+  editors that don't support `itemDefaults` in completion lists, such as
+  Emacs/Eglot. The insert text format is now set on each completion item,
+  unless the editor announces support for `itemDefaults.insertTextFormat` (#368).
+- editors without snippet support now get plain text completions. Placeholders
+  are replaced by their default text and tab stops are dropped, so
+  `LOAD <${0:iri}>;` is inserted as `LOAD <iri>;`. Before,
+  these editors received snippet syntax they could not expand.
+
 ## [3.12.0] - 2026-10-19
 
 ### Added
